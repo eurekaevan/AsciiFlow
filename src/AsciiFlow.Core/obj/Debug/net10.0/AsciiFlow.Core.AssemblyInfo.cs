@@ -10,12 +10,12 @@
 using System;
 using System.Reflection;
 
-[assembly: System.Reflection.AssemblyCompanyAttribute("AsciiFlow")]
+[assembly: System.Reflection.AssemblyCompanyAttribute("AsciiFlow.Core")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d814d6b740b3a7f5e159ba6a0054e3976df2444b")]
-[assembly: System.Reflection.AssemblyProductAttribute("AsciiFlow")]
-[assembly: System.Reflection.AssemblyTitleAttribute("AsciiFlow")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a9b238cd010cd0323ff4b3547dd16f05f774a70e")]
+[assembly: System.Reflection.AssemblyProductAttribute("AsciiFlow.Core")]
+[assembly: System.Reflection.AssemblyTitleAttribute("AsciiFlow.Core")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
 
 // 由 MSBuild WriteCodeFragment 类生成。

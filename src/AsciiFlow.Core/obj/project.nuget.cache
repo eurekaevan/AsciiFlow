@@ -1,0 +1,28 @@
+{
+  "version": 2,
+  "dgSpecHash": "cLJNwa8zLKg=",
+  "success": true,
+  "projectFilePath": "/home/eureka/文档/AsciiFlow/src/AsciiFlow.Core/AsciiFlow.Core.csproj",
+  "expectedPackageFiles": [
+    "/home/eureka/.nuget/packages/ffmpeg.autogen/3.3.3.2/ffmpeg.autogen.3.3.3.2.nupkg.sha512",
+    "/home/eureka/.nuget/packages/skiasharp/3.119.4/skiasharp.3.119.4.nupkg.sha512",
+    "/home/eureka/.nuget/packages/skiasharp.nativeassets.linux/3.119.4/skiasharp.nativeassets.linux.3.119.4.nupkg.sha512",
+    "/home/eureka/.nuget/packages/skiasharp.nativeassets.macos/3.119.4/skiasharp.nativeassets.macos.3.119.4.nupkg.sha512",
+    "/home/eureka/.nuget/packages/skiasharp.nativeassets.win32/3.119.4/skiasharp.nativeassets.win32.3.119.4.nupkg.sha512",
+    "/home/eureka/.nuget/packages/system.numerics.vectors/4.6.1/system.numerics.vectors.4.6.1.nupkg.sha512"
+  ],
+  "logs": [
+    {
+      "code": "NU1510",
+      "level": "Warning",
+      "message": "PackageReference System.Numerics.Vectors 将不会删除。请考虑从依赖项中移除此包，因为可能不需要它。",
+      "projectPath": "/home/eureka/文档/AsciiFlow/src/AsciiFlow.Core/AsciiFlow.Core.csproj",
+      "warningLevel": 1,
+      "filePath": "/home/eureka/文档/AsciiFlow/src/AsciiFlow.Core/AsciiFlow.Core.csproj",
+      "libraryId": "System.Numerics.Vectors",
+      "targetGraphs": [
+        "net10.0"
+      ]
+    }
+  ]
+}

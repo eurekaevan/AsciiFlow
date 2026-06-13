@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "/home/eureka/文档/AsciiFlow/AsciiFlow.csproj": {}
+    "/home/eureka/文档/AsciiFlow/src/AsciiFlow.Core/AsciiFlow.Core.csproj": {}
   },
   "projects": {
-    "/home/eureka/文档/AsciiFlow/AsciiFlow.csproj": {
+    "/home/eureka/文档/AsciiFlow/src/AsciiFlow.Core/AsciiFlow.Core.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/home/eureka/文档/AsciiFlow/AsciiFlow.csproj",
-        "projectName": "AsciiFlow",
-        "projectPath": "/home/eureka/文档/AsciiFlow/AsciiFlow.csproj",
+        "projectUniqueName": "/home/eureka/文档/AsciiFlow/src/AsciiFlow.Core/AsciiFlow.Core.csproj",
+        "projectName": "AsciiFlow.Core",
+        "projectPath": "/home/eureka/文档/AsciiFlow/src/AsciiFlow.Core/AsciiFlow.Core.csproj",
         "packagesPath": "/home/eureka/.nuget/packages/",
-        "outputPath": "/home/eureka/文档/AsciiFlow/obj/",
+        "outputPath": "/home/eureka/文档/AsciiFlow/src/AsciiFlow.Core/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "/home/eureka/.nuget/NuGet/NuGet.Config"
@@ -44,6 +44,32 @@
       "frameworks": {
         "net10.0": {
           "targetAlias": "net10.0",
+          "dependencies": {
+            "FFmpeg.AutoGen": {
+              "target": "Package",
+              "version": "[3.3.3.2, )"
+            },
+            "SkiaSharp": {
+              "target": "Package",
+              "version": "[3.119.4, )"
+            },
+            "SkiaSharp.NativeAssets.Linux": {
+              "target": "Package",
+              "version": "[3.119.4, )"
+            },
+            "SkiaSharp.NativeAssets.Win32": {
+              "target": "Package",
+              "version": "[3.119.4, )"
+            },
+            "SkiaSharp.NativeAssets.macOS": {
+              "target": "Package",
+              "version": "[3.119.4, )"
+            },
+            "System.Numerics.Vectors": {
+              "target": "Package",
+              "version": "[4.6.1, )"
+            }
+          },
           "imports": [
             "net461",
             "net462",

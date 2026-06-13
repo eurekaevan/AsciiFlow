@@ -1,3 +1,6 @@
 <Solution>
-  <Project Path="AsciiFlow.csproj" />
+  <Folder Name="/src/">
+    <Project Path="src/AsciiFlow.App/AsciiFlow.App.csproj" />
+    <Project Path="src/AsciiFlow.Core/AsciiFlow.Core.csproj" />
+  </Folder>
 </Solution>

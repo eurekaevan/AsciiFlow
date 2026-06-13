@@ -1,0 +1,28 @@
+{
+  "version": 2,
+  "dgSpecHash": "mdzzhzrBGzw=",
+  "success": true,
+  "projectFilePath": "/home/eureka/文档/AsciiFlow/src/AsciiFlow.App/AsciiFlow.App.csproj",
+  "expectedPackageFiles": [
+    "/home/eureka/.nuget/packages/commandlineparser/1.9.3.15/commandlineparser.1.9.3.15.nupkg.sha512",
+    "/home/eureka/.nuget/packages/ffmpeg.autogen/3.3.3.2/ffmpeg.autogen.3.3.3.2.nupkg.sha512",
+    "/home/eureka/.nuget/packages/skiasharp/3.119.4/skiasharp.3.119.4.nupkg.sha512",
+    "/home/eureka/.nuget/packages/skiasharp.nativeassets.linux/3.119.4/skiasharp.nativeassets.linux.3.119.4.nupkg.sha512",
+    "/home/eureka/.nuget/packages/skiasharp.nativeassets.macos/3.119.4/skiasharp.nativeassets.macos.3.119.4.nupkg.sha512",
+    "/home/eureka/.nuget/packages/skiasharp.nativeassets.win32/3.119.4/skiasharp.nativeassets.win32.3.119.4.nupkg.sha512"
+  ],
+  "logs": [
+    {
+      "code": "NU1701",
+      "level": "Warning",
+      "message": "已使用“.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1”而不是项目目标框架“net10.0”还原包“CommandLineParser 1.9.3.15”。此包可能与项目不完全兼容。",
+      "projectPath": "/home/eureka/文档/AsciiFlow/src/AsciiFlow.App/AsciiFlow.App.csproj",
+      "warningLevel": 1,
+      "filePath": "/home/eureka/文档/AsciiFlow/src/AsciiFlow.App/AsciiFlow.App.csproj",
+      "libraryId": "CommandLineParser",
+      "targetGraphs": [
+        "net10.0"
+      ]
+    }
+  ]
+}
