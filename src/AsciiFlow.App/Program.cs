@@ -1,137 +1,181 @@
 ﻿using System.Diagnostics;
+using AsciiFlow.App.Core;
+using AsciiFlow.Core.Video;
+using AsciiFlow.Core.Processing;
+using AsciiFlow.Core.AsciiMapping;
 using AsciiFlow.Core.Rendering;
-using System.Text;
+using AsciiFlow.Core.Encoding;
+using CommandLine;
 
 namespace AsciiFlow.App;
 
 class Program
 {
-    static void Main(string[] args)
+    static async Task<int> Main(string[] args)
     {
-        Console.WriteLine("=== 阶段 5: SkiaSharp ASCII 渲染器测试 ===\n");
-
-        // 测试参数
-        const int TARGET_WIDTH = 80;   // 目标字符宽度
-        const int TARGET_HEIGHT = 40;  // 目标字符高度
-
-        Console.WriteLine($"配置: {TARGET_WIDTH}x{TARGET_HEIGHT} 字符");
-        Console.WriteLine($"字体: Consolas, 16px");
-        Console.WriteLine($"输出尺寸: {TARGET_WIDTH * 12}x{TARGET_HEIGHT * 20} 像素");
-        Console.WriteLine($"目标性能: ≤ 0.5ms/帧\n");
-
-
-        // 测试 2：字符缓存版本（高性能）
-        TestCachedRenderer(TARGET_WIDTH, TARGET_HEIGHT);
-
-        // 显示示例输出前 5 行的前 10 字符
-        Console.WriteLine("=== 示例输出预览（前 5 行） ===\n");
-        ShowSampleOutput(TARGET_WIDTH, TARGET_HEIGHT);
-
-        Console.WriteLine("=== 阶段 5 测试完成 ===");
+        // 解析命令行参数
+        return await Parser.Default.ParseArguments<CommandLineOptions>(args)
+            .MapResult(
+                async opts => await RunAsync(opts),
+                errs => Task.FromResult(1));
     }
 
-    /// <summary>
-    /// 测试字符缓存渲染器性能
-    /// </summary>
-    static void TestCachedRenderer(int targetWidth, int targetHeight)
+    static async Task<int> RunAsync(CommandLineOptions options)
     {
-        Console.WriteLine("【SkiaCachedAsciiRenderer - 字符缓存版本（推荐）】");
-
+        var stopwatch = Stopwatch.StartNew();
+        var pipeline = new VideoPipeline();
+        
         try
         {
-            // 创建渲染器
-            using var renderer = new SkiaCachedAsciiRenderer(
-                CharacterSetConfig.Default,
-                targetWidth,
-                targetHeight);
+            Console.WriteLine("╔══════════════════════════════════════════════╗");
+            Console.WriteLine("║     AsciiFlow - ASCII 视频转换器 v1.0.0      ║");
+            Console.WriteLine("╚══════════════════════════════════════════════╝");
+            Console.WriteLine();
 
-            // 初始化（预渲染字符）
-            renderer.Initialize();
+            // 打印配置信息
+            PrintConfiguration(options);
 
-            Console.WriteLine($"输出尺寸: {renderer.OutputWidth}x{renderer.OutputHeight} 像素");
-
-            // 生成测试 ASCII 字符串
-            string testAscii = GenerateTestAscii(targetWidth, targetHeight);
-
-            // 预热
-            for (int i = 0; i < 5; i++)
-                renderer.RenderFrame(testAscii);
-
-            // 性能测试
-            const int ITERATIONS = 100;
-            var sw = Stopwatch.StartNew();
-
-            for (int i = 0; i < ITERATIONS; i++)
-            {
-                byte[] result = renderer.RenderFrame(testAscii);
-                Console.WriteLine($"  帧 {i+1}: {result.Length:N0} RGB24 字节");
-            }
-
-            sw.Stop();
-            double avgTimeMs = sw.Elapsed.TotalMilliseconds / ITERATIONS;
-            double fps = 1000.0 / avgTimeMs;
-
-            Console.WriteLine($"平均渲染时间: {avgTimeMs:F3} ms");
-            Console.WriteLine($"性能: {fps:N0} FPS ({avgTimeMs:F2}ms/帧)");
-            Console.WriteLine($"目标: ≤ 0.5ms/帧 (≥2000 FPS)");
-
-            // 性能评估
-            if (avgTimeMs <= 0.5)
-                Console.WriteLine("✅ 性能达标！");
-            else if (avgTimeMs <= 1.0)
-                Console.WriteLine("⚠️ 性能接近目标，可接受");
-            else
-                Console.WriteLine("❌ 性能不达标，需要优化");
+            // 初始化流水线
+            pipeline.Initialize(options);
 
             Console.WriteLine();
+            Console.WriteLine("开始处理...");
+            Console.WriteLine(new string('─', 50));
+
+            // 处理视频
+            int totalFrames = pipeline.Process(options);
+
+            // 完成编码
+            pipeline.WriteTrailer();
+
+            stopwatch.Stop();
+
+            // 打印性能报告
+            var stats = pipeline.GetStatistics();
+            PrintPerformanceReport(stats, totalFrames, stopwatch);
+
+            Console.WriteLine();
+            Console.WriteLine("╔══════════════════════════════════════════════╗");
+            Console.WriteLine("║              ✅ 处理完成！                    ║");
+            Console.WriteLine("╚══════════════════════════════════════════════╝");
+            Console.WriteLine();
+            Console.WriteLine($"输出文件: {Path.GetFullPath(options.OutputFile)}");
+            Console.WriteLine($"文件大小: {new FileInfo(options.OutputFile).Length / 1024.0 / 1024.0:F2} MB");
+
+            return 0;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ 测试失败: {ex.Message}");
-            Console.WriteLine($"   详细信息: {ex.GetType().Name}");
             Console.WriteLine();
-        }
-    }
+            Console.WriteLine($"╔══════════════════════════════════════════════╗");
+            Console.WriteLine($"║  ❌ 处理失败！                                ║");
+            Console.WriteLine($"╚══════════════════════════════════════════════╝");
+            Console.WriteLine();
 
-    /// <summary>
-    /// 生成测试用 ASCII 字符串（渐变效果）
-    /// </summary>
-    static string GenerateTestAscii(int width, int height)
-    {
-        // 从 ASCII 字符集 $@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\\|()1{}[]?-_+~<>i!lI;:,"^`'.
-        string charset = "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\\|()1{}[]?-_+~<>i!lI;:,\"^`'. ";
-
-        var sb = new StringBuilder();
-        for (int y = 0; y < height; y++)
-        {
-            for (int x = 0; x < width; x++)
+            if (options.Verbose)
             {
-                // 创建渐变：从左上到右下
-                int idx = (x + y) % charset.Length;
-                sb.Append(charset[idx]);
+                Console.WriteLine($"错误类型: {ex.GetType().Name}");
+                Console.WriteLine($"错误信息: {ex.Message}");
+                Console.WriteLine();
+                Console.WriteLine("堆栈跟踪:");
+                Console.WriteLine(ex.StackTrace);
+                
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine();
+                    Console.WriteLine("内部异常:");
+                    Console.WriteLine($"  类型: {ex.InnerException.GetType().Name}");
+                    Console.WriteLine($"  信息: {ex.InnerException.Message}");
+                }
             }
-            sb.AppendLine();
+            else
+            {
+                Console.WriteLine($"错误信息: {ex.Message}");
+                Console.WriteLine();
+                Console.WriteLine("提示: 使用 --verbose 选项查看详细信息");
+            }
+
+            return 1;
         }
-        return sb.ToString();
+        finally
+        {
+            pipeline?.Dispose();
+        }
     }
 
-    /// <summary>
-    /// 显示示例输出
-    /// </summary>
-    static void ShowSampleOutput(int targetWidth, int targetHeight)
+    static void PrintConfiguration(CommandLineOptions options)
     {
-        string testAscii = GenerateTestAscii(targetWidth, Math.Min(5, targetHeight));
-        var lines = testAscii.Split('\n');
-
-        for (int i = 0; i < lines.Length && i < 5; i++)
+        Console.WriteLine("【配置信息】");
+        Console.WriteLine($"  输入文件: {options.InputFile}");
+        Console.WriteLine($"  输出文件: {options.OutputFile}");
+        Console.WriteLine($"  ASCII 尺寸: {options.Width} × {options.Height} 字符");
+        Console.WriteLine($"  输出尺寸: {options.Width * 12} × {options.Height * 20} 像素");
+        Console.WriteLine($"  帧率: {options.FrameRate} fps");
+        Console.WriteLine($"  字符集: {options.CharSet}");
+        Console.WriteLine($"  字体: {options.FontFamily} {options.FontSize}px");
+        
+        if (options.MaxFrames > 0)
         {
-            // 只显示前 20 字符
-            string line = lines[i];
-            if (line.Length > 20)
-                line = line[..20] + "...";
-            Console.WriteLine(line);
+            Console.WriteLine($"  最大帧数: {options.MaxFrames}");
         }
 
         Console.WriteLine();
+        Console.WriteLine("【处理流水线】");
+        Console.WriteLine("  [解码] FFmpeg → SIMD灰度 → ASCII映射 → SkiaSharp渲染 → H.264编码 [输出]");
+    }
+
+    static void PrintPerformanceReport(PerformanceStats stats, int totalFrames, Stopwatch stopwatch)
+    {
+        Console.WriteLine();
+        Console.WriteLine(new string('═', 50));
+        Console.WriteLine("                    📊 性能报告");
+        Console.WriteLine(new string('═', 50));
+        Console.WriteLine();
+
+        // 统计信息
+        // var stats = pipeline.GetStatistics();
+
+        Console.WriteLine($"【总览】");
+        Console.WriteLine($"  处理帧数: {totalFrames} 帧");
+        Console.WriteLine($"  总耗时: {stopwatch.Elapsed.TotalSeconds:F2} 秒");
+        Console.WriteLine($"  平均 FPS: {(totalFrames / stopwatch.Elapsed.TotalSeconds):F2}");
+        Console.WriteLine();
+
+        Console.WriteLine($"【各阶段耗时】");
+        Console.WriteLine($"  ├─ 解码: {stats.DecodeTimeMs / 1000.0:F3}s ({stats.DecodeTimeMs / (double)totalFrames:F2}ms/帧)");
+        Console.WriteLine($"  ├─ 灰度转换: {stats.GrayscaleTimeMs / 1000.0:F3}s ({stats.GrayscaleTimeMs / (double)totalFrames:F2}ms/帧)");
+        Console.WriteLine($"  ├─ ASCII映射: {stats.MappingTimeMs / 1000.0:F3}s ({stats.MappingTimeMs / (double)totalFrames:F2}ms/帧)");
+        Console.WriteLine($"  ├─ 渲染: {stats.RenderTimeMs / 1000.0:F3}s ({stats.RenderTimeMs / (double)totalFrames:F2}ms/帧)");
+        Console.WriteLine($"  └─ 编码: {stats.EncodeTimeMs / 1000.0:F3}s ({stats.EncodeTimeMs / (double)totalFrames:F2}ms/帧)");
+        Console.WriteLine();
+
+        double avgFrameTime = (stats.DecodeTimeMs + stats.GrayscaleTimeMs + 
+                               stats.MappingTimeMs + stats.RenderTimeMs + stats.EncodeTimeMs) / totalFrames;
+        double theoreticalFps = 1000.0 / avgFrameTime;
+
+        Console.WriteLine($"【性能评估】");
+        Console.WriteLine($"  单帧平均耗时: {avgFrameTime:F2}ms");
+        Console.WriteLine($"  理论 FPS: {theoreticalFps:F1}");
+        Console.WriteLine();
+
+        if (avgFrameTime <= 30)
+        {
+            Console.WriteLine("  ✅ 性能优异！可以轻松处理 1080p30");
+        }
+        else if (avgFrameTime <= 50)
+        {
+            Console.WriteLine("  ✅ 性能良好！可以流畅处理 720p30");
+        }
+        else if (avgFrameTime <= 100)
+        {
+            Console.WriteLine("  ⚠️  性能一般！建议降低 ASCII 分辨率");
+        }
+        else
+        {
+            Console.WriteLine("  ❌ 性能不足！建议:");
+            Console.WriteLine("     • 降低 ASCII 分辨率（如 40x20）");
+            Console.WriteLine("     • 降低输出帧率（如 15fps）");
+            Console.WriteLine("     • 检查 CPU 性能和 FFmpeg 编解码器");
+        }
     }
 }
