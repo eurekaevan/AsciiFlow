@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
-using AsciiFlow.Core.AsciiMapping;
+using AsciiFlow.Core.Rendering;
+using System.Text;
 
 namespace AsciiFlow.App;
 
@@ -7,118 +8,130 @@ class Program
 {
     static void Main(string[] args)
     {
-        Console.WriteLine("=== 阶段 4: 查找表字符映射模块测试 ===\n");
+        Console.WriteLine("=== 阶段 5: SkiaSharp ASCII 渲染器测试 ===\n");
 
         // 测试参数
-        const int SRC_WIDTH = 1920;
-        const int SRC_HEIGHT = 1080;
-        const int TARGET_WIDTH = 80;
-        const int TARGET_HEIGHT = 40;
+        const int TARGET_WIDTH = 80;   // 目标字符宽度
+        const int TARGET_HEIGHT = 40;  // 目标字符高度
 
-        Console.WriteLine($"源图像尺寸: {SRC_WIDTH}x{SRC_HEIGHT}");
-        Console.WriteLine($"目标字符画尺寸: {TARGET_WIDTH}x{TARGET_HEIGHT}");
-        Console.WriteLine($"压缩比: {(SRC_WIDTH * SRC_HEIGHT) / (TARGET_WIDTH * TARGET_HEIGHT):N0}x\n");
+        Console.WriteLine($"配置: {TARGET_WIDTH}x{TARGET_HEIGHT} 字符");
+        Console.WriteLine($"字体: Consolas, 16px");
+        Console.WriteLine($"输出尺寸: {TARGET_WIDTH * 12}x{TARGET_HEIGHT * 20} 像素");
+        Console.WriteLine($"目标性能: ≤ 0.5ms/帧\n");
 
-        // 生成测试灰度数据（模拟从左到右的渐变）
-        byte[] testGrayData = GenerateTestGrayData(SRC_WIDTH, SRC_HEIGHT);
-        Console.WriteLine($"测试数据已生成（{testGrayData.Length:N0} 字节）\n");
 
-        // 测试 Standard 字符集
-        TestCharacterSet(
-            "Standard 字符集 (69 字符)",
-            LookupTableAsciiMapper.Standard,
-            testGrayData,
-            SRC_WIDTH,
-            SRC_HEIGHT,
-            TARGET_WIDTH,
-            TARGET_HEIGHT);
+        // 测试 2：字符缓存版本（高性能）
+        TestCachedRenderer(TARGET_WIDTH, TARGET_HEIGHT);
 
-        // 测试 Detailed 字符集
-        TestCharacterSet(
-            "Detailed 字符集 (25 字符)",
-            LookupTableAsciiMapper.Detailed,
-            testGrayData,
-            SRC_WIDTH,
-            SRC_HEIGHT,
-            TARGET_WIDTH,
-            TARGET_HEIGHT);
+        // 显示示例输出前 5 行的前 10 字符
+        Console.WriteLine("=== 示例输出预览（前 5 行） ===\n");
+        ShowSampleOutput(TARGET_WIDTH, TARGET_HEIGHT);
 
-        // 显示示例输出
-        Console.WriteLine("=== 示例输出（Standard 字符集，10 行预览）===\n");
-        var mapper = new LookupTableAsciiMapper();
-        string asciiArt = mapper.MapToAscii(
-            testGrayData,
-            SRC_WIDTH,
-            SRC_HEIGHT,
-            TARGET_WIDTH,
-            10);  // 只输出 10 行用于预览
-        
-        Console.WriteLine(asciiArt);
-
-        Console.WriteLine("\n=== 阶段 4 测试完成 ===");
+        Console.WriteLine("=== 阶段 5 测试完成 ===");
     }
 
     /// <summary>
-    /// 测试特定字符集的性能
+    /// 测试字符缓存渲染器性能
     /// </summary>
-    static void TestCharacterSet(
-        string name,
-        string characterSet,
-        byte[] grayData,
-        int srcWidth,
-        int srcHeight,
-        int targetWidth,
-        int targetHeight)
+    static void TestCachedRenderer(int targetWidth, int targetHeight)
     {
-        Console.WriteLine($"【{name}】");
-        Console.WriteLine($"字符集: {characterSet}");
-        Console.WriteLine($"字符数: {characterSet.Length}\n");
+        Console.WriteLine("【SkiaCachedAsciiRenderer - 字符缓存版本（推荐）】");
 
-        var mapper = new LookupTableAsciiMapper(characterSet);
-
-        // 预热
-        mapper.MapToAscii(grayData, srcWidth, srcHeight, targetWidth, targetHeight);
-
-        // 性能测试
-        const int ITERATIONS = 10;
-        var stopwatch = Stopwatch.StartNew();
-
-        for (int i = 0; i < ITERATIONS; i++)
+        try
         {
-            string asciiArt = mapper.MapToAscii(
-                grayData,
-                srcWidth,
-                srcHeight,
+            // 创建渲染器
+            using var renderer = new SkiaCachedAsciiRenderer(
+                CharacterSetConfig.Default,
                 targetWidth,
                 targetHeight);
+
+            // 初始化（预渲染字符）
+            renderer.Initialize();
+
+            Console.WriteLine($"输出尺寸: {renderer.OutputWidth}x{renderer.OutputHeight} 像素");
+
+            // 生成测试 ASCII 字符串
+            string testAscii = GenerateTestAscii(targetWidth, targetHeight);
+
+            // 预热
+            for (int i = 0; i < 5; i++)
+                renderer.RenderFrame(testAscii);
+
+            // 性能测试
+            const int ITERATIONS = 100;
+            var sw = Stopwatch.StartNew();
+
+            for (int i = 0; i < ITERATIONS; i++)
+            {
+                byte[] result = renderer.RenderFrame(testAscii);
+                Console.WriteLine($"  帧 {i+1}: {result.Length:N0} RGB24 字节");
+            }
+
+            sw.Stop();
+            double avgTimeMs = sw.Elapsed.TotalMilliseconds / ITERATIONS;
+            double fps = 1000.0 / avgTimeMs;
+
+            Console.WriteLine($"平均渲染时间: {avgTimeMs:F3} ms");
+            Console.WriteLine($"性能: {fps:N0} FPS ({avgTimeMs:F2}ms/帧)");
+            Console.WriteLine($"目标: ≤ 0.5ms/帧 (≥2000 FPS)");
+
+            // 性能评估
+            if (avgTimeMs <= 0.5)
+                Console.WriteLine("✅ 性能达标！");
+            else if (avgTimeMs <= 1.0)
+                Console.WriteLine("⚠️ 性能接近目标，可接受");
+            else
+                Console.WriteLine("❌ 性能不达标，需要优化");
+
+            Console.WriteLine();
         }
-
-        stopwatch.Stop();
-        double avgTimeMs = stopwatch.Elapsed.TotalMilliseconds / ITERATIONS;
-        double fps = 1000.0 / avgTimeMs;
-
-        Console.WriteLine($"平均处理时间: {avgTimeMs:F3} ms");
-        Console.WriteLine($"预计 FPS: {fps:N0}");
-        Console.WriteLine($"字符查找开销: O(1) 每像素\n");
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ 测试失败: {ex.Message}");
+            Console.WriteLine($"   详细信息: {ex.GetType().Name}");
+            Console.WriteLine();
+        }
     }
 
     /// <summary>
-    /// 生成测试灰度数据（从左到右的渐变）
+    /// 生成测试用 ASCII 字符串（渐变效果）
     /// </summary>
-    static byte[] GenerateTestGrayData(int width, int height)
+    static string GenerateTestAscii(int width, int height)
     {
-        var data = new byte[width * height];
+        // 从 ASCII 字符集 $@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\\|()1{}[]?-_+~<>i!lI;:,"^`'.
+        string charset = "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\\|()1{}[]?-_+~<>i!lI;:,\"^`'. ";
 
+        var sb = new StringBuilder();
         for (int y = 0; y < height; y++)
         {
             for (int x = 0; x < width; x++)
             {
-                // 从左到右：0（黑）→ 255（白）
-                byte grayValue = (byte)((x * 255) / (width - 1));
-                data[y * width + x] = grayValue;
+                // 创建渐变：从左上到右下
+                int idx = (x + y) % charset.Length;
+                sb.Append(charset[idx]);
             }
+            sb.AppendLine();
+        }
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// 显示示例输出
+    /// </summary>
+    static void ShowSampleOutput(int targetWidth, int targetHeight)
+    {
+        string testAscii = GenerateTestAscii(targetWidth, Math.Min(5, targetHeight));
+        var lines = testAscii.Split('\n');
+
+        for (int i = 0; i < lines.Length && i < 5; i++)
+        {
+            // 只显示前 20 字符
+            string line = lines[i];
+            if (line.Length > 20)
+                line = line[..20] + "...";
+            Console.WriteLine(line);
         }
 
-        return data;
+        Console.WriteLine();
     }
 }
