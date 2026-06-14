@@ -13,11 +13,43 @@ class Program
 {
     static async Task<int> Main(string[] args)
     {
-        // 解析命令行参数
+        // ====== 关键：在任何 FFmpeg API 调用之前设置路径 ======
+        SetupFFmpegRootPath();
+        // =====================================================
         return await Parser.Default.ParseArguments<CommandLineOptions>(args)
             .MapResult(
                 async opts => await RunAsync(opts),
                 errs => Task.FromResult(1));
+    }
+
+    /// <summary>
+    /// 自动检测并设置 FFmpeg 动态库路径
+    /// </summary>
+    private static void SetupFFmpegRootPath()
+    {
+        try
+        {
+            string? resolvedPath = FFmpegPathResolver.Resolve();
+            if (resolvedPath != null)
+            {
+                // ✅ 找到路径，设置 RootPath
+                FFmpeg.AutoGen.ffmpeg.RootPath = resolvedPath;
+                Console.WriteLine($"[FFmpeg] ✓ 动态库路径: {resolvedPath}");
+            }
+            else
+            {
+                // ❌ 未找到路径，打印详细帮助
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine(FFmpegPathResolver.GetHelpMessage());
+                Console.ResetColor();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine($"[FFmpeg] ⚠ 路径检测异常: {ex.Message}");
+            Console.ResetColor();
+        }
     }
 
     static async Task<int> RunAsync(CommandLineOptions options)

@@ -57,14 +57,22 @@ public static class FFmpegInitializer
                 
                 _initialized = true;
             }
-            catch (Exception ex)
+            catch (DllNotFoundException ex)
             {
+                // 使用 FFmpegPathResolver 的详细帮助信息
                 throw new DllNotFoundException(
-                    $"无法加载 FFmpeg 动态库。" +
-                    $"请确保已正确设置 ffmpeg.RootPath 或提供了 ffmpegRootPath。" +
-                    $"当前路径: {_ffmpegRootPath ?? "(未设置)"}\n" +
-                    $"错误信息: {ex.Message}", ex);
+                    $"FFmpeg 动态库加载失败：{ex.Message}\n\n{FFmpegPathResolver.GetHelpMessage()}", ex);
             }
+            catch (NotSupportedException ex)
+            {
+                // "Specified method is not supported" 通常是 ABI 版本不匹配
+                throw new NotSupportedException(
+                    $"FFmpeg ABI 不兼容：{ex.Message}\n\n" +
+                    "可能原因：FFmpeg.AutoGen 8.1.0 需要 FFmpeg 7.x 系列库。\n" +
+                    "请确认您的 FFmpeg 库版本与 FFmpeg.AutoGen 版本匹配。\n\n" +
+                    "检查系统 FFmpeg 版本: ffmpeg -version\n" +
+                    FFmpegPathResolver.GetHelpMessage(), ex);
+            }        
         }
     }
 
