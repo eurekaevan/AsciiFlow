@@ -4,3 +4,10 @@
 /home/eureka/文档/AsciiFlow/src/AsciiFlow.Core/obj/Debug/net10.0/AsciiFlow.Core.AssemblyInfo.cs
 /home/eureka/文档/AsciiFlow/src/AsciiFlow.Core/obj/Debug/net10.0/AsciiFlow.Core.csproj.CoreCompileInputs.cache
 /home/eureka/文档/AsciiFlow/src/AsciiFlow.Core/obj/Debug/net10.0/AsciiFlow.Core.sourcelink.json
+/home/eureka/文档/AsciiFlow/src/AsciiFlow.Core/bin/Debug/net10.0/AsciiFlow.Core.deps.json
+/home/eureka/文档/AsciiFlow/src/AsciiFlow.Core/bin/Debug/net10.0/AsciiFlow.Core.dll
+/home/eureka/文档/AsciiFlow/src/AsciiFlow.Core/bin/Debug/net10.0/AsciiFlow.Core.pdb
+/home/eureka/文档/AsciiFlow/src/AsciiFlow.Core/obj/Debug/net10.0/AsciiFlow.Core.dll
+/home/eureka/文档/AsciiFlow/src/AsciiFlow.Core/obj/Debug/net10.0/refint/AsciiFlow.Core.dll
+/home/eureka/文档/AsciiFlow/src/AsciiFlow.Core/obj/Debug/net10.0/AsciiFlow.Core.pdb
+/home/eureka/文档/AsciiFlow/src/AsciiFlow.Core/obj/Debug/net10.0/ref/AsciiFlow.Core.dll

@@ -24,10 +24,12 @@ public class LookupTableAsciiMapper : IAsciiMapper
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="characterSet">字符集字符串</param>
+    /// <param name="characterSet">
+    /// 字符集字符串（默认使用 Standard）
+    /// </param>
     /// <param name="maxDegreeOfParallelism">最大并行度（CPU 核心数）</param>
     public LookupTableAsciiMapper(
-        string characterSet = null,
+        string? characterSet = null,
         int maxDegreeOfParallelism = 0)
     {
         _characterSet = (characterSet ?? Standard).ToCharArray();
