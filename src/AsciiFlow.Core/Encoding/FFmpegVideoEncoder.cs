@@ -34,6 +34,7 @@ public unsafe class FFmpegVideoEncoder : IVideoEncoder
 
     // FFmpeg 错误码常量
     private const int AVERROR_EAGAIN = -11;
+    private const int AVERROR_EOF = unchecked((int)0x20464F45);  // ← 新增
     private const int AV_TIME_BASE = 1000000;
 
     // 编码器配置
@@ -341,6 +342,7 @@ public unsafe class FFmpegVideoEncoder : IVideoEncoder
 
     /// <summary>
     /// 接收编码包并写入文件
+    /// 修复：正确处理 EOF（flush 阶段正常返回）
     /// </summary>
     private void ReceiveAndWritePackets()
     {
@@ -350,6 +352,10 @@ public unsafe class FFmpegVideoEncoder : IVideoEncoder
 
             if (ret == AVERROR_EAGAIN)
                 break;  // 需要更多帧
+
+            // 【修复】EOF 在 flush 阶段是正常的，不是错误
+            if (ret == AVERROR_EOF)
+                break;  // flush 完成
 
             if (ret < 0)
                 throw new FFmpegEncoderException("接收编码包失败", ret);
@@ -361,7 +367,6 @@ public unsafe class FFmpegVideoEncoder : IVideoEncoder
             ffmpeg.av_packet_unref(_packet);
         }
     }
-
     /// <summary>
     /// 将数据包写入文件
     /// </summary>
@@ -392,10 +397,12 @@ public unsafe class FFmpegVideoEncoder : IVideoEncoder
         try
         {
             // 1. 刷新编码器（发送 null 帧表示结束）
-            ffmpeg.avcodec_send_frame(_codecContext, null);
+            int flushRet = ffmpeg.avcodec_send_frame(_codecContext, null);
+            
+            // 尝试接收 flush 出的包（EOF 是正常的）
             ReceiveAndWritePackets();
 
-            // 2. 写入文件尾（MP4 索引等）
+            // 2. 写入文件尾（MP4 索引等）- 必须调用！
             int ret = ffmpeg.av_write_trailer(_formatContext);
             if (ret < 0)
                 throw new FFmpegEncoderException("写入视频文件尾失败", ret);
@@ -410,13 +417,15 @@ public unsafe class FFmpegVideoEncoder : IVideoEncoder
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[编码器警告] Finish 出错: {ex.Message}");
+            Console.WriteLine($"[编码器错误] Finish 失败: {ex.Message}");
+            // 即使出错也要清理资源
         }
-
-        _initialized = false;
-        Cleanup();
+        finally
+        {
+            _initialized = false;
+            Cleanup();
+        }
     }
-
     /// <summary>
     /// 清理 FFmpeg 资源
     /// </summary>
