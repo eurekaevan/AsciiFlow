@@ -29,4 +29,13 @@ public interface IAsciiRenderer : IDisposable
     /// <param name="asciiArt">ASCII 艺术字符串（每行以换行符分隔）</param>
     /// <returns>RGB24 字节数组（R0,G0,B0,R1,G1,B1,...）</returns>
     byte[] RenderFrame(string asciiArt);
+
+    /// <summary>
+    /// 将 ASCII 字符串渲染为 RGB24 字节数组（支持彩色字符）
+    /// </summary>
+    /// <param name="asciiArt">ASCII 艺术字符串</param>
+    /// <param name="colors">每个字符单元格的 RGB 颜色数组</param>
+    /// <param name="useColor">是否启用彩色模式</param>
+    /// <returns>RGB24 字节数组</returns>
+    byte[] RenderFrameWithColor(string asciiArt, (byte R, byte G, byte B)[] colors, bool useColor = true);
 }

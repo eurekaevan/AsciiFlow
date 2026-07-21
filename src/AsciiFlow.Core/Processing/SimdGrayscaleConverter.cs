@@ -11,8 +11,8 @@ namespace AsciiFlow.Core.Processing;
 /// </summary>
 public class SimdGrayscaleConverter : IGrayscaleConverter
 {
-    // BT.709 标准灰度转换系数（整数形式）
-    // 灰度 = (54 * R + 183 * G + 19 * B) >> 8
+    // ITU-R BT.709 人眼感知亮度系数：0.2126 * R + 0.7152 * G + 0.0722 * B
+    // 整数化： (54 * R + 183 * G + 19 * B) >> 8 (54 + 183 + 19 = 256)
     private const int R_COEFF = 54;
     private const int G_COEFF = 183;
     private const int B_COEFF = 19;

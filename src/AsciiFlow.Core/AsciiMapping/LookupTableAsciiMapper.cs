@@ -44,10 +44,8 @@ public class LookupTableAsciiMapper : IAsciiMapper
     }
 
     /// <summary>
-    /// 构建查找表
+    /// 构建查找表（结合 S-Curve 伽马对比度增强算法）
     /// </summary>
-    /// <param name="charset">字符集</param>
-    /// <returns>查找表（256 个元素）</returns>
     private static char[] BuildLookupTable(char[] charset)
     {
         var table = new char[256];
@@ -55,11 +53,14 @@ public class LookupTableAsciiMapper : IAsciiMapper
 
         for (int grayValue = 0; grayValue < 256; grayValue++)
         {
-            // 反向映射：深色用密集字符，浅色用稀疏字符
-            // 0（黑色）→ charset[0]（最密集）
-            // 255（白色）→ charset[end]（最稀疏）
-            int index = (grayValue * (charsetLength - 1)) / 255;
-            table[grayValue] = charset[index];
+            // S-Curve 对比度增强：增强暗部与高光的梯度的清晰度
+            double norm = grayValue / 255.0;
+            double sCurve = norm < 0.5 
+                ? 2.0 * norm * norm 
+                : 1.0 - 2.0 * (1.0 - norm) * (1.0 - norm);
+
+            int index = (int)(sCurve * (charsetLength - 1) + 0.5);
+            table[grayValue] = charset[Math.Clamp(index, 0, charsetLength - 1)];
         }
 
         return table;
@@ -81,38 +82,29 @@ public class LookupTableAsciiMapper : IAsciiMapper
         double scaleX = (double)width / targetWidth;
         double scaleY = (double)height / targetHeight;
 
-        // 预分配 StringBuilder 容量（避免动态扩容）
-        // 格式: targetWidth 字符 + 换行符，共 targetHeight 行
-        int capacity = (targetWidth + 1) * targetHeight;
         var lines = new string[targetHeight];
 
         // 并行处理每一行
         Parallel.For(0, targetHeight, _parallelOptions, targetY =>
         {
-            // 计算源图像对应的 Y 范围
             int srcY = (int)(targetY * scaleY);
-            
-            // 预分配本行缓冲区
             var lineBuffer = new char[targetWidth];
+            int endY = Math.Min((int)((targetY + 1) * scaleY), height);
 
-            // 处理本行的每个字符
             for (int targetX = 0; targetX < targetWidth; targetX++)
             {
-                // 计算源图像对应的 X 范围
                 int srcX = (int)(targetX * scaleX);
-                
-                // 取区域内所有像素的平均灰度值
+                int endX = Math.Min((int)((targetX + 1) * scaleX), width);
+
                 int sum = 0;
                 int count = 0;
 
-                int endY = Math.Min((int)((targetY + 1) * scaleY), height);
-                int endX = Math.Min((int)((targetX + 1) * scaleX), width);
-
                 for (int y = srcY; y < endY; y++)
                 {
+                    int rowOffset = y * width;
                     for (int x = srcX; x < endX; x++)
                     {
-                        int index = y * width + x;
+                        int index = rowOffset + x;
                         if (index < grayData.Length)
                         {
                             sum += grayData[index];
@@ -121,19 +113,81 @@ public class LookupTableAsciiMapper : IAsciiMapper
                     }
                 }
 
-                // 计算平均灰度值
                 byte avgGray = count > 0 ? (byte)(sum / count) : (byte)0;
-
-                // O(1) 查表
                 lineBuffer[targetX] = _lookupTable[avgGray];
             }
 
-            // 保存本行结果
             lines[targetY] = new string(lineBuffer);
         });
 
-        // 合并所有行
         return string.Join("\n", lines);
+    }
+
+    /// <summary>
+    /// 将图像映射为 ASCII 字符串，并同时采样每个字符单元格的原视频 RGB 颜色（用于彩色 ASCII）
+    /// </summary>
+    public (string AsciiArt, (byte R, byte G, byte B)[] Colors) MapToAsciiWithColor(
+        byte[] rgbData,
+        byte[] grayData,
+        int width,
+        int height,
+        int targetWidth,
+        int targetHeight)
+    {
+        ValidateParameters(grayData, width, height, targetWidth, targetHeight);
+
+        double scaleX = (double)width / targetWidth;
+        double scaleY = (double)height / targetHeight;
+
+        var lines = new string[targetHeight];
+        var colors = new (byte R, byte G, byte B)[targetWidth * targetHeight];
+
+        Parallel.For(0, targetHeight, _parallelOptions, targetY =>
+        {
+            int srcY = (int)(targetY * scaleY);
+            var lineBuffer = new char[targetWidth];
+            int endY = Math.Min((int)((targetY + 1) * scaleY), height);
+
+            for (int targetX = 0; targetX < targetWidth; targetX++)
+            {
+                int srcX = (int)(targetX * scaleX);
+                int endX = Math.Min((int)((targetX + 1) * scaleX), width);
+
+                int sumR = 0, sumG = 0, sumB = 0, sumGray = 0;
+                int count = 0;
+
+                for (int y = srcY; y < endY; y++)
+                {
+                    int rowOffset = y * width;
+                    for (int x = srcX; x < endX; x++)
+                    {
+                        int pixelIdx = rowOffset + x;
+                        int rgbIdx = pixelIdx * 3;
+                        if (rgbIdx + 2 < rgbData.Length)
+                        {
+                            sumR += rgbData[rgbIdx];
+                            sumG += rgbData[rgbIdx + 1];
+                            sumB += rgbData[rgbIdx + 2];
+                            sumGray += grayData[pixelIdx];
+                            count++;
+                        }
+                    }
+                }
+
+                byte avgGray = count > 0 ? (byte)(sumGray / count) : (byte)0;
+                lineBuffer[targetX] = _lookupTable[avgGray];
+
+                byte avgR = count > 0 ? (byte)(sumR / count) : (byte)255;
+                byte avgG = count > 0 ? (byte)(sumG / count) : (byte)255;
+                byte avgB = count > 0 ? (byte)(sumB / count) : (byte)255;
+
+                colors[targetY * targetWidth + targetX] = (avgR, avgG, avgB);
+            }
+
+            lines[targetY] = new string(lineBuffer);
+        });
+
+        return (string.Join("\n", lines), colors);
     }
 
     /// <summary>

@@ -7,7 +7,7 @@ namespace AsciiFlow.Core.Processing;
 /// </summary>
 public class ScalarGrayscaleConverter : IGrayscaleConverter
 {
-    // BT.709 标准灰度转换系数
+    // ITU-R BT.709 人眼感知亮度系数：0.2126 * R + 0.7152 * G + 0.0722 * B
     private const int R_COEFF = 54;
     private const int G_COEFF = 183;
     private const int B_COEFF = 19;

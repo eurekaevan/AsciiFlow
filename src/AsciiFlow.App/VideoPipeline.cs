@@ -44,8 +44,8 @@ public class VideoPipeline : IDisposable
     {
         _asciiWidth = options.Width;
         _asciiHeight = options.Height;
-        _videoWidth = options.Width * 16;     // 16px per char
-        _videoHeight = options.Height * 16;   // 16px per char
+        _videoWidth = options.Width * 12;     // 12px per char
+        _videoHeight = options.Height * 12;   // 12px per char
 
         // 1. 初始化视频解码器
         _decoder = new FFmpegVideoDecoder();
@@ -73,8 +73,8 @@ public class VideoPipeline : IDisposable
         {
             FontFamily = options.FontFamily,
             FontSize = options.FontSize,
-            CharWidth = 16,
-            CharHeight = 16,
+            CharWidth = 12,
+            CharHeight = 12,
             BackgroundColor = (0, 0, 0),
             ForegroundColor = (255, 255, 255)
         };
@@ -85,10 +85,13 @@ public class VideoPipeline : IDisposable
         _videoHeight = _renderer.OutputHeight;  // 640
         Console.WriteLine($"✓ SkiaSharp 渲染器已就绪（{_videoWidth}x{_videoHeight} 像素）");
 
+        double outputFrameRate = options.FrameRate > 0 ? options.FrameRate : videoInfo.FrameRate;
+        if (outputFrameRate <= 0) outputFrameRate = 30.0;
+
         // 5. 初始化 H.264 编码器
         _encoder = new FFmpegVideoEncoder();
-        _encoder.Initialize(options.OutputFile, _videoWidth, _videoHeight, options.FrameRate);
-        Console.WriteLine($"✓ H.264 编码器已就绪（{_videoWidth}x{_videoHeight} @ {options.FrameRate}fps）");
+        _encoder.Initialize(options.OutputFile, _videoWidth, _videoHeight, outputFrameRate);
+        Console.WriteLine($"✓ H.264 编码器已就绪（{_videoWidth}x{_videoHeight} @ {outputFrameRate:F2}fps）");
     }
 
     // ─────────────────────────────────────────
@@ -141,19 +144,37 @@ public class VideoPipeline : IDisposable
             byte[] grayFrame = _grayscaleConverter.ConvertToGrayscale(rgbFrame, srcWidth, srcHeight);
             _grayscaleTimeMs += sw.ElapsedMilliseconds;
 
-            // ③ Grayscale → ASCII string (~1ms, 查找表)
-            //    【修复】源尺寸是解码器尺寸 srcWidth/srcHeight
+            // ③ Grayscale + RGB → ASCII string & Cell Colors
             sw.Restart();
-            string asciiArt = _asciiMapper.MapToAscii(
-                grayFrame,
-                srcWidth, srcHeight,                   // ← 源尺寸（解码器输出）
-                _asciiWidth, _asciiHeight);            // ← 目标字符尺寸
-            _mappingTimeMs += sw.ElapsedMilliseconds;
+            string asciiArt;
+            byte[] renderedFrame;
 
-            // ④ ASCII string → RGB24 image (~0.5ms, SkiaSharp+Cache)
-            sw.Restart();
-            byte[] renderedFrame = _renderer.RenderFrame(asciiArt);
-            _renderTimeMs += sw.ElapsedMilliseconds;
+            if (_asciiMapper is LookupTableAsciiMapper mapper)
+            {
+                var (art, colors) = mapper.MapToAsciiWithColor(
+                    rgbFrame, grayFrame,
+                    srcWidth, srcHeight,
+                    _asciiWidth, _asciiHeight);
+                asciiArt = art;
+                _mappingTimeMs += sw.ElapsedMilliseconds;
+
+                // ④ ASCII string + Colors → RGB24 image
+                sw.Restart();
+                renderedFrame = _renderer.RenderFrameWithColor(asciiArt, colors, options.Color);
+                _renderTimeMs += sw.ElapsedMilliseconds;
+            }
+            else
+            {
+                asciiArt = _asciiMapper.MapToAscii(
+                    grayFrame,
+                    srcWidth, srcHeight,
+                    _asciiWidth, _asciiHeight);
+                _mappingTimeMs += sw.ElapsedMilliseconds;
+
+                sw.Restart();
+                renderedFrame = _renderer.RenderFrame(asciiArt);
+                _renderTimeMs += sw.ElapsedMilliseconds;
+            }
 
             // ⑤ RGB24 → H.264 packet (~20ms, libx264)
             sw.Restart();

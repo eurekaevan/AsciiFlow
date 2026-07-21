@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -304,7 +304,8 @@ class Program
         Console.WriteLine($"  输出文件: {options.OutputFile}");
         Console.WriteLine($"  ASCII 尺寸: {options.Width} × {options.Height} 字符");
         Console.WriteLine($"  输出尺寸: {options.Width * 16} × {options.Height * 16} 像素");
-        Console.WriteLine($"  帧率: {options.FrameRate} fps");
+        string fpsText = options.FrameRate > 0 ? $"{options.FrameRate} fps" : "自动（与原视频保持一致）";
+        Console.WriteLine($"  帧率: {fpsText}");
         Console.WriteLine($"  字符集: {options.CharSet}");
         Console.WriteLine($"  字体: {options.FontFamily} {options.FontSize}px");
 
