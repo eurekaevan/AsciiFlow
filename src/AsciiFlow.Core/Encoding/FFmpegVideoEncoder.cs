@@ -64,10 +64,20 @@ public unsafe class FFmpegVideoEncoder : IVideoEncoder
         _outputPath = string.Empty;
     }
 
+    private int _audioStreamIndex = -1;
+
     /// <summary>
-    /// 初始化编码器
+    /// 初始化编码器（IVideoEncoder 接口实现）
     /// </summary>
     public void Initialize(string outputPath, int width, int height, double frameRate = 30.0)
+    {
+        Initialize(outputPath, width, height, frameRate, null);
+    }
+
+    /// <summary>
+    /// 初始化编码器（支持挂载原视频音频轨）
+    /// </summary>
+    public void Initialize(string outputPath, int width, int height, double frameRate, AVStream* inAudioStream)
     {
         if (_initialized)
             throw new InvalidOperationException("编码器已初始化");
@@ -90,6 +100,19 @@ public unsafe class FFmpegVideoEncoder : IVideoEncoder
 
             // 2. 创建编码器
             CreateEncoder();
+
+            // 2.5 挂载原视频音频流 (Stream Copy)
+            if (inAudioStream != null && _formatContext != null)
+            {
+                AVStream* outAudioStream = ffmpeg.avformat_new_stream(_formatContext, null);
+                if (outAudioStream != null)
+                {
+                    ffmpeg.avcodec_parameters_copy(outAudioStream->codecpar, inAudioStream->codecpar);
+                    outAudioStream->codecpar->codec_tag = 0;
+                    _audioStreamIndex = outAudioStream->index;
+                    Console.WriteLine($"[编码器] ✓ 挂载原音频轨 (Stream #{_audioStreamIndex})");
+                }
+            }
 
             // 3. 创建 RGB→YUV 格式转换上下文
             CreateSwsContext();
@@ -114,6 +137,26 @@ public unsafe class FFmpegVideoEncoder : IVideoEncoder
             Cleanup();
             throw new FFmpegEncoderException($"初始化编码器失败: {ex.Message}", ex);
         }
+    }
+
+    /// <summary>
+    /// 将原音频包透传写入 MP4 容器文件
+    /// </summary>
+    public void WriteAudioPacket(AVPacket* packet, AVStream* inAudioStream)
+    {
+        if (_audioStreamIndex < 0 || _formatContext == null || packet == null || inAudioStream == null)
+            return;
+
+        AVStream* outAudioStream = _formatContext->streams[_audioStreamIndex];
+
+        AVPacket* outPacket = ffmpeg.av_packet_clone(packet);
+        if (outPacket == null) return;
+
+        outPacket->stream_index = _audioStreamIndex;
+        ffmpeg.av_packet_rescale_ts(outPacket, inAudioStream->time_base, outAudioStream->time_base);
+
+        ffmpeg.av_interleaved_write_frame(_formatContext, outPacket);
+        ffmpeg.av_packet_free(&outPacket);
     }
 
     /// <summary>

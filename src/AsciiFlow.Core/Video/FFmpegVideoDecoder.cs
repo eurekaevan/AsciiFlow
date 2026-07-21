@@ -84,10 +84,12 @@ public unsafe class FFmpegVideoDecoder : IVideoDecoder
             if (findStreamRet < 0)
                 throw new FFmpegDecoderException("无法获取视频流信息", findStreamRet);
 
-            // ===== 查找视频流 =====
+            // ===== 查找视频流与音频流 =====
             _streamIndex = FindVideoStream();
             if (_streamIndex < 0)
                 throw new FFmpegDecoderException("未找到视频流");
+
+            _audioStreamIndex = FindAudioStream();
 
             AVStream* videoStream = _formatContext->streams[_streamIndex];
             AVCodecParameters* codecParams = videoStream->codecpar;
@@ -166,6 +168,31 @@ public unsafe class FFmpegVideoDecoder : IVideoDecoder
         }
     }
 
+    private int _audioStreamIndex = -1;
+
+    public int AudioStreamIndex => _audioStreamIndex;
+
+    public delegate void AudioPacketHandler(AVPacket* packet, AVStream* stream);
+    public AudioPacketHandler? OnAudioPacket;
+
+    public AVStream* GetAudioStream()
+    {
+        if (_formatContext == null || _audioStreamIndex < 0) return null;
+        return _formatContext->streams[_audioStreamIndex];
+    }
+
+    private int FindAudioStream()
+    {
+        if (_formatContext == null) return -1;
+        for (uint i = 0; i < _formatContext->nb_streams; i++)
+        {
+            AVStream* stream = _formatContext->streams[i];
+            if (stream->codecpar->codec_type == AVMediaType.AVMEDIA_TYPE_AUDIO)
+                return (int)i;
+        }
+        return -1;
+    }
+
     private int FindVideoStream()
     {
         if (_formatContext == null) return -1;
@@ -222,7 +249,18 @@ public unsafe class FFmpegVideoDecoder : IVideoDecoder
                     continue;
                 }
 
-                // ④ 只处理视频流的包（跳过音频/字幕包）
+                // ④ 处理音频包：将原音频数据包透传通知
+                if (_packet->stream_index == _audioStreamIndex)
+                {
+                    if (_formatContext != null && _audioStreamIndex >= 0)
+                    {
+                        OnAudioPacket?.Invoke(_packet, _formatContext->streams[_audioStreamIndex]);
+                    }
+                    ffmpeg.av_packet_unref(_packet);
+                    continue;
+                }
+
+                // 只处理视频流的包（跳过字幕等其他包）
                 if (_packet->stream_index != _streamIndex)
                 {
                     ffmpeg.av_packet_unref(_packet);

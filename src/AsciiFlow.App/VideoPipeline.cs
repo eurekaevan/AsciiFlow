@@ -88,9 +88,27 @@ public class VideoPipeline : IDisposable
         double outputFrameRate = options.FrameRate > 0 ? options.FrameRate : videoInfo.FrameRate;
         if (outputFrameRate <= 0) outputFrameRate = 30.0;
 
-        // 5. 初始化 H.264 编码器
+        // 5. 初始化 H.264 编码器并挂载原视频音频轨
         _encoder = new FFmpegVideoEncoder();
-        _encoder.Initialize(options.OutputFile, _videoWidth, _videoHeight, outputFrameRate);
+
+        if (_decoder is FFmpegVideoDecoder ffmpegDecoder && _encoder is FFmpegVideoEncoder ffmpegEncoder)
+        {
+            unsafe
+            {
+                var audioStream = ffmpegDecoder.GetAudioStream();
+                ffmpegEncoder.Initialize(options.OutputFile, _videoWidth, _videoHeight, outputFrameRate, audioStream);
+
+                ffmpegDecoder.OnAudioPacket = (packet, stream) =>
+                {
+                    ffmpegEncoder.WriteAudioPacket(packet, stream);
+                };
+            }
+        }
+        else
+        {
+            _encoder.Initialize(options.OutputFile, _videoWidth, _videoHeight, outputFrameRate);
+        }
+
         Console.WriteLine($"✓ H.264 编码器已就绪（{_videoWidth}x{_videoHeight} @ {outputFrameRate:F2}fps）");
     }
 
