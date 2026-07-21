@@ -18,7 +18,7 @@ public class SimdGrayscaleConverter : IGrayscaleConverter
     private const int B_COEFF = 19;
 
     /// <summary>
-    /// 将 RGB 数据转换为灰度数据（SIMD 优化版本）
+    /// 将 RGB 数据转换为灰度数据（Parallel + Pointer 优化版本）
     /// </summary>
     public byte[] ConvertToGrayscale(byte[] rgbData, int width, int height)
     {
@@ -34,60 +34,36 @@ public class SimdGrayscaleConverter : IGrayscaleConverter
                 $"RGB 数据长度不匹配，期望 {expectedLength}，实际 {rgbData.Length}");
 
         byte[] grayData = new byte[width * height];
-        int pixelCount = width * height;
 
-        // 【优化】使用 unsafe + 指针直接操作，避免数组边界检查
         unsafe
         {
             fixed (byte* rgbPtr = rgbData)
             fixed (byte* grayPtr = grayData)
             {
-                // 获取 SIMD 向量宽度
-                int vectorWidth = Vector<byte>.Count;  // 通常是 16 或 32
-                int pixelIndex = 0;
+                IntPtr rgbAddr = (IntPtr)rgbPtr;
+                IntPtr grayAddr = (IntPtr)grayPtr;
 
-                // SIMD 向量化处理（按字节向量）
-                // 每次处理 vectorWidth 个像素
-                while (pixelIndex <= pixelCount - vectorWidth)
+                Parallel.For(0, height, y =>
                 {
-                    // 从 RGB 数据加载向量
-                    // 注意：RGB 是交错的 (R,G,B,R,G,B,...)，需要特殊处理
-                    // 这里使用简化版本：逐个像素处理但用 SIMD 批量计算
-                    
-                    // 创建系数向量
-                    var rCoeff = new Vector<byte>(R_COEFF);
-                    var gCoeff = new Vector<byte>(G_COEFF);
-                    var bCoeff = new Vector<byte>(B_COEFF);
+                    byte* rPtr = (byte*)rgbAddr;
+                    byte* gPtr = (byte*)grayAddr;
 
-                    // 由于 RGB 交错存储，SIMD 处理比较复杂
-                    // 这里使用标量循环但避免数组分配
-                    for (int i = 0; i < vectorWidth; i++)
+                    int rowRgbOffset = y * width * 3;
+                    int rowGrayOffset = y * width;
+
+                    byte* rgbRow = rPtr + rowRgbOffset;
+                    byte* grayRow = gPtr + rowGrayOffset;
+
+                    for (int x = 0; x < width; x++)
                     {
-                        int rgbIdx = (pixelIndex + i) * 3;
-                        byte r = rgbPtr[rgbIdx];
-                        byte g = rgbPtr[rgbIdx + 1];
-                        byte b = rgbPtr[rgbIdx + 2];
+                        int rgbIdx = x * 3;
+                        byte r = rgbRow[rgbIdx];
+                        byte g = rgbRow[rgbIdx + 1];
+                        byte b = rgbRow[rgbIdx + 2];
 
-                        // 灰度计算（整数运算，避免浮点）
-                        int gray = (r * R_COEFF + g * G_COEFF + b * B_COEFF) >> 8;
-                        grayPtr[pixelIndex + i] = (byte)gray;
+                        grayRow[x] = (byte)((r * R_COEFF + g * G_COEFF + b * B_COEFF) >> 8);
                     }
-
-                    pixelIndex += vectorWidth;
-                }
-
-                // 处理剩余像素
-                while (pixelIndex < pixelCount)
-                {
-                    int rgbIdx = pixelIndex * 3;
-                    byte r = rgbPtr[rgbIdx];
-                    byte g = rgbPtr[rgbIdx + 1];
-                    byte b = rgbPtr[rgbIdx + 2];
-
-                    int gray = (r * R_COEFF + g * G_COEFF + b * B_COEFF) >> 8;
-                    grayPtr[pixelIndex] = (byte)gray;
-                    pixelIndex++;
-                }
+                });
             }
         }
 

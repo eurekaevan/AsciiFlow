@@ -271,7 +271,7 @@ public class SkiaCachedAsciiRenderer : IAsciiRenderer
     }
 
     /// <summary>
-    /// 将 ASCII 字符串渲染为 RGB24 字节数组（支持彩色字符）
+    /// 将 ASCII 字符串渲染为 RGB24 字节数组（支持彩色字符，Parallel 并行加速）
     /// </summary>
     public byte[] RenderFrameWithColor(string asciiArt, (byte R, byte G, byte B)[] colors, bool useColor = true)
     {
@@ -287,69 +287,73 @@ public class SkiaCachedAsciiRenderer : IAsciiRenderer
         int ow = OutputWidth;
         int rowStride = ow * 3;
         var bg = _config.BackgroundColor;
+        int charW = CharWidth;
+        int charH = CharHeight;
+        int targetW = _targetWidth;
+        int targetH = _targetHeight;
 
-        ReadOnlySpan<char> ascii = asciiArt.AsSpan();
-        int lineIndex = 0;
-        int lineStart = 0;
+        string[] lines = asciiArt.Split('\n');
+        int lineCount = Math.Min(lines.Length, targetH);
 
-        for (int i = 0; i <= ascii.Length; i++)
+        unsafe
         {
-            bool isLineEnd = (i == ascii.Length) || (ascii[i] == '\n');
-            if (!isLineEnd) continue;
-
-            if (lineIndex >= _targetHeight) break;
-
-            var lineSpan = ascii[lineStart..i];
-            int linePixelY = lineIndex * CharHeight;
-            int lineByteY = linePixelY * rowStride;
-            int colorOffsetBase = lineIndex * _targetWidth;
-
-            for (int charIdx = 0; charIdx < Math.Min(lineSpan.Length, _targetWidth); charIdx++)
+            fixed (byte* bufPtr = _rgbBuffer)
             {
-                char ch = lineSpan[charIdx];
-                int charCode = ch < 256 ? ch : 32;
+                IntPtr bufAddr = (IntPtr)bufPtr;
 
-                byte[] charAlpha = _charAlphaMasks[charCode];
-                var fgColor = colors[colorOffsetBase + charIdx];
-
-                int destPixelX = charIdx * CharWidth;
-                int destByteX = destPixelX * 3;
-
-                for (int cy = 0; cy < CharHeight; cy++)
+                Parallel.For(0, lineCount, lineIndex =>
                 {
-                    int maskRowOffset = cy * CharWidth;
-                    int destRowOffset = lineByteY + cy * rowStride + destByteX;
+                    byte* bPtr = (byte*)bufAddr;
+                    string lineStr = lines[lineIndex];
+                    int linePixelY = lineIndex * charH;
+                    int lineByteY = linePixelY * rowStride;
+                    int colorOffsetBase = lineIndex * targetW;
+                    int lineLen = Math.Min(lineStr.Length, targetW);
 
-                    for (int cx = 0; cx < CharWidth; cx++)
+                    for (int charIdx = 0; charIdx < lineLen; charIdx++)
                     {
-                        byte alpha = charAlpha[maskRowOffset + cx];
-                        int pxOffset = destRowOffset + cx * 3;
+                        char ch = lineStr[charIdx];
+                        int charCode = ch < 256 ? ch : 32;
 
-                        if (alpha == 0)
+                        byte[] charAlpha = _charAlphaMasks[charCode];
+                        var fgColor = colors[colorOffsetBase + charIdx];
+
+                        int destByteX = charIdx * charW * 3;
+
+                        for (int cy = 0; cy < charH; cy++)
                         {
-                            _rgbBuffer[pxOffset] = bg.R;
-                            _rgbBuffer[pxOffset + 1] = bg.G;
-                            _rgbBuffer[pxOffset + 2] = bg.B;
-                        }
-                        else if (alpha == 255)
-                        {
-                            _rgbBuffer[pxOffset] = fgColor.R;
-                            _rgbBuffer[pxOffset + 1] = fgColor.G;
-                            _rgbBuffer[pxOffset + 2] = fgColor.B;
-                        }
-                        else
-                        {
-                            int invAlpha = 255 - alpha;
-                            _rgbBuffer[pxOffset] = (byte)((fgColor.R * alpha + bg.R * invAlpha) / 255);
-                            _rgbBuffer[pxOffset + 1] = (byte)((fgColor.G * alpha + bg.G * invAlpha) / 255);
-                            _rgbBuffer[pxOffset + 2] = (byte)((fgColor.B * alpha + bg.B * invAlpha) / 255);
+                            int maskRowOffset = cy * charW;
+                            byte* destRowPtr = bPtr + lineByteY + cy * rowStride + destByteX;
+
+                            for (int cx = 0; cx < charW; cx++)
+                            {
+                                byte alpha = charAlpha[maskRowOffset + cx];
+                                byte* pxPtr = destRowPtr + cx * 3;
+
+                                if (alpha == 0)
+                                {
+                                    pxPtr[0] = bg.R;
+                                    pxPtr[1] = bg.G;
+                                    pxPtr[2] = bg.B;
+                                }
+                                else if (alpha == 255)
+                                {
+                                    pxPtr[0] = fgColor.R;
+                                    pxPtr[1] = fgColor.G;
+                                    pxPtr[2] = fgColor.B;
+                                }
+                                else
+                                {
+                                    int invAlpha = 255 - alpha;
+                                    pxPtr[0] = (byte)((fgColor.R * alpha + bg.R * invAlpha) / 255);
+                                    pxPtr[1] = (byte)((fgColor.G * alpha + bg.G * invAlpha) / 255);
+                                    pxPtr[2] = (byte)((fgColor.B * alpha + bg.B * invAlpha) / 255);
+                                }
+                            }
                         }
                     }
-                }
+                });
             }
-
-            lineIndex++;
-            lineStart = i + 1;
         }
 
         return _rgbBuffer;

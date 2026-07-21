@@ -26,7 +26,7 @@ public class CommandLineOptions
         HelpText = "字符集: standard(69字符) 或 detailed(25字符)")]
     public string CharSet { get; set; } = "standard";
 
-    [Option("font-size", Required = false, Default = 14.0f, HelpText = "渲染字体大小（像素）")]
+    [Option("font-size", Required = false, Default = 12.0f, HelpText = "渲染字体大小（像素）")]
     public float FontSize { get; set; } = 12.0f;
 
     [Option("font-family", Required = false, Default = "Consolas", HelpText = "渲染字体族")]
