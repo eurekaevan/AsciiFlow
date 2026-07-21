@@ -1,6 +1,0 @@
-/home/eureka/文档/AsciiFlow/src/AsciiFlow.Core/obj/Release/net10.0/AsciiFlow.Core.csproj.AssemblyReference.cache
-/home/eureka/文档/AsciiFlow/src/AsciiFlow.Core/obj/Release/net10.0/AsciiFlow.Core.GeneratedMSBuildEditorConfig.editorconfig
-/home/eureka/文档/AsciiFlow/src/AsciiFlow.Core/obj/Release/net10.0/AsciiFlow.Core.AssemblyInfoInputs.cache
-/home/eureka/文档/AsciiFlow/src/AsciiFlow.Core/obj/Release/net10.0/AsciiFlow.Core.AssemblyInfo.cs
-/home/eureka/文档/AsciiFlow/src/AsciiFlow.Core/obj/Release/net10.0/AsciiFlow.Core.csproj.CoreCompileInputs.cache
-/home/eureka/文档/AsciiFlow/src/AsciiFlow.Core/obj/Release/net10.0/AsciiFlow.Core.sourcelink.json
