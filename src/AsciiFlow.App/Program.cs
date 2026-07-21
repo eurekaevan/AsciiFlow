@@ -302,8 +302,9 @@ class Program
         Console.WriteLine("【配置信息】");
         Console.WriteLine($"  输入文件: {options.InputFile}");
         Console.WriteLine($"  输出文件: {options.OutputFile}");
-        Console.WriteLine($"  ASCII 尺寸: {options.Width} × {options.Height} 字符");
-        Console.WriteLine($"  输出尺寸: {options.Width * 16} × {options.Height * 16} 像素");
+        string heightText = options.Height > 0 ? $"{options.Height}" : "自动 (16:9对应135)";
+        Console.WriteLine($"  ASCII 尺寸: {options.Width} × {heightText} 字符");
+        Console.WriteLine($"  输出尺寸: 遵循原视频分辨率");
         string fpsText = options.FrameRate > 0 ? $"{options.FrameRate} fps" : "自动（与原视频保持一致）";
         Console.WriteLine($"  帧率: {fpsText}");
         Console.WriteLine($"  字符集: {options.CharSet}");

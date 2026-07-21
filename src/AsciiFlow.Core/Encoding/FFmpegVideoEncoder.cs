@@ -144,16 +144,22 @@ public unsafe class FFmpegVideoEncoder : IVideoEncoder
     /// </summary>
     public void WriteAudioPacket(AVPacket* packet, AVStream* inAudioStream)
     {
-        if (_audioStreamIndex < 0 || _formatContext == null || packet == null || inAudioStream == null)
+        if (_audioStreamIndex < 0 || _formatContext == null || packet == null || inAudioStream == null || !_initialized)
             return;
 
         AVStream* outAudioStream = _formatContext->streams[_audioStreamIndex];
+        if (outAudioStream == null) return;
 
         AVPacket* outPacket = ffmpeg.av_packet_clone(packet);
         if (outPacket == null) return;
 
         outPacket->stream_index = _audioStreamIndex;
-        ffmpeg.av_packet_rescale_ts(outPacket, inAudioStream->time_base, outAudioStream->time_base);
+        outPacket->pos = -1;
+
+        if (outPacket->pts != ffmpeg.AV_NOPTS_VALUE)
+        {
+            ffmpeg.av_packet_rescale_ts(outPacket, inAudioStream->time_base, outAudioStream->time_base);
+        }
 
         ffmpeg.av_interleaved_write_frame(_formatContext, outPacket);
         ffmpeg.av_packet_free(&outPacket);

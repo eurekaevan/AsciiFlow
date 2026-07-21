@@ -13,13 +13,13 @@ public class LookupTableAsciiMapper : IAsciiMapper
     private readonly ParallelOptions _parallelOptions;
 
     /// <summary>
-    /// 字符集预设
+    /// 字符集预设（由暗到亮排序：适合黑底白字/彩色 ASCII 渲染）
     /// </summary>
     public static readonly string Standard = 
-        "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\\|()1{}[]?-_+~<>i!lI;:,\"^`'. ";
+        " .'`^\"^:;Il!i><~+_-?[]{}1()|/\\tfjrxnuvczXYUJCLQ0OZmwqpbdkhao*#MW&8%B@$";
 
     public static readonly string Detailed = 
-        "@#W$8bWM%*oahkdqwmZO0QLUYXZ";
+        " .:-=+*#%@$WMB8";
 
     /// <summary>
     /// 构造函数

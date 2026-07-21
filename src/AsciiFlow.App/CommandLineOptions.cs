@@ -10,14 +10,14 @@ public class CommandLineOptions
     [Option('i', "input", Required = true, HelpText = "输入视频文件路径")]
     public string InputFile { get; set; } = string.Empty;
 
-    [Option('o', "output", Required = false, Default = "output.mp4", HelpText = "输出视频文件路径")]
-    public string OutputFile { get; set; } = "output.mp4";
+    [Option('o', "output", Required = false, Default = "output/output_ascii.mp4", HelpText = "输出视频文件路径")]
+    public string OutputFile { get; set; } = "output/output_ascii.mp4";
 
-    [Option('w', "width", Required = false, Default = 160, HelpText = "ASCII 艺术宽度（字符数）")]
-    public int Width { get; set; } = 160;
+    [Option('w', "width", Required = false, Default = 240, HelpText = "ASCII 字符画宽度（字符数，默认 240 超高清）")]
+    public int Width { get; set; } = 240;
 
-    [Option('h', "height", Required = false, Default = 90, HelpText = "ASCII 艺术高度（字符数）")]
-    public int Height { get; set; } = 90;
+    [Option('h', "height", Required = false, Default = 0, HelpText = "ASCII 字符画高度（字符数，0 = 自动根据原视频比例推算，16:9 对应 135）")]
+    public int Height { get; set; } = 0;
 
     [Option('f', "framerate", Required = false, Default = 0.0, HelpText = "输出视频帧率（0 = 保持与原视频一致）")]
     public double FrameRate { get; set; } = 0.0;

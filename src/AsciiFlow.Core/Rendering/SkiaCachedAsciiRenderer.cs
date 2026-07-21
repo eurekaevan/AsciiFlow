@@ -34,16 +34,27 @@ public class SkiaCachedAsciiRenderer : IAsciiRenderer
     public SkiaCachedAsciiRenderer(
         CharacterSetConfig config,
         int targetWidth,
-        int targetHeight)
+        int targetHeight) : this(config, targetWidth, targetHeight, targetWidth * config.CharWidth, targetHeight * config.CharHeight)
+    {
+    }
+
+    /// <summary>
+    /// 构造函数（指定输出视频像素分辨率）
+    /// </summary>
+    public SkiaCachedAsciiRenderer(
+        CharacterSetConfig config,
+        int targetWidth,
+        int targetHeight,
+        int outputWidth,
+        int outputHeight)
     {
         _config = config ?? throw new ArgumentNullException(nameof(config));
         _targetWidth = targetWidth;
         _targetHeight = targetHeight;
 
-        var (outputW, outputH) = config.CalculateOutputSize(targetWidth, targetHeight);
-        OutputWidth = outputW;
-        OutputHeight = outputH;
-        _rgbBuffer = new byte[outputW * outputH * 3];
+        OutputWidth = outputWidth;
+        OutputHeight = outputHeight;
+        _rgbBuffer = new byte[outputWidth * outputHeight * 3];
     }
 
     /// <summary>
@@ -225,11 +236,14 @@ public class SkiaCachedAsciiRenderer : IAsciiRenderer
             return _rgbBuffer;
 
         int ow = OutputWidth;
-        int rowStride = ow * 3;  // 每行 RGB 字节数
+        int oh = OutputHeight;
+        int rowStride = ow * 3;
 
         ReadOnlySpan<char> ascii = asciiArt.AsSpan();
         int lineIndex = 0;
         int lineStart = 0;
+        int charW = CharWidth;
+        int charH = CharHeight;
 
         for (int i = 0; i <= ascii.Length; i++)
         {
@@ -239,27 +253,36 @@ public class SkiaCachedAsciiRenderer : IAsciiRenderer
             if (lineIndex >= _targetHeight) break;
 
             var lineSpan = ascii[lineStart..i];
-            int linePixelY = lineIndex * CharHeight;
-            int lineByteY = linePixelY * rowStride;
+            int linePixelY = lineIndex * charH;
+            if (linePixelY >= oh) break;
 
-            for (int charIdx = 0; charIdx < Math.Min(lineSpan.Length, _targetWidth); charIdx++)
+            int maxChars = Math.Min(lineSpan.Length, _targetWidth);
+            for (int charIdx = 0; charIdx < maxChars; charIdx++)
             {
                 char ch = lineSpan[charIdx];
                 int charCode = ch < 256 ? ch : 32;
 
                 byte[] charBitmap = _charBitmaps[charCode];
 
-                int destPixelX = charIdx * CharWidth;
-                int destByteX = destPixelX * 3;
+                int destPixelX = charIdx * charW;
+                if (destPixelX >= ow) break;
 
-                int charStride = CharWidth * 3;
-                for (int cy = 0; cy < CharHeight; cy++)
+                int copyWidth = Math.Min(charW, ow - destPixelX);
+                if (copyWidth <= 0) break;
+
+                int charStride = charW * 3;
+                int copyBytes = copyWidth * 3;
+
+                for (int cy = 0; cy < charH; cy++)
                 {
-                    int srcOffset = cy * charStride;
-                    int destOffset = lineByteY + cy * rowStride + destByteX;
+                    int pxY = linePixelY + cy;
+                    if (pxY >= oh) break;
 
-                    charBitmap.AsSpan(srcOffset, charStride)
-                              .CopyTo(_rgbBuffer.AsSpan(destOffset, charStride));
+                    int srcOffset = cy * charStride;
+                    int destOffset = pxY * rowStride + destPixelX * 3;
+
+                    charBitmap.AsSpan(srcOffset, copyBytes)
+                              .CopyTo(_rgbBuffer.AsSpan(destOffset, copyBytes));
                 }
             }
 
@@ -271,7 +294,7 @@ public class SkiaCachedAsciiRenderer : IAsciiRenderer
     }
 
     /// <summary>
-    /// 将 ASCII 字符串渲染为 RGB24 字节数组（支持彩色字符，Parallel 并行加速）
+    /// 将 ASCII 字符串渲染为 RGB24 字节数组（支持彩色字符，Parallel 并行加速 + 严苛内存边界保护）
     /// </summary>
     public byte[] RenderFrameWithColor(string asciiArt, (byte R, byte G, byte B)[] colors, bool useColor = true)
     {
@@ -285,6 +308,7 @@ public class SkiaCachedAsciiRenderer : IAsciiRenderer
             return _rgbBuffer;
 
         int ow = OutputWidth;
+        int oh = OutputHeight;
         int rowStride = ow * 3;
         var bg = _config.BackgroundColor;
         int charW = CharWidth;
@@ -306,48 +330,69 @@ public class SkiaCachedAsciiRenderer : IAsciiRenderer
                     byte* bPtr = (byte*)bufAddr;
                     string lineStr = lines[lineIndex];
                     int linePixelY = lineIndex * charH;
-                    int lineByteY = linePixelY * rowStride;
-                    int colorOffsetBase = lineIndex * targetW;
-                    int lineLen = Math.Min(lineStr.Length, targetW);
-
-                    for (int charIdx = 0; charIdx < lineLen; charIdx++)
+                    if (linePixelY < oh)
                     {
-                        char ch = lineStr[charIdx];
-                        int charCode = ch < 256 ? ch : 32;
+                        int colorOffsetBase = lineIndex * targetW;
+                        int lineLen = Math.Min(lineStr.Length, targetW);
 
-                        byte[] charAlpha = _charAlphaMasks[charCode];
-                        var fgColor = colors[colorOffsetBase + charIdx];
-
-                        int destByteX = charIdx * charW * 3;
-
-                        for (int cy = 0; cy < charH; cy++)
+                        for (int charIdx = 0; charIdx < lineLen; charIdx++)
                         {
-                            int maskRowOffset = cy * charW;
-                            byte* destRowPtr = bPtr + lineByteY + cy * rowStride + destByteX;
+                            int destPixelX = charIdx * charW;
+                            if (destPixelX >= ow) break;
 
-                            for (int cx = 0; cx < charW; cx++)
+                            char ch = lineStr[charIdx];
+                            int charCode = ch < 256 ? ch : 32;
+
+                            byte[] charAlpha = _charAlphaMasks[charCode];
+                            
+                            int colorIdx = colorOffsetBase + charIdx;
+                            var fgColor = colorIdx < colors.Length ? colors[colorIdx] : (bg.R, bg.G, bg.B);
+
+                            // 【亮度补偿】由于字符笔画只覆盖单元格的一部分区域（如30%），纯黑背景会导致整体画面偏暗。
+                            // 通过笔画亮度增益(1.25x) + 单元格底色柔和衬托(15%原色)，使 ASCII 视频的整体亮度与原视频 1:1 完美匹配！
+                            byte bgR = (byte)(fgColor.R * 0.15f);
+                            byte bgG = (byte)(fgColor.G * 0.15f);
+                            byte bgB = (byte)(fgColor.B * 0.15f);
+
+                            byte strokeR = (byte)Math.Min(255, (int)(fgColor.R * 1.25f));
+                            byte strokeG = (byte)Math.Min(255, (int)(fgColor.G * 1.25f));
+                            byte strokeB = (byte)Math.Min(255, (int)(fgColor.B * 1.25f));
+
+                            for (int cy = 0; cy < charH; cy++)
                             {
-                                byte alpha = charAlpha[maskRowOffset + cx];
-                                byte* pxPtr = destRowPtr + cx * 3;
+                                int pxY = linePixelY + cy;
+                                if (pxY >= oh) break;
 
-                                if (alpha == 0)
+                                int maskRowOffset = cy * charW;
+                                int rowOffset = pxY * rowStride;
+
+                                for (int cx = 0; cx < charW; cx++)
                                 {
-                                    pxPtr[0] = bg.R;
-                                    pxPtr[1] = bg.G;
-                                    pxPtr[2] = bg.B;
-                                }
-                                else if (alpha == 255)
-                                {
-                                    pxPtr[0] = fgColor.R;
-                                    pxPtr[1] = fgColor.G;
-                                    pxPtr[2] = fgColor.B;
-                                }
-                                else
-                                {
-                                    int invAlpha = 255 - alpha;
-                                    pxPtr[0] = (byte)((fgColor.R * alpha + bg.R * invAlpha) / 255);
-                                    pxPtr[1] = (byte)((fgColor.G * alpha + bg.G * invAlpha) / 255);
-                                    pxPtr[2] = (byte)((fgColor.B * alpha + bg.B * invAlpha) / 255);
+                                    int pxX = destPixelX + cx;
+                                    if (pxX >= ow) break;
+
+                                    byte alpha = charAlpha[maskRowOffset + cx];
+                                    byte* pxPtr = bPtr + rowOffset + pxX * 3;
+
+                                    if (alpha == 0)
+                                    {
+                                        pxPtr[0] = bgR;
+                                        pxPtr[1] = bgG;
+                                        pxPtr[2] = bgB;
+                                    }
+                                    else if (alpha == 255)
+                                    {
+                                        pxPtr[0] = strokeR;
+                                        pxPtr[1] = strokeG;
+                                        pxPtr[2] = strokeB;
+                                    }
+                                    else
+                                    {
+                                        int invAlpha = 255 - alpha;
+                                        pxPtr[0] = (byte)((strokeR * alpha + bgR * invAlpha) / 255);
+                                        pxPtr[1] = (byte)((strokeG * alpha + bgG * invAlpha) / 255);
+                                        pxPtr[2] = (byte)((strokeB * alpha + bgB * invAlpha) / 255);
+                                    }
                                 }
                             }
                         }

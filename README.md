@@ -77,8 +77,8 @@ dotnet run --project src/AsciiFlow.App -- -i input.mp4 -o output.mp4 --max-frame
 | :--- | :--- | :--- | :--- |
 | `-i` | `--input` | **必填** | 输入视频文件路径 |
 | `-o` | `--output` | `output/output_ascii.mp4` | 输出视频文件路径 |
-| `-w` | `--width` | `160` | ASCII 字符画宽度（字符数） |
-| `-h` | `--height` | `90` | ASCII 字符画高度（字符数） |
+| `-w` | `--width` | `240` | ASCII 字符画宽度（默认 `240` 字符超高清） |
+| `-h` | `--height` | `0` (自动) | ASCII 字符画高度（`0` 表示根据原视频比例自动计算，16:9 对应 `135`） |
 | `-f` | `--framerate` | `0.0` (自动) | 输出视频帧率（`0` 表示自动与原视频一致） |
 | `-C` | `--color` | `true` | 是否启用彩色模式 (`true` / `false`) |
 | `-c` | `--charset` | `standard` | 字符集选用：`standard`(69字符) 或 `detailed`(25字符) |

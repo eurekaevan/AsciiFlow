@@ -449,9 +449,9 @@ public unsafe class FFmpegVideoDecoder : IVideoDecoder
     protected virtual void Dispose(bool disposing)
     {
         if (_disposed) return;
-        Cleanup();
         if (disposing)
         {
+            Cleanup();
             _frameBuffer = null;
             _videoPath = null;
         }

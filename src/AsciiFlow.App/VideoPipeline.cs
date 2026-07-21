@@ -42,23 +42,31 @@ public class VideoPipeline : IDisposable
 
     public void Initialize(CommandLineOptions options)
     {
-        _asciiWidth = options.Width;
-        _asciiHeight = options.Height;
-        _videoWidth = options.Width * 12;     // 12px per char
-        _videoHeight = options.Height * 12;   // 12px per char
-
         // 1. 初始化视频解码器
         _decoder = new FFmpegVideoDecoder();
         _decoder.Initialize(options.InputFile);
 
         var videoInfo = _decoder.GetVideoInfo();
+        int srcWidth = videoInfo.Width;
+        int srcHeight = videoInfo.Height;
         Console.WriteLine($"✓ 视频解码器: {videoInfo.Resolution}, {videoInfo.FrameRate:F2}fps, {videoInfo.FrameCount} 帧");
 
-        // 2. 初始化 SIMD 灰度转换器（无参构造）
+        // 计算 ASCII 字符网格尺寸 (默认 240 宽度，高度自动匹配原视频比例，16:9 为 135)
+        _asciiWidth = options.Width > 0 ? options.Width : 240;
+        if (options.Height > 0)
+        {
+            _asciiHeight = options.Height;
+        }
+        else
+        {
+            _asciiHeight = (int)Math.Max(1, Math.Round(_asciiWidth * ((double)srcHeight / srcWidth)));
+        }
+
+        // 2. 初始化 SIMD 灰度转换器
         _grayscaleConverter = new SimdGrayscaleConverter();
         Console.WriteLine($"✓ SIMD 灰度转换器已就绪");
 
-        // 3. 初始化 ASCII 字符映射器（查找表）
+        // 3. 初始化 ASCII 字符映射器
         string charSet = options.CharSet.ToLower() switch
         {
             "standard" => LookupTableAsciiMapper.Standard,
@@ -68,22 +76,27 @@ public class VideoPipeline : IDisposable
         _asciiMapper = new LookupTableAsciiMapper(charSet);
         Console.WriteLine($"✓ ASCII 映射器已就绪（字符集: {options.CharSet}, {charSet.Length} 字符）");
 
-        // 4. 初始化 SkiaSharp 渲染器（字符缓存版）
+        // 4. 初始化 SkiaSharp 渲染器（生成视频像素分辨率完全对齐原视频分辨率）
+        int charW = (int)Math.Max(1, Math.Round((double)srcWidth / _asciiWidth));
+        int charH = (int)Math.Max(1, Math.Round((double)srcHeight / _asciiHeight));
+        float fontSize = options.FontSize > 0 && options.FontSize != 14 ? options.FontSize : (float)Math.Max(6, charH * 0.95);
+
         var config = new CharacterSetConfig
         {
             FontFamily = options.FontFamily,
-            FontSize = options.FontSize,
-            CharWidth = 12,
-            CharHeight = 12,
+            FontSize = fontSize,
+            CharWidth = charW,
+            CharHeight = charH,
             BackgroundColor = (0, 0, 0),
             ForegroundColor = (255, 255, 255)
         };
-        _renderer = new SkiaCachedAsciiRenderer(config, _asciiWidth, _asciiHeight);
+        _renderer = new SkiaCachedAsciiRenderer(config, _asciiWidth, _asciiHeight, srcWidth, srcHeight);
         _renderer.Initialize();
-        // 编码器使用的视频尺寸（来自渲染器输出）
-        _videoWidth = _renderer.OutputWidth;    // 1280
-        _videoHeight = _renderer.OutputHeight;  // 640
-        Console.WriteLine($"✓ SkiaSharp 渲染器已就绪（{_videoWidth}x{_videoHeight} 像素）");
+
+        // 编码器使用的视频尺寸（遵循原视频尺寸）
+        _videoWidth = _renderer.OutputWidth;    // 遵循 srcWidth
+        _videoHeight = _renderer.OutputHeight;  // 遵循 srcHeight
+        Console.WriteLine($"✓ SkiaSharp 渲染器已就绪（输出尺寸对齐原视频: {_videoWidth}x{_videoHeight} 像素, 网格: {_asciiWidth}x{_asciiHeight} 字符）");
 
         double outputFrameRate = options.FrameRate > 0 ? options.FrameRate : videoInfo.FrameRate;
         if (outputFrameRate <= 0) outputFrameRate = 30.0;
