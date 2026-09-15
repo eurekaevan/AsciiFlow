@@ -1,0 +1,22 @@
+[package]
+name = "asciiflow-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "asciiflow"
+path = "src/main.rs"
+
+[dependencies]
+anyhow.workspace = true
+asciiflow-core = { path = "../../crates/asciiflow-core" }
+asciiflow-cpu = { path = "../../crates/asciiflow-cpu" }
+asciiflow-interop = { path = "../../crates/asciiflow-interop" }
+asciiflow-media = { path = "../../crates/asciiflow-media" }
+asciiflow-vulkan = { path = "../../crates/asciiflow-vulkan" }
+clap.workspace = true
+ctrlc.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true

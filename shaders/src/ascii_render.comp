@@ -1,0 +1,123 @@
+#version 460
+#extension GL_EXT_shader_8bit_storage : require
+#ifdef USE_INT64_COORDS
+#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+#endif
+
+#ifndef LOCAL_SIZE_X
+#define LOCAL_SIZE_X 8
+#endif
+#ifndef LOCAL_SIZE_Y
+#define LOCAL_SIZE_Y 8
+#endif
+layout(local_size_x = LOCAL_SIZE_X, local_size_y = LOCAL_SIZE_Y) in;
+
+layout(set = 0, binding = 1, std430) readonly buffer Cells { uvec4 cells[]; };
+layout(set = 0, binding = 3, std430) readonly buffer Atlas { uint8_t atlas[]; };
+layout(set = 0, binding = 4, std430) writeonly buffer OutputNv12 { uint8_t output_nv12[]; };
+#ifdef USE_COORD_LUT
+layout(set = 0, binding = 5, std430) readonly buffer CoordinateLut { uvec2 coordinates[]; };
+#endif
+
+layout(push_constant) uniform Params {
+    uint width;
+    uint height;
+    uint grid_width;
+    uint grid_height;
+    uint atlas_width;
+    uint atlas_height;
+    uint color;
+    uint glyph_count;
+    uint neutral_chroma;
+} params;
+
+uint alpha_for(uint glyph, uint x, uint y) {
+#ifdef USE_COORD_LUT
+    uint local_x = coordinates[x].y;
+    uint local_y = coordinates[params.width + y].y;
+#else
+#ifdef USE_INT64_COORDS
+    uint local_x = uint(
+        (uint64_t(x) * params.grid_width * params.atlas_width / params.width)
+        % params.atlas_width
+    );
+    uint local_y = uint(
+        (uint64_t(y) * params.grid_height * params.atlas_height / params.height)
+        % params.atlas_height
+    );
+#else
+    uint local_x = (x * params.grid_width * params.atlas_width / params.width)
+        % params.atlas_width;
+    uint local_y = (y * params.grid_height * params.atlas_height / params.height)
+        % params.atlas_height;
+#endif
+#endif
+    uint atlas_index = glyph * params.atlas_width * params.atlas_height
+        + local_y * params.atlas_width
+        + local_x;
+    return uint(atlas[atlas_index]);
+}
+
+uint cell_x_for(uint x) {
+#ifdef USE_COORD_LUT
+    return coordinates[x].x;
+#else
+    return x * params.grid_width / params.width;
+#endif
+}
+
+uint cell_y_for(uint y) {
+#ifdef USE_COORD_LUT
+    return coordinates[params.width + y].x;
+#else
+    return y * params.grid_height / params.height;
+#endif
+}
+
+uint blend(uint background, uint foreground, uint alpha) {
+    return (background * (255u - alpha) + foreground * alpha + 127u) / 255u;
+}
+
+void main() {
+    uint pixel_x = gl_GlobalInvocationID.x * 2u;
+    uint pixel_y = gl_GlobalInvocationID.y * 2u;
+    if (pixel_x >= params.width || pixel_y >= params.height) {
+        return;
+    }
+
+    for (uint delta_y = 0u; delta_y < 2u; delta_y++) {
+        for (uint delta_x = 0u; delta_x < 2u; delta_x++) {
+            uint x = pixel_x + delta_x;
+            uint y = pixel_y + delta_y;
+            uint cell_x = cell_x_for(x);
+            uint cell_y = cell_y_for(y);
+            uvec4 cell = cells[cell_y * params.grid_width + cell_x];
+            uint foreground = params.color != 0u ? cell.y : 235u;
+            uint output_y = blend(16u, foreground, alpha_for(cell.x, x, y));
+            output_nv12[y * params.width + x] = uint8_t(output_y);
+        }
+    }
+
+    uint uv_offset = params.width * params.height
+        + (pixel_y / 2u) * params.width
+        + pixel_x;
+    if (params.color == 0u) {
+        output_nv12[uv_offset] = uint8_t(params.neutral_chroma);
+        output_nv12[uv_offset + 1u] = uint8_t(params.neutral_chroma);
+        return;
+    }
+
+    uint cell_x = cell_x_for(pixel_x);
+    uint cell_y = cell_y_for(pixel_y);
+    uvec4 cell = cells[cell_y * params.grid_width + cell_x];
+    uint alpha = (
+        alpha_for(cell.x, pixel_x, pixel_y)
+        + alpha_for(cell.x, pixel_x + 1u, pixel_y)
+        + alpha_for(cell.x, pixel_x, pixel_y + 1u)
+        + alpha_for(cell.x, pixel_x + 1u, pixel_y + 1u)
+    ) / 4u;
+    uint output_u = blend(128u, cell.z, alpha);
+    uint output_v = blend(128u, cell.w, alpha);
+    output_nv12[uv_offset] = uint8_t(output_u);
+    output_nv12[uv_offset + 1u] = uint8_t(output_v);
+}

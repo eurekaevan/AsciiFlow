@@ -15,6 +15,16 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: Install FFmpeg development headers
+        run: sudo apt-get update && sudo apt-get install -y clang libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libx264-dev spirv-tools
       - run: dotnet restore AsciiFlow.slnx
       - run: dotnet build AsciiFlow.slnx -c Release --no-restore
       - run: dotnet test AsciiFlow.slnx -c Release --no-build --no-restore
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+      - run: cargo test --workspace
+      - name: Validate generated SPIR-V
+        run: find target/debug/build -path '*/out/ascii_*.spv' -print0 | xargs -0 -n1 spirv-val --target-env vulkan1.3

@@ -1,0 +1,36 @@
+[workspace]
+resolver = "2"
+members = [
+    "apps/asciiflow-cli",
+    "crates/asciiflow-core",
+    "crates/asciiflow-cpu",
+    "crates/asciiflow-font",
+    "crates/asciiflow-interop",
+    "crates/asciiflow-media",
+    "crates/asciiflow-vulkan",
+]
+
+[workspace.package]
+version = "2.0.0-alpha.0"
+edition = "2024"
+license = "MIT"
+rust-version = "1.85"
+
+[workspace.dependencies]
+anyhow = "1.0"
+ash = "0.38.0"
+bytemuck = { version = "1.24", features = ["derive"] }
+clap = { version = "4.5", features = ["derive"] }
+crossbeam-channel = "0.5"
+ctrlc = "3.4"
+ffmpeg-sys-next = { version = "9.0.0", default-features = false, features = ["avcodec", "avformat", "swscale"] }
+font8x8 = "0.3"
+gpu-allocator = { version = "0.28.0", default-features = false, features = ["std", "vulkan"] }
+shaderc = "0.10.1"
+thiserror = "2.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+
+[profile.release]
+lto = "thin"
+codegen-units = 1

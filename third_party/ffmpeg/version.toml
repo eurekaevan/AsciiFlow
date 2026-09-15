@@ -1,0 +1,21 @@
+version = "9.0.1"
+url = "https://ffmpeg.org/releases/ffmpeg-9.0.1.tar.xz"
+sha256 = "cf38e0e28c7e5605942c4a77755349b0145804a397af37eb1fb4c77cb237f635"
+
+# Stage 2 retains libx264 as the software baseline and enables Linux VAAPI
+# hardware codecs plus libdrm device integration. Enabling libx264 makes the
+# resulting FFmpeg build GPL; distributors must comply accordingly.
+configure_flags = [
+  "--enable-shared",
+  "--disable-static",
+  "--disable-programs",
+  "--disable-doc",
+  "--disable-debug",
+  "--disable-avdevice",
+  "--disable-avfilter",
+  "--disable-swresample",
+  "--enable-gpl",
+  "--enable-libx264",
+  "--enable-vaapi",
+  "--enable-libdrm",
+]

@@ -1,0 +1,6 @@
+[env]
+# This Fedora image ships libclang without a clang driver, so bindgen cannot
+# discover its resource headers. The path is harmless on hosts where clang
+# already discovers its own resource directory and can be overridden locally.
+BINDGEN_EXTRA_CLANG_ARGS = { value = "-I/usr/lib/clang/21/include", force = false }
+

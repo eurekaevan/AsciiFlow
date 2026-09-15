@@ -78,3 +78,9 @@ Thumbs.db
 ffmpeg/windows/
 ffmpeg/linux/
 ffmpeg/macos/
+
+# Rust build and locally acquired native SDKs
+target/
+third_party/ffmpeg/source/
+third_party/ffmpeg/install/
+third_party/ffmpeg/downloads/

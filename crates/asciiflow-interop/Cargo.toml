@@ -1,0 +1,15 @@
+[package]
+name = "asciiflow-interop"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+asciiflow-core = { path = "../asciiflow-core" }
+asciiflow-media = { path = "../asciiflow-media" }
+asciiflow-vulkan = { path = "../asciiflow-vulkan" }
+crossbeam-channel.workspace = true
+ffmpeg-sys-next.workspace = true
+libc = "0.2"
+tracing.workspace = true

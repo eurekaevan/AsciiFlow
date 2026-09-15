@@ -1,4 +1,111 @@
-# 🌊 AsciiFlow - 高性能全彩 ASCII 媒体转换器
+# 🌊 AsciiFlow v2 — Rust CPU + Vulkan pipeline
+
+AsciiFlow v2 is the primary development path. Host NV12 remains the portable
+Core boundary. At startup, AsciiFlow probes the input and the local runtime,
+then selects the fastest legal pipeline. On the qualified Intel Linux path,
+this can carry decoded VAAPI surfaces into Vulkan and return processed pixels
+to encoder-owned VAAPI surfaces without Host pixel copies:
+
+```text
+FFmpeg software or VAAPI decode
+  -> hardware download to Host NV12, or DRM PRIME / DMA-BUF import
+  -> CPU ASCII, or Vulkan mapping pass + render pass
+  -> Host NV12 + optional hardware upload, or writable encoder DMA-BUF import
+  -> FFmpeg software or VAAPI H.264 / MP4 encode
+```
+
+The existing .NET implementation remains in `src/` and `tests/` as the behavior
+and performance reference until the Rust baseline has broader regression
+coverage. It has not been deleted or mechanically translated.
+
+## Rust quick start
+
+Fedora development dependencies include Rust, `clang`/`libclang`, FFmpeg
+development headers, `libva`/`libdrm` headers, and an FFmpeg build containing
+`libx264`, VAAPI, and libdrm. H.264 VAAPI additionally needs a driver build
+that exposes the patented H.264 profiles; Fedora's free Intel driver omits
+them.
+
+```bash
+cargo build --workspace
+cargo test --workspace
+cargo run --release --bin asciiflow -- input.mp4 output.mp4 \
+  --width 160 --max-frames 100 --verbose
+
+# Inspect the runtime capability snapshot and selected plan without creating output.
+cargo run --release --bin asciiflow -- input.mp4 --capabilities
+cargo run --release --bin asciiflow -- input.mp4 --explain-plan
+
+# Explicit Stage 2 hardware media; never falls back to software.
+cargo run --release --bin asciiflow -- input.mp4 output-vaapi.mp4 \
+  --backend vulkan --decode vaapi --encode vaapi \
+  --input-interop off --output-interop off \
+  --hw-device /dev/dri/renderD128 --width 160 --verbose
+
+# Explicit Stage 3A zero-host-copy input. This is strict and Intel-specific.
+cargo run --release --bin asciiflow -- input.mp4 output-interop.mp4 \
+  --backend vulkan --decode vaapi --encode software \
+  --vaapi-vulkan-input-interop on --hw-device /dev/dri/renderD128 --width 80 --verbose
+
+# Explicit Stage 3B GPU-resident pixel path into h264_vaapi. Both directions are strict.
+cargo run --release --bin asciiflow -- input.mp4 output-full-interop.mp4 \
+  --backend vulkan --decode vaapi --encode vaapi \
+  --vaapi-vulkan-input-interop on --vaapi-vulkan-output-interop on \
+  --hw-device /dev/dri/renderD128 --width 80 --verbose
+```
+
+Supported options are positional `input` and optional `output` (output is not
+needed for `--capabilities` or `--explain-plan`), plus
+`--backend auto|cpu|vulkan`, `--vulkan-mapping auto|gpu|cpu`,
+`--decode auto|software|vaapi`, `--encode auto|software|vaapi`, optional
+`--hw-device`, `--vaapi-vulkan-input-interop auto|off|on` (also
+`--input-interop`), `--vaapi-vulkan-output-interop auto|off|on` (also
+`--output-interop`), `--capabilities`, `--explain-plan`, `--width`,
+`--height`, `--charset`, `--font`, `--color`, `--max-frames`, `--no-progress`,
+and `--verbose`. Output is currently video-only MP4/H.264. `auto` selects from
+the probed capability graph: it prefers qualified Vulkan processing and full
+interop, then staged hardware encode, then software media, and finally CPU
+processing. It does not prefer VAAPI decode followed by `hwdownload` when input
+interop is unavailable. Explicit `--decode vaapi`, `--encode vaapi`,
+`--backend vulkan`, or interop `on` requests fail instead of silently falling
+back; `auto` is the only mode allowed to degrade. `--verbose` prints the
+selected plan and startup probe/planning timings; `--capabilities` prints the
+facts and reasons; `--explain-plan` also lists rejected candidates and exits
+before creating an output file. Audio passthrough, VP9/WebM, FreeType fonts,
+cross-API asynchronous fences, and direct external-image shaders remain out of
+scope. GPU mapping uses two bounded in-flight slots by default; CPU mapping is
+an explicit hybrid diagnostic and remains single-slot.
+
+For the pinned FFmpeg 9.0.1 source build and dynamic-link setup, see
+[`docs/v2-architecture.md`](docs/v2-architecture.md) and
+`third_party/ffmpeg/`. The Rust binding is raw `ffmpeg-sys-next`; native calls
+and pointers do not enter Core or the CLI; the interop crate contains the only
+narrow unsafe bridge from an opaque retained VAAPI frame to FFmpeg DRM PRIME.
+
+## Rust workspace
+
+```text
+apps/asciiflow-cli/       CLI and composition root
+crates/asciiflow-core/    frames, traits, planner, bounded pipeline, metrics
+crates/asciiflow-media/   safe FFmpeg-facing API and internal unsafe wrappers
+crates/asciiflow-cpu/     permanent CPU reference backend
+crates/asciiflow-font/    cached R8 glyph atlas
+crates/asciiflow-interop/ FFmpeg DRM PRIME + Vulkan DMA-BUF composition
+crates/asciiflow-vulkan/  Vulkan 1.3 compute backend and resource ownership
+shaders/src/              build-time GLSL compute shader sources
+third_party/ffmpeg/       pinned native source/build recipe
+docs/v2-architecture.md   v2 invariants, ownership, and limitations
+docs/stage1-validation.md current parity, media, and benchmark evidence
+docs/stage2-validation.md current VAAPI correctness and benchmark evidence
+docs/stage3a-validation.md DMA-BUF input interop evidence and benchmark
+docs/stage3b-validation.md DMA-BUF output interop evidence and benchmark
+docs/auto-planner.md       Stage 4.0 capability graph and selection policy
+docs/failure-semantics.md  Stage 4.1 failure, cancellation, and output contract
+```
+
+---
+
+# AsciiFlow v1 — .NET reference implementation
 
 <p align="center">
   <b>基于 .NET 10、FFmpeg 与 SkiaSharp 的全彩字符视频处理工具</b>
@@ -153,6 +260,8 @@ dotnet run --project src/AsciiFlow.App -- -i input.mp4 -o output.mp4 --max-frame
 - 源媒体没有 `nb_frames` 时，总帧数保持“未知”。界面只使用 `时长 × 平均帧率` 生成标有“约”的进度参考，并将其最高限制为 `99.9%`；完成摘要使用实际解码并编码的帧数。
 - `--max-frames` 是处理上限，适合快速预览。使用 `--no-progress` 可关闭动态进度；标准输出被重定向时也会自动关闭。
 - 按 `Ctrl+C` 会请求取消并返回退出码 `130`；参数解析失败返回 `2`，运行或编码失败返回 `1`，成功返回 `0`。
+- 取消或任一阶段失败都只会删除临时输出；已有目标文件保持逐字节不变，不会提交半成品 MP4。
+- 显式请求 VAAPI、Vulkan 或硬件互操作时，能力或初始化失败会直接报错；只有 `auto` 可在开始处理前降级，运行中绝不切换路径。
 
 ---
 
