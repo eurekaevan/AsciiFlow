@@ -1,4 +1,8 @@
 use super::{
+    audio::{
+        AudioInputStream, AudioOutputTemplate, AudioPacketSender, discover_audio_streams,
+        selected_templates,
+    },
     codec::{again, check, ffmpeg_error},
     ffi,
     frame::Frame,
@@ -8,9 +12,9 @@ use super::{
     vaapi::{DecodeMode, VaapiOptions},
 };
 use asciiflow_core::{
-    ChromaLocation, ChromaSubsampling, ColorMatrix, ColorPrimaries, ColorRange, ColorSpace,
-    FrameDesc, FrameSource, HostFrame, InputRequirements, Rational, Result, SourceTimings,
-    TransferCharacteristic, VideoCodec, VideoFrame,
+    AudioPlan, AudioStreamInfo, ChromaLocation, ChromaSubsampling, ColorMatrix, ColorPrimaries,
+    ColorRange, ColorSpace, FrameDesc, FrameSource, HostFrame, InputRequirements, Rational, Result,
+    SourceTimings, TransferCharacteristic, VideoCodec, VideoFrame,
 };
 use std::{
     ffi::{CStr, CString},
@@ -25,6 +29,7 @@ pub struct MediaInfo {
     pub frame_rate: Rational,
     pub frame_count: Option<u64>,
     pub requirements: InputRequirements,
+    pub audio_streams: Vec<AudioStreamInfo>,
 }
 
 pub struct Decoder {
@@ -45,6 +50,11 @@ pub struct Decoder {
     drain_sent: bool,
     packet_pending: bool,
     download_format_checked: bool,
+    audio_streams: Vec<AudioInputStream>,
+    selected_audio_streams: Vec<usize>,
+    audio_sender: Option<AudioPacketSender>,
+    audio_video_origin: Option<i64>,
+    audio_video_frames: i64,
 }
 
 /// An owned reference to a decoded VAAPI surface.
@@ -215,6 +225,11 @@ impl Decoder {
                 }),
             },
         );
+        let audio_streams = discover_audio_streams(format)?;
+        let audio_info = audio_streams
+            .iter()
+            .map(|stream| stream.info.clone())
+            .collect();
         let decoder_pixel_format = unsafe { (*codec.as_ptr()).pix_fmt };
         let scaler = if mode == DecodeMode::Software
             && decoder_pixel_format != ffi::AVPixelFormat::AV_PIX_FMT_NONE
@@ -267,15 +282,33 @@ impl Decoder {
                 frame_rate,
                 frame_count,
                 requirements,
+                audio_streams: audio_info,
             },
             input_eof: false,
             drain_sent: false,
             packet_pending: false,
             download_format_checked: false,
+            audio_streams,
+            selected_audio_streams: Vec::new(),
+            audio_sender: None,
+            audio_video_origin: None,
+            audio_video_frames: 0,
         })
     }
     pub fn info(&self) -> &MediaInfo {
         &self.info
+    }
+    pub fn audio_output_templates(&self, plan: &AudioPlan) -> Result<Vec<AudioOutputTemplate>> {
+        selected_templates(&self.audio_streams, plan)
+    }
+
+    pub fn attach_audio_passthrough(&mut self, plan: &AudioPlan, sender: AudioPacketSender) {
+        self.selected_audio_streams = plan
+            .selected
+            .iter()
+            .map(|stream| stream.input_index)
+            .collect();
+        self.audio_sender = (!self.selected_audio_streams.is_empty()).then_some(sender);
     }
     fn receive_native(&mut self) -> Result<ReceiveResult> {
         let receive_started = Instant::now();
@@ -312,8 +345,53 @@ impl Decoder {
 
     fn next_native_frame(&mut self) -> Result<Option<Option<i64>>> {
         loop {
+            if let Some(sender) = &self.audio_sender {
+                sender.check_active()?;
+            }
             match self.receive_native()? {
-                ReceiveResult::Frame(pts) => return Ok(Some(pts)),
+                ReceiveResult::Frame(pts) => {
+                    if let Some(sender) = &self.audio_sender {
+                        let pts = pts.ok_or_else(|| {
+                            asciiflow_core::Error::Media(
+                                "audio passthrough requires video presentation timestamps".into(),
+                            )
+                        })?;
+                        let stream = unsafe {
+                            *(*self.format.as_ptr())
+                                .streams
+                                .add(self.stream_index as usize)
+                        };
+                        let time_base = unsafe { (*stream).time_base };
+                        let origin = *self.audio_video_origin.get_or_insert(pts);
+                        if self.audio_video_frames == 0 {
+                            sender.video_origin(origin, time_base)?;
+                        }
+                        let expected_delta = unsafe {
+                            ffi::av_rescale_q(
+                                self.audio_video_frames,
+                                ffi::AVRational {
+                                    num: self.info.frame_rate.denominator,
+                                    den: self.info.frame_rate.numerator,
+                                },
+                                time_base,
+                            )
+                        };
+                        let expected = origin.checked_add(expected_delta).ok_or_else(|| {
+                            asciiflow_core::Error::Media("video timeline overflow".into())
+                        })?;
+                        if pts.abs_diff(expected) > 1 {
+                            return Err(asciiflow_core::Error::Media(format!(
+                                "audio passthrough requires the existing CFR video timeline: frame {} has PTS {pts}, expected {expected}; variable-rate or discontinuous video needs a future timeline policy (use --audio none for video-only CFR output)",
+                                self.audio_video_frames
+                            )));
+                        }
+                        self.audio_video_frames =
+                            self.audio_video_frames.checked_add(1).ok_or_else(|| {
+                                asciiflow_core::Error::Media("video frame count overflow".into())
+                            })?;
+                    }
+                    return Ok(Some(pts));
+                }
                 ReceiveResult::Eof => return Ok(None),
                 ReceiveResult::Again => {}
             }
@@ -366,13 +444,43 @@ impl Decoder {
                     result,
                 ));
             }
-            let is_video = unsafe { (*self.packet.as_mut_ptr()).stream_index == self.stream_index };
+            let packet_stream_index = unsafe { (*self.packet.as_mut_ptr()).stream_index };
+            let is_video = packet_stream_index == self.stream_index;
             if is_video {
                 self.packet_pending = true;
             } else {
-                self.packet.unref();
+                self.route_audio_packet(packet_stream_index)?;
             }
         }
+    }
+
+    fn route_audio_packet(&mut self, packet_stream_index: i32) -> Result<()> {
+        if packet_stream_index >= 0
+            && self
+                .selected_audio_streams
+                .contains(&(packet_stream_index as usize))
+        {
+            let input_index = packet_stream_index as usize;
+            let time_base = self
+                .audio_streams
+                .iter()
+                .find(|stream| stream.info.input_index == input_index)
+                .map(|stream| stream.time_base)
+                .ok_or_else(|| {
+                    asciiflow_core::Error::Media(format!(
+                        "selected audio stream #{input_index} has no demux descriptor"
+                    ))
+                })?;
+            let mut packet = Packet::new()?;
+            packet.take_from(&mut self.packet);
+            self.audio_sender
+                .as_ref()
+                .expect("selected audio streams require a mux sender")
+                .send(packet, input_index, time_base)?;
+        } else {
+            self.packet.unref();
+        }
+        Ok(())
     }
 
     fn convert_current_to_host(&mut self, pts: Option<i64>) -> Result<VideoFrame> {
@@ -578,6 +686,31 @@ fn map_chroma_location(value: ffi::AVChromaLocation) -> ChromaLocation {
 }
 
 impl FrameSource for Decoder {
+    fn finish(&mut self) -> Result<()> {
+        if self.audio_sender.is_none() {
+            return Ok(());
+        }
+        // A video frame limit does not trim the independent audio timeline.
+        self.packet.unref();
+        while !self.input_eof {
+            if let Some(sender) = &self.audio_sender {
+                sender.check_active()?;
+            }
+            let result =
+                unsafe { ffi::av_read_frame(self.format.as_ptr(), self.packet.as_mut_ptr()) };
+            if result == ffi::AVERROR_EOF {
+                self.input_eof = true;
+                break;
+            }
+            check(result, "read remaining passthrough audio")?;
+            let index = unsafe { (*self.packet.as_mut_ptr()).stream_index };
+            self.route_audio_packet(index)?;
+        }
+        if let Some(sender) = self.audio_sender.take() {
+            sender.finish()?;
+        }
+        Ok(())
+    }
     fn next_frame(&mut self) -> Result<Option<VideoFrame>> {
         let Some(pts) = self.next_native_frame()? else {
             return Ok(None);

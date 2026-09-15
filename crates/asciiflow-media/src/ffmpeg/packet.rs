@@ -17,6 +17,13 @@ impl Packet {
     pub(crate) fn unref(&mut self) {
         unsafe { ffi::av_packet_unref(self.pointer.as_ptr()) }
     }
+    pub(crate) fn take_from(&mut self, source: &mut Self) {
+        self.unref();
+        unsafe { ffi::av_packet_move_ref(self.pointer.as_ptr(), source.pointer.as_ptr()) }
+    }
+    pub(crate) fn size(&self) -> u64 {
+        unsafe { (*self.pointer.as_ptr()).size.max(0) as u64 }
+    }
 }
 impl Drop for Packet {
     fn drop(&mut self) {

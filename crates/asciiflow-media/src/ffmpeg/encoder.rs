@@ -1,4 +1,5 @@
 use super::{
+    audio::{AudioOutputTemplate, AudioPacketSender, MuxMessage},
     codec::{again, check, ffmpeg_error},
     ffi,
     frame::Frame,
@@ -8,19 +9,26 @@ use super::{
     vaapi::{EncodeMode, VaapiOptions},
 };
 use asciiflow_core::{
-    Error, FrameDesc, FrameSink, PipelineStage, Rational, Result, SinkTimings, VideoFrame,
+    CancellationToken, Error, FrameDesc, FrameSink, PipelineStage, Rational, Result, SinkTimings,
+    VideoFrame,
 };
+use crossbeam_channel::{Receiver, SendTimeoutError, Sender, bounded};
 use std::{
     ffi::CString,
     path::Path,
     ptr::{self, NonNull},
-    time::Instant,
+    sync::{Arc, Mutex},
+    thread::JoinHandle,
+    time::{Duration, Instant},
 };
 
+const MUX_CHANNEL_CAPACITY: usize = 64;
+const MUX_POLL: Duration = Duration::from_millis(20);
+
 pub struct Encoder {
-    format: NonNull<ffi::AVFormatContext>,
     codec: NonNull<ffi::AVCodecContext>,
-    stream: NonNull<ffi::AVStream>,
+    video_stream_index: i32,
+    video_time_base: ffi::AVRational,
     frame: Frame,
     hardware_frame: Option<HardwareFrame>,
     frames_pool: Option<HardwareFramesPool>,
@@ -32,7 +40,43 @@ pub struct Encoder {
     next_pts: i64,
     finished: bool,
     finish_attempted: bool,
+    mux_sender: Sender<MuxMessage>,
+    mux_thread: Option<JoinHandle<Result<()>>>,
+    mux_failure: Arc<Mutex<Option<String>>>,
+    mux_stats: Arc<Mutex<MuxStats>>,
+    mux_stop: CancellationToken,
+    cancellation: CancellationToken,
 }
+
+#[derive(Default)]
+struct MuxStats {
+    audio_passthrough: Duration,
+    audio_packets: u64,
+    audio_bytes: u64,
+}
+
+struct AudioMuxRoute {
+    input_index: usize,
+    output_index: i32,
+    output_time_base: ffi::AVRational,
+}
+
+struct MuxOutput {
+    format: NonNull<ffi::AVFormatContext>,
+    video_stream_index: i32,
+    video_time_base: ffi::AVRational,
+    audio_routes: Vec<AudioMuxRoute>,
+}
+
+struct EncoderCreateOptions {
+    mode: EncodeMode,
+    vaapi: VaapiOptions,
+    require_host_upload: bool,
+    audio: Vec<AudioOutputTemplate>,
+    cancellation: CancellationToken,
+}
+
+unsafe impl Send for MuxOutput {}
 
 pub struct VaapiEncoderProbe {
     pub frames: VaapiEncoderFrames,
@@ -123,7 +167,41 @@ impl Encoder {
         mode: EncodeMode,
         vaapi: VaapiOptions,
     ) -> Result<Self> {
-        Self::create_internal(path, desc, frame_rate, mode, vaapi, true)
+        Self::create_internal(
+            path,
+            desc,
+            frame_rate,
+            EncoderCreateOptions {
+                mode,
+                vaapi,
+                require_host_upload: true,
+                audio: Vec::new(),
+                cancellation: CancellationToken::new(),
+            },
+        )
+    }
+
+    pub fn create_with_audio(
+        path: impl AsRef<Path>,
+        desc: FrameDesc,
+        frame_rate: Rational,
+        mode: EncodeMode,
+        vaapi: VaapiOptions,
+        audio: Vec<AudioOutputTemplate>,
+        cancellation: CancellationToken,
+    ) -> Result<Self> {
+        Self::create_internal(
+            path,
+            desc,
+            frame_rate,
+            EncoderCreateOptions {
+                mode,
+                vaapi,
+                require_host_upload: true,
+                audio,
+                cancellation,
+            },
+        )
     }
 
     pub fn create_with_hardware_frames(
@@ -132,17 +210,55 @@ impl Encoder {
         frame_rate: Rational,
         vaapi: VaapiOptions,
     ) -> Result<Self> {
-        Self::create_internal(path, desc, frame_rate, EncodeMode::Vaapi, vaapi, false)
+        Self::create_internal(
+            path,
+            desc,
+            frame_rate,
+            EncoderCreateOptions {
+                mode: EncodeMode::Vaapi,
+                vaapi,
+                require_host_upload: false,
+                audio: Vec::new(),
+                cancellation: CancellationToken::new(),
+            },
+        )
+    }
+
+    pub fn create_with_hardware_frames_and_audio(
+        path: impl AsRef<Path>,
+        desc: FrameDesc,
+        frame_rate: Rational,
+        vaapi: VaapiOptions,
+        audio: Vec<AudioOutputTemplate>,
+        cancellation: CancellationToken,
+    ) -> Result<Self> {
+        Self::create_internal(
+            path,
+            desc,
+            frame_rate,
+            EncoderCreateOptions {
+                mode: EncodeMode::Vaapi,
+                vaapi,
+                require_host_upload: false,
+                audio,
+                cancellation,
+            },
+        )
     }
 
     fn create_internal(
         path: impl AsRef<Path>,
         desc: FrameDesc,
         frame_rate: Rational,
-        mode: EncodeMode,
-        vaapi: VaapiOptions,
-        require_host_upload: bool,
+        options: EncoderCreateOptions,
     ) -> Result<Self> {
+        let EncoderCreateOptions {
+            mode,
+            vaapi,
+            require_host_upload,
+            audio,
+            cancellation,
+        } = options;
         let path = path.as_ref();
         let native = CString::new(path.as_os_str().as_encoded_bytes())
             .map_err(|_| asciiflow_core::Error::Media("output path contains a NUL byte".into()))?;
@@ -286,6 +402,61 @@ impl Encoder {
         unsafe {
             (*stream.as_ptr()).time_base = (*codec.as_ptr()).time_base;
         }
+        let mut audio_routes = (|| -> Result<Vec<AudioMuxRoute>> {
+            let mut routes = Vec::with_capacity(audio.len());
+            for template in audio {
+                let output_stream =
+                    NonNull::new(unsafe { ffi::avformat_new_stream(format.as_ptr(), ptr::null()) })
+                        .ok_or_else(|| {
+                            Error::Media("failed to create output audio stream".into())
+                        })?;
+                check(
+                    unsafe {
+                        ffi::avcodec_parameters_copy(
+                            (*output_stream.as_ptr()).codecpar,
+                            template.parameters.as_ptr(),
+                        )
+                    },
+                    "failed to copy passthrough audio parameters",
+                )?;
+                unsafe {
+                    (*(*output_stream.as_ptr()).codecpar).codec_tag = 0;
+                    (*output_stream.as_ptr()).time_base = template.input_time_base;
+                    (*output_stream.as_ptr()).disposition = template.disposition;
+                }
+                if let Some(language) = template.language {
+                    let key =
+                        CString::new("language").expect("static metadata key contains no NUL");
+                    let value = CString::new(language).map_err(|_| {
+                        Error::Media("audio language metadata contains a NUL byte".into())
+                    })?;
+                    check(
+                        unsafe {
+                            ffi::av_dict_set(
+                                &mut (*output_stream.as_ptr()).metadata,
+                                key.as_ptr(),
+                                value.as_ptr(),
+                                0,
+                            )
+                        },
+                        "failed to copy audio language metadata",
+                    )?;
+                }
+                routes.push(AudioMuxRoute {
+                    input_index: template.input_index,
+                    output_index: unsafe { (*output_stream.as_ptr()).index },
+                    output_time_base: template.input_time_base,
+                });
+            }
+            Ok(routes)
+        })()
+        .map_err(|error| {
+            Error::pipeline(
+                PipelineStage::MuxInitialization,
+                "create passthrough audio streams",
+                error,
+            )
+        })?;
         if unsafe { (*(*format.as_ptr()).oformat).flags } & ffi::AVFMT_NOFILE == 0 {
             check(
                 unsafe {
@@ -312,6 +483,13 @@ impl Encoder {
                 error,
             )
         })?;
+        let video_stream_index = unsafe { (*stream.as_ptr()).index };
+        let video_time_base = unsafe { (*stream.as_ptr()).time_base };
+        for route in &mut audio_routes {
+            let output_stream =
+                unsafe { *(*format.as_ptr()).streams.add(route.output_index as usize) };
+            route.output_time_base = unsafe { (*output_stream).time_base };
+        }
         let mut frame = Frame::new()?;
         unsafe {
             (*frame.as_mut_ptr()).format = ffi::AVPixelFormat::AV_PIX_FMT_NV12 as i32;
@@ -337,11 +515,50 @@ impl Encoder {
             "opened H.264 encoder"
         );
         let format = format_guard.take();
-        let codec = codec_guard.take();
-        Ok(Self {
+        let (mux_sender, mux_receiver) = bounded(MUX_CHANNEL_CAPACITY);
+        let mux_failure = Arc::new(Mutex::new(None));
+        let mux_stats = Arc::new(Mutex::new(MuxStats::default()));
+        let mux_stop = CancellationToken::new();
+        let output = MuxOutput {
             format,
-            codec,
-            stream,
+            video_stream_index,
+            video_time_base,
+            audio_routes,
+        };
+        let worker_failure = mux_failure.clone();
+        let worker_stats = mux_stats.clone();
+        let worker_stop = mux_stop.clone();
+        let worker_cancellation = cancellation.clone();
+        let mux_thread = std::thread::Builder::new()
+            .name("asciiflow-mux".into())
+            .spawn(move || {
+                let result = run_mux_worker(
+                    output,
+                    &mux_receiver,
+                    worker_stats,
+                    worker_failure.clone(),
+                    worker_stop,
+                    worker_cancellation,
+                );
+                if let Err(error) = &result
+                    && !error.is_cancelled()
+                {
+                    *worker_failure.lock().expect("mux failure lock poisoned") =
+                        Some(error.to_string());
+                }
+                result
+            })
+            .map_err(|error| {
+                Error::pipeline_message(
+                    PipelineStage::MuxInitialization,
+                    "start mux worker",
+                    error.to_string(),
+                )
+            })?;
+        Ok(Self {
+            codec: codec_guard.take(),
+            video_stream_index,
+            video_time_base,
             frame,
             hardware_frame,
             frames_pool,
@@ -353,6 +570,12 @@ impl Encoder {
             next_pts: 0,
             finished: false,
             finish_attempted: false,
+            mux_sender,
+            mux_thread: Some(mux_thread),
+            mux_failure,
+            mux_stats,
+            mux_stop,
+            cancellation,
         })
     }
     fn drain_packets(&mut self) -> Result<()> {
@@ -366,28 +589,84 @@ impl Encoder {
             if result < 0 {
                 return Err(ffmpeg_error("failed to receive H.264 packet", result));
             }
+            if self.packet.size() > 16 * 1024 * 1024 {
+                return Err(Error::pipeline_message(
+                    PipelineStage::MuxRuntime,
+                    "validate video packet size",
+                    "compressed packet exceeds the 16 MiB mux limit",
+                ));
+            }
             unsafe {
                 ffi::av_packet_rescale_ts(
                     self.packet.as_mut_ptr(),
                     (*self.codec.as_ptr()).time_base,
-                    (*self.stream.as_ptr()).time_base,
+                    self.video_time_base,
                 );
                 if (*self.packet.as_mut_ptr()).duration == 0 {
                     (*self.packet.as_mut_ptr()).duration = ffi::av_rescale_q(
                         1,
                         (*self.codec.as_ptr()).time_base,
-                        (*self.stream.as_ptr()).time_base,
+                        self.video_time_base,
                     );
                 }
-                (*self.packet.as_mut_ptr()).stream_index = (*self.stream.as_ptr()).index;
             }
-            let written = unsafe {
-                ffi::av_interleaved_write_frame(self.format.as_ptr(), self.packet.as_mut_ptr())
-            };
-            self.packet.unref();
-            check(written, "failed to mux H.264 packet").map_err(|error| {
-                Error::pipeline(PipelineStage::MuxRuntime, "write encoded packet", error)
+            let mut packet = Packet::new()?;
+            packet.take_from(&mut self.packet);
+            self.send_mux_message(MuxMessage::Packet {
+                packet,
+                input_index: self.video_stream_index as usize,
+                input_time_base: self.video_time_base,
+                audio: false,
             })?;
+        }
+    }
+
+    pub fn audio_packet_sender(&self) -> AudioPacketSender {
+        AudioPacketSender::new(
+            self.mux_sender.clone(),
+            self.cancellation.clone(),
+            self.mux_failure.clone(),
+        )
+    }
+
+    fn send_mux_message(&self, mut message: MuxMessage) -> Result<()> {
+        loop {
+            if self.cancellation.is_cancelled() {
+                return Err(Error::Cancelled);
+            }
+            match self.mux_sender.send_timeout(message, MUX_POLL) {
+                Ok(()) => return Ok(()),
+                Err(SendTimeoutError::Timeout(pending)) => message = pending,
+                Err(SendTimeoutError::Disconnected(_)) => return Err(self.current_mux_failure()),
+            }
+        }
+    }
+
+    fn current_mux_failure(&self) -> Error {
+        let message = self
+            .mux_failure
+            .lock()
+            .expect("mux failure lock poisoned")
+            .clone()
+            .unwrap_or_else(|| "mux worker stopped unexpectedly".into());
+        Error::pipeline_message(
+            PipelineStage::MuxRuntime,
+            "write interleaved packet",
+            message,
+        )
+    }
+
+    fn join_mux(&mut self) -> Result<()> {
+        let Some(thread) = self.mux_thread.take() else {
+            return Ok(());
+        };
+        match thread.join() {
+            Ok(result) => result,
+            Err(_) => Err(Error::pipeline_message(
+                PipelineStage::MuxRuntime,
+                "join mux worker",
+                "mux worker panicked",
+            )),
         }
     }
 
@@ -531,30 +810,193 @@ impl FrameSink for Encoder {
             self.drain_packets()?;
         }
         self.timings.submit_receive += encode_started.elapsed();
-        check(
-            unsafe { ffi::av_write_trailer(self.format.as_ptr()) },
-            "failed to finalize MP4 output",
-        )
-        .map_err(|error| {
-            Error::pipeline(
-                PipelineStage::Finalization,
-                "write MP4 container trailer",
-                error,
-            )
-        })?;
+        self.send_mux_message(MuxMessage::Finish)?;
+        self.join_mux()?;
         self.finished = true;
         Ok(())
     }
 
     fn take_timings(&mut self) -> SinkTimings {
-        std::mem::take(&mut self.timings)
+        let mut timings = std::mem::take(&mut self.timings);
+        let mut mux = self.mux_stats.lock().expect("mux stats lock poisoned");
+        let mux = std::mem::take(&mut *mux);
+        timings.audio_passthrough = mux.audio_passthrough;
+        timings.audio_packets = mux.audio_packets;
+        timings.audio_bytes = mux.audio_bytes;
+        timings
     }
 }
 impl Drop for Encoder {
     fn drop(&mut self) {
+        if self.mux_thread.is_some() {
+            self.mux_stop.cancel();
+            let _ = self.mux_sender.try_send(MuxMessage::Abort);
+            let _ = self.join_mux();
+        }
         unsafe {
             let mut codec = self.codec.as_ptr();
             ffi::avcodec_free_context(&mut codec);
+        }
+    }
+}
+unsafe impl Send for Encoder {}
+
+fn run_mux_worker(
+    output: MuxOutput,
+    receiver: &Receiver<MuxMessage>,
+    stats: Arc<Mutex<MuxStats>>,
+    failure: Arc<Mutex<Option<String>>>,
+    stop: CancellationToken,
+    cancellation: CancellationToken,
+) -> Result<()> {
+    let mut audio_done = output.audio_routes.is_empty();
+    let mut video_offset = 0_i64;
+    let mut buffered_packets = 0_u32;
+    let mut buffered_bytes = 0_u64;
+    loop {
+        if stop.is_cancelled() || cancellation.is_cancelled() {
+            return Err(Error::Cancelled);
+        }
+        let message = match receiver.recv_timeout(MUX_POLL) {
+            Ok(message) => message,
+            Err(crossbeam_channel::RecvTimeoutError::Timeout) => continue,
+            Err(crossbeam_channel::RecvTimeoutError::Disconnected) => {
+                return Err(Error::pipeline_message(
+                    PipelineStage::MuxRuntime,
+                    "receive mux packet",
+                    "all mux producers disconnected before finalization",
+                ));
+            }
+        };
+        match message {
+            MuxMessage::Packet {
+                mut packet,
+                input_index,
+                input_time_base,
+                audio,
+            } => {
+                let (output_index, output_time_base) = if audio {
+                    let route = output
+                        .audio_routes
+                        .iter()
+                        .find(|route| route.input_index == input_index)
+                        .ok_or_else(|| {
+                            Error::pipeline_message(
+                                PipelineStage::MuxRuntime,
+                                "map passthrough audio packet",
+                                format!("no output mapping exists for audio stream #{input_index}"),
+                            )
+                        })?;
+                    (route.output_index, route.output_time_base)
+                } else {
+                    (output.video_stream_index, output.video_time_base)
+                };
+                let bytes = packet.size();
+                if bytes > 16 * 1024 * 1024 {
+                    return Err(Error::pipeline_message(
+                        PipelineStage::MuxRuntime,
+                        "validate packet size",
+                        "compressed packet exceeds the 16 MiB mux limit",
+                    ));
+                }
+                let started = Instant::now();
+                unsafe {
+                    ffi::av_packet_rescale_ts(
+                        packet.as_mut_ptr(),
+                        input_time_base,
+                        output_time_base,
+                    );
+                    (*packet.as_mut_ptr()).stream_index = output_index;
+                    if !audio {
+                        let native = &mut *packet.as_mut_ptr();
+                        native.pts = native
+                            .pts
+                            .checked_add(video_offset)
+                            .ok_or_else(|| Error::Media("video PTS offset overflow".into()))?;
+                        native.dts = native
+                            .dts
+                            .checked_add(video_offset)
+                            .ok_or_else(|| Error::Media("video DTS offset overflow".into()))?;
+                    }
+                }
+                let written = unsafe {
+                    ffi::av_interleaved_write_frame(output.format.as_ptr(), packet.as_mut_ptr())
+                };
+                if let Err(error) = check(written, "failed to mux interleaved packet") {
+                    let message = error.to_string();
+                    *failure.lock().expect("mux failure lock poisoned") = Some(message.clone());
+                    return Err(Error::pipeline_message(
+                        PipelineStage::MuxRuntime,
+                        "write interleaved packet",
+                        message,
+                    ));
+                }
+                if audio {
+                    let mut stats = stats.lock().expect("mux stats lock poisoned");
+                    stats.audio_passthrough += started.elapsed();
+                    stats.audio_packets += 1;
+                    stats.audio_bytes += bytes;
+                }
+                // Bound libavformat's interleaver as well as our channel, even
+                // for non-interleaved or sparse-stream input. MP4 accepts chunks
+                // arriving in different streams' timestamp order.
+                buffered_packets += 1;
+                buffered_bytes += bytes;
+                if buffered_packets >= 64 || buffered_bytes >= 8 * 1024 * 1024 {
+                    check(
+                        unsafe {
+                            ffi::av_interleaved_write_frame(output.format.as_ptr(), ptr::null_mut())
+                        },
+                        "flush bounded mux interleaver",
+                    )?;
+                    buffered_packets = 0;
+                    buffered_bytes = 0;
+                }
+            }
+            MuxMessage::AudioDone => audio_done = true,
+            MuxMessage::VideoOrigin { pts, time_base } => {
+                video_offset = unsafe { ffi::av_rescale_q(pts, time_base, output.video_time_base) };
+            }
+            MuxMessage::Finish => {
+                if !audio_done {
+                    return Err(Error::pipeline_message(
+                        PipelineStage::Finalization,
+                        "finish mux producers",
+                        "audio producer must finish before the video sink",
+                    ));
+                }
+                check(
+                    unsafe { ffi::av_write_trailer(output.format.as_ptr()) },
+                    "failed to finalize MP4 output",
+                )
+                .map_err(|error| {
+                    let message = error.to_string();
+                    *failure.lock().expect("mux failure lock poisoned") = Some(message);
+                    Error::pipeline(
+                        PipelineStage::Finalization,
+                        "write MP4 container trailer",
+                        error,
+                    )
+                })?;
+                if unsafe { !(*output.format.as_ptr()).pb.is_null() } {
+                    check(
+                        unsafe { ffi::avio_closep(&mut (*output.format.as_ptr()).pb) },
+                        "close finalized MP4 output",
+                    )
+                    .map_err(|error| {
+                        Error::pipeline(PipelineStage::Finalization, "close MP4 output", error)
+                    })?;
+                }
+                return Ok(());
+            }
+            MuxMessage::Abort => return Err(Error::Cancelled),
+        }
+    }
+}
+
+impl Drop for MuxOutput {
+    fn drop(&mut self) {
+        unsafe {
             if !(*self.format.as_ptr()).pb.is_null() {
                 ffi::avio_closep(&mut (*self.format.as_ptr()).pb);
             }
@@ -562,7 +1004,6 @@ impl Drop for Encoder {
         }
     }
 }
-unsafe impl Send for Encoder {}
 
 fn require_vaapi_encoder(encoder: *const ffi::AVCodec) -> Result<()> {
     let mut index = 0;

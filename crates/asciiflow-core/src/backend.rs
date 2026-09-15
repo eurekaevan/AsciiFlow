@@ -12,6 +12,9 @@ pub struct SourceTimings {
 pub struct SinkTimings {
     pub hardware_upload: Duration,
     pub submit_receive: Duration,
+    pub audio_passthrough: Duration,
+    pub audio_packets: u64,
+    pub audio_bytes: u64,
 }
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -82,6 +85,10 @@ impl<T: AsciiBackend + ?Sized> AsciiBackend for Box<T> {
 
 pub trait FrameSource: Send {
     fn next_frame(&mut self) -> Result<Option<VideoFrame>>;
+
+    fn finish(&mut self) -> Result<()> {
+        Ok(())
+    }
 
     fn take_timings(&mut self) -> SourceTimings {
         SourceTimings::default()

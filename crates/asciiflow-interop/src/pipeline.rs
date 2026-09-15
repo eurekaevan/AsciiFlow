@@ -151,6 +151,16 @@ pub fn run_interop_pipeline_with_cancellation(
                     }
                 }
             }
+            if !cancel.is_cancelled()
+                && let Err(error) = FrameSource::finish(decoder)
+            {
+                let _ = errors.send(Error::pipeline(
+                    PipelineStage::Drain,
+                    "finish media source",
+                    error,
+                ));
+                cancel.cancel();
+            }
         });
 
         let cancel = cancellation.clone();
@@ -439,6 +449,16 @@ fn run_hardware_output_pipeline(
                         return;
                     }
                 }
+            }
+            if !cancel.is_cancelled()
+                && let Err(error) = FrameSource::finish(decoder)
+            {
+                let _ = errors.send(Error::pipeline(
+                    PipelineStage::Drain,
+                    "finish media source",
+                    error,
+                ));
+                cancel.cancel();
             }
         });
 
@@ -740,4 +760,6 @@ fn record_backend_timings(metrics: &Metrics, timings: asciiflow_core::BackendTim
 fn record_sink_timings(metrics: &Metrics, timings: asciiflow_core::SinkTimings) {
     metrics.record(MetricStage::HardwareUpload, timings.hardware_upload);
     metrics.record(MetricStage::EncodeSubmitReceive, timings.submit_receive);
+    metrics.record(MetricStage::AudioPassthrough, timings.audio_passthrough);
+    metrics.record_audio(timings.audio_packets, timings.audio_bytes);
 }

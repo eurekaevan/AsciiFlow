@@ -12,6 +12,8 @@ FFmpeg software or VAAPI decode
   -> CPU ASCII, or Vulkan mapping pass + render pass
   -> Host NV12 + optional hardware upload, or writable encoder DMA-BUF import
   -> FFmpeg software or VAAPI H.264 / MP4 encode
+
+FFmpeg demux -> compatible compressed audio packets -> the same MP4 mux owner
 ```
 
 The existing .NET implementation remains in `src/` and `tests/` as the behavior
@@ -57,24 +59,33 @@ cargo run --release --bin asciiflow -- input.mp4 output-full-interop.mp4 \
 Supported options are positional `input` and optional `output` (output is not
 needed for `--capabilities` or `--explain-plan`), plus
 `--backend auto|cpu|vulkan`, `--vulkan-mapping auto|gpu|cpu`,
-`--decode auto|software|vaapi`, `--encode auto|software|vaapi`, optional
+`--decode auto|software|vaapi`, `--encode auto|software|vaapi`,
+`--audio auto|copy|none`, optional
 `--hw-device`, `--vaapi-vulkan-input-interop auto|off|on` (also
 `--input-interop`), `--vaapi-vulkan-output-interop auto|off|on` (also
 `--output-interop`), `--capabilities`, `--explain-plan`, `--width`,
 `--height`, `--charset`, `--font`, `--color`, `--max-frames`, `--no-progress`,
-and `--verbose`. Output is currently video-only MP4/H.264. `auto` selects from
+and `--verbose`. Output is MP4 with H.264 video. Audio defaults to `auto`, which
+copies every MP4-compatible compressed audio stream without decoding it and
+warns when an incompatible stream is skipped. `--audio copy` is strict;
+`--audio none` deliberately drops audio. Video `auto` selects from
 the probed capability graph: it prefers qualified Vulkan processing and full
 interop, then staged hardware encode, then software media, and finally CPU
 processing. It does not prefer VAAPI decode followed by `hwdownload` when input
 interop is unavailable. Explicit `--decode vaapi`, `--encode vaapi`,
 `--backend vulkan`, or interop `on` requests fail instead of silently falling
 back; `auto` is the only mode allowed to degrade. `--verbose` prints the
-selected plan and startup probe/planning timings; `--capabilities` prints the
+selected video and audio plans and startup probe/planning timings;
+`--capabilities` prints the
 facts and reasons; `--explain-plan` also lists rejected candidates and exits
-before creating an output file. Audio passthrough, VP9/WebM, FreeType fonts,
+before creating an output file. Audio transcoding, VP9/WebM, FreeType fonts,
 cross-API asynchronous fences, and direct external-image shaders remain out of
 scope. GPU mapping uses two bounded in-flight slots by default; CPU mapping is
 an explicit hybrid diagnostic and remains single-slot.
+
+Audio passthrough currently requires video timestamps compatible with the
+existing CFR output. `--max-frames` limits video only; copied audio retains its
+full timeline. See [audio behavior and limitations](docs/audio.md).
 
 For the pinned FFmpeg 9.0.1 source build and dynamic-link setup, see
 [`docs/v2-architecture.md`](docs/v2-architecture.md) and
@@ -101,6 +112,7 @@ docs/stage3a-validation.md DMA-BUF input interop evidence and benchmark
 docs/stage3b-validation.md DMA-BUF output interop evidence and benchmark
 docs/auto-planner.md       Stage 4.0 capability graph and selection policy
 docs/failure-semantics.md  Stage 4.1 failure, cancellation, and output contract
+docs/audio.md              Stage 4.2 compressed-audio passthrough contract
 ```
 
 ---

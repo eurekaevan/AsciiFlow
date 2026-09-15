@@ -5,7 +5,7 @@ mod display;
 use anyhow::{Context, Result, bail};
 use args::{Args, VulkanMappingArg};
 use asciiflow_core::{
-    AsciiBackend, AsciiConfig, CancellationToken, CapabilitySnapshot, CapabilitySupport,
+    AsciiBackend, AsciiConfig, AudioPlan, CancellationToken, CapabilitySnapshot, CapabilitySupport,
     FrameSource, MediaImplementation, Pipeline, PipelinePlan, PipelinePlanner, PipelinePolicy,
     PipelineStage, PlanningResult, ProcessingBackend, SourceTimings,
 };
@@ -148,18 +148,26 @@ fn run(args: Args, cancellation: CancellationToken) -> Result<()> {
             )
         })?;
     let planning_duration = planning_started.elapsed();
+    let audio_plan = AudioPlan::select(args.audio.into(), &probe.media_info.audio_streams)
+        .map_err(|error| {
+            asciiflow_core::Error::pipeline(
+                PipelineStage::Planning,
+                "select audio passthrough streams",
+                error,
+            )
+        })?;
     if args.capabilities {
-        capabilities::print(&snapshot, &probe.media_info.requirements, probe.duration);
+        capabilities::print(&snapshot, &probe.media_info, &audio_plan, probe.duration);
         if args.explain_plan {
             println!();
-            print_plan_explanation(&decision, planning_duration);
+            print_plan_explanation(&decision, &audio_plan, planning_duration);
         }
         return Ok(());
     }
     if args.explain_plan {
-        capabilities::print(&snapshot, &probe.media_info.requirements, probe.duration);
+        capabilities::print(&snapshot, &probe.media_info, &audio_plan, probe.duration);
         println!();
-        print_plan_explanation(&decision, planning_duration);
+        print_plan_explanation(&decision, &audio_plan, planning_duration);
         return Ok(());
     }
     let output = args
@@ -176,7 +184,20 @@ fn run(args: Args, cancellation: CancellationToken) -> Result<()> {
         &info.requirements,
         policy,
         decision,
-        |plan| PipelineFactory::build(plan, &args, &info, &config, &vaapi, &temporary),
+        |plan| {
+            PipelineFactory::build(
+                plan,
+                FactoryContext {
+                    audio_plan: &audio_plan,
+                    args: &args,
+                    info: &info,
+                    config: &config,
+                    vaapi: &vaapi,
+                    temporary: &temporary,
+                    cancellation: &cancellation,
+                },
+            )
+        },
         || {
             let _ = fs::remove_file(&temporary);
             Ok(())
@@ -189,6 +210,7 @@ fn run(args: Args, cancellation: CancellationToken) -> Result<()> {
     let plan = decision.selected;
     if args.verbose {
         capabilities::print_plan(&plan);
+        capabilities::print_audio_plan(&audio_plan);
         println!(
             "Startup: capability probe {:.3} ms · planning {:.3} ms · fallback count {}",
             probe.duration.as_secs_f64() * 1e3,
@@ -202,6 +224,14 @@ fn run(args: Args, cancellation: CancellationToken) -> Result<()> {
                 replan.first_failure,
                 replan.replanned_plan,
                 replan.duration.as_secs_f64() * 1e3
+            );
+        }
+    }
+    if args.audio == args::AudioArg::Auto {
+        for skipped in &audio_plan.skipped {
+            eprintln!(
+                "Warning: audio stream #{} ({}) was skipped: {}",
+                skipped.input_index, skipped.codec, skipped.reason
             );
         }
     }
@@ -270,6 +300,14 @@ fn run(args: Args, cancellation: CancellationToken) -> Result<()> {
         });
     }
     println!("Media plan：{}", media_plan.join(" → "));
+    if audio_plan.selected.is_empty() {
+        println!("Audio：none");
+    } else {
+        println!(
+            "Audio：{} compressed stream(s) → packet passthrough → MP4 mux",
+            audio_plan.selected.len()
+        );
+    }
     if plan.hardware_download
         || plan.hardware_upload
         || plan.hardware_input_interop
@@ -387,7 +425,11 @@ fn ensure_not_cancelled(cancellation: &CancellationToken) -> Result<()> {
     }
 }
 
-fn print_plan_explanation(decision: &PlanningResult, planning_duration: Duration) {
+fn print_plan_explanation(
+    decision: &PlanningResult,
+    audio_plan: &AudioPlan,
+    planning_duration: Duration,
+) {
     println!("Rejected candidates:");
     for rejection in &decision.rejected {
         println!("  - {}", rejection.candidate);
@@ -400,6 +442,7 @@ fn print_plan_explanation(decision: &PlanningResult, planning_duration: Duration
     }
     println!();
     capabilities::print_plan(&decision.selected);
+    capabilities::print_audio_plan(audio_plan);
     println!(
         "Planning CPU wall: {:.3} ms",
         planning_duration.as_secs_f64() * 1e3
@@ -693,28 +736,40 @@ fn initialize_with_replan<T>(
 
 struct PipelineFactory;
 
+#[derive(Clone, Copy)]
+struct FactoryContext<'a> {
+    audio_plan: &'a AudioPlan,
+    args: &'a Args,
+    info: &'a MediaInfo,
+    config: &'a AsciiConfig,
+    vaapi: &'a VaapiOptions,
+    temporary: &'a Path,
+    cancellation: &'a CancellationToken,
+}
+
 impl PipelineFactory {
     fn build(
         plan: &PipelinePlan,
-        args: &Args,
-        info: &MediaInfo,
-        config: &AsciiConfig,
-        vaapi: &VaapiOptions,
-        temporary: &Path,
+        context: FactoryContext<'_>,
     ) -> std::result::Result<BuiltExecution, InitializationFailure> {
         let mut hooks = ProductionFactoryHooks;
-        Self::build_with_hooks(plan, args, info, config, vaapi, temporary, &mut hooks)
+        Self::build_with_hooks(plan, context, &mut hooks)
     }
 
     fn build_with_hooks(
         plan: &PipelinePlan,
-        args: &Args,
-        info: &MediaInfo,
-        config: &AsciiConfig,
-        vaapi: &VaapiOptions,
-        temporary: &Path,
+        context: FactoryContext<'_>,
         hooks: &mut impl FactoryHooks,
     ) -> std::result::Result<BuiltExecution, InitializationFailure> {
+        let FactoryContext {
+            audio_plan,
+            args,
+            info,
+            config,
+            vaapi,
+            temporary,
+            cancellation,
+        } = context;
         hooks.checkpoint(InitializationPoint::DecoderCreate, plan)?;
         let decode_capability = match plan.decode {
             MediaImplementation::Software => InitCapability::SoftwareDecode,
@@ -724,8 +779,11 @@ impl PipelineFactory {
             MediaImplementation::Software => DecodeMode::Software,
             MediaImplementation::Hardware => DecodeMode::Vaapi,
         };
-        let decoder = Decoder::open_with(&args.input, decode_mode, vaapi.clone())
+        let mut decoder = Decoder::open_with(&args.input, decode_mode, vaapi.clone())
             .map_err(|error| InitializationFailure::new(decode_capability, error))?;
+        let audio_templates = decoder
+            .audio_output_templates(audio_plan)
+            .map_err(|error| InitializationFailure::new(InitCapability::Muxer, error))?;
 
         let vulkan = if plan.backend == ProcessingBackend::Vulkan {
             hooks.checkpoint(InitializationPoint::VulkanProcessorCreate, plan)?;
@@ -751,19 +809,23 @@ impl PipelineFactory {
             hooks.checkpoint(InitializationPoint::VaapiFramesPoolCreate, plan)?;
         }
         let encoder_result = if plan.hardware_output_interop {
-            Encoder::create_with_hardware_frames(
+            Encoder::create_with_hardware_frames_and_audio(
                 temporary,
                 info.frame_desc.clone(),
                 info.frame_rate,
                 vaapi.clone(),
+                audio_templates,
+                cancellation.clone(),
             )
         } else {
-            Encoder::create_with(
+            Encoder::create_with_audio(
                 temporary,
                 info.frame_desc.clone(),
                 info.frame_rate,
                 encode_mode,
                 vaapi.clone(),
+                audio_templates,
+                cancellation.clone(),
             )
         };
         let encoder = encoder_result.map_err(|error| {
@@ -774,6 +836,7 @@ impl PipelineFactory {
             };
             InitializationFailure::new(capability, error)
         })?;
+        decoder.attach_audio_passthrough(audio_plan, encoder.audio_packet_sender());
 
         let selection = match vulkan {
             Some(backend) if plan.hardware_output_interop && plan.hardware_input_interop => {
@@ -1008,6 +1071,10 @@ impl<S: FrameSource> FrameSource for LimitedSource<S> {
 
     fn take_timings(&mut self) -> SourceTimings {
         self.inner.take_timings()
+    }
+
+    fn finish(&mut self) -> asciiflow_core::Result<()> {
+        self.inner.finish()
     }
 }
 

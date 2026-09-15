@@ -1,3 +1,4 @@
+mod audio;
 mod backend;
 mod cancellation;
 mod config;
@@ -8,6 +9,7 @@ mod metrics;
 mod pipeline;
 mod planner;
 
+pub use audio::{AudioPlan, AudioPolicy, AudioStreamInfo, AudioStreamPlan, SkippedAudioStream};
 pub use backend::{
     AsciiBackend, BackendOutput, BackendTimings, FrameSink, FrameSource, SinkTimings, SourceTimings,
 };

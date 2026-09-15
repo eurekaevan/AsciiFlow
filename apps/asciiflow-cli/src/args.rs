@@ -1,4 +1,4 @@
-use asciiflow_core::{InteropRequest, MediaRequest, ProcessingBackend};
+use asciiflow_core::{AudioPolicy, InteropRequest, MediaRequest, ProcessingBackend};
 use clap::{Parser, ValueEnum};
 use std::path::PathBuf;
 
@@ -28,6 +28,23 @@ pub enum InteropArg {
     Auto,
     Off,
     On,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, ValueEnum)]
+pub enum AudioArg {
+    Auto,
+    Copy,
+    None,
+}
+
+impl From<AudioArg> for AudioPolicy {
+    fn from(value: AudioArg) -> Self {
+        match value {
+            AudioArg::Auto => Self::Auto,
+            AudioArg::Copy => Self::Copy,
+            AudioArg::None => Self::None,
+        }
+    }
 }
 
 impl From<MediaArg> for MediaRequest {
@@ -76,6 +93,8 @@ pub struct Args {
     pub decode: MediaArg,
     #[arg(long, value_enum, default_value = "auto")]
     pub encode: MediaArg,
+    #[arg(long, value_enum, default_value = "auto")]
+    pub audio: AudioArg,
     #[arg(long)]
     pub hw_device: Option<PathBuf>,
     #[arg(

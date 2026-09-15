@@ -125,6 +125,7 @@ name = "asciiflow-media"
 version = "2.0.0-alpha.0"
 dependencies = [
  "asciiflow-core",
+ "crossbeam-channel",
  "ffmpeg-sys-next",
  "libc",
  "tracing",

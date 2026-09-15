@@ -206,6 +206,15 @@ impl Pipeline {
                         }
                     }
                 }
+                if !cancel.is_cancelled()
+                    && let Err(error) = source.finish()
+                {
+                    record_failure(
+                        &failure,
+                        &cancel,
+                        Error::pipeline(PipelineStage::Drain, "finish media source", error),
+                    );
+                }
             });
 
             let cancel = cancellation.clone();
@@ -301,6 +310,8 @@ impl Pipeline {
                             let timings = sink.take_timings();
                             m.record(MetricStage::HardwareUpload, timings.hardware_upload);
                             m.record(MetricStage::EncodeSubmitReceive, timings.submit_receive);
+                            m.record(MetricStage::AudioPassthrough, timings.audio_passthrough);
+                            m.record_audio(timings.audio_packets, timings.audio_bytes);
                             m.record(MetricStage::PipelineLatency, frame.started_at.elapsed());
                             m.frame_completed();
                         }
@@ -329,6 +340,8 @@ impl Pipeline {
                         let timings = sink.take_timings();
                         m.record(MetricStage::HardwareUpload, timings.hardware_upload);
                         m.record(MetricStage::EncodeSubmitReceive, timings.submit_receive);
+                        m.record(MetricStage::AudioPassthrough, timings.audio_passthrough);
+                        m.record_audio(timings.audio_packets, timings.audio_bytes);
                     }
                 }
             });

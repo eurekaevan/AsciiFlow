@@ -1,5 +1,5 @@
 use asciiflow_core::{
-    AsciiConfig, CapabilitySnapshot, CapabilitySupport, FrameSource, InputRequirements,
+    AsciiConfig, AudioPlan, CapabilitySnapshot, CapabilitySupport, FrameSource,
     InteropCapabilities, MediaCapabilities, PipelinePlan, PipelineStage, ProcessingCapabilities,
 };
 use asciiflow_interop::DrmPrimeMapping;
@@ -256,7 +256,13 @@ pub fn probe(
     })
 }
 
-pub fn print(snapshot: &CapabilitySnapshot, requirements: &InputRequirements, duration: Duration) {
+pub fn print(
+    snapshot: &CapabilitySnapshot,
+    media: &MediaInfo,
+    audio: &AudioPlan,
+    duration: Duration,
+) {
+    let requirements = &media.requirements;
     println!("Input:");
     println!(
         "  codec/profile: {:?} / {}",
@@ -292,6 +298,53 @@ pub fn print(snapshot: &CapabilitySnapshot, requirements: &InputRequirements, du
         "Host to VAAPI NV12 upload",
         &snapshot.media.nv12_hardware_upload,
     );
+    println!("Audio:");
+    if media.audio_streams.is_empty() {
+        println!("  input streams: none");
+    }
+    for stream in &media.audio_streams {
+        println!(
+            "  stream #{}: {}{} (codec id {}) · {} Hz · {} ch · {} kb/s · time base {}/{} · start {} · language {} · default {} · forced {} · MP4 copy {}",
+            stream.input_index,
+            stream.codec,
+            stream
+                .profile
+                .as_deref()
+                .map(|profile| format!(" / {profile}"))
+                .unwrap_or_default(),
+            stream.codec_id,
+            stream
+                .sample_rate
+                .map(|value| value.to_string())
+                .unwrap_or_else(|| "unknown".into()),
+            stream
+                .channels
+                .map(|value| value.to_string())
+                .unwrap_or_else(|| "unknown".into()),
+            stream
+                .bit_rate
+                .map(|value| format!("{:.1}", value as f64 / 1000.0))
+                .unwrap_or_else(|| "unknown".into()),
+            stream.time_base.numerator,
+            stream.time_base.denominator,
+            stream
+                .start_time
+                .map(|value| value.to_string())
+                .unwrap_or_else(|| "unknown".into()),
+            stream.language.as_deref().unwrap_or("unknown"),
+            stream.default,
+            stream.forced,
+            if stream.mp4_compatible {
+                "supported"
+            } else {
+                "unsupported"
+            },
+        );
+        if let Some(reason) = &stream.compatibility_reason {
+            println!("    {reason}");
+        }
+    }
+    println!("  selected for passthrough: {}", audio.selected.len());
     println!("Vulkan:");
     print_fact("CPU processing", &snapshot.processing.cpu);
     print_fact("processing", &snapshot.processing.vulkan);
@@ -324,6 +377,28 @@ pub fn print_plan(plan: &PipelinePlan) {
     }
 }
 
+pub fn print_audio_plan(plan: &AudioPlan) {
+    println!("Audio plan: {:?}", plan.policy);
+    if plan.selected.is_empty() {
+        println!("  no audio streams will be copied");
+    }
+    for stream in &plan.selected {
+        println!(
+            "  input stream #{}: {} · language {} · default {} → compressed packet copy",
+            stream.input_index,
+            stream.codec,
+            stream.language.as_deref().unwrap_or("unknown"),
+            stream.default
+        );
+    }
+    for stream in &plan.skipped {
+        println!(
+            "  skipped input stream #{} ({}): {}",
+            stream.input_index, stream.codec, stream.reason
+        );
+    }
+}
+
 fn print_fact(label: &str, fact: &CapabilitySupport) {
     match fact {
         CapabilitySupport::Supported => println!("  {label}: supported"),
@@ -336,8 +411,8 @@ fn print_fact(label: &str, fact: &CapabilitySupport) {
 mod tests {
     use super::*;
     use asciiflow_core::{
-        ChromaSubsampling, ColorSpace, InteropRequest, MediaRequest, PipelinePlanner,
-        PipelinePolicy, ProcessingBackend, Rational, VideoCodec, VulkanDeviceKind,
+        ChromaSubsampling, ColorSpace, InputRequirements, InteropRequest, MediaRequest,
+        PipelinePlanner, PipelinePolicy, ProcessingBackend, Rational, VideoCodec, VulkanDeviceKind,
     };
 
     fn supported() -> CapabilitySupport {

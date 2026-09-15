@@ -1,6 +1,6 @@
 # AsciiFlow v2 architecture
 
-This document defines the Rust baseline through Stage 4.1: a permanent CPU
+This document defines the Rust baseline through Stage 4.2: a permanent CPU
 reference backend, a Vulkan 1.3 compute backend, optional Linux VAAPI media,
 and qualified Intel DMA-BUF bridges in both pixel directions. Stage 3A
 eliminates decode-side Host copies; Stage 3B fills encoder-owned VAAPI
@@ -8,6 +8,8 @@ surfaces directly from Vulkan. Stage 4.0 adds a runtime capability graph and
 automatic selection without changing the portable Host reference paths. Stage
 4.1 adds structured failures, bounded initialization replan, cooperative
 cancellation, transactional output, and failure-path resource guarantees.
+Stage 4.2 adds a separate compressed-audio passthrough plan and one bounded,
+single-owner interleaved mux path; it does not change video planning or pixels.
 
 ## Workspace and dependency direction
 
@@ -70,6 +72,12 @@ longer owns it. The Core memory-domain enum intentionally contains only `Host`.
 The planner's `FrameDomain` is a separate, non-owning vocabulary for describing
 hardware transitions; it does not make native hardware frames part of the Core
 storage contract.
+
+Compressed audio never becomes a Core frame. Core contains only portable audio
+stream facts, policy, plan, and counters. The media crate retains native codec
+parameters, moves reference-counted `AVPacket` ownership out of the demux
+scratch packet, and sends selected packets through a bounded queue to the mux
+owner.
 Stage 2 downloads/uploads within `asciiflow-media`. Stage 3A uses a specialized
 Media/Interop pipeline carrying `VaapiDecodedFrame` outside Core, then returns
 the processed result through the unchanged Core Host NV12 contract.
@@ -106,6 +114,11 @@ Stage 4.0 keeps four concepts separate:
 * The CLI composition root is the execution factory. Only after a plan is
   selected does it construct concrete FFmpeg, Vulkan, CPU, and interop
   resources. The planner itself creates no native resources.
+
+`AudioPolicy` and `AudioPlan` are deliberately parallel to, not embedded in,
+the video candidate graph. Container compatibility is queried from FFmpeg's
+MP4 muxer. Therefore choosing, rejecting, or disabling audio cannot change the
+selected `PixelPath`, decoder, processor, interop mode, or encoder.
 
 The normal startup flow is:
 
@@ -374,14 +387,20 @@ that distinction explicit.
   the observed single-object R8+GR88 iHD export with a known, importable
   modifier. P010/HDR, 4:4:4, multi-object, unknown-modifier, and incompatible
   layer topologies are rejected rather than copied or silently reduced.
-- Video only. Audio is intentionally omitted rather than partially copied.
+- Compatible compressed audio streams can be copied into MP4. One mux worker
+  owns the output `AVFormatContext` and accepts both encoded video packets and
+  passthrough audio packets through a bounded queue. It rescales timestamps
+  with each explicit input/output stream mapping and performs every
+  `av_interleaved_write_frame` call. Audio is never decoded or transcoded.
 - Host NV12 remains the portable Core/reference contract. Full interop and
   output-only interop bypass some Host materialization without changing that
   contract or making native handles part of Core.
 - The built-in 8x8 atlas is the only font implementation.
 - Source presentation timestamps are represented on decoded frames, but Stage
   0 encoding uses an ordered constant-frame-rate sequence based on the source
-  frame-rate rational.
+  frame-rate rational. With audio selected, the mux layer preserves the first
+  video's timestamp origin and rejects source timestamps that deviate from
+  that CFR sequence. See [audio.md](audio.md) for timing and frame-limit details.
 - Output commit uses the host's rename semantics. Fedora/Linux replaces an
   existing destination atomically; cross-platform replacement semantics need a
   dedicated Stage after the Rust baseline.

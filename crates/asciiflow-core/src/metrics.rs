@@ -46,6 +46,7 @@ pub enum MetricStage {
     HostInvalidate,
     BackendWall,
     PipelineLatency,
+    AudioPassthrough,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -97,6 +98,9 @@ pub struct MetricsSnapshot {
     pub host_invalidate: Duration,
     pub backend_wall: Duration,
     pub pipeline_latency: Duration,
+    pub audio_passthrough: Duration,
+    pub audio_packets: u64,
+    pub audio_bytes: u64,
     pub total: Duration,
 }
 
@@ -151,10 +155,16 @@ impl Metrics {
             MetricStage::HostInvalidate => value.host_invalidate += elapsed,
             MetricStage::BackendWall => value.backend_wall += elapsed,
             MetricStage::PipelineLatency => value.pipeline_latency += elapsed,
+            MetricStage::AudioPassthrough => value.audio_passthrough += elapsed,
         }
     }
     pub fn frame_completed(&self) {
         self.inner.lock().expect("metrics lock poisoned").frames += 1;
+    }
+    pub fn record_audio(&self, packets: u64, bytes: u64) {
+        let mut value = self.inner.lock().expect("metrics lock poisoned");
+        value.audio_packets += packets;
+        value.audio_bytes += bytes;
     }
     pub fn set_total(&self, total: Duration) {
         self.inner.lock().expect("metrics lock poisoned").total = total;

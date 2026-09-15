@@ -20,6 +20,14 @@ pub fn print_summary(metrics: &MetricsSnapshot) {
         MetricsSnapshot::ms_per_frame(metrics.pipeline_latency, metrics.frames),
         metrics.fps(),
     );
+    if metrics.audio_packets != 0 {
+        println!(
+            "Audio passthrough: {} packets · {} bytes · {:.3} ms mux CPU wall (not part of video FPS)",
+            metrics.audio_packets,
+            metrics.audio_bytes,
+            metrics.audio_passthrough.as_secs_f64() * 1e3,
+        );
+    }
     if !(metrics.decode_packet_submit + metrics.decode_frame_receive + metrics.hardware_download)
         .is_zero()
     {
