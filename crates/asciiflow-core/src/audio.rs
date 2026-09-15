@@ -5,6 +5,105 @@ pub enum AudioPolicy {
     None,
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn stream(index: usize, compatible: bool, language: &str) -> AudioStreamInfo {
+        AudioStreamInfo {
+            input_index: index,
+            codec_id: 0,
+            codec: if compatible { "aac" } else { "unsupported" }.into(),
+            profile: None,
+            time_base: crate::Rational::new(1, 48000).unwrap(),
+            sample_rate: Some(48000),
+            channels: Some(1),
+            bit_rate: None,
+            language: Some(language.into()),
+            start_time: Some(0),
+            default: index == 1,
+            forced: false,
+            mp4_compatible: compatible,
+            compatibility_reason: (!compatible).then(|| "container incompatible".into()),
+        }
+    }
+
+    #[test]
+    fn audio_copy_preserves_relative_order_language_and_default() {
+        let input = [stream(1, true, "jpn"), stream(4, true, "eng")];
+        let plan = AudioPlan::select(AudioPolicy::Copy, &input).unwrap();
+        assert_eq!(
+            plan.selected
+                .iter()
+                .map(|s| s.input_index)
+                .collect::<Vec<_>>(),
+            [1, 4]
+        );
+        assert_eq!(plan.selected[0].language.as_deref(), Some("jpn"));
+        assert_eq!(plan.selected[1].language.as_deref(), Some("eng"));
+        assert!(plan.selected[0].default);
+        assert!(!plan.selected[1].default);
+        assert!(plan.skipped.is_empty());
+    }
+
+    #[test]
+    fn audio_auto_selects_only_compatible_tracks_with_skip_identity() {
+        let plan = AudioPlan::select(
+            AudioPolicy::Auto,
+            &[stream(1, true, "jpn"), stream(3, false, "eng")],
+        )
+        .unwrap();
+        assert_eq!(plan.selected.len(), 1);
+        assert_eq!(plan.selected[0].input_index, 1);
+        assert_eq!(plan.skipped.len(), 1);
+        assert_eq!(plan.skipped[0].input_index, 3);
+        assert_eq!(plan.skipped[0].codec, "unsupported");
+        assert_eq!(plan.skipped[0].reason, "container incompatible");
+    }
+
+    #[test]
+    fn audio_copy_rejects_any_incompatible_track() {
+        let error = AudioPlan::select(
+            AudioPolicy::Copy,
+            &[stream(1, true, "jpn"), stream(3, false, "eng")],
+        )
+        .unwrap_err();
+        let message = error.to_string();
+        assert!(message.contains("stream #3"));
+        assert!(message.contains("container incompatible"));
+    }
+
+    #[test]
+    fn audio_none_disables_even_compatible_tracks() {
+        let plan = AudioPlan::select(AudioPolicy::None, &[stream(1, true, "jpn")]).unwrap();
+        assert!(plan.selected.is_empty());
+        assert_eq!(plan.skipped.len(), 1);
+        assert!(plan.skipped[0].reason.contains("--audio none"));
+    }
+
+    #[test]
+    fn audio_without_input_tracks_succeeds_for_every_policy() {
+        for policy in [AudioPolicy::Auto, AudioPolicy::Copy, AudioPolicy::None] {
+            let plan = AudioPlan::select(policy, &[]).unwrap();
+            assert!(plan.selected.is_empty());
+            assert!(plan.skipped.is_empty());
+        }
+    }
+
+    #[test]
+    fn audio_auto_and_copy_have_identical_compatible_selection() {
+        let input = [stream(1, true, "jpn"), stream(4, true, "eng")];
+        assert_eq!(
+            AudioPlan::select(AudioPolicy::Auto, &input)
+                .unwrap()
+                .selected,
+            AudioPlan::select(AudioPolicy::Copy, &input)
+                .unwrap()
+                .selected
+        );
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct AudioStreamInfo {
     pub input_index: usize,

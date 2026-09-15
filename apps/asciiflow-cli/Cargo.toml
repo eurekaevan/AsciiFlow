@@ -10,6 +10,7 @@ name = "asciiflow"
 path = "src/main.rs"
 
 [dependencies]
+asciiflow-font = { path = "../../crates/asciiflow-font" }
 anyhow.workspace = true
 asciiflow-core = { path = "../../crates/asciiflow-core" }
 asciiflow-cpu = { path = "../../crates/asciiflow-cpu" }
@@ -20,3 +21,7 @@ clap.workspace = true
 ctrlc.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
+
+[dev-dependencies]
+ffmpeg-sys-next.workspace = true
+libc = "0.2"

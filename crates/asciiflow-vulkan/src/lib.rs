@@ -45,6 +45,58 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "requires Vulkan; lavapipe is sufficient for exact font parity"]
+    fn freetype_cpu_vulkan_and_two_slot_parity() {
+        let font = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../tests/fixtures/fonts/Inconsolata-Regular.ttf");
+        let mut config = AsciiConfig {
+            grid_width: 4,
+            grid_height: Some(3),
+            ..AsciiConfig::default()
+        };
+        let (atlas, _) =
+            asciiflow_font::build_font_atlas(&font, 0, &config.charset, 16, 16).unwrap();
+        for color in [false, true] {
+            config.color = color;
+            let input = patterned_frame();
+            let expected = CpuAsciiBackend::with_atlas(atlas.clone(), &config)
+                .process(input.clone(), &config)
+                .unwrap();
+            let mut gpu = VulkanAsciiBackend::new()
+                .unwrap()
+                .with_atlas(atlas.clone(), &config)
+                .unwrap();
+            let actual = gpu.process(input.clone(), &config).unwrap();
+            assert_eq!(expected.frame, actual.frame);
+            assert_eq!(gpu.validation_error_count(), 0);
+            let mut changed = config.clone();
+            changed.charset = config.charset.chars().rev().collect();
+            assert!(
+                gpu.prepare(input.desc(), &changed)
+                    .unwrap_err()
+                    .to_string()
+                    .contains("identity")
+            );
+            let mut slots =
+                PipelinedVulkanAsciiBackend::new(gpu, input.desc().clone(), config.clone())
+                    .unwrap();
+            let mut results = Vec::new();
+            for _ in 0..3 {
+                if let Some(output) = slots.submit(input.clone(), &config).unwrap() {
+                    results.push(output);
+                }
+            }
+            while let Some(output) = slots.drain().unwrap() {
+                results.push(output);
+            }
+            assert_eq!(results.len(), 3);
+            for output in results {
+                assert_eq!(expected.frame, output.frame);
+            }
+        }
+    }
+
+    #[test]
     #[ignore = "requires a Vulkan 1.3 compute device; set ASCIIFLOW_VULKAN_ALLOW_CPU=1 for lavapipe"]
     fn initializes_compute_device() {
         let devices = enumerate_devices().unwrap();

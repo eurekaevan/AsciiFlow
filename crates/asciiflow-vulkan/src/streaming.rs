@@ -145,6 +145,7 @@ impl PipelinedVulkanAsciiBackend {
     ) -> Result<Self> {
         let device_info = first_slot.device_info().clone();
         let context = first_slot.shared_context();
+        let second_slot = first_slot.try_fork()?;
         let mut slots = Vec::with_capacity(SLOT_COUNT);
         slots.push(WorkerSlot::spawn(
             Some(first_slot),
@@ -153,7 +154,7 @@ impl PipelinedVulkanAsciiBackend {
             config.clone(),
         )?);
         slots.push(WorkerSlot::spawn(
-            None,
+            Some(second_slot),
             context.clone(),
             desc.clone(),
             config.clone(),

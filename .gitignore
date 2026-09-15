@@ -32,6 +32,11 @@ scratch/
 *.bmp
 *.webp
 
+# Tiny self-generated regression media, with generator/version/checksums.
+!tests/fixtures/media/*.mp4
+!tests/fixtures/media/*.mkv
+!crates/asciiflow-media/tests/fixtures/*.mp4
+
 # -------------------------------------------------------------------------
 # 3. .NET 编译及构建非源码文件 (Build & compilation artifacts)
 # -------------------------------------------------------------------------

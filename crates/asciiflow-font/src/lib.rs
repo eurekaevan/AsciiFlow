@@ -1,8 +1,18 @@
 use font8x8::{BASIC_FONTS, UnicodeFonts};
 use thiserror::Error;
+mod scalable;
+pub use scalable::{FontDiagnostics, build_font_atlas};
 
 #[derive(Debug, Error)]
 pub enum FontError {
+    #[error("font {path}: {operation}: {detail}")]
+    Font {
+        path: String,
+        operation: &'static str,
+        detail: String,
+    },
+    #[error("invalid atlas dimensions or atlas exceeds 16 MiB")]
+    AtlasTooLarge,
     #[error("the built-in font does not contain glyph {0:?}")]
     MissingGlyph(char),
     #[error("only the built-in font is available in Stage 0; got {0:?}")]
@@ -17,11 +27,41 @@ pub struct GlyphAtlas {
 }
 
 impl GlyphAtlas {
+    /// Glyph-major, tightly packed row-major R8 tiles. Duplicate identities remain separate.
+    pub fn from_r8(
+        width: u32,
+        height: u32,
+        count: usize,
+        pixels: Vec<u8>,
+    ) -> Result<Self, FontError> {
+        let length = Self::checked_len(width, height, count)?;
+        if pixels.len() != length {
+            return Err(FontError::AtlasTooLarge);
+        }
+        Ok(Self {
+            width,
+            height,
+            glyphs: pixels,
+        })
+    }
+    pub(crate) fn checked_len(width: u32, height: u32, count: usize) -> Result<usize, FontError> {
+        let length = (width as usize)
+            .checked_mul(height as usize)
+            .and_then(|n| n.checked_mul(count));
+        match length {
+            Some(n) if width > 0 && height > 0 && count > 0 && n <= 16 * 1024 * 1024 => Ok(n),
+            _ => Err(FontError::AtlasTooLarge),
+        }
+    }
     pub fn builtin(font: &str, charset: &str) -> Result<Self, FontError> {
         if font != "builtin-8x8" {
             return Err(FontError::UnsupportedFont(font.into()));
         }
-        let mut glyphs = Vec::with_capacity(charset.chars().count() * 64);
+        let length = Self::checked_len(8, 8, charset.chars().count())?;
+        let mut glyphs = Vec::new();
+        glyphs
+            .try_reserve_exact(length)
+            .map_err(|_| FontError::AtlasTooLarge)?;
         for character in charset.chars() {
             let bitmap = BASIC_FONTS
                 .get(character)

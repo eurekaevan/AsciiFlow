@@ -176,6 +176,40 @@ fn run(args: Args, cancellation: CancellationToken) -> Result<()> {
         .context("output path is required unless --capabilities is used")?;
     let info = probe.media_info;
     ensure_not_cancelled(&cancellation)?;
+    let atlas = if args.font == "builtin-8x8" {
+        if args.font_face_index != 0 {
+            bail!("--font-face-index requires a font file");
+        }
+        asciiflow_font::GlyphAtlas::builtin(&args.font, &config.charset)?
+    } else {
+        let (columns, rows) =
+            config.resolved_grid(info.frame_desc.width, info.frame_desc.height)?;
+        let (atlas, diagnostics) = asciiflow_font::build_font_atlas(
+            Path::new(&args.font),
+            args.font_face_index as isize,
+            &config.charset,
+            info.frame_desc.width.div_ceil(columns),
+            info.frame_desc.height.div_ceil(rows),
+        )?;
+        if args.verbose {
+            println!(
+                "Font: FreeType {:?} · {} {} · face {} · {} glyphs · {}x{} R8 tiles · {} bytes · ppem {} · baseline {} · load {:.3} ms · build {:.3} ms",
+                diagnostics.version,
+                diagnostics.family,
+                diagnostics.style,
+                args.font_face_index,
+                atlas.glyph_count(),
+                atlas.width(),
+                atlas.height(),
+                atlas.as_r8_slice().len(),
+                diagnostics.pixel_size,
+                diagnostics.baseline,
+                diagnostics.load_wall.as_secs_f64() * 1000.0,
+                diagnostics.build_wall.as_secs_f64() * 1000.0
+            );
+        }
+        atlas
+    };
     let temporary = temporary_output_path(output)?;
     prepare_temporary_output(&temporary)?;
     let mut temporary_guard = TemporaryOutputGuard::new(temporary.clone());
@@ -188,6 +222,7 @@ fn run(args: Args, cancellation: CancellationToken) -> Result<()> {
             PipelineFactory::build(
                 plan,
                 FactoryContext {
+                    atlas: &atlas,
                     audio_plan: &audio_plan,
                     args: &args,
                     info: &info,
@@ -738,6 +773,7 @@ struct PipelineFactory;
 
 #[derive(Clone, Copy)]
 struct FactoryContext<'a> {
+    atlas: &'a asciiflow_font::GlyphAtlas,
     audio_plan: &'a AudioPlan,
     args: &'a Args,
     info: &'a MediaInfo,
@@ -762,6 +798,7 @@ impl PipelineFactory {
         hooks: &mut impl FactoryHooks,
     ) -> std::result::Result<BuiltExecution, InitializationFailure> {
         let FactoryContext {
+            atlas,
             audio_plan,
             args,
             info,
@@ -789,6 +826,11 @@ impl PipelineFactory {
             hooks.checkpoint(InitializationPoint::VulkanProcessorCreate, plan)?;
             Some(
                 VulkanAsciiBackend::new()
+                    .and_then(|backend| backend.with_atlas(atlas.clone(), config))
+                    .and_then(|mut backend| {
+                        backend.prepare(&info.frame_desc, config)?;
+                        Ok(backend)
+                    })
                     .map_err(|error| InitializationFailure::new(InitCapability::Vulkan, error))?,
             )
         } else {
@@ -963,7 +1005,10 @@ impl PipelineFactory {
                 }
             },
             None => BackendSelection {
-                processor: SelectedProcessor::Host(Box::new(CpuAsciiBackend::new())),
+                processor: SelectedProcessor::Host(Box::new(CpuAsciiBackend::with_atlas(
+                    atlas.clone(),
+                    config,
+                ))),
                 device_info: None,
                 memory_allocations: Vec::new(),
                 mapping_strategy: None,

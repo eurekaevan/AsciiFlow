@@ -144,6 +144,19 @@ not a controlled rerun of the Stage 4.1 benchmark. The copied track contains
 6.013968 seconds of audio alongside 6 seconds of video. Audio mux submission
 wall time was 0.253–0.321 ms for the entire run.
 
+## Automated regression coverage (Stage 4.2.1)
+
+Hardware-independent tests now lock auto/copy/none policy, strict incompatibility,
+multi-track ordering, language/default disposition, exact compressed packet
+payloads, timestamps within one output tick, relative A/V offset, unequal EOF,
+short video, complete audio under a video frame limit, ignored subtitle streams,
+and no-video/discontinuous-timeline rejection. Native tests cover missing and
+negative timestamps, bounded backpressure/cancellation, and audio mux root-cause
+preservation. Linux process tests cover SIGINT status 130 and safe existing-output
+preservation after cancellation or buffered output failure. Output AAC and video
+are decoded by test oracles; production remains compressed audio passthrough.
+See `testing.md` for fixtures, normal tests, stress, and hardware limitations.
+
 The remuxed input's extra 301st video frame had a discontinuous timestamp;
 the final implementation rejected it explicitly. The comparison above uses
 the first 300 consecutive video frames and still drains all selected audio.

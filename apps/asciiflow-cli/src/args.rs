@@ -119,6 +119,8 @@ pub struct Args {
     pub charset: String,
     #[arg(long, default_value = "builtin-8x8")]
     pub font: String,
+    #[arg(long, default_value_t = 0, value_parser = clap::value_parser!(u32).range(0..=i32::MAX as i64))]
+    pub font_face_index: u32,
     #[arg(long,default_value_t=true,action=clap::ArgAction::Set)]
     pub color: bool,
     #[arg(long, default_value_t = 0)]

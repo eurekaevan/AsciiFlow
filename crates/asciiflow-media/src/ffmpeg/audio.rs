@@ -167,6 +167,8 @@ fn dictionary_value(dictionary: *mut ffi::AVDictionary, key: &str) -> Option<Str
 }
 
 pub(crate) enum MuxMessage {
+    #[cfg(test)]
+    FailAudioAfter(u64),
     Packet {
         packet: Packet,
         input_index: usize,
@@ -297,4 +299,94 @@ pub(crate) fn selected_templates(
                 .output_template()
         })
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crossbeam_channel::bounded;
+
+    fn packet(pts: i64, dts: i64) -> Packet {
+        let mut packet = Packet::new().unwrap();
+        unsafe {
+            (*packet.as_mut_ptr()).pts = pts;
+            (*packet.as_mut_ptr()).dts = dts;
+        }
+        packet
+    }
+
+    #[test]
+    fn missing_audio_timestamps_fail_without_guessing_or_enqueueing() {
+        let (tx, rx) = bounded(1);
+        let sender =
+            AudioPacketSender::new(tx, CancellationToken::new(), Arc::new(Mutex::new(None)));
+        for (pts, dts) in [(ffi::AV_NOPTS_VALUE, 0), (0, ffi::AV_NOPTS_VALUE)] {
+            let error = sender
+                .send(packet(pts, dts), 7, ffi::AVRational { num: 1, den: 48000 })
+                .unwrap_err();
+            assert_eq!(error.stage(), Some(PipelineStage::MuxRuntime));
+            assert!(error.to_string().contains("stream #7"));
+            assert!(rx.is_empty());
+        }
+    }
+
+    #[test]
+    fn negative_audio_timestamps_are_not_clamped() {
+        let (tx, rx) = bounded(1);
+        let sender =
+            AudioPacketSender::new(tx, CancellationToken::new(), Arc::new(Mutex::new(None)));
+        sender
+            .send(
+                packet(-1024, -1024),
+                1,
+                ffi::AVRational { num: 1, den: 48000 },
+            )
+            .unwrap();
+        let MuxMessage::Packet { mut packet, .. } = rx.recv().unwrap() else {
+            panic!("expected packet")
+        };
+        unsafe {
+            assert_eq!((*packet.as_mut_ptr()).pts, -1024);
+            assert_eq!((*packet.as_mut_ptr()).dts, -1024);
+        }
+    }
+
+    #[test]
+    fn audio_queue_backpressure_is_bounded_and_cancellable() {
+        let (tx, rx) = bounded(2);
+        let observe = tx.clone();
+        let cancellation = CancellationToken::new();
+        let sender = AudioPacketSender::new(tx, cancellation.clone(), Arc::new(Mutex::new(None)));
+        let worker = std::thread::spawn(move || {
+            for index in 0..10000 {
+                sender.send(
+                    packet(index, index),
+                    1,
+                    ffi::AVRational { num: 1, den: 48000 },
+                )?;
+            }
+            Ok::<_, Error>(())
+        });
+        let deadline = std::time::Instant::now() + Duration::from_secs(2);
+        while observe.len() < 2 && std::time::Instant::now() < deadline {
+            std::thread::yield_now();
+        }
+        let high_water = observe.len();
+        cancellation.cancel();
+        assert!(worker.join().unwrap().unwrap_err().is_cancelled());
+        assert_eq!(high_water, observe.capacity().unwrap());
+        assert_eq!(rx.len(), 2);
+    }
+
+    #[test]
+    fn audio_rescale_preserves_media_time_within_destination_tick() {
+        let mut packet = packet(1234567, 1234567);
+        let source = ffi::AVRational { num: 1, den: 90000 };
+        let destination = ffi::AVRational { num: 1, den: 48000 };
+        unsafe {
+            ffi::av_packet_rescale_ts(packet.as_mut_ptr(), source, destination);
+            let scaled = (*packet.as_mut_ptr()).pts;
+            assert!((scaled as i128 * 90000 - 1234567_i128 * 48000).abs() <= 90000);
+        }
+    }
 }

@@ -853,6 +853,8 @@ fn run_mux_worker(
     let mut video_offset = 0_i64;
     let mut buffered_packets = 0_u32;
     let mut buffered_bytes = 0_u64;
+    #[cfg(test)]
+    let mut fail_audio_after: Option<u64> = None;
     loop {
         if stop.is_cancelled() || cancellation.is_cancelled() {
             return Err(Error::Cancelled);
@@ -869,12 +871,25 @@ fn run_mux_worker(
             }
         };
         match message {
+            #[cfg(test)]
+            MuxMessage::FailAudioAfter(count) => fail_audio_after = Some(count),
             MuxMessage::Packet {
                 mut packet,
                 input_index,
                 input_time_base,
                 audio,
             } => {
+                #[cfg(test)]
+                if audio && let Some(remaining) = &mut fail_audio_after {
+                    if *remaining == 0 {
+                        return Err(Error::pipeline_message(
+                            PipelineStage::MuxRuntime,
+                            "write audio packet",
+                            "injected audio mux failure",
+                        ));
+                    }
+                    *remaining -= 1;
+                }
                 let (output_index, output_time_base) = if audio {
                     let route = output
                         .audio_routes
@@ -1048,11 +1063,80 @@ impl CodecGuard {
         self.0.take().expect("codec guard already empty")
     }
 }
+
 impl Drop for CodecGuard {
     fn drop(&mut self) {
         if let Some(pointer) = self.0 {
             let mut p = pointer.as_ptr();
             unsafe { ffi::avcodec_free_context(&mut p) }
         }
+    }
+}
+
+#[cfg(test)]
+mod audio_regression_tests {
+    use super::*;
+    use crate::Decoder;
+    use asciiflow_core::{
+        AsciiBackend, AsciiConfig, AudioPlan, AudioPolicy, BackendOutput, BackendTimings, Pipeline,
+    };
+    struct Identity;
+    impl AsciiBackend for Identity {
+        fn process(&mut self, frame: VideoFrame, _: &AsciiConfig) -> Result<BackendOutput> {
+            Ok(BackendOutput {
+                frame,
+                timings: BackendTimings::default(),
+            })
+        }
+    }
+    struct OutputPath(std::path::PathBuf);
+    impl Drop for OutputPath {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_file(&self.0);
+        }
+    }
+
+    #[test]
+    fn injected_audio_mux_failure_is_the_pipeline_root_cause() {
+        let input =
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../tests/fixtures/media/single.mp4");
+        let output = OutputPath(std::env::temp_dir().join(format!(
+            "asciiflow-audio-mux-failure-{}.mp4",
+            std::process::id()
+        )));
+        let mut decoder = Decoder::open(input).unwrap();
+        let plan = AudioPlan::select(AudioPolicy::Copy, &decoder.info().audio_streams).unwrap();
+        let cancellation = CancellationToken::new();
+        let encoder = Encoder::create_with_audio(
+            &output.0,
+            decoder.info().frame_desc.clone(),
+            decoder.info().frame_rate,
+            EncodeMode::Software,
+            VaapiOptions::default(),
+            decoder.audio_output_templates(&plan).unwrap(),
+            cancellation.clone(),
+        )
+        .unwrap();
+        encoder
+            .send_mux_message(MuxMessage::FailAudioAfter(2))
+            .unwrap();
+        decoder.attach_audio_passthrough(&plan, encoder.audio_packet_sender());
+        let error = Pipeline::new(2)
+            .unwrap()
+            .run_with_cancellation(
+                decoder,
+                Identity,
+                encoder,
+                AsciiConfig::default(),
+                cancellation.clone(),
+            )
+            .unwrap_err();
+        assert_eq!(error.stage(), Some(PipelineStage::MuxRuntime));
+        assert!(
+            error.to_string().contains("injected audio mux failure"),
+            "{error}"
+        );
+        assert!(!error.to_string().contains("disconnected"));
+        assert!(cancellation.is_cancelled());
     }
 }

@@ -6,6 +6,6 @@ license.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+freetype-rs = "=0.38.0"
 font8x8.workspace = true
 thiserror.workspace = true
-

@@ -78,10 +78,22 @@ back; `auto` is the only mode allowed to degrade. `--verbose` prints the
 selected video and audio plans and startup probe/planning timings;
 `--capabilities` prints the
 facts and reasons; `--explain-plan` also lists rejected candidates and exits
-before creating an output file. Audio transcoding, VP9/WebM, FreeType fonts,
+before creating an output file. Audio transcoding, VP9/WebM,
 cross-API asynchronous fences, and direct external-image shaders remain out of
 scope. GPU mapping uses two bounded in-flight slots by default; CPU mapping is
 an explicit hybrid diagnostic and remains single-slot.
+
+Use a scalable monospaced font file with `--font` (optional collection index:
+`--font-face-index 0`):
+
+```bash
+asciiflow input.mp4 output.mp4 --font /path/to/mono.ttf
+```
+
+Without `--font`, the portable built-in 8×8 font remains unchanged. Explicit
+invalid or proportional fonts fail; there is no font fallback or shaping.
+Builds require system FreeType development files via pkg-config. See
+[fonts.md](docs/fonts.md) for geometry and supported-font details.
 
 Audio passthrough currently requires video timestamps compatible with the
 existing CFR output. `--max-frames` limits video only; copied audio retains its

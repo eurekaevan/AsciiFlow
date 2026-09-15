@@ -11,13 +11,22 @@ pub use mapper::{AsciiCell, CellGrid, Nv12Mapper};
 pub use renderer::Nv12Renderer;
 
 pub struct CpuAsciiBackend {
+    supplied: bool,
     atlas_key: Option<(String, String)>,
     atlas: Option<GlyphAtlas>,
 }
 
 impl CpuAsciiBackend {
+    pub fn with_atlas(atlas: GlyphAtlas, config: &AsciiConfig) -> Self {
+        Self {
+            supplied: true,
+            atlas_key: Some((config.font.clone(), config.charset.clone())),
+            atlas: Some(atlas),
+        }
+    }
     pub fn new() -> Self {
         Self {
+            supplied: false,
             atlas_key: None,
             atlas: None,
         }
@@ -35,6 +44,11 @@ impl AsciiBackend for CpuAsciiBackend {
         let (grid_width, grid_height) =
             config.resolved_grid(input.desc().width, input.desc().height)?;
         let key = (config.font.clone(), config.charset.clone());
+        if self.supplied && self.atlas_key.as_ref() != Some(&key) {
+            return Err(Error::Cpu(
+                "supplied atlas font/ramp identity changed".into(),
+            ));
+        }
         if self.atlas_key.as_ref() != Some(&key) {
             self.atlas = Some(
                 GlyphAtlas::builtin(&config.font, &config.charset)
@@ -43,6 +57,15 @@ impl AsciiBackend for CpuAsciiBackend {
             self.atlas_key = Some(key);
         }
         let mapping_started = Instant::now();
+        if self
+            .atlas
+            .as_ref()
+            .is_none_or(|atlas| atlas.glyph_count() != config.charset.chars().count())
+        {
+            return Err(Error::Cpu(
+                "atlas glyph count does not match the ramp".into(),
+            ));
+        }
         let grid = Nv12Mapper::new(&config.charset)?.map(&input, grid_width, grid_height)?;
         let mapping_time = mapping_started.elapsed();
         let render_started = Instant::now();

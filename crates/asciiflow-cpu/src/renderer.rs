@@ -20,6 +20,13 @@ impl<'a> Nv12Renderer<'a> {
         if grid.cells.len() != grid.width as usize * grid.height as usize {
             return Err(Error::Cpu("cell grid storage is incomplete".into()));
         }
+        if grid
+            .cells
+            .iter()
+            .any(|cell| cell.glyph as usize >= self.atlas.glyph_count())
+        {
+            return Err(Error::Cpu("cell glyph index exceeds atlas".into()));
+        }
         let mut storage = HostFrame::new_zeroed(&desc);
         let (y_plane, uv_plane) = storage.planes_mut(&desc);
         y_plane.fill(16);
@@ -84,6 +91,30 @@ mod tests {
     use super::*;
     use crate::AsciiCell;
     use asciiflow_core::ColorSpace;
+    #[test]
+    fn out_of_range_glyph_is_an_error_not_a_panic() {
+        let atlas = GlyphAtlas::builtin("builtin-8x8", " ").unwrap();
+        let grid = CellGrid {
+            width: 1,
+            height: 1,
+            cells: vec![AsciiCell {
+                glyph: 1,
+                y: 100,
+                u: 128,
+                v: 128,
+            }],
+        };
+        assert!(
+            Nv12Renderer::new(&atlas)
+                .render(
+                    &grid,
+                    FrameDesc::host_nv12(8, 8, ColorSpace::default()).unwrap(),
+                    None,
+                    true
+                )
+                .is_err()
+        );
+    }
     #[test]
     fn rendering_is_deterministic_nv12() {
         let atlas = GlyphAtlas::builtin("builtin-8x8", "@ ").unwrap();

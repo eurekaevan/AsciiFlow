@@ -155,6 +155,7 @@ fn mapping_u32_is_safe(
 }
 
 pub struct VulkanAsciiBackend {
+    supplied_atlas: Option<(GlyphAtlas, String, String)>,
     context: Arc<VulkanContext>,
     allocator: Option<Allocator>,
     resources: Option<Resources>,
@@ -177,6 +178,7 @@ impl VulkanAsciiBackend {
         })
         .map_err(|e| Error::Vulkan(format!("failed to create Vulkan memory allocator: {e}")))?;
         Ok(Self {
+            supplied_atlas: None,
             context,
             allocator: Some(allocator),
             resources: None,
@@ -186,7 +188,24 @@ impl VulkanAsciiBackend {
         self.context.clone()
     }
     pub fn try_fork(&self) -> Result<Self> {
-        Self::from_context(self.context.clone())
+        let mut fork = Self::from_context(self.context.clone())?;
+        fork.supplied_atlas = self.supplied_atlas.clone();
+        Ok(fork)
+    }
+    /// Supply initialization-owned pixels before allocating frame resources.
+    pub fn with_atlas(mut self, atlas: GlyphAtlas, config: &AsciiConfig) -> Result<Self> {
+        if self.resources.is_some() {
+            return Err(Error::Vulkan(
+                "atlas must be supplied before prepare".into(),
+            ));
+        }
+        if atlas.glyph_count() != config.charset.chars().count() {
+            return Err(Error::Vulkan(
+                "atlas glyph count does not match the ramp".into(),
+            ));
+        }
+        self.supplied_atlas = Some((atlas, config.font.clone(), config.charset.clone()));
+        Ok(self)
     }
     pub fn device_info(&self) -> &DeviceInfo {
         &self.context.info
@@ -245,6 +264,13 @@ impl VulkanAsciiBackend {
     }
 
     fn ensure_resources(&mut self, desc: &FrameDesc, config: &AsciiConfig) -> Result<()> {
+        if let Some((_, font, charset)) = &self.supplied_atlas
+            && (font != &config.font || charset != &config.charset)
+        {
+            return Err(Error::Vulkan(
+                "supplied atlas font/ramp identity changed".into(),
+            ));
+        }
         let (grid_width, grid_height) = config.resolved_grid(desc.width, desc.height)?;
         let key = ResourceKey {
             width: desc.width,
@@ -272,8 +298,16 @@ impl VulkanAsciiBackend {
                 self.allocator.as_mut().expect("allocator missing"),
             );
         }
-        let atlas = GlyphAtlas::builtin(&config.font, &config.charset)
-            .map_err(|e| Error::Vulkan(e.to_string()))?;
+        let atlas = match &self.supplied_atlas {
+            Some((atlas, _, _)) => atlas.clone(),
+            None => GlyphAtlas::builtin(&config.font, &config.charset)
+                .map_err(|e| Error::Vulkan(e.to_string()))?,
+        };
+        if atlas.glyph_count() != config.charset.chars().count() {
+            return Err(Error::Vulkan(
+                "atlas glyph count does not match the ramp".into(),
+            ));
+        }
         self.resources = Some(Resources::new(
             &self.context,
             self.allocator.as_mut().expect("allocator missing"),
@@ -1350,10 +1384,17 @@ impl Resources {
             return Err(error);
         }
         let atlas_data = result.atlas.as_r8_slice().to_vec();
+        let atlas_upload_started = Instant::now();
         if let Err(error) = result.upload_static(context, &atlas_data, result.atlas_buffer.handle) {
             result.destroy(device, allocator);
             return Err(error);
         }
+        tracing::info!(
+            target: "asciiflow",
+            atlas_bytes = atlas_data.len(),
+            atlas_upload_wall_ms = atlas_upload_started.elapsed().as_secs_f64() * 1000.0,
+            "glyph atlas initialization upload"
+        );
         let mut coordinate_lut =
             Vec::<[u32; 2]>::with_capacity((result.key.width + result.key.height) as usize);
         for x in 0..result.key.width {
