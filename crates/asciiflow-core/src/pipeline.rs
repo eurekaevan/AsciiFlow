@@ -310,6 +310,7 @@ impl Pipeline {
                             let timings = sink.take_timings();
                             m.record(MetricStage::HardwareUpload, timings.hardware_upload);
                             m.record(MetricStage::EncodeSubmitReceive, timings.submit_receive);
+                            m.record_encode_diagnostics(timings.encode_diagnostics);
                             m.record(MetricStage::AudioPassthrough, timings.audio_passthrough);
                             m.record_audio(timings.audio_packets, timings.audio_bytes);
                             m.record(MetricStage::PipelineLatency, frame.started_at.elapsed());
@@ -340,6 +341,7 @@ impl Pipeline {
                         let timings = sink.take_timings();
                         m.record(MetricStage::HardwareUpload, timings.hardware_upload);
                         m.record(MetricStage::EncodeSubmitReceive, timings.submit_receive);
+                        m.record_encode_diagnostics(timings.encode_diagnostics);
                         m.record(MetricStage::AudioPassthrough, timings.audio_passthrough);
                         m.record_audio(timings.audio_packets, timings.audio_bytes);
                     }

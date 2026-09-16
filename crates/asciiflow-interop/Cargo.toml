@@ -5,6 +5,9 @@ edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 
+[features]
+av1-encode-diagnostic = ["asciiflow-media/av1-encode-diagnostic"]
+
 [dependencies]
 asciiflow-core = { path = "../asciiflow-core" }
 asciiflow-media = { path = "../asciiflow-media" }

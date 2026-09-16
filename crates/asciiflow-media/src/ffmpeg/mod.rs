@@ -11,6 +11,8 @@ mod vaapi;
 
 pub use audio::{AudioOutputTemplate, AudioPacketSender};
 pub use decoder::{Decoder, MediaInfo, VaapiDecodedFrame};
+#[cfg(feature = "av1-encode-diagnostic")]
+pub use encoder::probe_vaapi_av1_encoder_diagnostic;
 pub use encoder::{
     Encoder, OutputEncoding, VaapiEncoderProbe, probe_vaapi_encoder, probe_vaapi_encoder_for,
 };

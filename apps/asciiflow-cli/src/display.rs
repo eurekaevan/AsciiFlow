@@ -45,6 +45,33 @@ pub fn print_summary(metrics: &MetricsSnapshot) {
             MetricsSnapshot::ms_per_frame(metrics.encode_submit_receive, metrics.frames),
         );
     }
+    #[cfg(feature = "encode-characterization")]
+    {
+        let encode = metrics.encode_diagnostics;
+        println!(
+            "Encode characterization CPU wall: send_frame {:.3} · receive_packet {:.3} · encoder drain {:.3} (drain overlaps send/receive) ms/frame",
+            MetricsSnapshot::ms_per_frame(encode.send_wall, metrics.frames),
+            MetricsSnapshot::ms_per_frame(encode.receive_wall, metrics.frames),
+            MetricsSnapshot::ms_per_frame(encode.drain_wall, metrics.frames),
+        );
+        println!(
+            "Mux characterization CPU wall: video packet write {:.3} · interleaver flush {:.3} · trailer {:.3} · queue send API {:.3} ms/frame (asynchronous; not additive)",
+            MetricsSnapshot::ms_per_frame(encode.mux_video_write_wall, metrics.frames),
+            MetricsSnapshot::ms_per_frame(encode.mux_interleave_flush_wall, metrics.frames),
+            MetricsSnapshot::ms_per_frame(encode.mux_trailer_wall, metrics.frames),
+            MetricsSnapshot::ms_per_frame(encode.mux_queue_send_wall, metrics.frames),
+        );
+        println!(
+            "Encode characterization counts: submitted frames {} · received packets {} · packet bytes {} · send EAGAIN {} · receive EAGAIN {} · max send retries/frame {} · peak submitted-minus-packets {} (proxy, not internal queue depth)",
+            encode.submitted_frames,
+            encode.received_packets,
+            encode.received_packet_bytes,
+            encode.send_eagain,
+            encode.receive_eagain,
+            encode.max_send_retries,
+            encode.peak_frame_packet_delta,
+        );
+    }
     if !(metrics.drm_prime_map
         + metrics.external_image_create
         + metrics.external_memory_import

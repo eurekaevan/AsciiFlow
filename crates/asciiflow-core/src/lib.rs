@@ -11,7 +11,8 @@ mod planner;
 
 pub use audio::{AudioPlan, AudioPolicy, AudioStreamInfo, AudioStreamPlan, SkippedAudioStream};
 pub use backend::{
-    AsciiBackend, BackendOutput, BackendTimings, FrameSink, FrameSource, SinkTimings, SourceTimings,
+    AsciiBackend, BackendOutput, BackendTimings, EncodeDiagnostics, FrameSink, FrameSource,
+    SinkTimings, SourceTimings,
 };
 pub use cancellation::CancellationToken;
 pub use config::{AsciiConfig, ProcessingBackend};

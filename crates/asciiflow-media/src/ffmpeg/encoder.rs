@@ -9,8 +9,8 @@ use super::{
     vaapi::{EncodeMode, VaapiOptions},
 };
 use asciiflow_core::{
-    CancellationToken, Error, FrameDesc, FrameSink, PipelineStage, Rational, Result, SinkTimings,
-    VideoCodec, VideoFrame,
+    CancellationToken, EncodeDiagnostics, Error, FrameDesc, FrameSink, PipelineStage, Rational,
+    Result, SinkTimings, VideoCodec, VideoFrame,
 };
 use crossbeam_channel::{Receiver, SendTimeoutError, Sender, bounded};
 use std::{
@@ -47,6 +47,10 @@ pub struct Encoder {
     mux_stats: Arc<Mutex<MuxStats>>,
     mux_stop: CancellationToken,
     cancellation: CancellationToken,
+    #[cfg(feature = "encode-characterization")]
+    submitted_total: u64,
+    #[cfg(feature = "encode-characterization")]
+    packets_total: u64,
     #[cfg(test)]
     inject_send_failure: bool,
     #[cfg(test)]
@@ -58,6 +62,7 @@ struct MuxStats {
     audio_passthrough: Duration,
     audio_packets: u64,
     audio_bytes: u64,
+    diagnostics: EncodeDiagnostics,
 }
 
 struct AudioMuxRoute {
@@ -108,7 +113,36 @@ pub fn probe_vaapi_encoder_for(
     frame_rate: Rational,
     vaapi: VaapiOptions,
 ) -> Result<VaapiEncoderProbe> {
-    let codec_name = output_codec_name(&output_codec)?;
+    probe_vaapi_encoder_internal(output_codec, desc, frame_rate, vaapi, false)
+}
+
+/// Open an AV1 VAAPI encoder and its NV12 pool for diagnostic qualification
+/// only. The production output factory still rejects AV1.
+#[cfg(feature = "av1-encode-diagnostic")]
+pub fn probe_vaapi_av1_encoder_diagnostic(
+    desc: FrameDesc,
+    frame_rate: Rational,
+    vaapi: VaapiOptions,
+) -> Result<VaapiEncoderProbe> {
+    probe_vaapi_encoder_internal(VideoCodec::Av1, desc, frame_rate, vaapi, true)
+}
+
+fn probe_vaapi_encoder_internal(
+    output_codec: VideoCodec,
+    desc: FrameDesc,
+    frame_rate: Rational,
+    vaapi: VaapiOptions,
+    diagnostic_av1: bool,
+) -> Result<VaapiEncoderProbe> {
+    let codec_name = if diagnostic_av1 && output_codec == VideoCodec::Av1 {
+        "av1"
+    } else {
+        output_codec_name(&output_codec)?
+    };
+    let width = i32::try_from(desc.width)
+        .map_err(|_| Error::Media("encoder probe width exceeds FFmpeg i32 range".into()))?;
+    let height = i32::try_from(desc.height)
+        .map_err(|_| Error::Media("encoder probe height exceeds FFmpeg i32 range".into()))?;
     let name = CString::new(format!("{codec_name}_vaapi")).unwrap();
     let encoder = unsafe { ffi::avcodec_find_encoder_by_name(name.as_ptr()) };
     if encoder.is_null() {
@@ -127,8 +161,8 @@ pub fn probe_vaapi_encoder_for(
     unsafe {
         (*codec.as_ptr()).codec_id = (*encoder).id;
         (*codec.as_ptr()).codec_type = ffi::AVMediaType::AVMEDIA_TYPE_VIDEO;
-        (*codec.as_ptr()).width = desc.width as i32;
-        (*codec.as_ptr()).height = desc.height as i32;
+        (*codec.as_ptr()).width = width;
+        (*codec.as_ptr()).height = height;
         (*codec.as_ptr()).pix_fmt = ffi::AVPixelFormat::AV_PIX_FMT_VAAPI;
         (*codec.as_ptr()).time_base = ffi::AVRational {
             num: frame_rate.denominator,
@@ -153,7 +187,18 @@ pub fn probe_vaapi_encoder_for(
     let pool = HardwareFramesPool::vaapi_nv12(&device, desc.width, desc.height)?;
     unsafe { (*codec.as_ptr()).hw_frames_ctx = pool.try_clone_ref()? };
     let mut options = ptr::null_mut();
-    for (key, value) in [("rc_mode", "CQP"), ("qp", "20"), ("async_depth", "2")] {
+    let options_for_codec: &[(&str, &str)] = if diagnostic_av1 {
+        // av1_vaapi has no `qp` AVOption. Its default quality is diagnostic
+        // only and is not a benchmark or a production encoding policy.
+        &[
+            ("rc_mode", "CQP"),
+            ("profile", "main"),
+            ("async_depth", "2"),
+        ]
+    } else {
+        &[("rc_mode", "CQP"), ("qp", "20"), ("async_depth", "2")]
+    };
+    for &(key, value) in options_for_codec {
         let key = CString::new(key).unwrap();
         let value = CString::new(value).unwrap();
         check(
@@ -166,7 +211,10 @@ pub fn probe_vaapi_encoder_for(
     unsafe { ffi::av_dict_free(&mut options) };
     check(
         opened,
-        &format!("failed to configure {codec_name}_vaapi encoder probe"),
+        &format!(
+            "failed to configure {codec_name}_vaapi encoder probe for {}x{} NV12",
+            desc.width, desc.height
+        ),
     )?;
     if unused_options != 0 {
         return Err(asciiflow_core::Error::Media(format!(
@@ -473,7 +521,10 @@ impl Encoder {
         let unused_options = unsafe { ffi::av_dict_count(options) };
         unsafe { ffi::av_dict_free(&mut options) };
         let configure_operation = if mode == EncodeMode::Vaapi {
-            format!("failed to configure {encoder_name} encoder")
+            format!(
+                "failed to configure {encoder_name} encoder for {}x{} NV12",
+                desc.width, desc.height
+            )
         } else {
             "failed to configure software H.264 encoder".into()
         };
@@ -668,13 +719,18 @@ impl Encoder {
             mux_stats,
             mux_stop,
             cancellation,
+            #[cfg(feature = "encode-characterization")]
+            submitted_total: 0,
+            #[cfg(feature = "encode-characterization")]
+            packets_total: 0,
             #[cfg(test)]
             inject_send_failure: false,
             #[cfg(test)]
             inject_receive_failure: false,
         })
     }
-    fn drain_packets(&mut self) -> Result<()> {
+    fn drain_packets(&mut self) -> Result<usize> {
+        let mut received = 0;
         loop {
             #[cfg(test)]
             if self.inject_receive_failure {
@@ -685,11 +741,20 @@ impl Encoder {
                     format!("injected {} receive_packet failure", self.output_codec),
                 ));
             }
+            #[cfg(feature = "encode-characterization")]
+            let receive_started = Instant::now();
             let result = unsafe {
                 ffi::avcodec_receive_packet(self.codec.as_ptr(), self.packet.as_mut_ptr())
             };
+            #[cfg(feature = "encode-characterization")]
+            {
+                self.timings.encode_diagnostics.receive_wall += receive_started.elapsed();
+                if again(result) {
+                    self.timings.encode_diagnostics.receive_eagain += 1;
+                }
+            }
             if again(result) || result == ffi::AVERROR_EOF {
-                return Ok(());
+                return Ok(received);
             }
             if result < 0 {
                 return Err(ffmpeg_error(
@@ -703,6 +768,13 @@ impl Encoder {
                     "validate video packet size",
                     "compressed packet exceeds the 16 MiB mux limit",
                 ));
+            }
+            received += 1;
+            #[cfg(feature = "encode-characterization")]
+            {
+                self.packets_total += 1;
+                self.timings.encode_diagnostics.received_packets += 1;
+                self.timings.encode_diagnostics.received_packet_bytes += self.packet.size();
             }
             unsafe {
                 ffi::av_packet_rescale_ts(
@@ -738,12 +810,25 @@ impl Encoder {
     }
 
     fn send_mux_message(&self, mut message: MuxMessage) -> Result<()> {
+        #[cfg(feature = "encode-characterization")]
+        let send_started = Instant::now();
         loop {
             if self.cancellation.is_cancelled() {
                 return Err(Error::Cancelled);
             }
             match self.mux_sender.send_timeout(message, MUX_POLL) {
-                Ok(()) => return Ok(()),
+                Ok(()) => {
+                    #[cfg(feature = "encode-characterization")]
+                    {
+                        let send_wall = send_started.elapsed();
+                        self.mux_stats
+                            .lock()
+                            .expect("mux stats lock poisoned")
+                            .diagnostics
+                            .mux_queue_send_wall += send_wall;
+                    }
+                    return Ok(());
+                }
                 Err(SendTimeoutError::Timeout(pending)) => message = pending,
                 Err(SendTimeoutError::Disconnected(_)) => return Err(self.current_mux_failure()),
             }
@@ -841,12 +926,48 @@ impl Encoder {
                 format!("injected {} send_frame failure", self.output_codec),
             ));
         }
-        check(
-            unsafe { ffi::avcodec_send_frame(self.codec.as_ptr(), frame) },
-            &format!("failed to send NV12 frame to {} encoder", self.output_codec),
-        )?;
+        let mut retries = 0_u32;
+        loop {
+            #[cfg(feature = "encode-characterization")]
+            let send_started = Instant::now();
+            let sent = unsafe { ffi::avcodec_send_frame(self.codec.as_ptr(), frame) };
+            #[cfg(feature = "encode-characterization")]
+            {
+                self.timings.encode_diagnostics.send_wall += send_started.elapsed();
+                if again(sent) {
+                    self.timings.encode_diagnostics.send_eagain += 1;
+                }
+            }
+            if again(sent) {
+                retries += 1;
+                let drained = self.drain_packets()?;
+                if drained == 0 || retries > 1024 {
+                    return Err(Error::pipeline_message(
+                        PipelineStage::EncodeRuntime,
+                        "retry encoder frame submission",
+                        "encoder returned EAGAIN without bounded packet-drain progress",
+                    ));
+                }
+                continue;
+            }
+            check(
+                sent,
+                &format!("failed to send NV12 frame to {} encoder", self.output_codec),
+            )?;
+            break;
+        }
+        #[cfg(feature = "encode-characterization")]
+        {
+            self.submitted_total += 1;
+            let diagnostics = &mut self.timings.encode_diagnostics;
+            diagnostics.submitted_frames += 1;
+            diagnostics.max_send_retries = diagnostics.max_send_retries.max(retries);
+            diagnostics.peak_frame_packet_delta = diagnostics
+                .peak_frame_packet_delta
+                .max(self.submitted_total.saturating_sub(self.packets_total));
+        }
         self.next_pts += 1;
-        let result = self.drain_packets();
+        let result = self.drain_packets().map(|_| ());
         self.timings.submit_receive += encode_started.elapsed();
         result
     }
@@ -920,7 +1041,15 @@ impl FrameSink for Encoder {
         self.finish_attempted = true;
         let encode_started = Instant::now();
         if self.next_pts != 0 {
+            #[cfg(feature = "encode-characterization")]
+            let drain_started = Instant::now();
+            #[cfg(feature = "encode-characterization")]
+            let send_started = Instant::now();
             let result = unsafe { ffi::avcodec_send_frame(self.codec.as_ptr(), ptr::null()) };
+            #[cfg(feature = "encode-characterization")]
+            {
+                self.timings.encode_diagnostics.send_wall += send_started.elapsed();
+            }
             if result < 0 && result != ffi::AVERROR_EOF {
                 return Err(ffmpeg_error(
                     &format!("failed to flush {} encoder", self.output_codec),
@@ -928,6 +1057,10 @@ impl FrameSink for Encoder {
                 ));
             }
             self.drain_packets()?;
+            #[cfg(feature = "encode-characterization")]
+            {
+                self.timings.encode_diagnostics.drain_wall += drain_started.elapsed();
+            }
         }
         self.timings.submit_receive += encode_started.elapsed();
         self.send_mux_message(MuxMessage::Finish)?;
@@ -943,6 +1076,7 @@ impl FrameSink for Encoder {
         timings.audio_passthrough = mux.audio_passthrough;
         timings.audio_packets = mux.audio_packets;
         timings.audio_bytes = mux.audio_bytes;
+        timings.encode_diagnostics.accumulate(mux.diagnostics);
         timings
     }
 }
@@ -1054,9 +1188,20 @@ fn run_mux_worker(
                             .ok_or_else(|| Error::Media("video DTS offset overflow".into()))?;
                     }
                 }
+                #[cfg(feature = "encode-characterization")]
+                let write_started = Instant::now();
                 let written = unsafe {
                     ffi::av_interleaved_write_frame(output.format.as_ptr(), packet.as_mut_ptr())
                 };
+                #[cfg(feature = "encode-characterization")]
+                if !audio {
+                    let write_wall = write_started.elapsed();
+                    stats
+                        .lock()
+                        .expect("mux stats lock poisoned")
+                        .diagnostics
+                        .mux_video_write_wall += write_wall;
+                }
                 if let Err(error) = check(written, "failed to mux interleaved packet") {
                     let message = error.to_string();
                     *failure.lock().expect("mux failure lock poisoned") = Some(message.clone());
@@ -1078,12 +1223,23 @@ fn run_mux_worker(
                 buffered_packets += 1;
                 buffered_bytes += bytes;
                 if buffered_packets >= 64 || buffered_bytes >= 8 * 1024 * 1024 {
+                    #[cfg(feature = "encode-characterization")]
+                    let flush_started = Instant::now();
                     check(
                         unsafe {
                             ffi::av_interleaved_write_frame(output.format.as_ptr(), ptr::null_mut())
                         },
                         "flush bounded mux interleaver",
                     )?;
+                    #[cfg(feature = "encode-characterization")]
+                    {
+                        let flush_wall = flush_started.elapsed();
+                        stats
+                            .lock()
+                            .expect("mux stats lock poisoned")
+                            .diagnostics
+                            .mux_interleave_flush_wall += flush_wall;
+                    }
                     buffered_packets = 0;
                     buffered_bytes = 0;
                 }
@@ -1100,6 +1256,8 @@ fn run_mux_worker(
                         "audio producer must finish before the video sink",
                     ));
                 }
+                #[cfg(feature = "encode-characterization")]
+                let trailer_started = Instant::now();
                 check(
                     unsafe { ffi::av_write_trailer(output.format.as_ptr()) },
                     "failed to finalize MP4 output",
@@ -1113,6 +1271,15 @@ fn run_mux_worker(
                         error,
                     )
                 })?;
+                #[cfg(feature = "encode-characterization")]
+                {
+                    let trailer_wall = trailer_started.elapsed();
+                    stats
+                        .lock()
+                        .expect("mux stats lock poisoned")
+                        .diagnostics
+                        .mux_trailer_wall += trailer_wall;
+                }
                 if unsafe { !(*output.format.as_ptr()).pb.is_null() } {
                     check(
                         unsafe { ffi::avio_closep(&mut (*output.format.as_ptr()).pb) },
@@ -1327,6 +1494,32 @@ mod audio_regression_tests {
             }));
             drop(encoder);
             std::fs::remove_file(path).unwrap();
+        }
+    }
+
+    #[test]
+    #[ignore = "requires Intel iHD HEVC encoder; dimensions are device-specific"]
+    fn intel_hevc_dimension_boundary_is_reported_during_encoder_probe() {
+        let fps = Rational::new(50, 1).unwrap();
+        // FFmpeg may pad a visible 126 dimension to a coded 128 surface.
+        for (width, height, supported) in [
+            (64, 128, false),
+            (128, 64, false),
+            (126, 128, true),
+            (128, 126, true),
+            (128, 128, true),
+        ] {
+            let desc = FrameDesc::host_nv12(width, height, ColorSpace::default()).unwrap();
+            let result =
+                probe_vaapi_encoder_for(VideoCodec::Hevc, desc, fps, VaapiOptions::default());
+            if supported {
+                assert!(result.is_ok(), "{width}x{height} HEVC probe should succeed");
+            } else {
+                let error = result.err().expect("sub-minimum HEVC encode should fail");
+                let message = error.to_string();
+                assert!(message.contains(&format!("{width}x{height}")), "{message}");
+                assert!(message.contains("NV12"), "{message}");
+            }
         }
     }
 }

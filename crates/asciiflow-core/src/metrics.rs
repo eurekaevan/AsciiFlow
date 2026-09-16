@@ -1,3 +1,4 @@
+use crate::EncodeDiagnostics;
 use std::{
     sync::{Arc, Mutex},
     time::Duration,
@@ -66,6 +67,7 @@ pub struct MetricsSnapshot {
     pub encode: Duration,
     pub hardware_upload: Duration,
     pub encode_submit_receive: Duration,
+    pub encode_diagnostics: EncodeDiagnostics,
     pub host_upload: Duration,
     pub queue_submit: Duration,
     pub gpu_upload: Duration,
@@ -165,6 +167,13 @@ impl Metrics {
         let mut value = self.inner.lock().expect("metrics lock poisoned");
         value.audio_packets += packets;
         value.audio_bytes += bytes;
+    }
+    pub fn record_encode_diagnostics(&self, diagnostics: EncodeDiagnostics) {
+        self.inner
+            .lock()
+            .expect("metrics lock poisoned")
+            .encode_diagnostics
+            .accumulate(diagnostics);
     }
     pub fn set_total(&self, total: Duration) {
         self.inner.lock().expect("metrics lock poisoned").total = total;

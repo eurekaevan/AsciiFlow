@@ -760,6 +760,7 @@ fn record_backend_timings(metrics: &Metrics, timings: asciiflow_core::BackendTim
 fn record_sink_timings(metrics: &Metrics, timings: asciiflow_core::SinkTimings) {
     metrics.record(MetricStage::HardwareUpload, timings.hardware_upload);
     metrics.record(MetricStage::EncodeSubmitReceive, timings.submit_receive);
+    metrics.record_encode_diagnostics(timings.encode_diagnostics);
     metrics.record(MetricStage::AudioPassthrough, timings.audio_passthrough);
     metrics.record_audio(timings.audio_packets, timings.audio_bytes);
 }

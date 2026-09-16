@@ -1,5 +1,7 @@
 pub mod ffmpeg;
 
+#[cfg(feature = "av1-encode-diagnostic")]
+pub use ffmpeg::probe_vaapi_av1_encoder_diagnostic;
 pub use ffmpeg::{
     DecodeMode, Decoder, EncodeMode, Encoder, MediaInfo, OutputEncoding, VaapiBuildCapabilities,
     VaapiDecodedFrame, VaapiEncoderFrame, VaapiEncoderFrames, VaapiEncoderProbe, VaapiOptions,

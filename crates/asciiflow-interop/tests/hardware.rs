@@ -1,8 +1,12 @@
 use asciiflow_core::{AsciiBackend, AsciiConfig, FrameSink, FrameSource, VideoCodec};
+#[cfg(feature = "av1-encode-diagnostic")]
+use asciiflow_core::{ColorSpace, FrameDesc, HostFrame, Rational, VideoFrame};
 use asciiflow_interop::{
     DrmPrimeMapping, VaapiVulkanFullInteropProcessor, VaapiVulkanInteropProcessor, fourcc_name,
 };
 use asciiflow_media::{DecodeMode, Decoder, EncodeMode, Encoder, OutputEncoding, VaapiOptions};
+#[cfg(feature = "av1-encode-diagnostic")]
+use asciiflow_media::{probe_vaapi_av1_encoder_diagnostic, probe_vaapi_encoder_for};
 use asciiflow_vulkan::VulkanAsciiBackend;
 use std::{collections::VecDeque, path::PathBuf};
 
@@ -17,6 +21,48 @@ fn config() -> AsciiConfig {
         charset: "@%#*+=-:. ".into(),
         font: "builtin-8x8".into(),
         color: true,
+    }
+}
+
+#[test]
+#[cfg(feature = "av1-encode-diagnostic")]
+#[ignore = "diagnostic only: requires Intel VAAPI AV1 encode; does not enable AV1 output"]
+fn av1_encoder_surface_descriptor_diagnostic() {
+    let desc = FrameDesc::host_nv12(1920, 1080, ColorSpace::default()).unwrap();
+    let fps = Rational::new(50, 1).unwrap();
+    let mut vulkan = VulkanAsciiBackend::new().unwrap();
+    assert_eq!(vulkan.device_info().vendor_id, 0x8086);
+    for codec in [VideoCodec::H264, VideoCodec::Hevc, VideoCodec::Av1] {
+        let probe = if codec == VideoCodec::Av1 {
+            probe_vaapi_av1_encoder_diagnostic(desc.clone(), fps, VaapiOptions::default())
+        } else {
+            probe_vaapi_encoder_for(codec.clone(), desc.clone(), fps, VaapiOptions::default())
+        }
+        .unwrap();
+        let mapping = DrmPrimeMapping::map_direct_write(probe.frames.acquire(0).unwrap()).unwrap();
+        let drm = mapping.descriptor();
+        println!("{codec} diagnostic encoder surface: {drm:#?}");
+        assert_eq!(drm.width, 1920);
+        assert_eq!(drm.height, 1080);
+        assert_eq!(drm.layers.len(), 2);
+        assert_eq!(fourcc_name(drm.layers[0].format), "R8..");
+        assert_eq!(fourcc_name(drm.layers[1].format), "GR88");
+        if codec == VideoCodec::Av1 {
+            let input =
+                VideoFrame::new_host(desc.clone(), Some(0), HostFrame::new_zeroed(&desc)).unwrap();
+            let timings = vulkan
+                .process_nv12_to_external(
+                    input,
+                    &config(),
+                    mapping.duplicate_external_planes().unwrap(),
+                )
+                .unwrap();
+            println!(
+                "AV1 diagnostic Vulkan output copy: {:.3} ms",
+                timings.gpu_external_output_copy.as_secs_f64() * 1000.0
+            );
+            assert_eq!(vulkan.validation_error_count(), 0);
+        }
     }
 }
 
