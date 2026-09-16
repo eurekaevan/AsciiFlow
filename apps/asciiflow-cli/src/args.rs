@@ -1,4 +1,4 @@
-use asciiflow_core::{AudioPolicy, InteropRequest, MediaRequest, ProcessingBackend};
+use asciiflow_core::{AudioPolicy, InteropRequest, MediaRequest, ProcessingBackend, VideoCodec};
 use clap::{Parser, ValueEnum};
 use std::path::PathBuf;
 
@@ -21,6 +21,22 @@ pub enum MediaArg {
     Auto,
     Software,
     Vaapi,
+}
+
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, ValueEnum)]
+pub enum OutputCodecArg {
+    #[default]
+    H264,
+    Hevc,
+}
+
+impl From<OutputCodecArg> for VideoCodec {
+    fn from(value: OutputCodecArg) -> Self {
+        match value {
+            OutputCodecArg::H264 => Self::H264,
+            OutputCodecArg::Hevc => Self::Hevc,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, ValueEnum)]
@@ -93,6 +109,8 @@ pub struct Args {
     pub decode: MediaArg,
     #[arg(long, value_enum, default_value = "auto")]
     pub encode: MediaArg,
+    #[arg(long, value_enum, default_value = "h264")]
+    pub output_codec: OutputCodecArg,
     #[arg(long, value_enum, default_value = "auto")]
     pub audio: AudioArg,
     #[arg(long)]
@@ -140,5 +158,30 @@ impl Args {
             }
             literal => literal.into(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn output_codec_defaults_to_h264_and_parses_hevc_independently() {
+        let default = Args::try_parse_from(["asciiflow", "input.mp4", "output.mp4"]).unwrap();
+        assert_eq!(default.output_codec, OutputCodecArg::H264);
+        assert_eq!(default.encode, MediaArg::Auto);
+
+        let hevc = Args::try_parse_from([
+            "asciiflow",
+            "input.mp4",
+            "output.mp4",
+            "--output-codec",
+            "hevc",
+            "--encode",
+            "vaapi",
+        ])
+        .unwrap();
+        assert_eq!(hevc.output_codec, OutputCodecArg::Hevc);
+        assert_eq!(hevc.encode, MediaArg::Vaapi);
     }
 }

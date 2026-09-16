@@ -1,8 +1,8 @@
-use asciiflow_core::{AsciiBackend, AsciiConfig, FrameSink, FrameSource};
+use asciiflow_core::{AsciiBackend, AsciiConfig, FrameSink, FrameSource, VideoCodec};
 use asciiflow_interop::{
     DrmPrimeMapping, VaapiVulkanFullInteropProcessor, VaapiVulkanInteropProcessor, fourcc_name,
 };
-use asciiflow_media::{DecodeMode, Decoder, EncodeMode, Encoder, VaapiOptions};
+use asciiflow_media::{DecodeMode, Decoder, EncodeMode, Encoder, OutputEncoding, VaapiOptions};
 use asciiflow_vulkan::VulkanAsciiBackend;
 use std::{collections::VecDeque, path::PathBuf};
 
@@ -17,6 +17,42 @@ fn config() -> AsciiConfig {
         charset: "@%#*+=-:. ".into(),
         font: "builtin-8x8".into(),
         color: true,
+    }
+}
+
+#[test]
+#[ignore = "requires Intel VAAPI/ANV; records actual new-codec descriptors and compares 36 frames"]
+fn hevc_av1_descriptor_and_pre_ascii_parity() {
+    for name in ["hevc-main8-bframes.mp4", "av1-main8-nofilmgrain.mp4"] {
+        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../tests/fixtures/codecs")
+            .join(name);
+        let mut reference = vaapi_decoder(&path);
+        let mut direct = vaapi_decoder(&path);
+        let mut vulkan = VulkanAsciiBackend::new().unwrap();
+        assert_eq!(vulkan.device_info().vendor_id, 0x8086);
+        for index in 0..36 {
+            let expected = reference.next_frame().unwrap().unwrap();
+            let mapping =
+                DrmPrimeMapping::map_direct_read(direct.next_vaapi_frame().unwrap().unwrap())
+                    .unwrap();
+            if index == 0 {
+                println!("{name}: {:#?}", mapping.descriptor());
+            }
+            let actual = vulkan
+                .read_external_nv12(
+                    expected.desc(),
+                    mapping.pts(),
+                    &config(),
+                    mapping.duplicate_external_planes().unwrap(),
+                )
+                .unwrap();
+            assert_eq!(actual, expected, "{name} frame {index}");
+        }
+        assert!(reference.next_frame().unwrap().is_none());
+        assert!(direct.next_vaapi_frame().unwrap().is_none());
+        assert_eq!(vulkan.validation_error_count(), 0);
+        compare_full_ascii(36, "ASCIIFLOW_STAGE5_INPUT", path.to_str().unwrap(), false);
     }
 }
 
@@ -210,7 +246,25 @@ fn output_import_failure_and_full_processor_drop_do_not_leak_fds() {
 #[test]
 #[ignore = "requires Intel iHD VAAPI and an ANV Vulkan device"]
 fn encoder_descriptor_and_pre_encode_pixels_are_exact() {
-    compare_output_interop(30, "ASCIIFLOW_STAGE3_INPUT", "input.mp4", false);
+    compare_output_interop(
+        30,
+        "ASCIIFLOW_STAGE3_INPUT",
+        "input.mp4",
+        false,
+        VideoCodec::H264,
+    );
+}
+
+#[test]
+#[ignore = "requires Intel iHD HEVC encode and an ANV Vulkan device"]
+fn hevc_encoder_descriptor_and_staged_interop_pixels_are_exact() {
+    compare_output_interop(
+        30,
+        "ASCIIFLOW_STAGE51_INPUT",
+        "input.mp4",
+        false,
+        VideoCodec::Hevc,
+    );
 }
 
 #[test]
@@ -254,6 +308,64 @@ fn encoder_rejects_surface_from_a_different_frames_context() {
 }
 
 #[test]
+#[ignore = "requires Intel iHD H.264 and HEVC encode"]
+fn h264_and_hevc_encoder_frames_are_not_cross_submittable() {
+    let path = input("ASCIIFLOW_STAGE51_INPUT", "input.mp4");
+    let decoder = vaapi_decoder(&path);
+    let desc = decoder.info().frame_desc.clone();
+    let frame_rate = decoder.info().frame_rate;
+    let h264_path = temporary_output("stage51-h264-pool");
+    let hevc_path = temporary_output("stage51-hevc-pool");
+    let cancellation = Default::default();
+    let mut h264 = Encoder::create_with_codec_and_audio(
+        &h264_path,
+        desc.clone(),
+        frame_rate,
+        OutputEncoding {
+            codec: VideoCodec::H264,
+            mode: EncodeMode::Vaapi,
+        },
+        VaapiOptions::default(),
+        Vec::new(),
+        cancellation,
+    )
+    .unwrap();
+    let mut hevc = Encoder::create_with_codec_and_audio(
+        &hevc_path,
+        desc,
+        frame_rate,
+        OutputEncoding {
+            codec: VideoCodec::Hevc,
+            mode: EncodeMode::Vaapi,
+        },
+        VaapiOptions::default(),
+        Vec::new(),
+        Default::default(),
+    )
+    .unwrap();
+    let h264_frame = h264.encoder_frames().unwrap().acquire(0).unwrap();
+    let hevc_frame = hevc.encoder_frames().unwrap().acquire(0).unwrap();
+    assert!(
+        hevc.encode_hardware_frame(h264_frame)
+            .unwrap_err()
+            .to_string()
+            .contains("different AVHWFramesContext")
+    );
+    assert!(
+        h264.encode_hardware_frame(hevc_frame)
+            .unwrap_err()
+            .to_string()
+            .contains("different AVHWFramesContext")
+    );
+    h264.finish().unwrap();
+    hevc.finish().unwrap();
+    drop(h264);
+    drop(hevc);
+    std::fs::remove_file(h264_path).unwrap();
+    std::fs::remove_file(hevc_path).unwrap();
+}
+
+#[test]
 #[ignore = "requires a 3000+ frame H.264 input, Intel iHD VAAPI, and ANV Vulkan"]
 fn full_interop_surface_reuse_is_exact_and_fd_bounded() {
     compare_output_interop(
@@ -261,6 +373,19 @@ fn full_interop_surface_reuse_is_exact_and_fd_bounded() {
         "ASCIIFLOW_STAGE3_STRESS_INPUT",
         "/tmp/asciiflow-stage3-stress-input.mp4",
         true,
+        VideoCodec::H264,
+    );
+}
+
+#[test]
+#[ignore = "requires a 3000+ frame input, Intel HEVC encode, and ANV Vulkan"]
+fn hevc_full_interop_surface_reuse_is_exact_and_fd_bounded() {
+    compare_output_interop(
+        3000,
+        "ASCIIFLOW_STAGE51_STRESS_INPUT",
+        "/tmp/asciiflow-stage5-qualification/h264-testsrc2-1920x1080-50fps-300f-bt709-limited-8bit-420.mp4",
+        true,
+        VideoCodec::Hevc,
     );
 }
 
@@ -333,7 +458,13 @@ fn compare_full_ascii(frames: usize, env_name: &str, fallback: &str, check_fds: 
     }
 }
 
-fn compare_output_interop(frames: usize, env_name: &str, fallback: &str, check_fds: bool) {
+fn compare_output_interop(
+    frames: usize,
+    env_name: &str,
+    fallback: &str,
+    check_fds: bool,
+    output_codec: VideoCodec,
+) {
     let path = input(env_name, fallback);
     let output_path = temporary_output(if check_fds {
         "stage3b-stress"
@@ -342,6 +473,7 @@ fn compare_output_interop(frames: usize, env_name: &str, fallback: &str, check_f
     });
     let _ = std::fs::remove_file(&output_path);
     let before = fd_count();
+    let expected_output_codec = output_codec.clone();
     let active_baseline_report;
     let mut max_seen = before;
     {
@@ -353,15 +485,21 @@ fn compare_output_interop(frames: usize, env_name: &str, fallback: &str, check_f
         let reference_backend = VulkanAsciiBackend::new().unwrap();
         let mut reference =
             VaapiVulkanInteropProcessor::new(reference_backend, desc.clone(), cfg.clone()).unwrap();
-        let mut encoder = Encoder::create_with(
+        let mut encoder = Encoder::create_with_codec_and_audio(
             &output_path,
             desc.clone(),
             frame_rate,
-            EncodeMode::Vaapi,
+            OutputEncoding {
+                codec: output_codec.clone(),
+                mode: EncodeMode::Vaapi,
+            },
             VaapiOptions::default(),
+            Vec::new(),
+            Default::default(),
         )
         .unwrap();
         let encoder_frames = encoder.encoder_frames().unwrap();
+        let staged_frames = encoder_frames.clone_for_diagnostic().unwrap();
         let descriptor_probe = encoder_frames.acquire(0).unwrap();
         let descriptor_mapping = DrmPrimeMapping::map_direct_write(descriptor_probe).unwrap();
         let encoder_drm = descriptor_mapping.descriptor();
@@ -399,6 +537,9 @@ fn compare_output_interop(frames: usize, env_name: &str, fallback: &str, check_f
                 let expected = expected.pop_front().unwrap();
                 assert_eq!(output.frame.pts(), compared as i64);
                 let actual = output.frame.download_nv12().unwrap();
+                let mut staged = staged_frames.acquire(compared as i64).unwrap();
+                staged.upload_nv12(&expected).unwrap();
+                let staged = staged.download_nv12().unwrap();
                 assert_eq!(
                     actual.desc(),
                     expected.desc(),
@@ -409,6 +550,7 @@ fn compare_output_interop(frames: usize, env_name: &str, fallback: &str, check_f
                     expected.host().as_slice(),
                     "pre-encode NV12 mismatch at {compared}"
                 );
+                assert_eq!(staged, expected, "staged surface mismatch at {compared}");
                 encoder.encode_hardware_frame(output.frame).unwrap();
                 compared += 1;
             }
@@ -428,6 +570,9 @@ fn compare_output_interop(frames: usize, env_name: &str, fallback: &str, check_f
             let expected = expected.pop_front().unwrap();
             assert_eq!(output.frame.pts(), compared as i64);
             let actual = output.frame.download_nv12().unwrap();
+            let mut staged = staged_frames.acquire(compared as i64).unwrap();
+            staged.upload_nv12(&expected).unwrap();
+            let staged = staged.download_nv12().unwrap();
             assert_eq!(
                 actual.desc(),
                 expected.desc(),
@@ -438,6 +583,7 @@ fn compare_output_interop(frames: usize, env_name: &str, fallback: &str, check_f
                 expected.host().as_slice(),
                 "pre-encode NV12 mismatch at {compared}"
             );
+            assert_eq!(staged, expected, "staged surface mismatch at {compared}");
             encoder.encode_hardware_frame(output.frame).unwrap();
             compared += 1;
         }
@@ -447,6 +593,22 @@ fn compare_output_interop(frames: usize, env_name: &str, fallback: &str, check_f
         assert_eq!(reference.validation_error_count(), 0);
         assert_eq!(full.validation_error_count(), 0);
     }
+    let mut decoded = Decoder::open(&output_path).unwrap();
+    assert_eq!(decoded.info().requirements.codec, expected_output_codec);
+    let mut decoded_count = 0;
+    let mut previous_pts = None;
+    while let Some(frame) = decoded.next_frame().unwrap() {
+        let pts = frame.pts().expect("encoded output frame must carry PTS");
+        if let Some(previous) = previous_pts {
+            assert!(pts > previous, "decoded output PTS must be monotonic");
+        } else {
+            assert_eq!(pts, 0);
+        }
+        previous_pts = Some(pts);
+        decoded_count += 1;
+    }
+    assert_eq!(decoded_count, frames);
+    drop(decoded);
     if check_fds {
         let after = fd_count();
         println!(

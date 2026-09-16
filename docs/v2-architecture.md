@@ -1,6 +1,6 @@
 # AsciiFlow v2 architecture
 
-This document defines the Rust baseline through Stage 4.3: a permanent CPU
+This document defines the Rust baseline through Stage 5.1A Intel qualification: a permanent CPU
 reference backend, a Vulkan 1.3 compute backend, optional Linux VAAPI media,
 and qualified Intel DMA-BUF bridges in both pixel directions. Stage 3A
 eliminates decode-side Host copies; Stage 3B fills encoder-owned VAAPI
@@ -36,6 +36,31 @@ glyph atlas independently of either video backend. `asciiflow-vulkan` contains
 all Vulkan types and calls; Core does not depend on `ash` or `gpu-allocator`.
 
 ## Native and unsafe boundary
+
+Stage 5.0 adds portable HEVC/AV1 codec and Main-profile identities. Native codec
+discovery, actual decoded format validation and libva profile/VLD probing stay
+in media. Decode capability and stream input-interop qualification are keyed
+by codec; initialization replan changes only the failing codec's fact. The DRM
+importer is reused. Stage 5.1A separates portable output requirements from the
+encoder backend and qualifies H.264 or HEVC Main VAAPI encoder-owned surfaces
+through the same output interop. Intel Arc Meteor Lake qualification passed;
+see [codec validation](stage5.0-codec-validation.md).
+
+The output selection boundary is:
+
+```text
+OutputVideoRequirements (codec/profile/8-bit 4:2:0/geometry/rate)
+  -> codec-specific software/VAAPI capability and policy
+  -> H.264 software, H.264 VAAPI, or HEVC Main VAAPI encoder
+  -> generic encoder-owned VAAPI surface interop when selected
+  -> MP4 mux
+```
+
+Core contains portable identities only. FFmpeg codec IDs, named encoder lookup,
+VAProfileHEVCMain/EncSlice qualification, CQP options and AVHWFramesContext stay
+in media. The interop crate receives only an encoder-owned NV12 frames context;
+it contains no H.264/HEVC branch. See the
+[Stage 5.1A validation](stage5.1a-hevc-encode-validation.md).
 
 Stage 4.3 adds initialization-only `Font specification -> FreeType -> GlyphAtlas`.
 The CLI builds one owned atlas before staging/mux initialization and passes
@@ -203,7 +228,7 @@ VAAPI or software decode
   -> explicit plan transfer/interop nodes
   -> CPU or Vulkan ASCII
   -> explicit plan transfer/interop nodes
-  -> software or VAAPI H.264 encode
+  -> software H.264, VAAPI H.264, or VAAPI HEVC Main encode
 ```
 
 Two capacity-three crossbeam channels provide bounded backpressure and ordered

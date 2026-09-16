@@ -15,7 +15,9 @@ use asciiflow_interop::{
     VulkanVaapiOutputInteropProcessor, run_full_interop_pipeline_with_cancellation,
     run_interop_pipeline_with_cancellation, run_output_interop_pipeline_with_cancellation,
 };
-use asciiflow_media::{DecodeMode, Decoder, EncodeMode, Encoder, MediaInfo, VaapiOptions};
+use asciiflow_media::{
+    DecodeMode, Decoder, EncodeMode, Encoder, MediaInfo, OutputEncoding, VaapiOptions,
+};
 use asciiflow_vulkan::{DeviceInfo, PipelinedVulkanAsciiBackend, VulkanAsciiBackend};
 use clap::Parser;
 use std::{
@@ -82,7 +84,7 @@ fn run(args: Args, cancellation: CancellationToken) -> Result<()> {
             .and_then(|value| value.to_str())
             .is_none_or(|value| !value.eq_ignore_ascii_case("mp4"))
         {
-            bail!("Stage 0 currently supports MP4/H.264 output only");
+            bail!("the current output container is MP4; use an .mp4 path");
         }
         if paths_refer_to_same_file(&args.input, output) {
             bail!("input and output must be different paths");
@@ -119,8 +121,9 @@ fn run(args: Args, cancellation: CancellationToken) -> Result<()> {
         } else {
             args.vaapi_vulkan_output_interop.into()
         },
+        output_codec: args.output_codec.into(),
     };
-    PipelinePlanner::validate_policy(policy).map_err(|error| {
+    PipelinePlanner::validate_policy(policy.clone()).map_err(|error| {
         asciiflow_core::Error::pipeline(PipelineStage::Planning, "validate pipeline policy", error)
     })?;
     let vaapi = VaapiOptions::new(args.hw_device.clone());
@@ -139,14 +142,15 @@ fn run(args: Args, cancellation: CancellationToken) -> Result<()> {
         })?;
     let planning_started = Instant::now();
     let mut snapshot = probe.snapshot;
-    let decision = PipelinePlanner::select(&snapshot, &probe.media_info.requirements, policy)
-        .map_err(|error| {
-            asciiflow_core::Error::pipeline(
-                PipelineStage::Planning,
-                "select initial pipeline",
-                error,
-            )
-        })?;
+    let decision =
+        PipelinePlanner::select(&snapshot, &probe.media_info.requirements, policy.clone())
+            .map_err(|error| {
+                asciiflow_core::Error::pipeline(
+                    PipelineStage::Planning,
+                    "select initial pipeline",
+                    error,
+                )
+            })?;
     let planning_duration = planning_started.elapsed();
     let audio_plan = AudioPlan::select(args.audio.into(), &probe.media_info.audio_streams)
         .map_err(|error| {
@@ -534,10 +538,10 @@ impl InitCapability {
     fn operation(self) -> &'static str {
         match self {
             Self::SoftwareDecode => "create software decoder",
-            Self::HardwareDecode => "create VAAPI H.264 decoder",
+            Self::HardwareDecode => "create VAAPI input video decoder",
             Self::Vulkan => "create Vulkan ASCII processor",
-            Self::SoftwareEncode => "create software H.264 encoder and MP4 muxer",
-            Self::HardwareEncode => "create VAAPI H.264 encoder and MP4 muxer",
+            Self::SoftwareEncode => "create software output video encoder and MP4 muxer",
+            Self::HardwareEncode => "create VAAPI output video encoder and MP4 muxer",
             Self::InputInterop => "create VAAPI to Vulkan input interop",
             Self::OutputInterop => "create Vulkan to VAAPI output interop",
             Self::Muxer => "create MP4 muxer",
@@ -545,7 +549,7 @@ impl InitCapability {
         }
     }
 
-    fn is_auto(self, policy: PipelinePolicy) -> bool {
+    fn is_auto(self, policy: &PipelinePolicy) -> bool {
         match self {
             Self::HardwareDecode => policy.decode == asciiflow_core::MediaRequest::Auto,
             Self::Vulkan => policy.backend == ProcessingBackend::Auto,
@@ -558,17 +562,23 @@ impl InitCapability {
         }
     }
 
-    fn mark_unsupported(self, snapshot: &mut CapabilitySnapshot, reason: &str) {
+    fn mark_unsupported(
+        self,
+        snapshot: &mut CapabilitySnapshot,
+        input_codec: &asciiflow_core::VideoCodec,
+        output_codec: &asciiflow_core::VideoCodec,
+        reason: &str,
+    ) {
         let unsupported = || CapabilitySupport::unsupported(reason);
         match self {
-            Self::HardwareDecode => snapshot.media.h264_vaapi_decode = unsupported(),
+            Self::HardwareDecode => snapshot.media.disable_decode(input_codec, reason),
             Self::Vulkan => {
                 snapshot.processing.vulkan = unsupported();
                 snapshot.processing.vulkan_auto_eligible = false;
             }
-            Self::HardwareEncode => snapshot.media.h264_vaapi_encode = unsupported(),
-            Self::InputInterop => snapshot.interop.input = unsupported(),
-            Self::OutputInterop => snapshot.interop.output = unsupported(),
+            Self::HardwareEncode => snapshot.media.disable_encode(output_codec, reason),
+            Self::InputInterop => snapshot.interop.set_input(input_codec, unsupported()),
+            Self::OutputInterop => snapshot.interop.set_output(output_codec, unsupported()),
             Self::SoftwareDecode | Self::SoftwareEncode | Self::Muxer | Self::Configuration => {}
         }
     }
@@ -638,10 +648,10 @@ impl InitializationPoint {
                 MediaImplementation::Software => InitCapability::SoftwareDecode,
                 MediaImplementation::Hardware => InitCapability::HardwareDecode,
             },
-            Self::VaapiFramesPoolCreate
-            | Self::OutputVaapiFrameAcquire
-            | Self::OutputDrmPrimeMap
-            | Self::OutputDmaBufImport => InitCapability::OutputInterop,
+            Self::VaapiFramesPoolCreate => InitCapability::HardwareEncode,
+            Self::OutputVaapiFrameAcquire | Self::OutputDrmPrimeMap | Self::OutputDmaBufImport => {
+                InitCapability::OutputInterop
+            }
             Self::InputDrmPrimeMap | Self::InputDmaBufImport => InitCapability::InputInterop,
             Self::VulkanProcessorCreate => InitCapability::Vulkan,
             Self::EncoderCreate => match plan.encode {
@@ -732,13 +742,25 @@ fn initialize_with_replan<T>(
             decision: initial,
             replan: None,
         }),
-        Err(first) if first.capability.is_auto(policy) => {
+        Err(first) if first.capability.is_auto(&policy) => {
             let first_failure = first.to_string();
-            first.capability.mark_unsupported(snapshot, &first_failure);
+            first.capability.mark_unsupported(
+                snapshot,
+                &requirements.codec,
+                &policy.output_codec,
+                &first_failure,
+            );
             reset_staging().context("initialization replan: clean failed staging output")?;
             let started = Instant::now();
-            let replanned = PipelinePlanner::select(snapshot, requirements, policy)
-                .context("planning: automatic pipeline replan failed")?;
+            let replanned = PipelinePlanner::select(snapshot, requirements, policy.clone())
+                .map_err(|replan_failure| {
+                    anyhow::anyhow!(
+                        "pipeline initialization could not find a legal automatic replan\ninitial plan: {}\nfirst failure: {}\nreplan failure: {}",
+                        initial_plan,
+                        first_failure,
+                        replan_failure
+                    )
+                })?;
             let duration = started.elapsed();
             let replanned_plan = replanned.selected.clone();
             match build(&replanned_plan) {
@@ -851,20 +873,24 @@ impl PipelineFactory {
             hooks.checkpoint(InitializationPoint::VaapiFramesPoolCreate, plan)?;
         }
         let encoder_result = if plan.hardware_output_interop {
-            Encoder::create_with_hardware_frames_and_audio(
+            Encoder::create_with_hardware_frames_codec_and_audio(
                 temporary,
                 info.frame_desc.clone(),
                 info.frame_rate,
+                plan.output.codec.clone(),
                 vaapi.clone(),
                 audio_templates,
                 cancellation.clone(),
             )
         } else {
-            Encoder::create_with_audio(
+            Encoder::create_with_codec_and_audio(
                 temporary,
                 info.frame_desc.clone(),
                 info.frame_rate,
-                encode_mode,
+                OutputEncoding {
+                    codec: plan.output.codec.clone(),
+                    mode: encode_mode,
+                },
                 vaapi.clone(),
                 audio_templates,
                 cancellation.clone(),
@@ -1435,7 +1461,10 @@ mod stage40_tests {
                 software_encode: supported(),
                 vaapi_device: supported(),
                 h264_vaapi_decode: supported(),
+                hevc_vaapi_decode: supported(),
+                av1_vaapi_decode: supported(),
                 h264_vaapi_encode: supported(),
+                hevc_vaapi_encode: supported(),
                 nv12_hardware_frames: supported(),
                 nv12_hardware_upload: supported(),
             },
@@ -1452,7 +1481,10 @@ mod stage40_tests {
             },
             interop: InteropCapabilities {
                 input: supported(),
+                hevc_input: supported(),
+                av1_input: supported(),
                 output: supported(),
+                hevc_output: supported(),
             },
         }
     }
@@ -1547,11 +1579,11 @@ mod stage40_tests {
     #[test]
     fn only_auto_policy_fields_are_eligible_for_initialization_replan() {
         let automatic = PipelinePolicy::default();
-        assert!(InitCapability::HardwareDecode.is_auto(automatic));
-        assert!(InitCapability::HardwareEncode.is_auto(automatic));
-        assert!(InitCapability::Vulkan.is_auto(automatic));
-        assert!(InitCapability::InputInterop.is_auto(automatic));
-        assert!(InitCapability::OutputInterop.is_auto(automatic));
+        assert!(InitCapability::HardwareDecode.is_auto(&automatic));
+        assert!(InitCapability::HardwareEncode.is_auto(&automatic));
+        assert!(InitCapability::Vulkan.is_auto(&automatic));
+        assert!(InitCapability::InputInterop.is_auto(&automatic));
+        assert!(InitCapability::OutputInterop.is_auto(&automatic));
 
         let explicit = PipelinePolicy {
             backend: ProcessingBackend::Vulkan,
@@ -1559,12 +1591,13 @@ mod stage40_tests {
             encode: asciiflow_core::MediaRequest::Hardware,
             input_interop: asciiflow_core::InteropRequest::On,
             output_interop: asciiflow_core::InteropRequest::On,
+            output_codec: asciiflow_core::VideoCodec::H264,
         };
-        assert!(!InitCapability::HardwareDecode.is_auto(explicit));
-        assert!(!InitCapability::HardwareEncode.is_auto(explicit));
-        assert!(!InitCapability::Vulkan.is_auto(explicit));
-        assert!(!InitCapability::InputInterop.is_auto(explicit));
-        assert!(!InitCapability::OutputInterop.is_auto(explicit));
+        assert!(!InitCapability::HardwareDecode.is_auto(&explicit));
+        assert!(!InitCapability::HardwareEncode.is_auto(&explicit));
+        assert!(!InitCapability::Vulkan.is_auto(&explicit));
+        assert!(!InitCapability::InputInterop.is_auto(&explicit));
+        assert!(!InitCapability::OutputInterop.is_auto(&explicit));
     }
 
     #[test]
@@ -1608,7 +1641,7 @@ mod stage40_tests {
         let policy = PipelinePolicy::default();
         let requirements = requirements();
         let mut snapshot = full_capabilities();
-        let initial = PipelinePlanner::select(&snapshot, &requirements, policy).unwrap();
+        let initial = PipelinePlanner::select(&snapshot, &requirements, policy.clone()).unwrap();
         let mut attempt = 0;
         let initialized = initialize_with_replan(
             &mut snapshot,
@@ -1642,7 +1675,7 @@ mod stage40_tests {
         let policy = PipelinePolicy::default();
         let requirements = requirements();
         let mut snapshot = full_capabilities();
-        let initial = PipelinePlanner::select(&snapshot, &requirements, policy).unwrap();
+        let initial = PipelinePlanner::select(&snapshot, &requirements, policy.clone()).unwrap();
         let mut attempt = 0;
         let initialized = initialize_with_replan(
             &mut snapshot,
@@ -1672,6 +1705,128 @@ mod stage40_tests {
     }
 
     #[test]
+    fn hevc_output_interop_failure_replans_only_hevc_to_staged_encode() {
+        let policy = PipelinePolicy {
+            output_codec: VideoCodec::Hevc,
+            ..Default::default()
+        };
+        let requirements = requirements();
+        let mut snapshot = full_capabilities();
+        let initial = PipelinePlanner::select(&snapshot, &requirements, policy.clone()).unwrap();
+        let mut attempt = 0;
+        let initialized = initialize_with_replan(
+            &mut snapshot,
+            &requirements,
+            policy,
+            initial,
+            |plan| {
+                attempt += 1;
+                if attempt == 1 {
+                    Err(injected(
+                        InitCapability::OutputInterop,
+                        "injected HEVC output DMA-BUF import failure",
+                    ))
+                } else {
+                    Ok(plan.clone())
+                }
+            },
+            || Ok(()),
+        )
+        .unwrap();
+        assert_eq!(attempt, 2);
+        assert_eq!(initialized.value.output.codec, VideoCodec::Hevc);
+        assert!(initialized.value.hardware_upload);
+        assert!(!initialized.value.hardware_output_interop);
+        assert!(snapshot.interop.output.is_supported());
+        assert!(!snapshot.interop.hevc_output.is_supported());
+        assert!(snapshot.media.hevc_vaapi_encode.is_supported());
+    }
+
+    #[test]
+    fn hevc_encoder_or_frames_pool_failure_never_changes_output_codec() {
+        for capability in [
+            InitCapability::HardwareEncode,
+            InitializationPoint::VaapiFramesPoolCreate.capability(
+                &PipelinePlanner::select(
+                    &full_capabilities(),
+                    &requirements(),
+                    PipelinePolicy {
+                        output_codec: VideoCodec::Hevc,
+                        ..Default::default()
+                    },
+                )
+                .unwrap()
+                .selected,
+            ),
+        ] {
+            let policy = PipelinePolicy {
+                output_codec: VideoCodec::Hevc,
+                ..Default::default()
+            };
+            let requirements = requirements();
+            let mut snapshot = full_capabilities();
+            let initial =
+                PipelinePlanner::select(&snapshot, &requirements, policy.clone()).unwrap();
+            let error = initialize_with_replan(
+                &mut snapshot,
+                &requirements,
+                policy,
+                initial,
+                |_| {
+                    Err::<(), _>(injected(
+                        capability,
+                        "injected HEVC encoder initialization failure",
+                    ))
+                },
+                || Ok(()),
+            )
+            .unwrap_err();
+            assert!(error.to_string().contains("HEVC"));
+            assert!(snapshot.media.h264_vaapi_encode.is_supported());
+            assert!(!snapshot.media.hevc_vaapi_encode.is_supported());
+        }
+    }
+
+    #[test]
+    fn new_codec_input_replan_leaves_other_codecs_available() {
+        for (codec, profile) in [
+            (VideoCodec::Hevc, asciiflow_core::VideoProfile::HevcMain),
+            (VideoCodec::Av1, asciiflow_core::VideoProfile::Av1Main),
+        ] {
+            let mut req = requirements();
+            req.codec = codec.clone();
+            req.profile = Some(profile);
+            let mut snapshot = full_capabilities();
+            let initial = PipelinePlanner::select(&snapshot, &req, Default::default()).unwrap();
+            let mut attempts = 0;
+            let result = initialize_with_replan(
+                &mut snapshot,
+                &req,
+                Default::default(),
+                initial,
+                |plan| {
+                    attempts += 1;
+                    if attempts == 1 {
+                        Err(injected(
+                            InitCapability::InputInterop,
+                            "new codec input import failed",
+                        ))
+                    } else {
+                        Ok(plan.clone())
+                    }
+                },
+                || Ok(()),
+            )
+            .unwrap();
+            assert_eq!(attempts, 2);
+            assert_eq!(result.value.decode, MediaImplementation::Software);
+            assert!(!snapshot.interop.input_for(&codec).is_supported());
+            assert!(snapshot.interop.input.is_supported());
+            assert!(snapshot.media.decode_for(&codec).is_supported());
+        }
+    }
+
+    #[test]
     fn automatic_decoder_vulkan_and_encoder_failures_replan_once() {
         type PlanCheck = fn(&PipelinePlan) -> bool;
         let cases: [(InitCapability, PlanCheck); 3] = [
@@ -1689,7 +1844,8 @@ mod stage40_tests {
             let policy = PipelinePolicy::default();
             let requirements = requirements();
             let mut snapshot = full_capabilities();
-            let initial = PipelinePlanner::select(&snapshot, &requirements, policy).unwrap();
+            let initial =
+                PipelinePlanner::select(&snapshot, &requirements, policy.clone()).unwrap();
             let mut attempt = 0;
             let initialized = initialize_with_replan(
                 &mut snapshot,
@@ -1720,7 +1876,7 @@ mod stage40_tests {
         };
         let requirements = requirements();
         let mut snapshot = full_capabilities();
-        let initial = PipelinePlanner::select(&snapshot, &requirements, policy).unwrap();
+        let initial = PipelinePlanner::select(&snapshot, &requirements, policy.clone()).unwrap();
         let mut attempts = 0;
         let error = initialize_with_replan(
             &mut snapshot,
@@ -1746,7 +1902,7 @@ mod stage40_tests {
         let policy = PipelinePolicy::default();
         let requirements = requirements();
         let mut snapshot = full_capabilities();
-        let initial = PipelinePlanner::select(&snapshot, &requirements, policy).unwrap();
+        let initial = PipelinePlanner::select(&snapshot, &requirements, policy.clone()).unwrap();
         let mut attempts = 0;
         let error = initialize_with_replan(
             &mut snapshot,

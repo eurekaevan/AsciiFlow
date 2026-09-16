@@ -6,6 +6,7 @@ license.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+libloading = "0.8"
 asciiflow-core = { path = "../asciiflow-core" }
 ffmpeg-sys-next.workspace = true
 crossbeam-channel.workspace = true

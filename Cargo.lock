@@ -132,6 +132,7 @@ dependencies = [
  "crossbeam-channel",
  "ffmpeg-sys-next",
  "libc",
+ "libloading",
  "tracing",
 ]
 

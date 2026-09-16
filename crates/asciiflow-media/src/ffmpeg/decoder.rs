@@ -14,7 +14,7 @@ use super::{
 use asciiflow_core::{
     AudioPlan, AudioStreamInfo, ChromaLocation, ChromaSubsampling, ColorMatrix, ColorPrimaries,
     ColorRange, ColorSpace, FrameDesc, FrameSource, HostFrame, InputRequirements, Rational, Result,
-    SourceTimings, TransferCharacteristic, VideoCodec, VideoFrame,
+    SourceTimings, TransferCharacteristic, VideoCodec, VideoFrame, VideoProfile,
 };
 use std::{
     ffi::{CStr, CString},
@@ -134,7 +134,7 @@ impl Decoder {
         }
         let stream = unsafe { *(*format.as_ptr()).streams.add(stream_index as usize) };
         let parameters = unsafe { (*stream).codecpar };
-        let decoder = unsafe { ffi::avcodec_find_decoder((*parameters).codec_id) };
+        let decoder = super::vaapi::select_decoder(unsafe { (*parameters).codec_id }, mode)?;
         if decoder.is_null() {
             return Err(asciiflow_core::Error::Media(
                 "no decoder is available for the input video codec".into(),
@@ -332,6 +332,60 @@ impl Decoder {
                     "VAAPI decode was requested, but the decoder returned a software frame".into(),
                 ));
             }
+            let format = if self.mode == DecodeMode::Vaapi {
+                if native.hw_frames_ctx.is_null() {
+                    return Err(asciiflow_core::Error::Media(
+                        "VAAPI decoded frame has no hardware frames context".into(),
+                    ));
+                }
+                let frames = unsafe {
+                    &*((*native.hw_frames_ctx)
+                        .data
+                        .cast::<ffi::AVHWFramesContext>())
+                };
+                frames.sw_format as i32
+            } else {
+                native.format
+            };
+            let pixel = if (0..ffi::AVPixelFormat::AV_PIX_FMT_NB as i32).contains(&format) {
+                unsafe {
+                    ffi::av_pix_fmt_desc_get(std::mem::transmute::<i32, ffi::AVPixelFormat>(format))
+                        .as_ref()
+                }
+            } else {
+                None
+            };
+            let mut actual = self.info.requirements.clone();
+            actual.bit_depth = pixel.map(|p| p.comp[0].depth as u8);
+            actual.chroma_subsampling = pixel.map_or(ChromaSubsampling::Unknown, |p| {
+                if p.nb_components == 3 && p.log2_chroma_w == 1 && p.log2_chroma_h == 1 {
+                    ChromaSubsampling::Yuv420
+                } else {
+                    ChromaSubsampling::Other
+                }
+            });
+            actual.validate_current_pipeline().map_err(|e| {
+                asciiflow_core::Error::Media(format!(
+                    "decoded {:?} profile {:?}, {:?}-bit {:?}, requested {:?}: {e}",
+                    actual.codec,
+                    actual.profile,
+                    actual.bit_depth,
+                    actual.chroma_subsampling,
+                    self.mode
+                ))
+            })?;
+            if matches!(
+                native.color_trc,
+                ffi::AVColorTransferCharacteristic::AVCOL_TRC_SMPTE2084
+                    | ffi::AVColorTransferCharacteristic::AVCOL_TRC_ARIB_STD_B67
+            ) || native.color_primaries == ffi::AVColorPrimaries::AVCOL_PRI_BT2020
+            {
+                return Err(asciiflow_core::Error::Media(format!(
+                    "{:?} HDR/BT.2020 input is not supported by the current SDR NV12 pipeline",
+                    actual.codec
+                )));
+            }
+            self.info.requirements = actual;
             return Ok(ReceiveResult::Frame(pts));
         }
         if result == ffi::AVERROR_EOF {
@@ -615,6 +669,10 @@ fn input_requirements(
     let codec_id = unsafe { (*parameters).codec_id };
     let codec = if codec_id == ffi::AVCodecID::AV_CODEC_ID_H264 {
         VideoCodec::H264
+    } else if codec_id == ffi::AVCodecID::AV_CODEC_ID_HEVC {
+        VideoCodec::Hevc
+    } else if codec_id == ffi::AVCodecID::AV_CODEC_ID_AV1 {
+        VideoCodec::Av1
     } else {
         let name = unsafe { CStr::from_ptr(ffi::avcodec_get_name(codec_id)) }
             .to_string_lossy()
@@ -623,7 +681,15 @@ fn input_requirements(
     };
     let profile = unsafe {
         let name = ffi::avcodec_profile_name(codec_id, (*parameters).profile);
-        (!name.is_null()).then(|| CStr::from_ptr(name).to_string_lossy().into_owned())
+        (!name.is_null()).then(|| {
+            let name = CStr::from_ptr(name).to_string_lossy();
+            match (&codec, name.as_ref()) {
+                (VideoCodec::Hevc, "Main") => VideoProfile::HevcMain,
+                (VideoCodec::Av1, "Main") => VideoProfile::Av1Main,
+                (VideoCodec::H264, "Main") => VideoProfile::H264Main,
+                _ => VideoProfile::from(name.as_ref()),
+            }
+        })
     };
     let format_value = unsafe { (*parameters).format };
     let descriptor = if (-1..ffi::AVPixelFormat::AV_PIX_FMT_NB as i32).contains(&format_value) {

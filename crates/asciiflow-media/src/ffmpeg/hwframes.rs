@@ -148,6 +148,13 @@ impl VaapiEncoderFrames {
             desc: self.desc.clone(),
         })
     }
+
+    pub fn clone_for_diagnostic(&self) -> Result<Self> {
+        Ok(Self {
+            pool: self.pool.try_clone()?,
+            desc: self.desc.clone(),
+        })
+    }
 }
 
 unsafe impl Send for VaapiEncoderFrames {}
@@ -188,6 +195,61 @@ impl VaapiEncoderFrame {
     pub(crate) fn belongs_to(&self, pool: &HardwareFramesPool) -> bool {
         let frame_ref = unsafe { (*self.hardware.as_ptr()).hw_frames_ctx };
         !frame_ref.is_null() && unsafe { (*frame_ref).data == (*pool.as_ptr()).data }
+    }
+
+    /// Diagnostic upload used to compare the staged and external-image paths
+    /// before either surface enters an encoder.
+    pub fn upload_nv12(&mut self, frame: &VideoFrame) -> Result<()> {
+        if frame.desc() != &self.desc {
+            return Err(Error::Media(
+                "encoder-surface upload received a different frame descriptor".into(),
+            ));
+        }
+        let mut host = Frame::new()?;
+        unsafe {
+            (*host.as_mut_ptr()).format = ffi::AVPixelFormat::AV_PIX_FMT_NV12 as i32;
+            (*host.as_mut_ptr()).width = self.desc.width as i32;
+            (*host.as_mut_ptr()).height = self.desc.height as i32;
+        }
+        let allocated = unsafe { ffi::av_frame_get_buffer(host.as_mut_ptr(), 32) };
+        if allocated < 0 {
+            return Err(ffmpeg_error(
+                "failed to allocate staged encoder upload frame",
+                allocated,
+            ));
+        }
+        let native = unsafe { &mut *host.as_mut_ptr() };
+        let (source_y, source_uv) = frame.host().planes(frame.desc());
+        let width = self.desc.width as usize;
+        let height = self.desc.height as usize;
+        unsafe {
+            for row in 0..height {
+                std::ptr::copy_nonoverlapping(
+                    source_y.as_ptr().add(row * width),
+                    native.data[0].add(row * native.linesize[0] as usize),
+                    width,
+                );
+            }
+            for row in 0..height / 2 {
+                std::ptr::copy_nonoverlapping(
+                    source_uv.as_ptr().add(row * width),
+                    native.data[1].add(row * native.linesize[1] as usize),
+                    width,
+                );
+            }
+            native.pts = frame.pts().unwrap_or(self.pts());
+        }
+        let uploaded = unsafe {
+            ffi::av_hwframe_transfer_data(self.hardware.as_mut_ptr(), host.as_mut_ptr(), 0)
+        };
+        if uploaded < 0 {
+            return Err(ffmpeg_error(
+                "failed to upload staged NV12 into VAAPI encoder surface",
+                uploaded,
+            ));
+        }
+        unsafe { (*self.hardware.as_mut_ptr()).pts = native.pts };
+        Ok(())
     }
 
     /// Diagnostic-only readback used to prove pre-encode pixel parity.

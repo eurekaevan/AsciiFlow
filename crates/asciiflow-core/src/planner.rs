@@ -35,7 +35,10 @@ pub struct MediaCapabilities {
     pub software_encode: CapabilitySupport,
     pub vaapi_device: CapabilitySupport,
     pub h264_vaapi_decode: CapabilitySupport,
+    pub hevc_vaapi_decode: CapabilitySupport,
+    pub av1_vaapi_decode: CapabilitySupport,
     pub h264_vaapi_encode: CapabilitySupport,
+    pub hevc_vaapi_encode: CapabilitySupport,
     pub nv12_hardware_frames: CapabilitySupport,
     pub nv12_hardware_upload: CapabilitySupport,
 }
@@ -64,8 +67,12 @@ pub struct ProcessingCapabilities {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct InteropCapabilities {
+    /// Qualification of the actual H.264 stream, never a global interop promise.
     pub input: CapabilitySupport,
+    pub hevc_input: CapabilitySupport,
+    pub av1_input: CapabilitySupport,
     pub output: CapabilitySupport,
+    pub hevc_output: CapabilitySupport,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -78,7 +85,116 @@ pub struct CapabilitySnapshot {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum VideoCodec {
     H264,
+    Hevc,
+    Av1,
     Other(String),
+}
+
+impl fmt::Display for VideoCodec {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::H264 => f.write_str("H.264"),
+            Self::Hevc => f.write_str("HEVC"),
+            Self::Av1 => f.write_str("AV1"),
+            Self::Other(name) => f.write_str(name),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum VideoProfile {
+    H264Baseline,
+    H264Main,
+    H264High,
+    HevcMain,
+    Av1Main,
+    Other(String),
+}
+
+impl From<&str> for VideoProfile {
+    fn from(name: &str) -> Self {
+        match name {
+            "High" => Self::H264High,
+            "Baseline" | "Constrained Baseline" => Self::H264Baseline,
+            _ => Self::Other(name.into()),
+        }
+    }
+}
+
+impl MediaCapabilities {
+    pub fn decode_for(&self, codec: &VideoCodec) -> &CapabilitySupport {
+        match codec {
+            VideoCodec::H264 => &self.h264_vaapi_decode,
+            VideoCodec::Hevc => &self.hevc_vaapi_decode,
+            VideoCodec::Av1 => &self.av1_vaapi_decode,
+            VideoCodec::Other(_) => &UNSUPPORTED_CODEC,
+        }
+    }
+    pub fn disable_decode(&mut self, codec: &VideoCodec, reason: &str) {
+        let fact = match codec {
+            VideoCodec::H264 => &mut self.h264_vaapi_decode,
+            VideoCodec::Hevc => &mut self.hevc_vaapi_decode,
+            VideoCodec::Av1 => &mut self.av1_vaapi_decode,
+            VideoCodec::Other(_) => return,
+        };
+        *fact = CapabilitySupport::unsupported(reason);
+    }
+}
+static UNSUPPORTED_CODEC: std::sync::LazyLock<CapabilitySupport> = std::sync::LazyLock::new(|| {
+    CapabilitySupport::not_probed("codec is outside the qualified hardware input set")
+});
+impl InteropCapabilities {
+    pub fn input_for(&self, codec: &VideoCodec) -> &CapabilitySupport {
+        match codec {
+            VideoCodec::H264 => &self.input,
+            VideoCodec::Hevc => &self.hevc_input,
+            VideoCodec::Av1 => &self.av1_input,
+            VideoCodec::Other(_) => &UNSUPPORTED_CODEC,
+        }
+    }
+    pub fn set_input(&mut self, codec: &VideoCodec, fact: CapabilitySupport) {
+        match codec {
+            VideoCodec::H264 => self.input = fact,
+            VideoCodec::Hevc => self.hevc_input = fact,
+            VideoCodec::Av1 => self.av1_input = fact,
+            VideoCodec::Other(_) => {}
+        }
+    }
+
+    pub fn output_for(&self, codec: &VideoCodec) -> &CapabilitySupport {
+        match codec {
+            VideoCodec::H264 => &self.output,
+            VideoCodec::Hevc => &self.hevc_output,
+            VideoCodec::Av1 | VideoCodec::Other(_) => &UNSUPPORTED_CODEC,
+        }
+    }
+
+    pub fn set_output(&mut self, codec: &VideoCodec, fact: CapabilitySupport) {
+        match codec {
+            VideoCodec::H264 => self.output = fact,
+            VideoCodec::Hevc => self.hevc_output = fact,
+            VideoCodec::Av1 | VideoCodec::Other(_) => {}
+        }
+    }
+}
+
+impl MediaCapabilities {
+    pub fn encode_for(&self, codec: &VideoCodec) -> &CapabilitySupport {
+        match codec {
+            VideoCodec::H264 => &self.h264_vaapi_encode,
+            VideoCodec::Hevc => &self.hevc_vaapi_encode,
+            VideoCodec::Av1 | VideoCodec::Other(_) => &UNSUPPORTED_CODEC,
+        }
+    }
+
+    pub fn disable_encode(&mut self, codec: &VideoCodec, reason: &str) {
+        let fact = match codec {
+            VideoCodec::H264 => &mut self.h264_vaapi_encode,
+            VideoCodec::Hevc => &mut self.hevc_vaapi_encode,
+            VideoCodec::Av1 | VideoCodec::Other(_) => return,
+        };
+        *fact = CapabilitySupport::unsupported(reason);
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -91,7 +207,7 @@ pub enum ChromaSubsampling {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct InputRequirements {
     pub codec: VideoCodec,
-    pub profile: Option<String>,
+    pub profile: Option<VideoProfile>,
     pub pixel_format: Option<String>,
     pub bit_depth: Option<u8>,
     pub chroma_subsampling: ChromaSubsampling,
@@ -101,10 +217,50 @@ pub struct InputRequirements {
     pub color_space: ColorSpace,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct OutputVideoRequirements {
+    pub codec: VideoCodec,
+    /// Explicitly required profile. H.264 retains the encoder's existing profile selection.
+    pub profile: Option<VideoProfile>,
+    pub bit_depth: u8,
+    pub chroma_subsampling: ChromaSubsampling,
+    pub width: u32,
+    pub height: u32,
+    pub frame_rate: Rational,
+}
+
+impl OutputVideoRequirements {
+    pub fn current_nv12(codec: VideoCodec, input: &InputRequirements) -> Result<Self> {
+        let profile = match codec {
+            VideoCodec::H264 => None,
+            VideoCodec::Hevc => Some(VideoProfile::HevcMain),
+            VideoCodec::Av1 => {
+                return Err(Error::InvalidConfig("AV1 output is not implemented".into()));
+            }
+            VideoCodec::Other(ref name) => {
+                return Err(Error::InvalidConfig(format!(
+                    "output codec {name} is not implemented"
+                )));
+            }
+        };
+        Ok(Self {
+            codec,
+            profile,
+            bit_depth: 8,
+            chroma_subsampling: ChromaSubsampling::Yuv420,
+            width: input.width,
+            height: input.height,
+            frame_rate: input.frame_rate,
+        })
+    }
+}
+
 impl InputRequirements {
     fn supports_current_hardware_path(&self) -> bool {
-        self.codec == VideoCodec::H264
-            && self.bit_depth == Some(8)
+        matches!(
+            self.codec,
+            VideoCodec::H264 | VideoCodec::Hevc | VideoCodec::Av1
+        ) && self.bit_depth == Some(8)
             && self.chroma_subsampling == ChromaSubsampling::Yuv420
     }
 
@@ -120,6 +276,14 @@ impl InputRequirements {
             return Err(Error::UnsupportedFrame(format!(
                 "the current NV12 pipeline requires 4:2:0 chroma, got {:?}",
                 self.chroma_subsampling
+            )));
+        }
+        if (self.codec == VideoCodec::Hevc && self.profile != Some(VideoProfile::HevcMain))
+            || (self.codec == VideoCodec::Av1 && self.profile != Some(VideoProfile::Av1Main))
+        {
+            return Err(Error::UnsupportedFrame(format!(
+                "{:?} profile {:?} is outside the Main 8-bit 4:2:0 input contract",
+                self.codec, self.profile
             )));
         }
         if self.width == 0
@@ -156,13 +320,27 @@ pub enum InteropRequest {
     On,
 }
 
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PipelinePolicy {
     pub backend: ProcessingBackend,
     pub decode: MediaRequest,
     pub encode: MediaRequest,
     pub input_interop: InteropRequest,
     pub output_interop: InteropRequest,
+    pub output_codec: VideoCodec,
+}
+
+impl Default for PipelinePolicy {
+    fn default() -> Self {
+        Self {
+            backend: ProcessingBackend::Auto,
+            decode: MediaRequest::Auto,
+            encode: MediaRequest::Auto,
+            input_interop: InteropRequest::Auto,
+            output_interop: InteropRequest::Auto,
+            output_codec: VideoCodec::H264,
+        }
+    }
 }
 
 impl PipelinePolicy {
@@ -207,7 +385,7 @@ impl fmt::Display for PlanNode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
             Self::SoftwareDecode => "software decode",
-            Self::VaapiDecode => "VAAPI H.264 decode",
+            Self::VaapiDecode => "VAAPI decode",
             Self::HardwareDownload => "hardware download",
             Self::InputHardwareInterop => "VAAPI/Vulkan input interop",
             Self::CpuAscii => "CPU ASCII",
@@ -215,8 +393,8 @@ impl fmt::Display for PlanNode {
             Self::HostReadback => "Host readback",
             Self::HardwareUpload => "VAAPI hardware upload",
             Self::OutputHardwareInterop => "Vulkan/VAAPI output interop",
-            Self::SoftwareEncode => "software H.264 encode",
-            Self::VaapiEncode => "VAAPI H.264 encode",
+            Self::SoftwareEncode => "software encode",
+            Self::VaapiEncode => "VAAPI encode",
         })
     }
 }
@@ -250,6 +428,7 @@ pub struct PipelinePlan {
     pub backend: ProcessingBackend,
     pub decode: MediaImplementation,
     pub encode: MediaImplementation,
+    pub output: OutputVideoRequirements,
     pub hardware_download: bool,
     pub hardware_upload: bool,
     pub hardware_input_interop: bool,
@@ -267,7 +446,11 @@ impl fmt::Display for PipelinePlan {
             if index != 0 {
                 f.write_str("\n  -> ")?;
             }
-            write!(f, "{}", step.node)?;
+            match step.node {
+                PlanNode::SoftwareEncode => write!(f, "software {} encode", self.output.codec)?,
+                PlanNode::VaapiEncode => write!(f, "VAAPI {} encode", self.output.codec)?,
+                _ => write!(f, "{}", step.node)?,
+            }
         }
         Ok(())
     }
@@ -298,7 +481,7 @@ struct Candidate {
 
 impl PipelinePlanner {
     pub fn validate_policy(policy: PipelinePolicy) -> Result<()> {
-        validate_policy(policy)
+        validate_policy(&policy)
     }
 
     pub fn select(
@@ -306,7 +489,10 @@ impl PipelinePlanner {
         requirements: &InputRequirements,
         policy: PipelinePolicy,
     ) -> Result<PlanningResult> {
-        validate_policy(policy)?;
+        validate_policy(&policy)?;
+        requirements.validate_current_pipeline()?;
+        let output =
+            OutputVideoRequirements::current_nv12(policy.output_codec.clone(), requirements)?;
         let mut accepted = Vec::new();
         let mut rejected = Vec::new();
         let mut ordinal = 0_u16;
@@ -325,11 +511,15 @@ impl PipelinePlanner {
                             if !candidate.is_structurally_valid() {
                                 continue;
                             }
-                            if !candidate.matches_policy(policy) {
+                            if !candidate.matches_policy(&policy) {
                                 continue;
                             }
-                            let reasons =
-                                candidate.rejection_reasons(capabilities, requirements, policy);
+                            let reasons = candidate.rejection_reasons(
+                                capabilities,
+                                requirements,
+                                &output,
+                                &policy,
+                            );
                             if reasons.is_empty() {
                                 accepted.push((candidate.preference_cost(), ordinal, candidate));
                             } else {
@@ -360,13 +550,18 @@ impl PipelinePlanner {
             }));
         };
         Ok(PlanningResult {
-            selected: selected.into_plan(cost, capabilities),
+            selected: selected.into_plan(cost, capabilities, output),
             rejected,
         })
     }
 }
 
-fn validate_policy(policy: PipelinePolicy) -> Result<()> {
+fn validate_policy(policy: &PipelinePolicy) -> Result<()> {
+    if policy.output_codec == VideoCodec::Hevc && policy.encode == MediaRequest::Software {
+        return Err(Error::InvalidConfig(
+            "HEVC software encoding is not implemented".into(),
+        ));
+    }
     if policy.input_interop == InteropRequest::On && policy.decode == MediaRequest::Software {
         return Err(Error::InvalidConfig(
             "input interop requires a hardware decoder".into(),
@@ -400,7 +595,7 @@ impl Candidate {
                     && self.backend == ProcessingBackend::Vulkan))
     }
 
-    fn matches_policy(self, policy: PipelinePolicy) -> bool {
+    fn matches_policy(self, policy: &PipelinePolicy) -> bool {
         matches_media(policy.decode, self.decode)
             && matches_media(policy.encode, self.encode)
             && matches_backend(policy.backend, self.backend)
@@ -412,7 +607,8 @@ impl Candidate {
         self,
         caps: &CapabilitySnapshot,
         req: &InputRequirements,
-        policy: PipelinePolicy,
+        output: &OutputVideoRequirements,
+        policy: &PipelinePolicy,
     ) -> Vec<String> {
         let mut reasons = Vec::new();
         if self.decode == MediaImplementation::Hardware
@@ -423,11 +619,14 @@ impl Candidate {
         if self.decode == MediaImplementation::Hardware {
             require(
                 &mut reasons,
-                "VAAPI H.264 decode",
-                &caps.media.h264_vaapi_decode,
+                &format!("VAAPI {} decode", req.codec),
+                caps.media.decode_for(&req.codec),
             );
             if !req.supports_current_hardware_path() {
-                reasons.push(format!("input {:?} {:?}-bit {:?} is outside the qualified H.264 8-bit 4:2:0 hardware path", req.codec, req.bit_depth, req.chroma_subsampling));
+                reasons.push(format!(
+                    "input {:?} {:?}-bit {:?} is outside the qualified 8-bit 4:2:0 hardware path",
+                    req.codec, req.bit_depth, req.chroma_subsampling
+                ));
             }
         } else {
             require(&mut reasons, "software decode", &caps.media.software_decode);
@@ -435,8 +634,8 @@ impl Candidate {
         if self.encode == MediaImplementation::Hardware {
             require(
                 &mut reasons,
-                "VAAPI H.264 encode",
-                &caps.media.h264_vaapi_encode,
+                &format!("VAAPI {} encode", output.codec),
+                caps.media.encode_for(&output.codec),
             );
             require(
                 &mut reasons,
@@ -451,6 +650,12 @@ impl Candidate {
                 );
             }
         } else {
+            if output.codec != VideoCodec::H264 {
+                reasons.push(format!(
+                    "{} software encoding is not implemented",
+                    output.codec
+                ));
+            }
             require(
                 &mut reasons,
                 "software H.264 encode",
@@ -497,7 +702,7 @@ impl Candidate {
             require(
                 &mut reasons,
                 "VAAPI to Vulkan input interop",
-                &caps.interop.input,
+                caps.interop.input_for(&req.codec),
             );
         }
         if self.output_interop {
@@ -509,7 +714,7 @@ impl Candidate {
             require(
                 &mut reasons,
                 "Vulkan to VAAPI output interop",
-                &caps.interop.output,
+                caps.interop.output_for(&output.codec),
             );
         }
         reasons
@@ -549,7 +754,12 @@ impl Candidate {
             .join(" -> ")
     }
 
-    fn into_plan(self, preference_cost: u16, caps: &CapabilitySnapshot) -> PipelinePlan {
+    fn into_plan(
+        self,
+        preference_cost: u16,
+        caps: &CapabilitySnapshot,
+        output: OutputVideoRequirements,
+    ) -> PipelinePlan {
         let hardware_download = self.decode == MediaImplementation::Hardware && !self.input_interop;
         let hardware_upload = self.encode == MediaImplementation::Hardware && !self.output_interop;
         let pixel_path = if self.decode == MediaImplementation::Hardware
@@ -594,6 +804,7 @@ impl Candidate {
             backend: self.backend,
             decode: self.decode,
             encode: self.encode,
+            output,
             hardware_download,
             hardware_upload,
             hardware_input_interop: self.input_interop,
@@ -740,7 +951,10 @@ mod tests {
                 software_encode: yes(),
                 vaapi_device: yes(),
                 h264_vaapi_decode: yes(),
+                hevc_vaapi_decode: yes(),
+                av1_vaapi_decode: yes(),
                 h264_vaapi_encode: yes(),
+                hevc_vaapi_encode: yes(),
                 nv12_hardware_frames: yes(),
                 nv12_hardware_upload: yes(),
             },
@@ -757,7 +971,10 @@ mod tests {
             },
             interop: InteropCapabilities {
                 input: yes(),
+                hevc_input: yes(),
+                av1_input: yes(),
                 output: yes(),
+                hevc_output: yes(),
             },
         }
     }
@@ -772,6 +989,63 @@ mod tests {
             height: 1080,
             frame_rate: Rational::new(50, 1).unwrap(),
             color_space: ColorSpace::default(),
+        }
+    }
+
+    #[test]
+    fn new_codec_auto_capabilities_are_isolated_and_do_not_prefer_hwdownload() {
+        for (codec, profile) in [
+            (VideoCodec::Hevc, VideoProfile::HevcMain),
+            (VideoCodec::Av1, VideoProfile::Av1Main),
+        ] {
+            let mut req = h264();
+            req.codec = codec.clone();
+            req.profile = Some(profile);
+            let mut caps = full();
+            let plan = PipelinePlanner::select(&caps, &req, Default::default())
+                .unwrap()
+                .selected;
+            assert!(plan.hardware_input_interop);
+            caps.interop.set_input(&codec, no("stream import"));
+            let plan = PipelinePlanner::select(&caps, &req, Default::default())
+                .unwrap()
+                .selected;
+            assert_eq!(plan.decode, MediaImplementation::Software);
+            assert!(caps.interop.input.is_supported());
+            caps.media.disable_decode(&codec, "decoder init");
+            assert!(caps.media.h264_vaapi_decode.is_supported());
+            assert!(!caps.media.decode_for(&codec).is_supported());
+            assert!(
+                PipelinePlanner::select(
+                    &caps,
+                    &req,
+                    PipelinePolicy {
+                        decode: MediaRequest::Hardware,
+                        ..Default::default()
+                    }
+                )
+                .is_err()
+            );
+        }
+    }
+
+    #[test]
+    fn new_codec_depth_profile_and_chroma_are_planner_errors() {
+        for (codec, profile) in [
+            (VideoCodec::Hevc, VideoProfile::HevcMain),
+            (VideoCodec::Av1, VideoProfile::Av1Main),
+        ] {
+            let mut req = h264();
+            req.codec = codec;
+            req.profile = Some(profile);
+            req.bit_depth = Some(10);
+            assert!(PipelinePlanner::select(&full(), &req, Default::default()).is_err());
+            req.bit_depth = Some(8);
+            req.chroma_subsampling = ChromaSubsampling::Other;
+            assert!(PipelinePlanner::select(&full(), &req, Default::default()).is_err());
+            req.chroma_subsampling = ChromaSubsampling::Yuv420;
+            req.profile = Some(VideoProfile::Other("unsupported profile".into()));
+            assert!(PipelinePlanner::select(&full(), &req, Default::default()).is_err());
         }
     }
     fn automatic(snapshot: &CapabilitySnapshot) -> PipelinePlan {
@@ -878,7 +1152,7 @@ mod tests {
             },
         ];
         for policy in policies {
-            let p = PipelinePlanner::select(&c, &h264(), policy)
+            let p = PipelinePlanner::select(&c, &h264(), policy.clone())
                 .unwrap()
                 .selected;
             if policy.decode == MediaRequest::Software {
@@ -955,7 +1229,7 @@ mod tests {
         assert_eq!(p.steps[0].output, Some(FrameDomain::HardwareNv12));
         assert_eq!(
             p.to_string(),
-            "VAAPI H.264 decode\n  -> VAAPI/Vulkan input interop\n  -> Vulkan ASCII\n  -> Vulkan/VAAPI output interop\n  -> VAAPI H.264 encode"
+            "VAAPI decode\n  -> VAAPI/Vulkan input interop\n  -> Vulkan ASCII\n  -> Vulkan/VAAPI output interop\n  -> VAAPI H.264 encode"
         );
     }
 
@@ -997,11 +1271,115 @@ mod tests {
     fn planning_is_deterministic() {
         let capabilities = full();
         let first = PipelinePlanner::select(&capabilities, &h264(), Default::default()).unwrap();
+        assert_eq!(first.selected.output.profile, None);
         for _ in 0..20 {
             assert_eq!(
                 PipelinePlanner::select(&capabilities, &h264(), Default::default()).unwrap(),
                 first
             );
         }
+    }
+
+    #[test]
+    fn hevc_output_selects_vaapi_and_records_codec_identity() {
+        let plan = PipelinePlanner::select(
+            &full(),
+            &h264(),
+            PipelinePolicy {
+                output_codec: VideoCodec::Hevc,
+                ..Default::default()
+            },
+        )
+        .unwrap()
+        .selected;
+        assert_eq!(plan.output.codec, VideoCodec::Hevc);
+        assert_eq!(plan.output.profile, Some(VideoProfile::HevcMain));
+        assert_eq!(plan.encode, MediaImplementation::Hardware);
+        assert!(plan.hardware_output_interop);
+        assert!(plan.to_string().contains("VAAPI HEVC encode"));
+    }
+
+    #[test]
+    fn hevc_output_without_interop_keeps_vaapi_encode_and_stages() {
+        let mut capabilities = full();
+        capabilities.interop.hevc_output = no("HEVC output interop");
+        let plan = PipelinePlanner::select(
+            &capabilities,
+            &h264(),
+            PipelinePolicy {
+                output_codec: VideoCodec::Hevc,
+                ..Default::default()
+            },
+        )
+        .unwrap()
+        .selected;
+        assert_eq!(plan.output.codec, VideoCodec::Hevc);
+        assert!(plan.hardware_upload);
+        assert!(!plan.hardware_output_interop);
+    }
+
+    #[test]
+    fn hevc_output_never_falls_back_to_h264_or_software() {
+        let mut capabilities = full();
+        capabilities.media.hevc_vaapi_encode = no("HEVC encoder");
+        let error = PipelinePlanner::select(
+            &capabilities,
+            &h264(),
+            PipelinePolicy {
+                output_codec: VideoCodec::Hevc,
+                ..Default::default()
+            },
+        )
+        .unwrap_err();
+        assert!(error.to_string().contains("VAAPI HEVC encode unavailable"));
+
+        let error = PipelinePlanner::select(
+            &full(),
+            &h264(),
+            PipelinePolicy {
+                encode: MediaRequest::Software,
+                output_codec: VideoCodec::Hevc,
+                ..Default::default()
+            },
+        )
+        .unwrap_err();
+        assert!(
+            error
+                .to_string()
+                .contains("HEVC software encoding is not implemented")
+        );
+    }
+
+    #[test]
+    fn output_interop_capability_is_scoped_by_codec() {
+        let mut capabilities = full();
+        capabilities.interop.hevc_output = no("HEVC-only output import");
+        let h264_plan = PipelinePlanner::select(&capabilities, &h264(), Default::default())
+            .unwrap()
+            .selected;
+        assert!(h264_plan.hardware_output_interop);
+        let hevc = PipelinePlanner::select(
+            &capabilities,
+            &h264(),
+            PipelinePolicy {
+                output_codec: VideoCodec::Hevc,
+                ..Default::default()
+            },
+        )
+        .unwrap()
+        .selected;
+        assert!(!hevc.hardware_output_interop);
+
+        let error = PipelinePlanner::select(
+            &capabilities,
+            &h264(),
+            PipelinePolicy {
+                output_codec: VideoCodec::Hevc,
+                output_interop: InteropRequest::On,
+                ..Default::default()
+            },
+        )
+        .unwrap_err();
+        assert!(error.to_string().contains("HEVC-only output import"));
     }
 }

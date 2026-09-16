@@ -2,6 +2,59 @@ mod audio_support;
 use asciiflow_core::FrameSource;
 
 #[test]
+fn hevc_av1_software_input_retains_audio_font_and_h264_output() {
+    for name in ["hevc-main8-bframes.mp4", "av1-main8-nofilmgrain.mp4"] {
+        let ws = Workspace::new();
+        let root = fixture("single.mp4")
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .to_owned();
+        let input = root.join("codecs").join(name);
+        let result = Process::start(
+            command(&input, &ws.output(), "copy")
+                .arg("--font")
+                .arg(root.join("fonts/Inconsolata-Regular.ttf")),
+        )
+        .finish();
+        success(&result);
+        let output = inspect(&ws.output());
+        let video = output.iter().find(|s| s.video).unwrap();
+        assert_eq!(video.codec, "h264");
+        assert_eq!(video.packets.len(), 36);
+        same_audio(audio(&inspect(&input))[0], audio(&output)[0]);
+        let mut decoder = asciiflow_media::Decoder::open(ws.output()).unwrap();
+        let mut count = 0;
+        while decoder.next_frame().unwrap().is_some() {
+            count += 1;
+        }
+        assert_eq!(count, 36);
+        ws.assert_no_staging();
+    }
+}
+
+#[test]
+fn new_codec_ten_bit_failures_do_not_touch_existing_output() {
+    for name in ["hevc-main10-reject.mp4", "av1-main10-reject.mp4"] {
+        let ws = Workspace::new();
+        std::fs::write(ws.output(), b"existing").unwrap();
+        let input = fixture("single.mp4")
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .join("codecs")
+            .join(name);
+        let result = Process::start(&mut command(&input, &ws.output(), "none")).finish();
+        assert!(!result.status.success());
+        assert!(String::from_utf8_lossy(&result.stderr).contains("10-bit"));
+        assert_eq!(std::fs::read(ws.output()).unwrap(), b"existing");
+        ws.assert_no_staging();
+    }
+}
+
+#[test]
 fn explicit_font_failures_preserve_output_and_capabilities_remain_font_independent() {
     for name in ["missing.ttf", "Abel-Regular.ttf"] {
         let ws = Workspace::new();

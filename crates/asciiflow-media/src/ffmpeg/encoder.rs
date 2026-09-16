@@ -10,7 +10,7 @@ use super::{
 };
 use asciiflow_core::{
     CancellationToken, Error, FrameDesc, FrameSink, PipelineStage, Rational, Result, SinkTimings,
-    VideoFrame,
+    VideoCodec, VideoFrame,
 };
 use crossbeam_channel::{Receiver, SendTimeoutError, Sender, bounded};
 use std::{
@@ -35,6 +35,7 @@ pub struct Encoder {
     _hardware_device: Option<HardwareDevice>,
     packet: Packet,
     mode: EncodeMode,
+    output_codec: VideoCodec,
     timings: SinkTimings,
     desc: FrameDesc,
     next_pts: i64,
@@ -46,6 +47,10 @@ pub struct Encoder {
     mux_stats: Arc<Mutex<MuxStats>>,
     mux_stop: CancellationToken,
     cancellation: CancellationToken,
+    #[cfg(test)]
+    inject_send_failure: bool,
+    #[cfg(test)]
+    inject_receive_failure: bool,
 }
 
 #[derive(Default)]
@@ -69,6 +74,7 @@ struct MuxOutput {
 }
 
 struct EncoderCreateOptions {
+    codec: VideoCodec,
     mode: EncodeMode,
     vaapi: VaapiOptions,
     require_host_upload: bool,
@@ -83,21 +89,39 @@ pub struct VaapiEncoderProbe {
     pub host_upload_supported: bool,
 }
 
+pub struct OutputEncoding {
+    pub codec: VideoCodec,
+    pub mode: EncodeMode,
+}
+
 pub fn probe_vaapi_encoder(
     desc: FrameDesc,
     frame_rate: Rational,
     vaapi: VaapiOptions,
 ) -> Result<VaapiEncoderProbe> {
-    let name = CString::new("h264_vaapi").unwrap();
+    probe_vaapi_encoder_for(VideoCodec::H264, desc, frame_rate, vaapi)
+}
+
+pub fn probe_vaapi_encoder_for(
+    output_codec: VideoCodec,
+    desc: FrameDesc,
+    frame_rate: Rational,
+    vaapi: VaapiOptions,
+) -> Result<VaapiEncoderProbe> {
+    let codec_name = output_codec_name(&output_codec)?;
+    let name = CString::new(format!("{codec_name}_vaapi")).unwrap();
     let encoder = unsafe { ffi::avcodec_find_encoder_by_name(name.as_ptr()) };
     if encoder.is_null() {
-        return Err(asciiflow_core::Error::Media(
-            "this FFmpeg build has no h264_vaapi encoder".into(),
-        ));
+        return Err(asciiflow_core::Error::Media(format!(
+            "this FFmpeg build has no {codec_name}_vaapi encoder"
+        )));
     }
+    require_output_codec_id(encoder, &output_codec)?;
     require_vaapi_encoder(encoder)?;
     let codec = NonNull::new(unsafe { ffi::avcodec_alloc_context3(encoder) }).ok_or_else(|| {
-        asciiflow_core::Error::Media("failed to allocate H.264 encoder probe context".into())
+        asciiflow_core::Error::Media(format!(
+            "failed to allocate {output_codec} encoder probe context"
+        ))
     })?;
     let _guard = CodecGuard(Some(codec));
     unsafe {
@@ -119,6 +143,9 @@ pub fn probe_vaapi_encoder(
         (*codec.as_ptr()).color_primaries = ffi::AVColorPrimaries::AVCOL_PRI_BT709;
         (*codec.as_ptr()).color_trc = ffi::AVColorTransferCharacteristic::AVCOL_TRC_BT709;
         (*codec.as_ptr()).chroma_sample_location = ffi::AVChromaLocation::AVCHROMA_LOC_LEFT;
+        if output_codec == VideoCodec::Hevc {
+            (*codec.as_ptr()).profile = ffi::FF_PROFILE_HEVC_MAIN;
+        }
         (*codec.as_ptr()).max_b_frames = 0;
         (*codec.as_ptr()).gop_size = 250;
     }
@@ -137,10 +164,13 @@ pub fn probe_vaapi_encoder(
     let opened = unsafe { ffi::avcodec_open2(codec.as_ptr(), encoder, &mut options) };
     let unused_options = unsafe { ffi::av_dict_count(options) };
     unsafe { ffi::av_dict_free(&mut options) };
-    check(opened, "failed to configure h264_vaapi encoder probe")?;
+    check(
+        opened,
+        &format!("failed to configure {codec_name}_vaapi encoder probe"),
+    )?;
     if unused_options != 0 {
         return Err(asciiflow_core::Error::Media(format!(
-            "H.264 encoder probe rejected {unused_options} configuration option(s)"
+            "{output_codec} encoder probe rejected {unused_options} configuration option(s)"
         )));
     }
     Ok(VaapiEncoderProbe {
@@ -172,6 +202,7 @@ impl Encoder {
             desc,
             frame_rate,
             EncoderCreateOptions {
+                codec: VideoCodec::H264,
                 mode,
                 vaapi,
                 require_host_upload: true,
@@ -195,6 +226,7 @@ impl Encoder {
             desc,
             frame_rate,
             EncoderCreateOptions {
+                codec: VideoCodec::H264,
                 mode,
                 vaapi,
                 require_host_upload: true,
@@ -215,6 +247,7 @@ impl Encoder {
             desc,
             frame_rate,
             EncoderCreateOptions {
+                codec: VideoCodec::H264,
                 mode: EncodeMode::Vaapi,
                 vaapi,
                 require_host_upload: false,
@@ -237,6 +270,55 @@ impl Encoder {
             desc,
             frame_rate,
             EncoderCreateOptions {
+                codec: VideoCodec::H264,
+                mode: EncodeMode::Vaapi,
+                vaapi,
+                require_host_upload: false,
+                audio,
+                cancellation,
+            },
+        )
+    }
+
+    pub fn create_with_codec_and_audio(
+        path: impl AsRef<Path>,
+        desc: FrameDesc,
+        frame_rate: Rational,
+        output: OutputEncoding,
+        vaapi: VaapiOptions,
+        audio: Vec<AudioOutputTemplate>,
+        cancellation: CancellationToken,
+    ) -> Result<Self> {
+        Self::create_internal(
+            path,
+            desc,
+            frame_rate,
+            EncoderCreateOptions {
+                codec: output.codec,
+                mode: output.mode,
+                vaapi,
+                require_host_upload: true,
+                audio,
+                cancellation,
+            },
+        )
+    }
+
+    pub fn create_with_hardware_frames_codec_and_audio(
+        path: impl AsRef<Path>,
+        desc: FrameDesc,
+        frame_rate: Rational,
+        codec: VideoCodec,
+        vaapi: VaapiOptions,
+        audio: Vec<AudioOutputTemplate>,
+        cancellation: CancellationToken,
+    ) -> Result<Self> {
+        Self::create_internal(
+            path,
+            desc,
+            frame_rate,
+            EncoderCreateOptions {
+                codec,
                 mode: EncodeMode::Vaapi,
                 vaapi,
                 require_host_upload: false,
@@ -253,6 +335,7 @@ impl Encoder {
         options: EncoderCreateOptions,
     ) -> Result<Self> {
         let EncoderCreateOptions {
+            codec: output_codec,
             mode,
             vaapi,
             require_host_upload,
@@ -278,26 +361,30 @@ impl Encoder {
             asciiflow_core::Error::Media("failed to allocate output context".into())
         })?;
         let mut format_guard = OutputGuard(Some(format));
-        let name = CString::new(if mode == EncodeMode::Vaapi {
-            "h264_vaapi"
+        if mode == EncodeMode::Software && output_codec != VideoCodec::H264 {
+            return Err(Error::Media(format!(
+                "{output_codec} software encoding is not implemented"
+            )));
+        }
+        let codec_name = output_codec_name(&output_codec)?;
+        let encoder_name = if mode == EncodeMode::Vaapi {
+            format!("{codec_name}_vaapi")
         } else {
-            "libx264"
-        })
-        .unwrap();
+            "libx264".into()
+        };
+        let name = CString::new(encoder_name.clone()).unwrap();
         let mut encoder = unsafe { ffi::avcodec_find_encoder_by_name(name.as_ptr()) };
         if encoder.is_null() && mode == EncodeMode::Software {
             encoder = unsafe { ffi::avcodec_find_encoder(ffi::AVCodecID::AV_CODEC_ID_H264) };
         }
         if encoder.is_null() {
-            return Err(asciiflow_core::Error::Media(
-                if mode == EncodeMode::Vaapi {
-                    "this FFmpeg build has no h264_vaapi encoder"
-                } else {
-                    "this FFmpeg build has no H.264 encoder"
-                }
-                .into(),
-            ));
+            return Err(asciiflow_core::Error::Media(if mode == EncodeMode::Vaapi {
+                format!("this FFmpeg build has no {encoder_name} encoder")
+            } else {
+                "this FFmpeg build has no H.264 encoder".into()
+            }));
         }
+        require_output_codec_id(encoder, &output_codec)?;
         if mode == EncodeMode::Vaapi {
             require_vaapi_encoder(encoder)?;
         }
@@ -308,7 +395,9 @@ impl Encoder {
                 })?;
         let codec =
             NonNull::new(unsafe { ffi::avcodec_alloc_context3(encoder) }).ok_or_else(|| {
-                asciiflow_core::Error::Media("failed to allocate H.264 encoder context".into())
+                asciiflow_core::Error::Media(format!(
+                    "failed to allocate {output_codec} encoder context"
+                ))
             })?;
         let mut codec_guard = CodecGuard(Some(codec));
         unsafe {
@@ -334,6 +423,9 @@ impl Encoder {
             (*codec.as_ptr()).color_primaries = ffi::AVColorPrimaries::AVCOL_PRI_BT709;
             (*codec.as_ptr()).color_trc = ffi::AVColorTransferCharacteristic::AVCOL_TRC_BT709;
             (*codec.as_ptr()).chroma_sample_location = ffi::AVChromaLocation::AVCHROMA_LOC_LEFT;
+            if output_codec == VideoCodec::Hevc {
+                (*codec.as_ptr()).profile = ffi::FF_PROFILE_HEVC_MAIN;
+            }
             if mode == EncodeMode::Vaapi {
                 (*codec.as_ptr()).max_b_frames = 0;
                 (*codec.as_ptr()).gop_size = 250;
@@ -380,17 +472,15 @@ impl Encoder {
         let opened = unsafe { ffi::avcodec_open2(codec.as_ptr(), encoder, &mut options) };
         let unused_options = unsafe { ffi::av_dict_count(options) };
         unsafe { ffi::av_dict_free(&mut options) };
-        check(
-            opened,
-            if mode == EncodeMode::Vaapi {
-                "failed to configure h264_vaapi encoder"
-            } else {
-                "failed to configure software H.264 encoder"
-            },
-        )?;
+        let configure_operation = if mode == EncodeMode::Vaapi {
+            format!("failed to configure {encoder_name} encoder")
+        } else {
+            "failed to configure software H.264 encoder".into()
+        };
+        check(opened, &configure_operation)?;
         if unused_options != 0 {
             return Err(asciiflow_core::Error::Media(format!(
-                "H.264 encoder rejected {unused_options} configuration option(s)"
+                "{output_codec} encoder rejected {unused_options} configuration option(s)"
             )));
         }
         check(
@@ -512,7 +602,8 @@ impl Encoder {
             fps_denominator = frame_rate.denominator,
             mode = ?mode,
             vaapi_device = vaapi.display_device(),
-            "opened H.264 encoder"
+            codec = %output_codec,
+            "opened video encoder"
         );
         let format = format_guard.take();
         let (mux_sender, mux_receiver) = bounded(MUX_CHANNEL_CAPACITY);
@@ -565,6 +656,7 @@ impl Encoder {
             _hardware_device: hardware_device,
             packet,
             mode,
+            output_codec,
             timings: SinkTimings::default(),
             desc,
             next_pts: 0,
@@ -576,10 +668,23 @@ impl Encoder {
             mux_stats,
             mux_stop,
             cancellation,
+            #[cfg(test)]
+            inject_send_failure: false,
+            #[cfg(test)]
+            inject_receive_failure: false,
         })
     }
     fn drain_packets(&mut self) -> Result<()> {
         loop {
+            #[cfg(test)]
+            if self.inject_receive_failure {
+                self.inject_receive_failure = false;
+                return Err(Error::pipeline_message(
+                    PipelineStage::EncodeRuntime,
+                    "receive encoded packet",
+                    format!("injected {} receive_packet failure", self.output_codec),
+                ));
+            }
             let result = unsafe {
                 ffi::avcodec_receive_packet(self.codec.as_ptr(), self.packet.as_mut_ptr())
             };
@@ -587,7 +692,10 @@ impl Encoder {
                 return Ok(());
             }
             if result < 0 {
-                return Err(ffmpeg_error("failed to receive H.264 packet", result));
+                return Err(ffmpeg_error(
+                    &format!("failed to receive {} packet", self.output_codec),
+                    result,
+                ));
             }
             if self.packet.size() > 16 * 1024 * 1024 {
                 return Err(Error::pipeline_message(
@@ -724,9 +832,18 @@ impl Encoder {
             native.chroma_location = ffi::AVChromaLocation::AVCHROMA_LOC_LEFT;
         }
         let encode_started = Instant::now();
+        #[cfg(test)]
+        if self.inject_send_failure {
+            self.inject_send_failure = false;
+            return Err(Error::pipeline_message(
+                PipelineStage::EncodeRuntime,
+                "send frame to encoder",
+                format!("injected {} send_frame failure", self.output_codec),
+            ));
+        }
         check(
             unsafe { ffi::avcodec_send_frame(self.codec.as_ptr(), frame) },
-            "failed to send NV12 frame to H.264 encoder",
+            &format!("failed to send NV12 frame to {} encoder", self.output_codec),
         )?;
         self.next_pts += 1;
         let result = self.drain_packets();
@@ -805,7 +922,10 @@ impl FrameSink for Encoder {
         if self.next_pts != 0 {
             let result = unsafe { ffi::avcodec_send_frame(self.codec.as_ptr(), ptr::null()) };
             if result < 0 && result != ffi::AVERROR_EOF {
-                return Err(ffmpeg_error("failed to flush H.264 encoder", result));
+                return Err(ffmpeg_error(
+                    &format!("failed to flush {} encoder", self.output_codec),
+                    result,
+                ));
             }
             self.drain_packets()?;
         }
@@ -1026,7 +1146,7 @@ fn require_vaapi_encoder(encoder: *const ffi::AVCodec) -> Result<()> {
         let config = unsafe { ffi::avcodec_get_hw_config(encoder, index) };
         if config.is_null() {
             return Err(asciiflow_core::Error::Media(
-                "h264_vaapi has no VAAPI hardware-frames configuration".into(),
+                "VAAPI encoder has no VAAPI hardware-frames configuration".into(),
             ));
         }
         let config = unsafe { &*config };
@@ -1038,6 +1158,36 @@ fn require_vaapi_encoder(encoder: *const ffi::AVCodec) -> Result<()> {
         }
         index += 1;
     }
+}
+
+fn output_codec_name(codec: &VideoCodec) -> Result<&'static str> {
+    match codec {
+        VideoCodec::H264 => Ok("h264"),
+        VideoCodec::Hevc => Ok("hevc"),
+        VideoCodec::Av1 => Err(Error::Media("AV1 output is not implemented".into())),
+        VideoCodec::Other(name) => Err(Error::Media(format!(
+            "output codec {name} is not implemented"
+        ))),
+    }
+}
+
+fn require_output_codec_id(encoder: *const ffi::AVCodec, codec: &VideoCodec) -> Result<()> {
+    let expected = match codec {
+        VideoCodec::H264 => ffi::AVCodecID::AV_CODEC_ID_H264,
+        VideoCodec::Hevc => ffi::AVCodecID::AV_CODEC_ID_HEVC,
+        VideoCodec::Av1 => ffi::AVCodecID::AV_CODEC_ID_AV1,
+        VideoCodec::Other(name) => {
+            return Err(Error::Media(format!(
+                "output codec {name} is not implemented"
+            )));
+        }
+    };
+    if unsafe { (*encoder).id } != expected {
+        return Err(Error::Media(format!(
+            "selected encoder does not implement requested {codec} codec ID"
+        )));
+    }
+    Ok(())
 }
 struct OutputGuard(Option<NonNull<ffi::AVFormatContext>>);
 impl OutputGuard {
@@ -1078,7 +1228,8 @@ mod audio_regression_tests {
     use super::*;
     use crate::Decoder;
     use asciiflow_core::{
-        AsciiBackend, AsciiConfig, AudioPlan, AudioPolicy, BackendOutput, BackendTimings, Pipeline,
+        AsciiBackend, AsciiConfig, AudioPlan, AudioPolicy, BackendOutput, BackendTimings,
+        ColorSpace, FrameDesc, HostFrame, Pipeline, VideoCodec,
     };
     struct Identity;
     impl AsciiBackend for Identity {
@@ -1138,5 +1289,44 @@ mod audio_regression_tests {
         );
         assert!(!error.to_string().contains("disconnected"));
         assert!(cancellation.is_cancelled());
+    }
+
+    #[test]
+    #[ignore = "requires Intel VAAPI HEVC encode"]
+    fn injected_hevc_send_and_receive_failures_keep_encode_runtime_context() {
+        let desc = FrameDesc::host_nv12(1920, 1080, ColorSpace::default()).unwrap();
+        let frame =
+            || VideoFrame::new_host(desc.clone(), Some(0), HostFrame::new_zeroed(&desc)).unwrap();
+        for receive in [false, true] {
+            let path = std::env::temp_dir().join(format!(
+                "asciiflow-hevc-injected-{}-{}.mp4",
+                if receive { "receive" } else { "send" },
+                std::process::id()
+            ));
+            let mut encoder = Encoder::create_with_codec_and_audio(
+                &path,
+                desc.clone(),
+                Rational::new(50, 1).unwrap(),
+                OutputEncoding {
+                    codec: VideoCodec::Hevc,
+                    mode: EncodeMode::Vaapi,
+                },
+                VaapiOptions::default(),
+                Vec::new(),
+                CancellationToken::new(),
+            )
+            .unwrap();
+            encoder.inject_send_failure = !receive;
+            encoder.inject_receive_failure = receive;
+            let error = encoder.encode(frame()).unwrap_err();
+            assert_eq!(error.stage(), Some(PipelineStage::EncodeRuntime));
+            assert!(error.to_string().contains(if receive {
+                "injected HEVC receive_packet failure"
+            } else {
+                "injected HEVC send_frame failure"
+            }));
+            drop(encoder);
+            std::fs::remove_file(path).unwrap();
+        }
     }
 }

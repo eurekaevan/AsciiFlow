@@ -134,13 +134,21 @@ For a fully qualified Intel Linux host, the explanation has this shape:
 
 ```text
 Selected pipeline:
-  VAAPI H.264 decode
+  VAAPI decode
   -> VAAPI/Vulkan input interop
   -> Vulkan ASCII
   -> Vulkan/VAAPI output interop
   -> VAAPI H.264 encode
+Output: H.264 High · 8-bit Yuv420
+Encoder backend: Hardware
 Pixel path: GPU-resident
 ```
+
+`--output-codec hevc` keeps the same graph but requires the independently
+qualified HEVC Main VAAPI encoder. If HEVC output interop is unavailable,
+automatic policy may replan once to Host readback plus VAAPI upload; it never
+changes the requested codec to H.264. `--output-codec hevc --encode software`
+is a planning error because software HEVC is not implemented.
 
 The actual device, modifier, driver, and capability reasons are runtime data;
 the sample above is not a vendor whitelist or a guarantee for another host.
