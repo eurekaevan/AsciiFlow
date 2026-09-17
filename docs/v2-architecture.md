@@ -1,8 +1,8 @@
 # AsciiFlow v2 architecture
 
-This document defines the Rust baseline through Stage 5.1A Intel qualification: a permanent CPU
-reference backend, a Vulkan 1.3 compute backend, optional Linux VAAPI media,
-and qualified Intel DMA-BUF bridges in both pixel directions. Stage 3A
+This document describes the Rust architecture through Stage 5.1B: a permanent
+CPU reference backend, a Vulkan 1.3 compute backend, optional Linux VAAPI
+media, and qualified Intel DMA-BUF bridges in both pixel directions. Stage 3A
 eliminates decode-side Host copies; Stage 3B fills encoder-owned VAAPI
 surfaces directly from Vulkan. Stage 4.0 adds a runtime capability graph and
 automatic selection without changing the portable Host reference paths. Stage
@@ -10,6 +10,9 @@ automatic selection without changing the portable Host reference paths. Stage
 cancellation, transactional output, and failure-path resource guarantees.
 Stage 4.2 adds a separate compressed-audio passthrough plan and one bounded,
 single-owner interleaved mux path; it does not change video planning or pixels.
+Stage 4.3 adds optional FreeType atlases. Stage 5.0 qualifies HEVC Main and AV1
+Main input; Stages 5.1A and 5.1B qualify HEVC Main and AV1 Profile0 VAAPI
+output, respectively. Device-specific evidence is kept in the stage reports.
 
 ## Workspace and dependency direction
 
@@ -42,10 +45,10 @@ discovery, actual decoded format validation and libva profile/VLD probing stay
 in media. Decode capability and stream input-interop qualification are keyed
 by codec; initialization replan changes only the failing codec's fact. The DRM
 importer is reused. Stage 5.1A separates portable output requirements from the
-encoder backend and qualifies H.264, HEVC Main or AV1 Profile0 VAAPI
-encoder-owned surfaces through the same output interop. Intel Arc Meteor Lake
-qualification passed;
-see [codec validation](stage5.0-codec-validation.md).
+encoder backend. Stages 5.1A and 5.1B qualify HEVC Main and AV1 Profile0
+VAAPI encoder-owned surfaces through the same output interop as H.264 on Intel
+Arc Meteor Lake; see [input codec validation](stage5.0-codec-validation.md) and
+the output reports below.
 
 The output selection boundary is:
 
@@ -423,9 +426,9 @@ that distinction explicit.
 - `auto` prefers full interop, then qualified staged hardware encode, then
   software media/Vulkan, and finally CPU processing. It does not choose VAAPI
   decode plus `hwdownload` solely because a VAAPI device exists.
-- The qualified VAAPI path supports only 8-bit 4:2:0 NV12 semantics. Stage 3A currently accepts
-  the observed single-object R8+GR88 iHD export with a known, importable
-  modifier. P010/HDR, 4:4:4, multi-object, unknown-modifier, and incompatible
+- The qualified VAAPI path supports only 8-bit 4:2:0 NV12 semantics. Stage 3A
+  currently accepts the observed single-object R8+GR88 iHD export with a known,
+  importable modifier. P010/HDR, 4:4:4, multi-object, unknown-modifier, and incompatible
   layer topologies are rejected rather than copied or silently reduced.
 - Compatible compressed audio streams can be copied into MP4. One mux worker
   owns the output `AVFormatContext` and accepts both encoded video packets and

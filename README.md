@@ -137,13 +137,17 @@ crates/asciiflow-vulkan/  Vulkan 1.3 compute backend and resource ownership
 shaders/src/              build-time GLSL compute shader sources
 third_party/ffmpeg/       pinned native source/build recipe
 docs/v2-architecture.md   v2 invariants, ownership, and limitations
-docs/stage1-validation.md current parity, media, and benchmark evidence
-docs/stage2-validation.md current VAAPI correctness and benchmark evidence
+docs/stage1-validation.md Stage 1 parity, media, and benchmark evidence
+docs/stage2-validation.md Stage 2 VAAPI correctness and benchmark evidence
 docs/stage3a-validation.md DMA-BUF input interop evidence and benchmark
 docs/stage3b-validation.md DMA-BUF output interop evidence and benchmark
 docs/auto-planner.md       Stage 4.0 capability graph and selection policy
 docs/failure-semantics.md  Stage 4.1 failure, cancellation, and output contract
 docs/audio.md              Stage 4.2 compressed-audio passthrough contract
+docs/fonts.md              Stage 4.3 font/atlas contract
+docs/codecs.md             Current input/output codec support and limits
+docs/testing.md            Portable and opt-in hardware regression tests
+docs/stage5.1b-av1-encode-validation.md  Latest Intel output qualification
 ```
 
 ---

@@ -31,19 +31,19 @@ errors when the detailed stream configuration is not acceptable.
 
 ```text
 input AVFormatContext (decoder/demux owner)
-  ├─ selected video packet -> decoder -> ASCII -> H.264 encoder ─┐
+  ├─ selected video packet -> decoder -> ASCII -> video encoder ─┐
   └─ selected audio packet -> move-ref, no payload copy ─────────┤
-                                                                v
-                                              bounded mux queue (64 packets)
-                                                                |
-                                             one mux worker / one AVFormatContext
-                                                                |
-                                             av_interleaved_write_frame -> MP4
+                                                                 v
+                                               bounded mux queue (64 packets)
+                                                                 |
+                                              one mux worker / one AVFormatContext
+                                                                 |
+                                              av_interleaved_write_frame -> MP4
 ```
 
 The decoder remains the only input demux owner. A selected audio packet is
 moved into its own RAII `AVPacket` and sent through a bounded channel. The
-encoder moves each produced H.264 packet into the same channel. The mux worker
+encoder moves each produced video packet into the same channel. The mux worker
 is the only code that touches the output format context, so audio and video can
 never concurrently call FFmpeg's mux API.
 

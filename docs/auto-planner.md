@@ -1,7 +1,8 @@
 # AsciiFlow automatic pipeline planner
 
-Stage 4.0 gives the Rust CLI one runtime decision point for media, processing,
-and DMA-BUF interop. The decision is deliberately small and deterministic:
+Stage 4.0 introduced the Rust CLI's runtime decision point for media,
+processing, and DMA-BUF interop. Later stages extended its codec facts without
+changing that boundary. The decision is deliberately small and deterministic:
 AsciiFlow probes the input and this process's runtime capabilities, filters a
 finite set of legal candidates, and selects the lowest qualitative preference
 cost. It does not benchmark pipelines at startup and it does not persist a
@@ -12,12 +13,13 @@ hardware cache across processes.
 ### Capability
 
 `CapabilitySnapshot` contains facts, not preferences. Media facts include
-software H.264 decode/encode, VAAPI availability, H.264 VAAPI decode/encode,
-NV12 hardware-frame creation, and Host-to-VAAPI upload. Processing facts cover
-CPU, Vulkan, compute queue, `storageBuffer8BitAccess`, `shaderInt64`,
-`Synchronization2`, selected device identity, and automatic eligibility.
+software H.264/HEVC/AV1 decode, software H.264 encode, per-codec VAAPI
+decode/encode availability, NV12 hardware-frame creation, and Host-to-VAAPI
+upload. Processing facts cover CPU, Vulkan, compute queue,
+`storageBuffer8BitAccess`, `shaderInt64`, `Synchronization2`, selected device
+identity, and automatic eligibility.
 Interop is directional: VAAPI → Vulkan input and Vulkan → VAAPI output are
-qualified independently.
+qualified independently, with codec-scoped input and output facts.
 
 Every fact is one of:
 
@@ -40,6 +42,7 @@ encoder surface and checks the required DRM modifier and external-image access.
 --backend auto|cpu|vulkan
 --decode auto|software|vaapi
 --encode auto|software|vaapi
+--output-codec h264|hevc|av1
 --input-interop auto|off|on
 --output-interop auto|off|on
 ```
@@ -145,11 +148,12 @@ Encoder backend: Hardware
 Pixel path: GPU-resident
 ```
 
-`--output-codec hevc` keeps the same graph but requires the independently
-qualified HEVC Main VAAPI encoder. If HEVC output interop is unavailable,
-automatic policy may replan once to Host readback plus VAAPI upload; it never
-changes the requested codec to H.264. `--output-codec hevc --encode software`
-is a planning error because software HEVC is not implemented.
+`--output-codec hevc` or `av1` keeps the same graph but requires its own
+qualified VAAPI encoder and output-interop fact. If output interop is
+unavailable, automatic policy may replan once to Host readback plus VAAPI
+upload; it never changes the requested codec. Explicit output interop fails
+instead. Software HEVC/AV1 encoding is not implemented and is rejected during
+policy validation. See [codec support](codecs.md) for the qualified profiles.
 
 The actual device, modifier, driver, and capability reasons are runtime data;
 the sample above is not a vendor whitelist or a guarantee for another host.
@@ -204,7 +208,7 @@ probe output, `--capabilities`, `--explain-plan`, automatic full interop,
 explicit-versus-automatic parity, and the 300-frame comparison must be run on
 the qualified host before claiming hardware support.
 
-## Current Intel qualification evidence
+## Stage 4.0 Intel qualification evidence (historical baseline)
 
 On 2026-09-14, Release validation used the Stage 3 workload (`input.mp4`,
 1920x1080 at 50 FPS, H.264 High/yuv420p, ASCII width 80) on Intel Arc MTL

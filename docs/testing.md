@@ -1,5 +1,11 @@
 # Regression testing
 
+The default workspace suite covers portable planning, codec policy, failure
+semantics, media fixtures, fonts, and CPU processing. Real Intel VAAPI/Vulkan
+tests are opt-in because they require a qualified device, drivers, and sometimes
+a retained long-form input. Stage-specific measurements and hardware outcomes
+live in their validation reports.
+
 Audio Stage 4.2.1 has three layers:
 
 - A: core policy tests and native packet/queue fault tests, without GPU access.
@@ -33,5 +39,31 @@ On an Intel host run
 `cargo test -p asciiflow-cli --test audio_regression intel_audio -- --ignored`.
 This requires explicit full interop (no auto fallback), enables
 `ASCIIFLOW_VULKAN_VALIDATION=1`, compares audio against software, and cancels the
-long run. Hardware validation was not rerun for Stage 4.2.1: this environment has
-no `/dev/dri`. No new performance claim is made; Stage 4.2 remains the reference.
+long run. The Stage 4.2.1 report did not include a hardware rerun; that is a
+historical stage-specific statement, not a claim about the current host.
+Subsequent hardware validation is recorded in
+[Stage 5.0](stage5.0-codec-validation.md),
+[Stage 5.1A](stage5.1a-hevc-encode-validation.md), and
+[Stage 5.1B](stage5.1b-av1-encode-validation.md).
+
+On the qualified Intel host, the AV1 output opt-in tests cover a 30-frame
+pre-encode staged/full pixel comparison and 3000-frame surface-reuse/FD stress.
+Provide the actual media paths; the tests' default `target/` artifacts are not
+checked into the repository:
+
+```bash
+ASCIIFLOW_STAGE51B_INPUT=/absolute/path/to/300-frame-input.mp4 \
+ASCIIFLOW_VULKAN_VALIDATION=1 \
+cargo test -p asciiflow-interop --test hardware \
+  av1_encoder_descriptor_and_staged_interop_pixels_are_exact -- --ignored
+
+ASCIIFLOW_STAGE51B_STRESS_INPUT=/absolute/path/to/3000-frame-input.mp4 \
+ASCIIFLOW_VULKAN_VALIDATION=1 \
+cargo test -p asciiflow-interop --test hardware \
+  av1_full_interop_surface_reuse_is_exact_and_fd_bounded -- --ignored
+```
+
+Neither a passing portable suite nor lavapipe emulation substitutes for Intel
+hardware qualification. Do not run all ignored hardware tests indiscriminately:
+some deliberately submit invalid external handles and must run without
+Validation, as their test annotations state.
