@@ -343,6 +343,71 @@ fn sigint_with_audio_preserves_existing_output_and_cleans_staging() {
 }
 
 #[cfg(target_os = "linux")]
+#[test]
+#[ignore = "requires Intel VAAPI/Vulkan and a retained 3000-frame benchmark input"]
+fn av1_full_interop_sigint_preserves_output_and_next_run_initializes() {
+    let input = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../target/stage51a1-evidence/h264-testsrc2-3000-loop.mp4");
+    let ws = Workspace::new();
+    let mut command = std::process::Command::new(env!("CARGO_BIN_EXE_asciiflow"));
+    command
+        .arg(&input)
+        .arg(ws.output())
+        .args([
+            "--backend",
+            "vulkan",
+            "--decode",
+            "vaapi",
+            "--encode",
+            "vaapi",
+            "--output-codec",
+            "av1",
+            "--vaapi-vulkan-input-interop",
+            "on",
+            "--vaapi-vulkan-output-interop",
+            "on",
+            "--audio",
+            "none",
+            "--width",
+            "80",
+            "--no-progress",
+        ])
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped());
+    cancel_preserving_output(&ws, command);
+
+    let followup = Workspace::new();
+    let mut next = std::process::Command::new(env!("CARGO_BIN_EXE_asciiflow"));
+    next.arg(&input)
+        .arg(followup.output())
+        .args([
+            "--backend",
+            "vulkan",
+            "--decode",
+            "vaapi",
+            "--encode",
+            "vaapi",
+            "--output-codec",
+            "av1",
+            "--vaapi-vulkan-input-interop",
+            "on",
+            "--vaapi-vulkan-output-interop",
+            "on",
+            "--audio",
+            "none",
+            "--width",
+            "80",
+            "--max-frames",
+            "3",
+            "--no-progress",
+        ])
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped());
+    success(&Process::start(&mut next).finish());
+    followup.assert_no_staging();
+}
+
+#[cfg(target_os = "linux")]
 fn cancel_preserving_output(ws: &Workspace, mut command: std::process::Command) {
     std::fs::write(ws.output(), b"existing-output").unwrap();
     let process = Process::start(&mut command);

@@ -108,7 +108,8 @@ devices such as llvmpipe/lavapipe are not eligible for automatic processing;
 the existing environment hook remains for explicit diagnostics and tests.
 
 Unsupported input requirements do not get silently admitted to the pipeline.
-The qualified range is H.264, 8-bit 4:2:0, NV12-compatible video. Stage 4.1
+The qualified range is H.264, HEVC Main and AV1 Main 8-bit 4:2:0,
+NV12-compatible video. Stage 4.1
 rejects 10-bit input before output creation with an explicit unsupported-input
 error; it never performs an undeclared 10-to-8 conversion.
 

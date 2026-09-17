@@ -113,18 +113,18 @@ pub fn probe_vaapi_encoder_for(
     frame_rate: Rational,
     vaapi: VaapiOptions,
 ) -> Result<VaapiEncoderProbe> {
-    probe_vaapi_encoder_internal(output_codec, desc, frame_rate, vaapi, false)
+    probe_vaapi_encoder_internal(output_codec, desc, frame_rate, vaapi)
 }
 
-/// Open an AV1 VAAPI encoder and its NV12 pool for diagnostic qualification
-/// only. The production output factory still rejects AV1.
+/// Retained for the opt-in descriptor qualification test. Production probing
+/// uses the same codec-specific configuration.
 #[cfg(feature = "av1-encode-diagnostic")]
 pub fn probe_vaapi_av1_encoder_diagnostic(
     desc: FrameDesc,
     frame_rate: Rational,
     vaapi: VaapiOptions,
 ) -> Result<VaapiEncoderProbe> {
-    probe_vaapi_encoder_internal(VideoCodec::Av1, desc, frame_rate, vaapi, true)
+    probe_vaapi_encoder_internal(VideoCodec::Av1, desc, frame_rate, vaapi)
 }
 
 fn probe_vaapi_encoder_internal(
@@ -132,13 +132,8 @@ fn probe_vaapi_encoder_internal(
     desc: FrameDesc,
     frame_rate: Rational,
     vaapi: VaapiOptions,
-    diagnostic_av1: bool,
 ) -> Result<VaapiEncoderProbe> {
-    let codec_name = if diagnostic_av1 && output_codec == VideoCodec::Av1 {
-        "av1"
-    } else {
-        output_codec_name(&output_codec)?
-    };
+    let codec_name = output_codec_name(&output_codec)?;
     let width = i32::try_from(desc.width)
         .map_err(|_| Error::Media("encoder probe width exceeds FFmpeg i32 range".into()))?;
     let height = i32::try_from(desc.height)
@@ -179,6 +174,8 @@ fn probe_vaapi_encoder_internal(
         (*codec.as_ptr()).chroma_sample_location = ffi::AVChromaLocation::AVCHROMA_LOC_LEFT;
         if output_codec == VideoCodec::Hevc {
             (*codec.as_ptr()).profile = ffi::FF_PROFILE_HEVC_MAIN;
+        } else if output_codec == VideoCodec::Av1 {
+            (*codec.as_ptr()).global_quality = 25;
         }
         (*codec.as_ptr()).max_b_frames = 0;
         (*codec.as_ptr()).gop_size = 250;
@@ -187,17 +184,7 @@ fn probe_vaapi_encoder_internal(
     let pool = HardwareFramesPool::vaapi_nv12(&device, desc.width, desc.height)?;
     unsafe { (*codec.as_ptr()).hw_frames_ctx = pool.try_clone_ref()? };
     let mut options = ptr::null_mut();
-    let options_for_codec: &[(&str, &str)] = if diagnostic_av1 {
-        // av1_vaapi has no `qp` AVOption. Its default quality is diagnostic
-        // only and is not a benchmark or a production encoding policy.
-        &[
-            ("rc_mode", "CQP"),
-            ("profile", "main"),
-            ("async_depth", "2"),
-        ]
-    } else {
-        &[("rc_mode", "CQP"), ("qp", "20"), ("async_depth", "2")]
-    };
+    let options_for_codec = vaapi_codec_options(&output_codec);
     for &(key, value) in options_for_codec {
         let key = CString::new(key).unwrap();
         let value = CString::new(value).unwrap();
@@ -473,6 +460,8 @@ impl Encoder {
             (*codec.as_ptr()).chroma_sample_location = ffi::AVChromaLocation::AVCHROMA_LOC_LEFT;
             if output_codec == VideoCodec::Hevc {
                 (*codec.as_ptr()).profile = ffi::FF_PROFILE_HEVC_MAIN;
+            } else if output_codec == VideoCodec::Av1 {
+                (*codec.as_ptr()).global_quality = 25;
             }
             if mode == EncodeMode::Vaapi {
                 (*codec.as_ptr()).max_b_frames = 0;
@@ -499,9 +488,7 @@ impl Encoder {
         };
         let mut options = ptr::null_mut();
         let codec_options: &[(&str, &str)] = if mode == EncodeMode::Vaapi {
-            // Stable throughput baseline. CQP is deliberately not presented as
-            // quality-equivalent to libx264 CRF 20.
-            &[("rc_mode", "CQP"), ("qp", "20"), ("async_depth", "2")]
+            vaapi_codec_options(&output_codec)
         } else {
             &[
                 ("preset", "ultrafast"),
@@ -1109,6 +1096,8 @@ fn run_mux_worker(
     let mut buffered_bytes = 0_u64;
     #[cfg(test)]
     let mut fail_audio_after: Option<u64> = None;
+    #[cfg(test)]
+    let mut fail_video_after: Option<u64> = None;
     loop {
         if stop.is_cancelled() || cancellation.is_cancelled() {
             return Err(Error::Cancelled);
@@ -1127,6 +1116,8 @@ fn run_mux_worker(
         match message {
             #[cfg(test)]
             MuxMessage::FailAudioAfter(count) => fail_audio_after = Some(count),
+            #[cfg(test)]
+            MuxMessage::FailVideoAfter(count) => fail_video_after = Some(count),
             MuxMessage::Packet {
                 mut packet,
                 input_index,
@@ -1140,6 +1131,17 @@ fn run_mux_worker(
                             PipelineStage::MuxRuntime,
                             "write audio packet",
                             "injected audio mux failure",
+                        ));
+                    }
+                    *remaining -= 1;
+                }
+                #[cfg(test)]
+                if !audio && let Some(remaining) = &mut fail_video_after {
+                    if *remaining == 0 {
+                        return Err(Error::pipeline_message(
+                            PipelineStage::MuxRuntime,
+                            "write video packet",
+                            "injected video mux failure",
                         ));
                     }
                     *remaining -= 1;
@@ -1331,10 +1333,24 @@ fn output_codec_name(codec: &VideoCodec) -> Result<&'static str> {
     match codec {
         VideoCodec::H264 => Ok("h264"),
         VideoCodec::Hevc => Ok("hevc"),
-        VideoCodec::Av1 => Err(Error::Media("AV1 output is not implemented".into())),
+        VideoCodec::Av1 => Ok("av1"),
         VideoCodec::Other(name) => Err(Error::Media(format!(
             "output codec {name} is not implemented"
         ))),
+    }
+}
+
+fn vaapi_codec_options(codec: &VideoCodec) -> &'static [(&'static str, &'static str)] {
+    match codec {
+        // AV1 VAAPI exposes `profile=main` but no `qp` private option.
+        // `global_quality=25` is set directly on the codec context.
+        VideoCodec::Av1 => &[
+            ("rc_mode", "CQP"),
+            ("profile", "main"),
+            ("async_depth", "2"),
+        ],
+        // These historical baselines are not cross-codec quality-equivalent.
+        _ => &[("rc_mode", "CQP"), ("qp", "20"), ("async_depth", "2")],
     }
 }
 
@@ -1494,6 +1510,106 @@ mod audio_regression_tests {
             }));
             drop(encoder);
             std::fs::remove_file(path).unwrap();
+        }
+    }
+
+    #[test]
+    #[ignore = "requires Intel VAAPI AV1 encode"]
+    fn injected_av1_send_and_receive_failures_keep_encode_runtime_context() {
+        let desc = FrameDesc::host_nv12(1920, 1080, ColorSpace::default()).unwrap();
+        let frame =
+            || VideoFrame::new_host(desc.clone(), Some(0), HostFrame::new_zeroed(&desc)).unwrap();
+        for receive in [false, true] {
+            let path = std::env::temp_dir().join(format!(
+                "asciiflow-av1-injected-{}-{}.mp4",
+                if receive { "receive" } else { "send" },
+                std::process::id()
+            ));
+            let mut encoder = Encoder::create_with_codec_and_audio(
+                &path,
+                desc.clone(),
+                Rational::new(50, 1).unwrap(),
+                OutputEncoding {
+                    codec: VideoCodec::Av1,
+                    mode: EncodeMode::Vaapi,
+                },
+                VaapiOptions::default(),
+                Vec::new(),
+                CancellationToken::new(),
+            )
+            .unwrap();
+            encoder.inject_send_failure = !receive;
+            encoder.inject_receive_failure = receive;
+            let error = encoder.encode(frame()).unwrap_err();
+            assert_eq!(error.stage(), Some(PipelineStage::EncodeRuntime));
+            assert!(error.to_string().contains(if receive {
+                "injected AV1 receive_packet failure"
+            } else {
+                "injected AV1 send_frame failure"
+            }));
+            drop(encoder);
+            std::fs::remove_file(path).unwrap();
+        }
+    }
+
+    #[test]
+    #[ignore = "requires Intel VAAPI AV1 encode"]
+    fn injected_av1_video_mux_failure_keeps_mux_root_cause() {
+        let desc = FrameDesc::host_nv12(128, 96, ColorSpace::default()).unwrap();
+        let path = std::env::temp_dir().join(format!(
+            "asciiflow-av1-injected-video-mux-{}.mp4",
+            std::process::id()
+        ));
+        let mut encoder = Encoder::create_with_codec_and_audio(
+            &path,
+            desc.clone(),
+            Rational::new(50, 1).unwrap(),
+            OutputEncoding {
+                codec: VideoCodec::Av1,
+                mode: EncodeMode::Vaapi,
+            },
+            VaapiOptions::default(),
+            Vec::new(),
+            CancellationToken::new(),
+        )
+        .unwrap();
+        encoder
+            .send_mux_message(MuxMessage::FailVideoAfter(0))
+            .unwrap();
+        let frame =
+            VideoFrame::new_host(desc.clone(), Some(0), HostFrame::new_zeroed(&desc)).unwrap();
+        let failure = encoder
+            .encode(frame)
+            .and_then(|_| encoder.finish())
+            .unwrap_err();
+        assert_eq!(failure.stage(), Some(PipelineStage::MuxRuntime));
+        assert!(failure.to_string().contains("injected video mux failure"));
+        drop(encoder);
+        std::fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    #[ignore = "requires Intel iHD AV1 encoder; dimensions are device-specific"]
+    fn intel_av1_dimension_boundary_is_reported_during_encoder_probe() {
+        let fps = Rational::new(50, 1).unwrap();
+        for (width, height, supported) in [
+            (64, 96, false),
+            (128, 64, false),
+            (126, 96, true),
+            (128, 94, true),
+            (128, 96, true),
+        ] {
+            let desc = FrameDesc::host_nv12(width, height, ColorSpace::default()).unwrap();
+            let result =
+                probe_vaapi_encoder_for(VideoCodec::Av1, desc, fps, VaapiOptions::default());
+            if supported {
+                assert!(result.is_ok(), "{width}x{height} AV1 probe should succeed");
+            } else {
+                let error = result.err().expect("sub-minimum AV1 encode should fail");
+                let message = error.to_string();
+                assert!(message.contains(&format!("{width}x{height}")), "{message}");
+                assert!(message.contains("NV12"), "{message}");
+            }
         }
     }
 

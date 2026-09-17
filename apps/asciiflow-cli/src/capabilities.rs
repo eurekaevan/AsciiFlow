@@ -46,6 +46,8 @@ pub(crate) fn inject_probe_failure(snapshot: &mut CapabilitySnapshot, point: Pro
                 CapabilitySupport::not_probed("VAAPI device probe failed");
             snapshot.media.hevc_vaapi_encode =
                 CapabilitySupport::not_probed("VAAPI device probe failed");
+            snapshot.media.av1_vaapi_encode =
+                CapabilitySupport::not_probed("VAAPI device probe failed");
             snapshot.media.nv12_hardware_frames =
                 CapabilitySupport::not_probed("VAAPI device probe failed");
             snapshot.media.nv12_hardware_upload =
@@ -56,6 +58,8 @@ pub(crate) fn inject_probe_failure(snapshot: &mut CapabilitySnapshot, point: Pro
             snapshot.interop.av1_input = CapabilitySupport::not_probed("VAAPI device probe failed");
             snapshot.interop.output = CapabilitySupport::not_probed("VAAPI device probe failed");
             snapshot.interop.hevc_output =
+                CapabilitySupport::not_probed("VAAPI device probe failed");
+            snapshot.interop.av1_output =
                 CapabilitySupport::not_probed("VAAPI device probe failed");
         }
         ProbeFaultPoint::VulkanLoader => {
@@ -73,6 +77,7 @@ pub(crate) fn inject_probe_failure(snapshot: &mut CapabilitySnapshot, point: Pro
             snapshot.interop.av1_input = CapabilitySupport::not_probed(reason);
             snapshot.interop.output = CapabilitySupport::not_probed(reason);
             snapshot.interop.hevc_output = CapabilitySupport::not_probed(reason);
+            snapshot.interop.av1_output = CapabilitySupport::not_probed(reason);
         }
         ProbeFaultPoint::InputInteropQualification => {
             snapshot.interop.input = failed("qualify input DMA-BUF import");
@@ -80,6 +85,7 @@ pub(crate) fn inject_probe_failure(snapshot: &mut CapabilitySnapshot, point: Pro
         ProbeFaultPoint::OutputInteropQualification => {
             snapshot.interop.output = failed("qualify output DMA-BUF import");
             snapshot.interop.hevc_output = failed("qualify output DMA-BUF import");
+            snapshot.interop.av1_output = failed("qualify output DMA-BUF import");
         }
     }
 }
@@ -225,16 +231,19 @@ pub fn probe(
     let mut output_interop = [
         CapabilitySupport::not_probed("H.264 VAAPI encode is unavailable"),
         CapabilitySupport::not_probed("HEVC VAAPI encode is unavailable"),
+        CapabilitySupport::not_probed("AV1 VAAPI encode is unavailable"),
     ];
     let mut nv12_frames = CapabilitySupport::not_probed("VAAPI encode is unavailable");
     let mut nv12_upload = CapabilitySupport::not_probed("VAAPI encode is unavailable");
     let mut encode_facts = [
         CapabilitySupport::not_probed("H.264 encoder not probed"),
         CapabilitySupport::not_probed("HEVC encoder not probed"),
+        CapabilitySupport::not_probed("AV1 encoder not probed"),
     ];
     for (index, (codec, build_available)) in [
         (VideoCodec::H264, build.h264_encoder),
         (VideoCodec::Hevc, build.hevc_encoder),
+        (VideoCodec::Av1, build.av1_encoder),
     ]
     .into_iter()
     .enumerate()
@@ -304,6 +313,7 @@ pub fn probe(
                 av1_vaapi_decode: decode_facts[2].clone(),
                 h264_vaapi_encode: encode_facts[0].clone(),
                 hevc_vaapi_encode: encode_facts[1].clone(),
+                av1_vaapi_encode: encode_facts[2].clone(),
                 nv12_hardware_frames: nv12_frames,
                 nv12_hardware_upload: nv12_upload,
             },
@@ -326,6 +336,7 @@ pub fn probe(
                 },
                 output: output_interop[0].clone(),
                 hevc_output: output_interop[1].clone(),
+                av1_output: output_interop[2].clone(),
             },
         },
         media_info,
@@ -399,6 +410,14 @@ pub fn print(
     print_fact(
         "HEVC Main 8-bit 4:2:0 VAAPI",
         &snapshot.media.hevc_vaapi_encode,
+    );
+    print_fact(
+        "AV1 Profile0 8-bit 4:2:0 software",
+        &CapabilitySupport::unsupported("not implemented"),
+    );
+    print_fact(
+        "AV1 Profile0 8-bit 4:2:0 VAAPI",
+        &snapshot.media.av1_vaapi_encode,
     );
     print_fact("VAAPI NV12 frames", &snapshot.media.nv12_hardware_frames);
     print_fact(
@@ -476,16 +495,17 @@ pub fn print(
     );
     print_fact("Vulkan -> VAAPI H.264 output", &snapshot.interop.output);
     print_fact("Vulkan -> VAAPI HEVC output", &snapshot.interop.hevc_output);
+    print_fact("Vulkan -> VAAPI AV1 output", &snapshot.interop.av1_output);
     println!("Probe CPU wall: {:.3} ms", duration.as_secs_f64() * 1e3);
 }
 
 pub fn print_plan(plan: &PipelinePlan) {
     println!("Selected pipeline:\n  {plan}");
-    let profile = plan
-        .output
-        .profile
-        .as_ref()
-        .map_or_else(|| "encoder-selected".into(), |value| format!("{value:?}"));
+    let profile = match plan.output.profile.as_ref() {
+        Some(asciiflow_core::VideoProfile::Av1Main) => "Profile0 (Main)".into(),
+        Some(value) => format!("{value:?}"),
+        None => "encoder-selected".into(),
+    };
     println!(
         "Output: {} {profile} · {}-bit {:?}",
         plan.output.codec, plan.output.bit_depth, plan.output.chroma_subsampling
@@ -551,6 +571,7 @@ mod tests {
                 av1_vaapi_decode: supported(),
                 h264_vaapi_encode: supported(),
                 hevc_vaapi_encode: supported(),
+                av1_vaapi_encode: supported(),
                 nv12_hardware_frames: supported(),
                 nv12_hardware_upload: supported(),
             },
@@ -571,6 +592,7 @@ mod tests {
                 av1_input: supported(),
                 output: supported(),
                 hevc_output: supported(),
+                av1_output: supported(),
             },
         }
     }

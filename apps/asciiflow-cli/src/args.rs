@@ -28,6 +28,7 @@ pub enum OutputCodecArg {
     #[default]
     H264,
     Hevc,
+    Av1,
 }
 
 impl From<OutputCodecArg> for VideoCodec {
@@ -35,6 +36,7 @@ impl From<OutputCodecArg> for VideoCodec {
         match value {
             OutputCodecArg::H264 => Self::H264,
             OutputCodecArg::Hevc => Self::Hevc,
+            OutputCodecArg::Av1 => Self::Av1,
         }
     }
 }
@@ -166,7 +168,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn output_codec_defaults_to_h264_and_parses_hevc_independently() {
+    fn output_codec_defaults_to_h264_and_parses_hardware_codecs_independently() {
         let default = Args::try_parse_from(["asciiflow", "input.mp4", "output.mp4"]).unwrap();
         assert_eq!(default.output_codec, OutputCodecArg::H264);
         assert_eq!(default.encode, MediaArg::Auto);
@@ -183,5 +185,18 @@ mod tests {
         .unwrap();
         assert_eq!(hevc.output_codec, OutputCodecArg::Hevc);
         assert_eq!(hevc.encode, MediaArg::Vaapi);
+
+        let av1 = Args::try_parse_from([
+            "asciiflow",
+            "input.mp4",
+            "output.mp4",
+            "--output-codec",
+            "av1",
+            "--encode",
+            "vaapi",
+        ])
+        .unwrap();
+        assert_eq!(av1.output_codec, OutputCodecArg::Av1);
+        assert_eq!(av1.encode, MediaArg::Vaapi);
     }
 }

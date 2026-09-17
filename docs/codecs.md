@@ -1,10 +1,12 @@
-# Video codecs (Stage 5.1A)
+# Video codecs (Stage 5.1B)
 
 Qualified software input scope: H.264 8-bit 4:2:0, HEVC Main 8-bit 4:2:0,
 and AV1 Main 8-bit 4:2:0. Codec identity comes from probing; no input-codec flag
 is needed. MP4 output defaults to H.264 8-bit; `--output-codec hevc` selects
-HEVC Main 8-bit 4:2:0 through VAAPI. Output codec and `--encode` backend are
-independent. Software HEVC and all AV1 output are explicitly unsupported.
+HEVC Main 8-bit 4:2:0 through VAAPI, and `--output-codec av1` selects AV1
+Profile0 (Main) 8-bit 4:2:0 through VAAPI. Output codec and `--encode` backend
+are independent. Software HEVC/AV1 encoding is explicitly unsupported, and
+an unavailable AV1 encoder never changes the requested output codec.
 `--decode software|vaapi|auto` applies to the detected codec. Explicit VAAPI
 never substitutes a software decoder.
 
@@ -18,7 +20,8 @@ and BT.2020 frames fail, not silently convert to the current SDR pipeline.
 
 Capabilities retain Supported/Unsupported/NotProbed states. Native probing checks
 FFmpeg configuration and driver profile + VLD for H.264, HEVC Main and AV1
-Profile0. It dynamically loads system libva using the existing libloading stack;
+Profile0 input, and matching EncSlice profiles for all three hardware output
+codecs. It dynamically loads system libva using the existing libloading stack;
 software-only use does not require libva development headers. The selected stream
 is additionally decoded and mapped: static profile support is not proof that an
 arbitrary stream's surface can be imported. The actual DRM descriptor, modifier
@@ -29,7 +32,8 @@ Input interop and initialization replan are scoped by codec/stream. Auto still
 prefers software decode when input interop is unavailable, rather than automatic
 VAAPI hwdownload. At most one initialization replan is allowed; runtime errors
 remain terminal. Output replan facts are also codec-scoped: failure to import an
-HEVC encoder surface does not disable H.264 output interop. FFmpeg manages
+HEVC or AV1 encoder surface does not disable another codec's output interop.
+FFmpeg manages
 decoder and encoder reference surfaces; no new fixed DPB pool was added.
 
 ## Validation status
@@ -55,6 +59,8 @@ reordering. Film-grain equivalence is not claimed.
 
 HEVC output qualification is recorded in
 [stage5.1a-hevc-encode-validation.md](stage5.1a-hevc-encode-validation.md).
-It covers HEVC Main via VAAPI only. There is no software HEVC encoder, AV1
-encoder, Main10/P010, HDR/tone mapping, 4:2:2/4:4:4 output, quality/preset UI,
-B-frame tuning, or new GPU vendor/platform support.
+It covers HEVC Main via VAAPI only. AV1 output qualification is recorded in
+[stage5.1b-av1-encode-validation.md](stage5.1b-av1-encode-validation.md).
+AV1 output is Profile0, NV12, 8-bit 4:2:0 and VAAPI-only. There is no software
+HEVC/AV1 encoder, Main10/P010, HDR/tone mapping, 4:2:2/4:4:4 output,
+quality/preset/bitrate UI, AV1 tuning, or new GPU vendor/platform support.

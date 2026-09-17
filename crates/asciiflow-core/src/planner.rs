@@ -39,6 +39,7 @@ pub struct MediaCapabilities {
     pub av1_vaapi_decode: CapabilitySupport,
     pub h264_vaapi_encode: CapabilitySupport,
     pub hevc_vaapi_encode: CapabilitySupport,
+    pub av1_vaapi_encode: CapabilitySupport,
     pub nv12_hardware_frames: CapabilitySupport,
     pub nv12_hardware_upload: CapabilitySupport,
 }
@@ -73,6 +74,7 @@ pub struct InteropCapabilities {
     pub av1_input: CapabilitySupport,
     pub output: CapabilitySupport,
     pub hevc_output: CapabilitySupport,
+    pub av1_output: CapabilitySupport,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -165,7 +167,8 @@ impl InteropCapabilities {
         match codec {
             VideoCodec::H264 => &self.output,
             VideoCodec::Hevc => &self.hevc_output,
-            VideoCodec::Av1 | VideoCodec::Other(_) => &UNSUPPORTED_CODEC,
+            VideoCodec::Av1 => &self.av1_output,
+            VideoCodec::Other(_) => &UNSUPPORTED_CODEC,
         }
     }
 
@@ -173,7 +176,8 @@ impl InteropCapabilities {
         match codec {
             VideoCodec::H264 => self.output = fact,
             VideoCodec::Hevc => self.hevc_output = fact,
-            VideoCodec::Av1 | VideoCodec::Other(_) => {}
+            VideoCodec::Av1 => self.av1_output = fact,
+            VideoCodec::Other(_) => {}
         }
     }
 }
@@ -183,7 +187,8 @@ impl MediaCapabilities {
         match codec {
             VideoCodec::H264 => &self.h264_vaapi_encode,
             VideoCodec::Hevc => &self.hevc_vaapi_encode,
-            VideoCodec::Av1 | VideoCodec::Other(_) => &UNSUPPORTED_CODEC,
+            VideoCodec::Av1 => &self.av1_vaapi_encode,
+            VideoCodec::Other(_) => &UNSUPPORTED_CODEC,
         }
     }
 
@@ -191,7 +196,8 @@ impl MediaCapabilities {
         let fact = match codec {
             VideoCodec::H264 => &mut self.h264_vaapi_encode,
             VideoCodec::Hevc => &mut self.hevc_vaapi_encode,
-            VideoCodec::Av1 | VideoCodec::Other(_) => return,
+            VideoCodec::Av1 => &mut self.av1_vaapi_encode,
+            VideoCodec::Other(_) => return,
         };
         *fact = CapabilitySupport::unsupported(reason);
     }
@@ -234,9 +240,7 @@ impl OutputVideoRequirements {
         let profile = match codec {
             VideoCodec::H264 => None,
             VideoCodec::Hevc => Some(VideoProfile::HevcMain),
-            VideoCodec::Av1 => {
-                return Err(Error::InvalidConfig("AV1 output is not implemented".into()));
-            }
+            VideoCodec::Av1 => Some(VideoProfile::Av1Main),
             VideoCodec::Other(ref name) => {
                 return Err(Error::InvalidConfig(format!(
                     "output codec {name} is not implemented"
@@ -560,6 +564,11 @@ fn validate_policy(policy: &PipelinePolicy) -> Result<()> {
     if policy.output_codec == VideoCodec::Hevc && policy.encode == MediaRequest::Software {
         return Err(Error::InvalidConfig(
             "HEVC software encoding is not implemented".into(),
+        ));
+    }
+    if policy.output_codec == VideoCodec::Av1 && policy.encode == MediaRequest::Software {
+        return Err(Error::InvalidConfig(
+            "AV1 software encoding is not implemented".into(),
         ));
     }
     if policy.input_interop == InteropRequest::On && policy.decode == MediaRequest::Software {
@@ -955,6 +964,7 @@ mod tests {
                 av1_vaapi_decode: yes(),
                 h264_vaapi_encode: yes(),
                 hevc_vaapi_encode: yes(),
+                av1_vaapi_encode: yes(),
                 nv12_hardware_frames: yes(),
                 nv12_hardware_upload: yes(),
             },
@@ -975,6 +985,7 @@ mod tests {
                 av1_input: yes(),
                 output: yes(),
                 hevc_output: yes(),
+                av1_output: yes(),
             },
         }
     }
@@ -1381,5 +1392,72 @@ mod tests {
         )
         .unwrap_err();
         assert!(error.to_string().contains("HEVC-only output import"));
+    }
+
+    #[test]
+    fn av1_output_requires_its_own_encoder_and_never_changes_codec() {
+        let policy = PipelinePolicy {
+            output_codec: VideoCodec::Av1,
+            ..Default::default()
+        };
+        let plan = PipelinePlanner::select(&full(), &h264(), policy.clone())
+            .unwrap()
+            .selected;
+        assert_eq!(plan.output.codec, VideoCodec::Av1);
+        assert_eq!(plan.output.profile, Some(VideoProfile::Av1Main));
+        assert_eq!(plan.encode, MediaImplementation::Hardware);
+        assert!(plan.hardware_output_interop);
+        assert!(plan.to_string().contains("VAAPI AV1 encode"));
+
+        let mut capabilities = full();
+        capabilities.media.av1_vaapi_encode = no("AV1 encoder absent");
+        let error = PipelinePlanner::select(&capabilities, &h264(), policy.clone()).unwrap_err();
+        assert!(error.to_string().contains("AV1 encoder absent"));
+        assert!(capabilities.media.h264_vaapi_encode.is_supported());
+        assert!(capabilities.media.hevc_vaapi_encode.is_supported());
+
+        let error = PipelinePlanner::select(
+            &full(),
+            &h264(),
+            PipelinePolicy {
+                encode: MediaRequest::Software,
+                ..policy
+            },
+        )
+        .unwrap_err();
+        assert!(
+            error
+                .to_string()
+                .contains("AV1 software encoding is not implemented")
+        );
+    }
+
+    #[test]
+    fn av1_output_interop_failure_stages_only_av1_when_auto() {
+        let mut capabilities = full();
+        capabilities.interop.av1_output = no("AV1 import rejected");
+        let policy = PipelinePolicy {
+            output_codec: VideoCodec::Av1,
+            ..Default::default()
+        };
+        let plan = PipelinePlanner::select(&capabilities, &h264(), policy.clone())
+            .unwrap()
+            .selected;
+        assert!(plan.hardware_upload);
+        assert!(!plan.hardware_output_interop);
+        assert_eq!(plan.output.codec, VideoCodec::Av1);
+        assert!(capabilities.interop.output.is_supported());
+        assert!(capabilities.interop.hevc_output.is_supported());
+
+        let error = PipelinePlanner::select(
+            &capabilities,
+            &h264(),
+            PipelinePolicy {
+                output_interop: InteropRequest::On,
+                ..policy
+            },
+        )
+        .unwrap_err();
+        assert!(error.to_string().contains("AV1 import rejected"));
     }
 }

@@ -1,8 +1,8 @@
 # 🌊 AsciiFlow v2 — Rust CPU + Vulkan pipeline
 
 Input is detected automatically: H.264 8-bit 4:2:0, HEVC Main 8-bit 4:2:0,
-and AV1 Main 8-bit 4:2:0. Output defaults to H.264; HEVC Main 8-bit output is
-available through VAAPI. Ten-bit HEVC/AV1 and HDR are
+and AV1 Main 8-bit 4:2:0. Output defaults to H.264; HEVC Main and AV1 Profile0
+8-bit output are available through VAAPI. Ten-bit HEVC/AV1 and HDR are
 not supported. Software decode and Intel Arc Meteor Lake hardware decode/interop
 are qualified for these 8-bit inputs. See [codec support](docs/codecs.md).
 
@@ -17,7 +17,7 @@ FFmpeg software or VAAPI decode
   -> hardware download to Host NV12, or DRM PRIME / DMA-BUF import
   -> CPU ASCII, or Vulkan mapping pass + render pass
   -> Host NV12 + optional hardware upload, or writable encoder DMA-BUF import
-  -> FFmpeg software H.264, or VAAPI H.264/HEVC Main MP4 encode
+  -> FFmpeg software H.264, or VAAPI H.264/HEVC Main/AV1 Profile0 MP4 encode
 
 FFmpeg demux -> compatible compressed audio packets -> the same MP4 mux owner
 ```
@@ -65,20 +65,25 @@ cargo run --release --bin asciiflow -- input.mp4 output-full-interop.mp4 \
 # H.264 remains the default. HEVC output currently requires VAAPI.
 cargo run --release --bin asciiflow -- input.mp4 output-hevc.mp4 \
   --output-codec hevc --encode auto --width 80 --verbose
+
+# AV1 Profile0 output uses VAAPI hardware encode; H.264 remains the default.
+cargo run --release --bin asciiflow -- input.mp4 output-av1.mp4 \
+  --output-codec av1 --encode auto --width 80 --verbose
 ```
 
 Supported options are positional `input` and optional `output` (output is not
 needed for `--capabilities` or `--explain-plan`), plus
 `--backend auto|cpu|vulkan`, `--vulkan-mapping auto|gpu|cpu`,
 `--decode auto|software|vaapi`, `--encode auto|software|vaapi`,
-`--output-codec h264|hevc` (default `h264`),
+`--output-codec h264|hevc|av1` (default `h264`),
 `--audio auto|copy|none`, optional
 `--hw-device`, `--vaapi-vulkan-input-interop auto|off|on` (also
 `--input-interop`), `--vaapi-vulkan-output-interop auto|off|on` (also
 `--output-interop`), `--capabilities`, `--explain-plan`, `--width`,
 `--height`, `--charset`, `--font`, `--color`, `--max-frames`, `--no-progress`,
-and `--verbose`. Output is MP4 with H.264 or HEVC video. HEVC is Main,
-8-bit 4:2:0 and VAAPI-only; it never falls back to H.264 or software HEVC.
+and `--verbose`. Output is MP4 with H.264, HEVC or AV1 video. HEVC Main and
+AV1 Profile0 output are 8-bit 4:2:0 and VAAPI-only; neither silently changes
+codec or falls back to software encoding.
 Audio defaults to `auto`, which
 copies every MP4-compatible compressed audio stream without decoding it and
 warns when an incompatible stream is skipped. `--audio copy` is strict;

@@ -314,6 +314,21 @@ fn hevc_encoder_descriptor_and_staged_interop_pixels_are_exact() {
 }
 
 #[test]
+#[ignore = "requires Intel iHD AV1 encode and an ANV Vulkan device"]
+fn av1_encoder_descriptor_and_staged_interop_pixels_are_exact() {
+    compare_output_interop(
+        30,
+        "ASCIIFLOW_STAGE51B_INPUT",
+        concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../target/stage51a1-evidence/h264-testsrc2-300.mp4"
+        ),
+        false,
+        VideoCodec::Av1,
+    );
+}
+
+#[test]
 #[ignore = "requires Intel iHD VAAPI"]
 fn encoder_rejects_surface_from_a_different_frames_context() {
     let path = input("ASCIIFLOW_STAGE3_INPUT", "input.mp4");
@@ -412,6 +427,69 @@ fn h264_and_hevc_encoder_frames_are_not_cross_submittable() {
 }
 
 #[test]
+#[ignore = "requires Intel iHD H.264, HEVC, and AV1 encode"]
+fn av1_encoder_frames_are_not_cross_submittable() {
+    let path = input(
+        "ASCIIFLOW_STAGE51B_INPUT",
+        concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../target/stage51a1-evidence/h264-testsrc2-300.mp4"
+        ),
+    );
+    let decoder = vaapi_decoder(&path);
+    let desc = decoder.info().frame_desc.clone();
+    let frame_rate = decoder.info().frame_rate;
+    let av1_path = temporary_output("stage51b-av1-pool");
+    let h264_path = temporary_output("stage51b-h264-pool");
+    let mut av1 = Encoder::create_with_codec_and_audio(
+        &av1_path,
+        desc.clone(),
+        frame_rate,
+        OutputEncoding {
+            codec: VideoCodec::Av1,
+            mode: EncodeMode::Vaapi,
+        },
+        VaapiOptions::default(),
+        Vec::new(),
+        Default::default(),
+    )
+    .unwrap();
+    let mut h264 = Encoder::create_with_codec_and_audio(
+        &h264_path,
+        desc,
+        frame_rate,
+        OutputEncoding {
+            codec: VideoCodec::H264,
+            mode: EncodeMode::Vaapi,
+        },
+        VaapiOptions::default(),
+        Vec::new(),
+        Default::default(),
+    )
+    .unwrap();
+    let av1_frame = av1.encoder_frames().unwrap().acquire(0).unwrap();
+    let h264_frame = h264.encoder_frames().unwrap().acquire(0).unwrap();
+    assert!(
+        h264.encode_hardware_frame(av1_frame)
+            .unwrap_err()
+            .to_string()
+            .contains("different AVHWFramesContext")
+    );
+    assert!(
+        av1.encode_hardware_frame(h264_frame)
+            .unwrap_err()
+            .to_string()
+            .contains("different AVHWFramesContext")
+    );
+    av1.finish().unwrap();
+    h264.finish().unwrap();
+    drop(av1);
+    drop(h264);
+    std::fs::remove_file(av1_path).unwrap();
+    std::fs::remove_file(h264_path).unwrap();
+}
+
+#[test]
 #[ignore = "requires a 3000+ frame H.264 input, Intel iHD VAAPI, and ANV Vulkan"]
 fn full_interop_surface_reuse_is_exact_and_fd_bounded() {
     compare_output_interop(
@@ -432,6 +510,21 @@ fn hevc_full_interop_surface_reuse_is_exact_and_fd_bounded() {
         "/tmp/asciiflow-stage5-qualification/h264-testsrc2-1920x1080-50fps-300f-bt709-limited-8bit-420.mp4",
         true,
         VideoCodec::Hevc,
+    );
+}
+
+#[test]
+#[ignore = "requires a 3000-frame input, Intel AV1 encode, and ANV Vulkan"]
+fn av1_full_interop_surface_reuse_is_exact_and_fd_bounded() {
+    compare_output_interop(
+        3000,
+        "ASCIIFLOW_STAGE51B_STRESS_INPUT",
+        concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../target/stage51a1-evidence/h264-testsrc2-3000-loop.mp4"
+        ),
+        true,
+        VideoCodec::Av1,
     );
 }
 

@@ -42,8 +42,9 @@ discovery, actual decoded format validation and libva profile/VLD probing stay
 in media. Decode capability and stream input-interop qualification are keyed
 by codec; initialization replan changes only the failing codec's fact. The DRM
 importer is reused. Stage 5.1A separates portable output requirements from the
-encoder backend and qualifies H.264 or HEVC Main VAAPI encoder-owned surfaces
-through the same output interop. Intel Arc Meteor Lake qualification passed;
+encoder backend and qualifies H.264, HEVC Main or AV1 Profile0 VAAPI
+encoder-owned surfaces through the same output interop. Intel Arc Meteor Lake
+qualification passed;
 see [codec validation](stage5.0-codec-validation.md).
 
 The output selection boundary is:
@@ -51,16 +52,20 @@ The output selection boundary is:
 ```text
 OutputVideoRequirements (codec/profile/8-bit 4:2:0/geometry/rate)
   -> codec-specific software/VAAPI capability and policy
-  -> H.264 software, H.264 VAAPI, or HEVC Main VAAPI encoder
-  -> generic encoder-owned VAAPI surface interop when selected
+  -> codec-specific encoder configuration (H.264 software/VAAPI, HEVC or AV1 VAAPI)
+  -> generic VAAPI hardware-frame lifecycle when selected
+  -> generic encoder-owned Vulkan/VAAPI output interop when selected
+  -> H.264 / HEVC Main / AV1 Profile0 encoder
   -> MP4 mux
 ```
 
 Core contains portable identities only. FFmpeg codec IDs, named encoder lookup,
-VAProfileHEVCMain/EncSlice qualification, CQP options and AVHWFramesContext stay
+VAProfileHEVCMain and VAProfileAV1Profile0 EncSlice qualification, CQP options
+and AVHWFramesContext stay
 in media. The interop crate receives only an encoder-owned NV12 frames context;
-it contains no H.264/HEVC branch. See the
-[Stage 5.1A validation](stage5.1a-hevc-encode-validation.md).
+it contains no H.264/HEVC/AV1 branch. See the
+[Stage 5.1A validation](stage5.1a-hevc-encode-validation.md) and
+[Stage 5.1B validation](stage5.1b-av1-encode-validation.md).
 
 Stage 4.3 adds initialization-only `Font specification -> FreeType -> GlyphAtlas`.
 The CLI builds one owned atlas before staging/mux initialization and passes
@@ -228,7 +233,7 @@ VAAPI or software decode
   -> explicit plan transfer/interop nodes
   -> CPU or Vulkan ASCII
   -> explicit plan transfer/interop nodes
-  -> software H.264, VAAPI H.264, or VAAPI HEVC Main encode
+  -> software H.264, VAAPI H.264/HEVC Main/AV1 Profile0 encode
 ```
 
 Two capacity-three crossbeam channels provide bounded backpressure and ordered
@@ -376,7 +381,7 @@ encoder's existing AVHWFramesContext
   -> FOREIGN_EXT release back to GENERAL
   -> slot fence completion
   -> unmap DRM PRIME while retaining the original VAAPI frame
-  -> common h264_vaapi submit/receive path
+  -> common selected VAAPI encoder submit/receive path
 ```
 
 The encoder pool, not Vulkan, determines allocation, pitch, modifier, tiling,
@@ -408,15 +413,17 @@ that distinction explicit.
 ## Media contract and current limitations
 
 - Software decode and VAAPI decode are selected from the input requirements and
-  capability snapshot. The current pipeline contract is H.264, 8-bit 4:2:0,
-  NV12-compatible input. Ten-bit input is rejected before output creation; it
-  is never silently reduced to 8-bit.
-- MP4/H.264 software output uses `libx264`; explicit-transfer VAAPI output uses
-  `h264_vaapi`. Explicit hardware requests never fall back.
+  capability snapshot. Qualified input is H.264, HEVC Main or AV1 Main,
+  8-bit 4:2:0 and NV12-compatible. Ten-bit input is rejected before output
+  creation; it is never silently reduced to 8-bit.
+- MP4 output defaults to H.264 (`libx264` for software or `h264_vaapi` for
+  VAAPI). HEVC Main and AV1 Profile0 output use `hevc_vaapi` and `av1_vaapi`,
+  respectively; software output for those codecs is unsupported. Explicit
+  hardware requests never fall back.
 - `auto` prefers full interop, then qualified staged hardware encode, then
   software media/Vulkan, and finally CPU processing. It does not choose VAAPI
   decode plus `hwdownload` solely because a VAAPI device exists.
-- VAAPI supports only 8-bit 4:2:0 NV12 semantics. Stage 3A currently accepts
+- The qualified VAAPI path supports only 8-bit 4:2:0 NV12 semantics. Stage 3A currently accepts
   the observed single-object R8+GR88 iHD export with a known, importable
   modifier. P010/HDR, 4:4:4, multi-object, unknown-modifier, and incompatible
   layer topologies are rejected rather than copied or silently reduced.

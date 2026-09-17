@@ -1465,6 +1465,7 @@ mod stage40_tests {
                 av1_vaapi_decode: supported(),
                 h264_vaapi_encode: supported(),
                 hevc_vaapi_encode: supported(),
+                av1_vaapi_encode: supported(),
                 nv12_hardware_frames: supported(),
                 nv12_hardware_upload: supported(),
             },
@@ -1485,6 +1486,7 @@ mod stage40_tests {
                 av1_input: supported(),
                 output: supported(),
                 hevc_output: supported(),
+                av1_output: supported(),
             },
         }
     }
@@ -1743,6 +1745,45 @@ mod stage40_tests {
     }
 
     #[test]
+    fn av1_output_interop_failure_replans_only_av1_to_staged_encode() {
+        let policy = PipelinePolicy {
+            output_codec: VideoCodec::Av1,
+            ..Default::default()
+        };
+        let requirements = requirements();
+        let mut snapshot = full_capabilities();
+        let initial = PipelinePlanner::select(&snapshot, &requirements, policy.clone()).unwrap();
+        let mut attempts = 0;
+        let initialized = initialize_with_replan(
+            &mut snapshot,
+            &requirements,
+            policy,
+            initial,
+            |plan| {
+                attempts += 1;
+                if attempts == 1 {
+                    Err(injected(
+                        InitCapability::OutputInterop,
+                        "injected AV1 output DMA-BUF import failure",
+                    ))
+                } else {
+                    Ok(plan.clone())
+                }
+            },
+            || Ok(()),
+        )
+        .unwrap();
+        assert_eq!(attempts, 2);
+        assert_eq!(initialized.value.output.codec, VideoCodec::Av1);
+        assert!(initialized.value.hardware_upload);
+        assert!(!initialized.value.hardware_output_interop);
+        assert!(!snapshot.interop.av1_output.is_supported());
+        assert!(snapshot.interop.output.is_supported());
+        assert!(snapshot.interop.hevc_output.is_supported());
+        assert!(snapshot.media.av1_vaapi_encode.is_supported());
+    }
+
+    #[test]
     fn hevc_encoder_or_frames_pool_failure_never_changes_output_codec() {
         for capability in [
             InitCapability::HardwareEncode,
@@ -1784,6 +1825,45 @@ mod stage40_tests {
             assert!(error.to_string().contains("HEVC"));
             assert!(snapshot.media.h264_vaapi_encode.is_supported());
             assert!(!snapshot.media.hevc_vaapi_encode.is_supported());
+        }
+    }
+
+    #[test]
+    fn av1_encoder_or_frames_pool_failure_is_terminal_without_codec_fallback() {
+        let policy = PipelinePolicy {
+            output_codec: VideoCodec::Av1,
+            ..Default::default()
+        };
+        for capability in [
+            InitCapability::HardwareEncode,
+            InitializationPoint::VaapiFramesPoolCreate.capability(
+                &PipelinePlanner::select(&full_capabilities(), &requirements(), policy.clone())
+                    .unwrap()
+                    .selected,
+            ),
+        ] {
+            let requirements = requirements();
+            let mut snapshot = full_capabilities();
+            let initial =
+                PipelinePlanner::select(&snapshot, &requirements, policy.clone()).unwrap();
+            let error = initialize_with_replan(
+                &mut snapshot,
+                &requirements,
+                policy.clone(),
+                initial,
+                |_| {
+                    Err::<(), _>(injected(
+                        capability,
+                        "injected AV1 encoder initialization failure",
+                    ))
+                },
+                || Ok(()),
+            )
+            .unwrap_err();
+            assert!(error.to_string().contains("AV1"));
+            assert!(!snapshot.media.av1_vaapi_encode.is_supported());
+            assert!(snapshot.media.h264_vaapi_encode.is_supported());
+            assert!(snapshot.media.hevc_vaapi_encode.is_supported());
         }
     }
 

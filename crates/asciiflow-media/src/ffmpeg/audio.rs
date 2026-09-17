@@ -169,6 +169,8 @@ fn dictionary_value(dictionary: *mut ffi::AVDictionary, key: &str) -> Option<Str
 pub(crate) enum MuxMessage {
     #[cfg(test)]
     FailAudioAfter(u64),
+    #[cfg(test)]
+    FailVideoAfter(u64),
     Packet {
         packet: Packet,
         input_index: usize,

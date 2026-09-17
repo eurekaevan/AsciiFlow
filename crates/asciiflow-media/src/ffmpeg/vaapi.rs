@@ -64,7 +64,7 @@ impl VaapiOptions {
     }
 
     /// Probe the exact 8-bit VAAPI encode profiles used by the output planner.
-    pub fn probe_encode_profiles(&self) -> [CapabilitySupport; 2] {
+    pub fn probe_encode_profiles(&self) -> [CapabilitySupport; 3] {
         let library = match unsafe { libloading::Library::new("libva.so.2") } {
             Ok(value) => value,
             Err(error) => {
@@ -103,8 +103,9 @@ fn unsupported_profiles(reason: String) -> [CapabilitySupport; 3] {
     ]
 }
 
-fn unsupported_encode_profiles(reason: String) -> [CapabilitySupport; 2] {
+fn unsupported_encode_profiles(reason: String) -> [CapabilitySupport; 3] {
     [
+        CapabilitySupport::unsupported(reason.clone()),
         CapabilitySupport::unsupported(reason.clone()),
         CapabilitySupport::unsupported(reason),
     ]
@@ -128,6 +129,7 @@ pub struct VaapiBuildCapabilities {
     pub h264_decoder: bool,
     pub h264_encoder: bool,
     pub hevc_encoder: bool,
+    pub av1_encoder: bool,
     pub software_h264_encoder: bool,
 }
 
@@ -145,6 +147,8 @@ pub fn probe_vaapi_build() -> VaapiBuildCapabilities {
     let h264_encoder = !unsafe { ffi::avcodec_find_encoder_by_name(name.as_ptr()) }.is_null();
     let hevc_name = CString::new("hevc_vaapi").expect("literal has no NUL");
     let hevc_encoder = !unsafe { ffi::avcodec_find_encoder_by_name(hevc_name.as_ptr()) }.is_null();
+    let av1_name = CString::new("av1_vaapi").expect("literal has no NUL");
+    let av1_encoder = !unsafe { ffi::avcodec_find_encoder_by_name(av1_name.as_ptr()) }.is_null();
     let h264_decoder =
         !unsafe { ffi::avcodec_find_decoder(ffi::AVCodecID::AV_CODEC_ID_H264) }.is_null();
     let software_name = CString::new("libx264").expect("literal has no NUL");
@@ -156,6 +160,7 @@ pub fn probe_vaapi_build() -> VaapiBuildCapabilities {
         h264_decoder,
         h264_encoder,
         hevc_encoder,
+        av1_encoder,
         software_h264_encoder,
     }
 }
@@ -324,7 +329,7 @@ unsafe fn query_profiles(
 unsafe fn query_encode_profiles(
     library: &libloading::Library,
     display: VaDisplay,
-) -> [CapabilitySupport; 2] {
+) -> [CapabilitySupport; 3] {
     unsafe {
         let max_profiles: libloading::Symbol<unsafe extern "C" fn(VaDisplay) -> i32> =
             match library.get(b"vaMaxNumProfiles\0") {
@@ -399,6 +404,14 @@ unsafe fn query_encode_profiles(
                 available,
                 entries,
                 &[VA_PROFILE_HEVC_MAIN],
+                VA_ENTRYPOINT_ENC_SLICE,
+                *query_entries,
+            ),
+            profile_entrypoint_support(
+                display,
+                available,
+                entries,
+                &[VA_PROFILE_AV1_PROFILE0],
                 VA_ENTRYPOINT_ENC_SLICE,
                 *query_entries,
             ),
