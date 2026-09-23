@@ -24,6 +24,7 @@ pub struct DeviceInfo {
     pub max_compute_work_group_invocations: u32,
     pub max_compute_work_group_size: [u32; 3],
     pub dma_buf_interop: bool,
+    pub p010_storage_supported: bool,
     pub memory_heaps: Vec<MemoryHeapInfo>,
     pub memory_types: Vec<MemoryTypeInfo>,
 }
@@ -258,6 +259,8 @@ impl VulkanContext {
             .queue_family_index(selected.queue_family)
             .queue_priorities(&priority)];
         let features = vk::PhysicalDeviceFeatures::default().shader_int64(true);
+        let mut features11 = vk::PhysicalDeviceVulkan11Features::default()
+            .storage_buffer16_bit_access(selected.p010_storage_supported);
         let mut features12 =
             vk::PhysicalDeviceVulkan12Features::default().storage_buffer8_bit_access(true);
         let mut features13 = vk::PhysicalDeviceVulkan13Features::default().synchronization2(true);
@@ -275,6 +278,7 @@ impl VulkanContext {
             .queue_create_infos(&queue_info)
             .enabled_extension_names(&extension_names)
             .enabled_features(&features)
+            .push_next(&mut features11)
             .push_next(&mut features12)
             .push_next(&mut features13);
         let device = unsafe {
@@ -379,16 +383,16 @@ fn collect_device_candidates(instance: &ash::Instance) -> Result<Vec<DeviceCandi
         if properties.api_version < vk::API_VERSION_1_3 {
             continue;
         }
+        let mut f11 = vk::PhysicalDeviceVulkan11Features::default();
         let mut f12 = vk::PhysicalDeviceVulkan12Features::default();
         let mut f13 = vk::PhysicalDeviceVulkan13Features::default();
         let mut features = vk::PhysicalDeviceFeatures2::default()
+            .push_next(&mut f11)
             .push_next(&mut f12)
             .push_next(&mut f13);
         unsafe { instance.get_physical_device_features2(physical, &mut features) };
-        if features.features.shader_int64 == 0
-            || f12.storage_buffer8_bit_access == 0
-            || f13.synchronization2 == 0
-        {
+        let shader_int64 = features.features.shader_int64 != 0;
+        if !shader_int64 || f12.storage_buffer8_bit_access == 0 || f13.synchronization2 == 0 {
             continue;
         }
         let queues = unsafe { instance.get_physical_device_queue_family_properties(physical) };
@@ -419,6 +423,7 @@ fn collect_device_candidates(instance: &ash::Instance) -> Result<Vec<DeviceCandi
                     .max_compute_work_group_invocations,
                 max_compute_work_group_size: properties.limits.max_compute_work_group_size,
                 dma_buf_interop,
+                p010_storage_supported: f11.storage_buffer16_bit_access != 0,
                 memory_heaps: memory
                     .memory_heaps_as_slice()
                     .iter()

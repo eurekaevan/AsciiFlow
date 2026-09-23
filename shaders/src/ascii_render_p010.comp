@@ -1,0 +1,76 @@
+#version 460
+#extension GL_EXT_shader_8bit_storage : require
+#extension GL_EXT_shader_16bit_storage : require
+#extension GL_EXT_shader_explicit_arithmetic_types_int16 : require
+layout(local_size_x = 32, local_size_y = 4) in;
+
+layout(set = 0, binding = 1, std430) readonly buffer Cells { uvec4 cells[]; };
+layout(set = 0, binding = 3, std430) readonly buffer Atlas { uint8_t atlas[]; };
+layout(set = 0, binding = 4, std430) writeonly buffer OutputP010 { uint16_t output_p010[]; };
+layout(set = 0, binding = 5, std430) readonly buffer CoordinateLut { uvec2 coordinates[]; };
+
+layout(push_constant) uniform Params {
+    uint width;
+    uint height;
+    uint grid_width;
+    uint grid_height;
+    uint atlas_width;
+    uint atlas_height;
+    uint color;
+    uint glyph_count;
+    uint neutral_chroma;
+} params;
+
+uint alpha_for(uint glyph, uint x, uint y) {
+    uint local_x = coordinates[x].y;
+    uint local_y = coordinates[params.width + y].y;
+    uint atlas_index = glyph * params.atlas_width * params.atlas_height
+        + local_y * params.atlas_width + local_x;
+    return uint(atlas[atlas_index]);
+}
+
+uint cell_x_for(uint x) { return coordinates[x].x; }
+uint cell_y_for(uint y) { return coordinates[params.width + y].x; }
+
+uint blend(uint background, uint foreground, uint alpha) {
+    return (background * (255u - alpha) + foreground * alpha + 127u) / 255u;
+}
+
+void main() {
+    uint pixel_x = gl_GlobalInvocationID.x * 2u;
+    uint pixel_y = gl_GlobalInvocationID.y * 2u;
+    if (pixel_x >= params.width || pixel_y >= params.height) {
+        return;
+    }
+
+    for (uint delta_y = 0u; delta_y < 2u; delta_y++) {
+        for (uint delta_x = 0u; delta_x < 2u; delta_x++) {
+            uint x = pixel_x + delta_x;
+            uint y = pixel_y + delta_y;
+            uvec4 cell = cells[cell_y_for(y) * params.grid_width + cell_x_for(x)];
+            uint foreground = params.color != 0u ? cell.y : 940u;
+            uint output_y = blend(64u, foreground, alpha_for(cell.x, x, y));
+            output_p010[y * params.width + x] = uint16_t((output_y & 1023u) << 6u);
+        }
+    }
+
+    uint uv_offset = params.width * params.height
+        + (pixel_y / 2u) * params.width + pixel_x;
+    if (params.color == 0u) {
+        output_p010[uv_offset] = uint16_t(params.neutral_chroma << 6u);
+        output_p010[uv_offset + 1u] = uint16_t(params.neutral_chroma << 6u);
+        return;
+    }
+
+    uvec4 cell = cells[cell_y_for(pixel_y) * params.grid_width + cell_x_for(pixel_x)];
+    uint alpha = (
+        alpha_for(cell.x, pixel_x, pixel_y)
+        + alpha_for(cell.x, pixel_x + 1u, pixel_y)
+        + alpha_for(cell.x, pixel_x, pixel_y + 1u)
+        + alpha_for(cell.x, pixel_x + 1u, pixel_y + 1u)
+    ) / 4u;
+    uint output_u = blend(params.neutral_chroma, cell.z, alpha);
+    uint output_v = blend(params.neutral_chroma, cell.w, alpha);
+    output_p010[uv_offset] = uint16_t((output_u & 1023u) << 6u);
+    output_p010[uv_offset + 1u] = uint16_t((output_v & 1023u) << 6u);
+}

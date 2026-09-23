@@ -67,3 +67,24 @@ Neither a passing portable suite nor lavapipe emulation substitutes for Intel
 hardware qualification. Do not run all ignored hardware tests indiscriminately:
 some deliberately submit invalid external handles and must run without
 Validation, as their test annotations state.
+
+## Internal P010LE processing (Stage 5.2A)
+
+Core and CPU P010LE tests run in `cargo test --workspace`. The opt-in Vulkan
+checks use synthetic Host P010LE frames, not a Main10 media decoder. Lavapipe
+can verify pixel parity and Vulkan Validation when it provides the required
+16-bit storage feature:
+
+```bash
+ASCIIFLOW_VULKAN_ALLOW_CPU=1 \
+ASCIIFLOW_VULKAN_VALIDATION=1 \
+VK_DRIVER_FILES=/usr/share/vulkan/icd.d/lvp_icd.x86_64.json \
+cargo test -p asciiflow-vulkan p010_ -- --ignored
+```
+
+The `p010_` filter also includes the opt-in 300-frame 1080p benchmark and
+3000-frame reuse test. Run the benchmark in Release for interpretable timing:
+`cargo test --release -p asciiflow-vulkan
+p010_synthetic_1080p_300_frame_benchmark -- --ignored --nocapture`.
+See [the P010 contract and measured scope](p010.md). Production HEVC Main10
+and 10-bit AV1 must continue to fail input qualification.

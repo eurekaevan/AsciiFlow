@@ -7,8 +7,11 @@ not supported. Software decode and Intel Arc Meteor Lake hardware decode/interop
 are qualified for these 8-bit inputs. See [codec support](docs/codecs.md).
 
 AsciiFlow v2 is the primary development path. Host NV12 remains the portable
-Core boundary. At startup, AsciiFlow probes the input and the local runtime,
-then selects the fastest legal pipeline. On the qualified Intel Linux path,
+production boundary. An internal P010LE processing foundation now exists for
+synthetic 10-bit SDR frames; real 10-bit media input/output is still rejected.
+See [P010 processing contract](docs/p010.md). At startup, AsciiFlow probes the
+input and the local runtime, then selects the fastest legal pipeline. On the
+qualified Intel Linux path,
 this can carry decoded VAAPI surfaces into Vulkan and return processed pixels
 to encoder-owned VAAPI surfaces without Host pixel copies:
 
@@ -148,6 +151,7 @@ docs/fonts.md              Stage 4.3 font/atlas contract
 docs/codecs.md             Current input/output codec support and limits
 docs/testing.md            Portable and opt-in hardware regression tests
 docs/stage5.1b-av1-encode-validation.md  Latest Intel output qualification
+docs/p010.md               Internal P010LE processing contract and validation
 ```
 
 ---

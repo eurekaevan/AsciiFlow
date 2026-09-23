@@ -1,0 +1,116 @@
+#version 460
+#extension GL_EXT_shader_16bit_storage : require
+#extension GL_EXT_shader_explicit_arithmetic_types_int16 : require
+#ifdef USE_INT64_SUMS
+#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+#define SUM_TYPE uint64_t
+#define SUM_ZERO 0ul
+#else
+#define SUM_TYPE uint
+#define SUM_ZERO 0u
+#endif
+
+#ifndef MAP_WORKGROUP_SIZE
+#define MAP_WORKGROUP_SIZE 32
+#endif
+layout(local_size_x = MAP_WORKGROUP_SIZE) in;
+
+layout(set = 0, binding = 0, std430) readonly buffer InputP010 { uint16_t input_p010[]; };
+layout(set = 0, binding = 1, std430) writeonly buffer Cells { uvec4 cells[]; };
+layout(set = 0, binding = 2, std430) readonly buffer GlyphLut { uint glyph_for_y[256]; };
+
+layout(push_constant) uniform Params {
+    uint width;
+    uint height;
+    uint grid_width;
+    uint grid_height;
+    uint atlas_width;
+    uint atlas_height;
+    uint color;
+    uint glyph_count;
+    uint neutral_chroma;
+} params;
+
+shared SUM_TYPE y_sum[MAP_WORKGROUP_SIZE];
+shared uint y_count[MAP_WORKGROUP_SIZE];
+shared SUM_TYPE u_sum[MAP_WORKGROUP_SIZE];
+shared SUM_TYPE v_sum[MAP_WORKGROUP_SIZE];
+shared uint uv_count[MAP_WORKGROUP_SIZE];
+
+void main() {
+    uint lane = gl_LocalInvocationID.x;
+    uint cell_x = gl_WorkGroupID.x;
+    uint cell_y = gl_WorkGroupID.y;
+    uint cell_index = cell_y * params.grid_width + cell_x;
+
+#ifdef USE_INT64_SUMS
+    uint x0 = uint(uint64_t(cell_x) * params.width / params.grid_width);
+    uint x1 = max(uint(uint64_t(cell_x + 1u) * params.width / params.grid_width), x0 + 1u);
+    uint y0 = uint(uint64_t(cell_y) * params.height / params.grid_height);
+    uint y1 = max(uint(uint64_t(cell_y + 1u) * params.height / params.grid_height), y0 + 1u);
+#else
+    uint x0 = cell_x * params.width / params.grid_width;
+    uint x1 = max((cell_x + 1u) * params.width / params.grid_width, x0 + 1u);
+    uint y0 = cell_y * params.height / params.grid_height;
+    uint y1 = max((cell_y + 1u) * params.height / params.grid_height, y0 + 1u);
+#endif
+    uint cell_width = x1 - x0;
+    uint pixel_count = cell_width * (y1 - y0);
+
+    SUM_TYPE local_y_sum = SUM_ZERO;
+    for (uint i = lane; i < pixel_count; i += MAP_WORKGROUP_SIZE) {
+        uint y = y0 + i / cell_width;
+        uint x = x0 + i % cell_width;
+        local_y_sum += uint(input_p010[y * params.width + x]) >> 6u;
+    }
+    y_sum[lane] = local_y_sum;
+    y_count[lane] = (pixel_count + (MAP_WORKGROUP_SIZE - 1u) - lane) / MAP_WORKGROUP_SIZE;
+
+    uint uv_x0 = x0 & ~1u;
+    uint uv_x1 = min(x1 + 1u, params.width) & ~1u;
+    uint uv_y0 = y0 / 2u;
+    uint uv_y1 = (y1 + 1u) / 2u;
+    uint pairs_per_row = (uv_x1 - uv_x0) / 2u;
+    uint pair_count = pairs_per_row * (uv_y1 - uv_y0);
+    uint uv_base = params.width * params.height;
+    SUM_TYPE local_u_sum = SUM_ZERO;
+    SUM_TYPE local_v_sum = SUM_ZERO;
+    for (uint i = lane; i < pair_count; i += MAP_WORKGROUP_SIZE) {
+        uint row = uv_y0 + i / pairs_per_row;
+        uint x = uv_x0 + (i % pairs_per_row) * 2u;
+        uint uv_index = uv_base + row * params.width + x;
+        local_u_sum += uint(input_p010[uv_index]) >> 6u;
+        local_v_sum += uint(input_p010[uv_index + 1u]) >> 6u;
+    }
+    u_sum[lane] = local_u_sum;
+    v_sum[lane] = local_v_sum;
+    uv_count[lane] = (pair_count + (MAP_WORKGROUP_SIZE - 1u) - lane) / MAP_WORKGROUP_SIZE;
+
+    barrier();
+    for (uint step = MAP_WORKGROUP_SIZE / 2u; step > 0u; step >>= 1u) {
+        if (lane < step) {
+            y_sum[lane] += y_sum[lane + step];
+            y_count[lane] += y_count[lane + step];
+            u_sum[lane] += u_sum[lane + step];
+            v_sum[lane] += v_sum[lane + step];
+            uv_count[lane] += uv_count[lane + step];
+        }
+        barrier();
+    }
+
+    if (lane == 0u) {
+        uint mean10 = uint(y_sum[0] / SUM_TYPE(y_count[0]));
+        uint average_u = uv_count[0] == 0u
+            ? params.neutral_chroma
+            : uint(u_sum[0] / SUM_TYPE(uv_count[0]));
+        uint average_v = uv_count[0] == 0u
+            ? params.neutral_chroma
+            : uint(v_sum[0] / SUM_TYPE(uv_count[0]));
+        cells[cell_index] = uvec4(
+            glyph_for_y[mean10 >> 2u],
+            mean10,
+            average_u,
+            average_v
+        );
+    }
+}

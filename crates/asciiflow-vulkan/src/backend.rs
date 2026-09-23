@@ -7,7 +7,7 @@ use crate::{
 };
 use asciiflow_core::{
     AsciiBackend, AsciiConfig, BackendOutput, BackendTimings, Error, FrameDesc, HostFrame,
-    PipelineStage, Result, VideoFrame, glyph_lookup_table,
+    PipelineStage, PixelFormat, Result, VideoFrame, glyph_lookup_table,
 };
 use asciiflow_font::GlyphAtlas;
 use ash::{util::read_spv, vk};
@@ -34,6 +34,10 @@ const MAP_U32_32: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/ascii_map_u3
 const MAP_U32_64: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/ascii_map_u32_64.spv"));
 const MAP_U32_128: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/ascii_map_u32_128.spv"));
 const MAP_U32_256: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/ascii_map_u32_256.spv"));
+const MAP_P010_U32_32: &[u8] =
+    include_bytes!(concat!(env!("OUT_DIR"), "/ascii_map_p010_u32_32.spv"));
+const MAP_P010_U64_64: &[u8] =
+    include_bytes!(concat!(env!("OUT_DIR"), "/ascii_map_p010_u64_64.spv"));
 const RENDER_INT64_8X8: &[u8] =
     include_bytes!(concat!(env!("OUT_DIR"), "/ascii_render_int64_8x8.spv"));
 const RENDER_U32_8X8: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/ascii_render_u32_8x8.spv"));
@@ -50,6 +54,8 @@ const RENDER_LUT_16X16: &[u8] =
     include_bytes!(concat!(env!("OUT_DIR"), "/ascii_render_lut_16x16.spv"));
 const RENDER_LUT_32X4: &[u8] =
     include_bytes!(concat!(env!("OUT_DIR"), "/ascii_render_lut_32x4.spv"));
+const RENDER_P010_LUT_32X4: &[u8] =
+    include_bytes!(concat!(env!("OUT_DIR"), "/ascii_render_p010_lut_32x4.spv"));
 
 const QUERY_UPLOAD_BEGIN: u32 = 0;
 const QUERY_MAPPING_BEGIN: u32 = 2;
@@ -129,6 +135,7 @@ struct DownloadResult {
 struct ResourceKey {
     width: u32,
     height: u32,
+    format: PixelFormat,
     grid_width: u32,
     grid_height: u32,
     font: String,
@@ -141,17 +148,25 @@ fn mapping_u32_is_safe(
     grid_width: u32,
     grid_height: u32,
     frame_bytes: u64,
+    max_sample: u64,
 ) -> bool {
     let max_cell_width = (width as u64).div_ceil(grid_width as u64);
     let max_cell_height = (height as u64).div_ceil(grid_height as u64);
     let max_cell_pixels = max_cell_width * max_cell_height;
     max_cell_pixels
-        .checked_mul(255)
+        .checked_mul(max_sample)
         .is_some_and(|sum| sum <= u32::MAX as u64)
         && grid_width as u64 * width as u64 <= u32::MAX as u64
         && grid_height as u64 * height as u64 <= u32::MAX as u64
         && frame_bytes <= u32::MAX as u64
         && grid_width as u64 * grid_height as u64 <= u32::MAX as u64
+}
+
+fn max_sample_for(format: PixelFormat) -> u32 {
+    match format {
+        PixelFormat::Nv12 => 255,
+        PixelFormat::P010Le => 1023,
+    }
 }
 
 pub struct VulkanAsciiBackend {
@@ -264,6 +279,13 @@ impl VulkanAsciiBackend {
     }
 
     fn ensure_resources(&mut self, desc: &FrameDesc, config: &AsciiConfig) -> Result<()> {
+        desc.validate_layout()?;
+        if desc.format == PixelFormat::P010Le && !self.context.info.p010_storage_supported {
+            return Err(Error::Vulkan(format!(
+                "P010LE Vulkan processing requires storageBuffer16BitAccess on {}",
+                self.context.info.name
+            )));
+        }
         if let Some((_, font, charset)) = &self.supplied_atlas
             && (font != &config.font || charset != &config.charset)
         {
@@ -275,6 +297,7 @@ impl VulkanAsciiBackend {
         let key = ResourceKey {
             width: desc.width,
             height: desc.height,
+            format: desc.format,
             grid_width,
             grid_height,
             font: config.font.clone(),
@@ -348,9 +371,9 @@ impl VulkanAsciiBackend {
         }
         if cells.iter().any(|cell| {
             cell.glyph >= resources.atlas.glyph_count() as u32
-                || cell.y > 255
-                || cell.u > 255
-                || cell.v > 255
+                || cell.y > max_sample_for(desc.format)
+                || cell.u > max_sample_for(desc.format)
+                || cell.v > max_sample_for(desc.format)
         }) {
             return Err(Error::Vulkan("mapped cell value is out of range".into()));
         }
@@ -361,7 +384,7 @@ impl VulkanAsciiBackend {
         let frame = VideoFrame::new_host(
             desc.clone(),
             pts,
-            HostFrame::from_nv12(desc, download.bytes)?,
+            HostFrame::from_bytes(desc, download.bytes)?,
         )?;
         Ok(BackendOutput {
             frame,
@@ -392,6 +415,11 @@ impl VulkanAsciiBackend {
         config: &AsciiConfig,
         planes: [ExternalPlaneImage; 2],
     ) -> Result<BackendOutput> {
+        if desc.format != PixelFormat::Nv12 {
+            return Err(Error::Vulkan(
+                "external-image input is qualified only for NV12".into(),
+            ));
+        }
         let total_started = Instant::now();
         self.ensure_resources(desc, config)?;
         if planes[0].kind != ExternalPlaneKind::Y || planes[1].kind != ExternalPlaneKind::Uv {
@@ -434,7 +462,7 @@ impl VulkanAsciiBackend {
         let frame = VideoFrame::new_host(
             desc.clone(),
             pts,
-            HostFrame::from_nv12(desc, download.bytes)?,
+            HostFrame::from_bytes(desc, download.bytes)?,
         )?;
         Ok(BackendOutput {
             frame,
@@ -473,6 +501,7 @@ impl VulkanAsciiBackend {
         config: &AsciiConfig,
         planes: [ExternalPlaneImage; 2],
     ) -> Result<VideoFrame> {
+        validate_external_planes(desc, &planes, crate::ExternalImageAccess::Read, "input")?;
         self.ensure_resources(desc, config)?;
         let [y, uv] = planes;
         let (y, _) = ImportedExternalPlane::import(&self.context, y)?;
@@ -695,6 +724,11 @@ fn validate_external_planes(
     access: crate::ExternalImageAccess,
     label: &str,
 ) -> Result<()> {
+    if desc.format != PixelFormat::Nv12 {
+        return Err(Error::Vulkan(
+            "external-image interop is qualified only for NV12".into(),
+        ));
+    }
     if planes[0].kind != ExternalPlaneKind::Y
         || planes[1].kind != ExternalPlaneKind::Uv
         || planes.iter().any(|plane| plane.access != access)
@@ -766,7 +800,7 @@ impl AsciiBackend for VulkanAsciiBackend {
         let frame = VideoFrame::new_host(
             desc.clone(),
             pts,
-            HostFrame::from_nv12(&desc, download.bytes)?,
+            HostFrame::from_bytes(&desc, download.bytes)?,
         )?;
         Ok(BackendOutput {
             frame,
@@ -1001,11 +1035,8 @@ impl Resources {
         atlas: GlyphAtlas,
     ) -> Result<Self> {
         let device = &context.device;
-        let frame_bytes = (key.width as u64)
-            .checked_mul(key.height as u64)
-            .and_then(|pixels| pixels.checked_mul(3))
-            .map(|bytes| bytes / 2)
-            .ok_or_else(|| Error::Vulkan("NV12 resource size overflow".into()))?;
+        let frame_bytes = u64::try_from(key.format.frame_byte_len(key.width, key.height)?)
+            .map_err(|_| Error::Vulkan("frame resource size exceeds u64".into()))?;
         let cell_bytes =
             key.grid_width as u64 * key.grid_height as u64 * size_of::<GpuAsciiCell>() as u64;
         let atlas_bytes = atlas.as_r8_slice().len() as u64;
@@ -1017,6 +1048,7 @@ impl Resources {
             key.grid_width,
             key.grid_height,
             frame_bytes,
+            u64::from(max_sample_for(key.format)),
         );
         let x_coordinate_max = (key.width - 1)
             .checked_mul(key.grid_width)
@@ -1238,7 +1270,13 @@ impl Resources {
         }
         .map_err(vk_error("failed to create compute pipeline layout"))?;
         let pipeline_layout = pending_objects.pipeline_layout;
-        let (map_shader, map_variant, map_workgroup_size) =
+        let (map_shader, map_variant, map_workgroup_size) = if key.format == PixelFormat::P010Le {
+            if map_u32_safe {
+                (MAP_P010_U32_32, "p010-u32-32", 32)
+            } else {
+                (MAP_P010_U64_64, "p010-u64-64", 64)
+            }
+        } else {
             match std::env::var("ASCIIFLOW_VULKAN_MAP_VARIANT").as_deref() {
                 Ok("u64-64") => (MAP_U64_64, "u64-64", 64),
                 Ok(value @ ("u32-32" | "u32-64" | "u32-128" | "u32-256")) if !map_u32_safe => {
@@ -1257,7 +1295,8 @@ impl Resources {
                 }
                 Err(_) if map_u32_safe => (MAP_U32_32, "u32-32", 32),
                 Err(_) => (MAP_U64_64, "u64-64", 64),
-            };
+            }
+        };
         if map_workgroup_size > context.info.max_compute_work_group_invocations
             || map_workgroup_size > context.info.max_compute_work_group_size[0]
         {
@@ -1267,7 +1306,9 @@ impl Resources {
         }
         pending_objects.map_pipeline = create_pipeline(device, pipeline_layout, map_shader)?;
         let map_pipeline = pending_objects.map_pipeline;
-        let (render_shader, render_local_size) =
+        let (render_shader, render_local_size) = if key.format == PixelFormat::P010Le {
+            (RENDER_P010_LUT_32X4, (32, 4))
+        } else {
             match std::env::var("ASCIIFLOW_VULKAN_RENDER_VARIANT").as_deref() {
                 Ok("int64-8x8") => (RENDER_INT64_8X8, (8, 8)),
                 Ok("u32-16x8") => (RENDER_U32_16X8, (16, 8)),
@@ -1284,7 +1325,8 @@ impl Resources {
                         "unknown ASCIIFLOW_VULKAN_RENDER_VARIANT={value}"
                     )));
                 }
-            };
+            }
+        };
         if render_local_size.0 * render_local_size.1
             > context.info.max_compute_work_group_invocations
             || render_local_size.0 > context.info.max_compute_work_group_size[0]
@@ -1433,7 +1475,7 @@ impl Resources {
             atlas_height: self.atlas.height(),
             color: color as u32,
             glyph_count: self.atlas.glyph_count() as u32,
-            neutral_chroma: 128,
+            neutral_chroma: u32::from(self.key.format.neutral_chroma()),
         }
     }
     fn begin(&self, context: &VulkanContext) -> Result<()> {
@@ -2249,8 +2291,10 @@ mod tests {
 
     #[test]
     fn mapping_width_selects_common_path_and_large_cell_fallback() {
-        assert!(mapping_u32_is_safe(1920, 1080, 80, 45, 3_110_400));
-        assert!(!mapping_u32_is_safe(8192, 4096, 1, 1, 50_331_648,));
+        assert!(mapping_u32_is_safe(1920, 1080, 80, 45, 3_110_400, 255));
+        assert!(mapping_u32_is_safe(1920, 1080, 80, 45, 6_220_800, 1023));
+        assert!(!mapping_u32_is_safe(8192, 4096, 1, 1, 50_331_648, 255));
+        assert!(!mapping_u32_is_safe(4096, 4096, 1, 1, 50_331_648, 1023));
     }
 
     #[test]

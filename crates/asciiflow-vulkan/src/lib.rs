@@ -44,6 +44,332 @@ mod tests {
         .unwrap()
     }
 
+    fn synthetic_p010_frame(pattern: usize, pts: i64) -> VideoFrame {
+        synthetic_p010_frame_sized(64, 48, pattern, pts)
+    }
+
+    fn synthetic_p010_frame_sized(width: u32, height: u32, pattern: usize, pts: i64) -> VideoFrame {
+        let desc = FrameDesc::host_p010_le(width, height, ColorSpace::default()).unwrap();
+        let mut bytes = vec![0; desc.byte_len()];
+        for index in 0..(desc.byte_len() / 2) {
+            let x = index % width as usize;
+            let y = index / width as usize;
+            let code = match pattern {
+                0 => 513,
+                1 => 64 + ((x * 11 + y * 17 + index % 4) % 900) as u16,
+                2 => {
+                    if ((x / 8) + (y / 8)) % 2 == 0 {
+                        129
+                    } else {
+                        895
+                    }
+                }
+                _ => {
+                    64 + ((index.wrapping_mul(1_103_515_245).wrapping_add(12_345) >> 9) % 900)
+                        as u16
+                }
+            };
+            bytes[index * 2..index * 2 + 2].copy_from_slice(&(code << 6).to_le_bytes());
+        }
+        VideoFrame::new_host(
+            desc.clone(),
+            Some(pts),
+            HostFrame::from_p010_le(&desc, bytes).unwrap(),
+        )
+        .unwrap()
+    }
+
+    #[test]
+    #[ignore = "300 synthetic 1080p P010 frames; run explicitly on the device being measured"]
+    fn p010_synthetic_1080p_300_frame_benchmark() {
+        let frame = synthetic_p010_frame_sized(1920, 1080, 1, 0);
+        let config = AsciiConfig {
+            grid_width: 80,
+            grid_height: Some(45),
+            ..AsciiConfig::default()
+        };
+        let count = 300u32;
+        let mut cpu = CpuAsciiBackend::new();
+        cpu.process(frame.clone(), &config).unwrap();
+        let start = Instant::now();
+        for _ in 0..count {
+            cpu.process(frame.clone(), &config).unwrap();
+        }
+        let cpu_wall = start.elapsed();
+
+        let mut gpu = VulkanAsciiBackend::new().unwrap();
+        gpu.process(frame.clone(), &config).unwrap();
+        let start = Instant::now();
+        let mut one_mapping = Duration::ZERO;
+        let mut one_render = Duration::ZERO;
+        let mut one_backend = Duration::ZERO;
+        for _ in 0..count {
+            let output = gpu.process(frame.clone(), &config).unwrap();
+            one_mapping += output.timings.gpu_mapping;
+            one_render += output.timings.gpu_render;
+            one_backend += output.timings.backend_wall;
+        }
+        let one_wall = start.elapsed();
+
+        let mut slots = PipelinedVulkanAsciiBackend::new(
+            VulkanAsciiBackend::new().unwrap(),
+            frame.desc().clone(),
+            config.clone(),
+        )
+        .unwrap();
+        slots.submit(frame.clone(), &config).unwrap();
+        slots.drain().unwrap();
+        let start = Instant::now();
+        let mut two_mapping = Duration::ZERO;
+        let mut two_render = Duration::ZERO;
+        let mut two_backend = Duration::ZERO;
+        let mut completed = 0u32;
+        for _ in 0..count {
+            if let Some(output) = slots.submit(frame.clone(), &config).unwrap() {
+                two_mapping += output.timings.gpu_mapping;
+                two_render += output.timings.gpu_render;
+                two_backend += output.timings.backend_wall;
+                completed += 1;
+            }
+        }
+        while let Some(output) = slots.drain().unwrap() {
+            two_mapping += output.timings.gpu_mapping;
+            two_render += output.timings.gpu_render;
+            two_backend += output.timings.backend_wall;
+            completed += 1;
+        }
+        assert_eq!(completed, count);
+        let two_wall = start.elapsed();
+        assert_eq!(gpu.validation_error_count(), 0);
+        assert_eq!(slots.validation_error_count(), 0);
+        for (name, wall, mapping, render, backend) in [
+            ("CPU", cpu_wall, Duration::ZERO, Duration::ZERO, cpu_wall),
+            (
+                "Vulkan 1-slot",
+                one_wall,
+                one_mapping,
+                one_render,
+                one_backend,
+            ),
+            (
+                "Vulkan 2-slot",
+                two_wall,
+                two_mapping,
+                two_render,
+                two_backend,
+            ),
+        ] {
+            eprintln!(
+                "{name}: FPS={:.2}, mapping GPU={:.3} ms/frame, render GPU={:.3} ms/frame, backend wall={:.3} ms/frame, test wall={:.3} ms/frame",
+                count as f64 / wall.as_secs_f64(),
+                mapping.as_secs_f64() * 1000.0 / count as f64,
+                render.as_secs_f64() * 1000.0 / count as f64,
+                backend.as_secs_f64() * 1000.0 / count as f64,
+                wall.as_secs_f64() * 1000.0 / count as f64,
+            );
+        }
+    }
+
+    fn assert_p010_padding(frame: &VideoFrame) {
+        assert!(
+            frame
+                .host()
+                .as_slice()
+                .chunks_exact(2)
+                .all(|bytes| { u16::from_le_bytes([bytes[0], bytes[1]]) & 0x3f == 0 })
+        );
+    }
+
+    fn expand_nv12_to_p010_for_test(frame: &VideoFrame) -> VideoFrame {
+        let desc = FrameDesc::host_p010_le(
+            frame.desc().width,
+            frame.desc().height,
+            frame.desc().color_space,
+        )
+        .unwrap();
+        let bytes: Vec<u8> = frame
+            .host()
+            .as_slice()
+            .iter()
+            .flat_map(|&sample| ((sample as u16) << 8).to_le_bytes())
+            .collect();
+        VideoFrame::new_host(
+            desc.clone(),
+            frame.pts(),
+            HostFrame::from_p010_le(&desc, bytes).unwrap(),
+        )
+        .unwrap()
+    }
+
+    #[test]
+    #[ignore = "requires Vulkan 1.3 with P010 16-bit storage; lavapipe is sufficient"]
+    fn p010_mapping_render_and_two_slot_match_cpu() {
+        let mut config = AsciiConfig {
+            grid_width: 13,
+            grid_height: Some(9),
+            charset: "@%#*+=-:. ".into(),
+            ..AsciiConfig::default()
+        };
+        let mut gpu = VulkanAsciiBackend::new().unwrap();
+        assert!(gpu.device_info().p010_storage_supported);
+        let mut cpu = CpuAsciiBackend::new();
+        let nv12 = patterned_frame();
+        let nv12_reference = cpu.process(nv12.clone(), &config).unwrap().frame;
+        let nv12_glyphs = gpu
+            .map_cells(&nv12, &config)
+            .unwrap()
+            .into_iter()
+            .map(|cell| cell.glyph)
+            .collect::<Vec<_>>();
+        let p010_glyphs = gpu
+            .map_cells(&expand_nv12_to_p010_for_test(&nv12), &config)
+            .unwrap()
+            .into_iter()
+            .map(|cell| cell.glyph)
+            .collect::<Vec<_>>();
+        assert_eq!(nv12_glyphs, p010_glyphs);
+        assert_eq!(
+            gpu.process(nv12.clone(), &config).unwrap().frame,
+            nv12_reference
+        );
+        for color in [false, true] {
+            config.color = color;
+            for pattern in 0..4 {
+                let input = synthetic_p010_frame(pattern, pattern as i64);
+                let cells = Nv12Mapper::new(&config.charset)
+                    .unwrap()
+                    .map(&input, 13, 9)
+                    .unwrap();
+                let mapped = gpu.map_cells(&input, &config).unwrap();
+                assert_eq!(mapped.len(), cells.cells.len());
+                for (actual, expected) in mapped.iter().zip(&cells.cells) {
+                    assert_eq!(
+                        (actual.glyph, actual.y, actual.u, actual.v),
+                        (
+                            expected.glyph as u32,
+                            expected.y as u32,
+                            expected.u as u32,
+                            expected.v as u32
+                        )
+                    );
+                }
+                let reference = cpu.process(input.clone(), &config).unwrap().frame;
+                let rendered = gpu
+                    .render_cells(input.desc(), input.pts(), &config, &mapped)
+                    .unwrap()
+                    .frame;
+                let processed = gpu.process(input, &config).unwrap().frame;
+                assert_eq!(rendered, reference);
+                assert_eq!(processed, reference);
+                assert_p010_padding(&processed);
+            }
+        }
+        assert_eq!(gpu.process(nv12, &config).unwrap().frame, nv12_reference);
+        assert_eq!(gpu.validation_error_count(), 0);
+
+        config.color = true;
+        for frame_count in [1, 2, 3, 5] {
+            let frames: Vec<_> = (0..frame_count)
+                .map(|index| synthetic_p010_frame(index % 4, index as i64))
+                .collect();
+            let expected: Vec<_> = frames
+                .iter()
+                .map(|frame| cpu.process(frame.clone(), &config).unwrap().frame)
+                .collect();
+            let mut slots = PipelinedVulkanAsciiBackend::new(
+                VulkanAsciiBackend::new().unwrap(),
+                frames[0].desc().clone(),
+                config.clone(),
+            )
+            .unwrap();
+            let mut actual = Vec::new();
+            for frame in frames {
+                if let Some(output) = slots.submit(frame, &config).unwrap() {
+                    actual.push(output.frame);
+                }
+            }
+            while let Some(output) = slots.drain().unwrap() {
+                actual.push(output.frame);
+            }
+            assert_eq!(actual, expected, "frame_count={frame_count}");
+            assert_eq!(slots.validation_error_count(), 0);
+        }
+    }
+
+    #[test]
+    #[ignore = "requires Vulkan 1.3 with P010 16-bit storage and checked-in font fixture"]
+    fn p010_freetype_atlas_matches_cpu() {
+        let font = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../tests/fixtures/fonts/Inconsolata-Regular.ttf");
+        let config = AsciiConfig {
+            grid_width: 4,
+            grid_height: Some(3),
+            ..AsciiConfig::default()
+        };
+        let (atlas, _) =
+            asciiflow_font::build_font_atlas(&font, 0, &config.charset, 16, 16).unwrap();
+        let input = synthetic_p010_frame(1, 5);
+        let reference = CpuAsciiBackend::with_atlas(atlas.clone(), &config)
+            .process(input.clone(), &config)
+            .unwrap()
+            .frame;
+        let mut gpu = VulkanAsciiBackend::new()
+            .unwrap()
+            .with_atlas(atlas, &config)
+            .unwrap();
+        let actual = gpu.process(input, &config).unwrap().frame;
+        assert_eq!(actual, reference);
+        assert_p010_padding(&actual);
+        assert_eq!(gpu.validation_error_count(), 0);
+    }
+
+    #[test]
+    #[ignore = "3000 synthetic frames require Vulkan 1.3 with P010 16-bit storage"]
+    fn p010_two_slot_3000_frame_reuse_preserves_order() {
+        let config = AsciiConfig {
+            grid_width: 13,
+            grid_height: Some(9),
+            ..AsciiConfig::default()
+        };
+        let first = synthetic_p010_frame(0, 0);
+        let mut cpu = CpuAsciiBackend::new();
+        let reference: Vec<_> = (0..4)
+            .map(|pattern| {
+                cpu.process(synthetic_p010_frame(pattern, 0), &config)
+                    .unwrap()
+                    .frame
+                    .into_host()
+            })
+            .collect();
+        let mut slots = PipelinedVulkanAsciiBackend::new(
+            VulkanAsciiBackend::new().unwrap(),
+            first.desc().clone(),
+            config.clone(),
+        )
+        .unwrap();
+        let mut completed = 0usize;
+        let mut check = |output: asciiflow_core::BackendOutput| {
+            assert_eq!(output.frame.pts(), Some(completed as i64));
+            assert_eq!(
+                output.frame.host().as_slice(),
+                reference[completed % 4].as_slice()
+            );
+            assert_p010_padding(&output.frame);
+            completed += 1;
+        };
+        for index in 0..3000 {
+            let frame = synthetic_p010_frame(index % 4, index as i64);
+            if let Some(output) = slots.submit(frame, &config).unwrap() {
+                check(output);
+            }
+        }
+        while let Some(output) = slots.drain().unwrap() {
+            check(output);
+        }
+        assert_eq!(completed, 3000);
+        assert_eq!(slots.validation_error_count(), 0);
+    }
+
     #[test]
     #[ignore = "requires Vulkan; lavapipe is sufficient for exact font parity"]
     fn freetype_cpu_vulkan_and_two_slot_parity() {

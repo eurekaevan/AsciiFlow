@@ -1,8 +1,9 @@
 # AsciiFlow v2 architecture
 
-This document describes the Rust architecture through Stage 5.1B: a permanent
-CPU reference backend, a Vulkan 1.3 compute backend, optional Linux VAAPI
-media, and qualified Intel DMA-BUF bridges in both pixel directions. Stage 3A
+This document describes the Rust architecture through the Stage 5.2A P010
+processing foundation: a permanent CPU reference backend, a Vulkan 1.3 compute
+backend, optional Linux VAAPI media, and qualified Intel DMA-BUF bridges in both
+pixel directions. Stage 3A
 eliminates decode-side Host copies; Stage 3B fills encoder-owned VAAPI
 surfaces directly from Vulkan. Stage 4.0 adds a runtime capability graph and
 automatic selection without changing the portable Host reference paths. Stage
@@ -13,6 +14,8 @@ single-owner interleaved mux path; it does not change video planning or pixels.
 Stage 4.3 adds optional FreeType atlases. Stage 5.0 qualifies HEVC Main and AV1
 Main input; Stages 5.1A and 5.1B qualify HEVC Main and AV1 Profile0 VAAPI
 output, respectively. Device-specific evidence is kept in the stage reports.
+Stage 5.2A adds an internal Host P010LE format and CPU/Vulkan processing
+variants; production media planning and native interop remain 8-bit NV12.
 
 ## Workspace and dependency direction
 
@@ -99,9 +102,11 @@ distribution obligations even though AsciiFlow's own source remains MIT.
 
 ## Frame model and ownership
 
-`FrameDesc` describes even-sized NV12 video, BT.709/limited-range metadata, and
-the `Host` memory domain. `VideoFrame` owns a `HostFrame`; byte slices are
-borrowed and the backing allocation cannot be shared mutably. A frame moves
+`FrameDesc` describes even-sized NV12 or P010LE 4:2:0 video, portable color
+metadata, and the `Host` memory domain. `HostFrame` owns tightly packed bytes:
+NV12 uses one byte per sample, while P010LE uses little-endian 16-bit words
+with 10 signal bits in bits 15..6. `VideoFrame` owns a `HostFrame`; byte slices
+are borrowed and the backing allocation cannot be shared mutably. A frame moves
 through the traits:
 
 ```text
@@ -121,7 +126,8 @@ scratch packet, and sends selected packets through a bounded queue to the mux
 owner.
 Stage 2 downloads/uploads within `asciiflow-media`. Stage 3A uses a specialized
 Media/Interop pipeline carrying `VaapiDecodedFrame` outside Core, then returns
-the processed result through the unchanged Core Host NV12 contract.
+the processed result through the production Host NV12 contract. Internal P010LE
+tests construct Host frames directly; no native decoder produces them yet.
 
 ## CPU data flow
 
@@ -313,9 +319,14 @@ still intentionally blocking. A driver that wedges without reporting device
 loss can therefore stall the process; bounded waits need a safe abandoned-device
 teardown design rather than merely timing out while resources remain in flight.
 
-Host NV12 is tightly packed by the current `HostFrame` contract, so both plane
-strides equal width. This is an implementation invariant of Host storage, not a
-promise for a future pitched hardware-frame domain.
+Host NV12 and P010LE are tightly packed: both plane strides equal width times
+the format's bytes per sample. This is an invariant of Host storage, not a
+promise for a future pitched hardware-frame domain. P010LE selects separate
+map/render SPIR-V at resource initialization; both passes load/store 16-bit
+words and calculate in 32-bit integers, with the existing u64 map fallback for
+large cells. The glyph atlas remains R8 and the coordinate LUT is shared.
+P010LE storage requires `storageBuffer16BitAccess`; the generated shaders do
+not require `shaderInt16`. See [P010 processing](p010.md).
 
 GLSL is compiled to embedded SPIR-V at build time by the Rust `shaderc` crate,
 targeting Vulkan 1.3 with performance optimization. Runtime execution needs the
@@ -435,9 +446,10 @@ that distinction explicit.
   passthrough audio packets through a bounded queue. It rescales timestamps
   with each explicit input/output stream mapping and performs every
   `av_interleaved_write_frame` call. Audio is never decoded or transcoded.
-- Host NV12 remains the portable Core/reference contract. Full interop and
-  output-only interop bypass some Host materialization without changing that
-  contract or making native handles part of Core.
+- Host NV12 remains the production Core/reference contract. Internal P010LE
+  Host frames have CPU/Vulkan processing parity, but no production codec or
+  DMA-BUF path yet. Full interop and output-only interop remain NV12-only and
+  do not make native handles part of Core.
 - Built-in 8x8 remains the default; explicit scalable monospaced FreeType fonts
   provide grayscale tiles without changing glyph ordering or grid geometry.
 - Source presentation timestamps are represented on decoded frames, but Stage

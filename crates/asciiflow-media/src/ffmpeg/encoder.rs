@@ -9,8 +9,8 @@ use super::{
     vaapi::{EncodeMode, VaapiOptions},
 };
 use asciiflow_core::{
-    CancellationToken, EncodeDiagnostics, Error, FrameDesc, FrameSink, PipelineStage, Rational,
-    Result, SinkTimings, VideoCodec, VideoFrame,
+    CancellationToken, EncodeDiagnostics, Error, FrameDesc, FrameSink, PipelineStage, PixelFormat,
+    Rational, Result, SinkTimings, VideoCodec, VideoFrame,
 };
 use crossbeam_channel::{Receiver, SendTimeoutError, Sender, bounded};
 use std::{
@@ -133,6 +133,7 @@ fn probe_vaapi_encoder_internal(
     frame_rate: Rational,
     vaapi: VaapiOptions,
 ) -> Result<VaapiEncoderProbe> {
+    require_nv12_output(&desc)?;
     let codec_name = output_codec_name(&output_codec)?;
     let width = i32::try_from(desc.width)
         .map_err(|_| Error::Media("encoder probe width exceeds FFmpeg i32 range".into()))?;
@@ -369,6 +370,7 @@ impl Encoder {
         frame_rate: Rational,
         options: EncoderCreateOptions,
     ) -> Result<Self> {
+        require_nv12_output(&desc)?;
         let EncoderCreateOptions {
             codec: output_codec,
             mode,
@@ -959,6 +961,16 @@ impl Encoder {
         result
     }
 }
+
+fn require_nv12_output(desc: &FrameDesc) -> Result<()> {
+    desc.validate_layout()?;
+    if desc.format != PixelFormat::Nv12 {
+        return Err(Error::UnsupportedFrame(
+            "production encoders accept NV12 8-bit only; P010LE codec output is not enabled".into(),
+        ));
+    }
+    Ok(())
+}
 impl FrameSink for Encoder {
     fn encode(&mut self, frame: VideoFrame) -> Result<()> {
         if frame.desc() != &self.desc {
@@ -1428,6 +1440,40 @@ mod audio_regression_tests {
         fn drop(&mut self) {
             let _ = std::fs::remove_file(&self.0);
         }
+    }
+
+    #[test]
+    fn p010_frame_is_rejected_before_encoder_or_output_initialization() {
+        let desc = FrameDesc::host_p010_le(128, 96, ColorSpace::default()).unwrap();
+        let output = std::env::temp_dir().join(format!(
+            "asciiflow-p010-output-rejected-{}.mp4",
+            std::process::id()
+        ));
+        let error = Encoder::create_with_codec_and_audio(
+            &output,
+            desc.clone(),
+            Rational::new(50, 1).unwrap(),
+            OutputEncoding {
+                codec: VideoCodec::H264,
+                mode: EncodeMode::Software,
+            },
+            VaapiOptions::default(),
+            Vec::new(),
+            CancellationToken::new(),
+        )
+        .err()
+        .unwrap();
+        assert!(error.to_string().contains("NV12 8-bit only"));
+        assert!(!output.exists());
+        let error = probe_vaapi_encoder_for(
+            VideoCodec::Av1,
+            desc,
+            Rational::new(50, 1).unwrap(),
+            VaapiOptions::default(),
+        )
+        .err()
+        .unwrap();
+        assert!(error.to_string().contains("NV12 8-bit only"));
     }
 
     #[test]

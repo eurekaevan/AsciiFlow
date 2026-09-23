@@ -1206,11 +1206,38 @@ mod tests {
     }
     #[test]
     fn ten_bit_input_is_explicitly_rejected_by_current_pipeline_contract() {
+        let p010 =
+            crate::FrameDesc::host_p010_le(1920, 1080, crate::ColorSpace::default()).unwrap();
+        assert_eq!(p010.format, crate::PixelFormat::P010Le);
         let mut r = h264();
         r.bit_depth = Some(10);
         r.pixel_format = Some("yuv420p10le".into());
         let error = r.validate_current_pipeline().unwrap_err();
         assert!(error.to_string().contains("10-bit video is not supported"));
+        for (codec, profile) in [
+            (VideoCodec::Hevc, VideoProfile::HevcMain),
+            (VideoCodec::Av1, VideoProfile::Av1Main),
+        ] {
+            let mut requirements = h264();
+            requirements.codec = codec.clone();
+            requirements.profile = Some(profile);
+            requirements.bit_depth = Some(10);
+            let error =
+                PipelinePlanner::select(&full(), &requirements, Default::default()).unwrap_err();
+            assert!(error.to_string().contains("10-bit video is not supported"));
+            requirements.bit_depth = Some(8);
+            let plan = PipelinePlanner::select(
+                &full(),
+                &requirements,
+                PipelinePolicy {
+                    output_codec: codec,
+                    ..Default::default()
+                },
+            )
+            .unwrap()
+            .selected;
+            assert_eq!(plan.output.bit_depth, 8);
+        }
     }
 
     #[test]
