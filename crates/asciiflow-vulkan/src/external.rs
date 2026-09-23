@@ -14,6 +14,8 @@ use std::{
 pub enum ExternalPlaneKind {
     Y,
     Uv,
+    P010Y,
+    P010Uv,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -78,6 +80,8 @@ impl ImportedExternalPlane {
         let format = match input.kind {
             ExternalPlaneKind::Y => vk::Format::R8_UNORM,
             ExternalPlaneKind::Uv => vk::Format::R8G8_UNORM,
+            ExternalPlaneKind::P010Y => vk::Format::R16_UNORM,
+            ExternalPlaneKind::P010Uv => vk::Format::R16G16_UNORM,
         };
         let query_started = Instant::now();
         require_modifier_support(context, format, input.modifier, input.access)?;

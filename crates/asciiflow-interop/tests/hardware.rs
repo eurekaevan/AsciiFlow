@@ -1,6 +1,7 @@
-use asciiflow_core::{AsciiBackend, AsciiConfig, FrameSink, FrameSource, VideoCodec};
+use asciiflow_core::{AsciiBackend, AsciiConfig, FrameSink, FrameSource, PixelFormat, VideoCodec};
 #[cfg(feature = "av1-encode-diagnostic")]
 use asciiflow_core::{ColorSpace, FrameDesc, HostFrame, Rational, VideoFrame};
+use asciiflow_cpu::CpuAsciiBackend;
 use asciiflow_interop::{
     DrmPrimeMapping, VaapiVulkanFullInteropProcessor, VaapiVulkanInteropProcessor, fourcc_name,
 };
@@ -8,7 +9,11 @@ use asciiflow_media::{DecodeMode, Decoder, EncodeMode, Encoder, OutputEncoding, 
 #[cfg(feature = "av1-encode-diagnostic")]
 use asciiflow_media::{probe_vaapi_av1_encoder_diagnostic, probe_vaapi_encoder_for};
 use asciiflow_vulkan::VulkanAsciiBackend;
-use std::{collections::VecDeque, path::PathBuf};
+use std::{
+    collections::VecDeque,
+    path::PathBuf,
+    time::{Duration, Instant},
+};
 
 fn input(name: &str, fallback: &str) -> PathBuf {
     std::env::var_os(name).map_or_else(|| PathBuf::from(fallback), PathBuf::from)
@@ -99,6 +104,316 @@ fn hevc_av1_descriptor_and_pre_ascii_parity() {
         assert!(direct.next_vaapi_frame().unwrap().is_none());
         assert_eq!(vulkan.validation_error_count(), 0);
         compare_full_ascii(36, "ASCIIFLOW_STAGE5_INPUT", path.to_str().unwrap(), false);
+    }
+}
+
+#[test]
+#[ignore = "requires Intel iHD Main10/AV1 10-bit decode; captures real P010 DRM descriptors"]
+fn ten_bit_vaapi_descriptors_and_hwdownload_reference() {
+    let capabilities = VaapiOptions::default().probe_decode_10bit_profiles();
+    let mut vulkan = VulkanAsciiBackend::new().unwrap();
+    assert_eq!(vulkan.device_info().vendor_id, 0x8086);
+    for (index, name) in [
+        "hevc-main10-sdr-gradient.mp4",
+        "av1-main10-sdr-gradient.mp4",
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        assert!(
+            capabilities[index].is_supported(),
+            "{name}: {:?}",
+            capabilities[index]
+        );
+        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../tests/fixtures/codecs")
+            .join(name);
+        let mut software = Decoder::open(&path).unwrap();
+        let mut download = vaapi_decoder(&path);
+        let mut direct = vaapi_decoder(&path);
+        let mut cpu = CpuAsciiBackend::new();
+        for frame_index in 0..30 {
+            let reference = software.next_frame().unwrap().unwrap();
+            let staged = download.next_frame().unwrap().unwrap();
+            assert_eq!(reference.desc().format, PixelFormat::P010Le);
+            assert_eq!(staged.desc().format, PixelFormat::P010Le);
+            assert_eq!(reference.pts(), staged.pts(), "{name} frame {frame_index}");
+            assert_eq!(
+                reference.host().as_slice(),
+                staged.host().as_slice(),
+                "{name} frame {frame_index}"
+            );
+            let mapping =
+                DrmPrimeMapping::map_direct_read(direct.next_vaapi_frame().unwrap().unwrap())
+                    .unwrap();
+            if frame_index == 0 {
+                println!(
+                    "{name} actual P010 DRM descriptor: {:#?}",
+                    mapping.descriptor()
+                );
+            }
+            assert_eq!(mapping.pts(), reference.pts());
+            let imported = vulkan
+                .read_external_p010(
+                    reference.desc(),
+                    mapping.pts(),
+                    &config(),
+                    mapping.duplicate_external_p010_planes().unwrap(),
+                )
+                .unwrap();
+            assert_eq!(imported, reference, "{name} imported frame {frame_index}");
+
+            let expected_ascii = cpu.process(reference.clone(), &config()).unwrap().frame;
+            let actual_ascii = vulkan
+                .process_external_p010(
+                    reference.desc(),
+                    mapping.pts(),
+                    &config(),
+                    mapping.duplicate_external_p010_planes().unwrap(),
+                )
+                .unwrap()
+                .frame;
+            assert_eq!(
+                actual_ascii, expected_ascii,
+                "{name} ASCII frame {frame_index}"
+            );
+            // `mapping` owns the decoded VAAPI surface through both synchronous
+            // Vulkan copy fences, including the final compute/readback fence.
+        }
+        assert_eq!(vulkan.validation_error_count(), 0);
+    }
+}
+
+#[test]
+#[ignore = "requires 3000-frame Main10 and AV1 inputs, Intel iHD decode, and ANV Vulkan"]
+fn ten_bit_p010_interop_reuse_is_exact_and_fd_bounded() {
+    for (name, variable, fallback) in [
+        (
+            "HEVC Main10",
+            "ASCIIFLOW_STAGE52B_HEVC_STRESS_INPUT",
+            "/tmp/asciiflow-stage52b-hevc-3000.mp4",
+        ),
+        (
+            "AV1 10-bit",
+            "ASCIIFLOW_STAGE52B_AV1_STRESS_INPUT",
+            "/tmp/asciiflow-stage52b-av1-3000.mp4",
+        ),
+    ] {
+        let path = input(variable, fallback);
+        let before = fd_count();
+        let active_baseline;
+        let mut peak;
+        {
+            let mut software = Decoder::open(&path).unwrap();
+            let mut vaapi = vaapi_decoder(&path);
+            let mut cpu = CpuAsciiBackend::new();
+            let mut vulkan = VulkanAsciiBackend::new().unwrap();
+            assert_eq!(vulkan.device_info().vendor_id, 0x8086);
+            active_baseline = fd_count();
+            peak = active_baseline;
+            for index in 0..3000 {
+                let reference = software.next_frame().unwrap().unwrap_or_else(|| {
+                    panic!("{name} software input ended at {index}; expected 3000 frames")
+                });
+                let hardware = vaapi.next_vaapi_frame().unwrap().unwrap_or_else(|| {
+                    panic!("{name} VAAPI input ended at {index}; expected 3000 frames")
+                });
+                let mapping = DrmPrimeMapping::map_direct_read(hardware).unwrap();
+                assert_eq!(mapping.pts(), reference.pts(), "{name} frame {index}");
+                let expected = cpu.process(reference.clone(), &config()).unwrap().frame;
+                let actual = vulkan
+                    .process_external_p010(
+                        reference.desc(),
+                        mapping.pts(),
+                        &config(),
+                        mapping.duplicate_external_p010_planes().unwrap(),
+                    )
+                    .unwrap()
+                    .frame;
+                assert_eq!(actual, expected, "{name} frame {index}");
+                let current = fd_count();
+                peak = peak.max(current);
+                assert!(
+                    current <= active_baseline + 12,
+                    "{name} FD count grew from {active_baseline} to {current} at frame {index}"
+                );
+            }
+            assert_eq!(vulkan.validation_error_count(), 0, "{name}");
+        }
+        let after = fd_count();
+        println!(
+            "{name} FD count: before={before} active_baseline={active_baseline} per-frame_peak={peak} after={after}"
+        );
+        assert!(
+            after <= before + 4,
+            "{name} FD count did not return near baseline"
+        );
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+enum P010BenchmarkPath {
+    Software,
+    VaapiDownload,
+    VaapiInterop,
+}
+
+#[derive(Default)]
+struct P010BenchmarkSample {
+    wall: Duration,
+    cpu: Duration,
+    decode_call: Duration,
+    decode_core: Duration,
+    hardware_download: Duration,
+    drm_map: Duration,
+    import_setup: Duration,
+    gpu_copy: Duration,
+    gpu_map: Duration,
+    gpu_render: Duration,
+    backend_wall: Duration,
+    latency: Duration,
+}
+
+impl P010BenchmarkSample {
+    fn fps(&self) -> f64 {
+        300.0 / self.wall.as_secs_f64()
+    }
+
+    fn report(&self, codec: &str, path: P010BenchmarkPath, run: &str) {
+        let ms = |value: Duration| value.as_secs_f64() * 1_000.0 / 300.0;
+        println!(
+            "{codec} {path:?} {run}: FPS={:.2} CPU={:.1}% decode_call={:.3} decode_core={:.3} download={:.3} drm_map={:.3} import_setup={:.3} gpu_copy={:.3} gpu_map={:.3} gpu_render={:.3} backend_wall={:.3} latency={:.3} ms/frame",
+            self.fps(),
+            self.cpu.as_secs_f64() / self.wall.as_secs_f64() * 100.0,
+            ms(self.decode_call),
+            ms(self.decode_core),
+            ms(self.hardware_download),
+            ms(self.drm_map),
+            ms(self.import_setup),
+            ms(self.gpu_copy),
+            ms(self.gpu_map),
+            ms(self.gpu_render),
+            ms(self.backend_wall),
+            ms(self.latency),
+        );
+    }
+}
+
+fn process_cpu_time() -> Duration {
+    let mut clock = libc::timespec {
+        tv_sec: 0,
+        tv_nsec: 0,
+    };
+    assert_eq!(
+        unsafe { libc::clock_gettime(libc::CLOCK_PROCESS_CPUTIME_ID, &mut clock) },
+        0
+    );
+    Duration::new(clock.tv_sec as u64, clock.tv_nsec as u32)
+}
+
+fn benchmark_p010_path(path: &PathBuf, mode: P010BenchmarkPath) -> P010BenchmarkSample {
+    let decode_mode = if matches!(mode, P010BenchmarkPath::Software) {
+        DecodeMode::Software
+    } else {
+        DecodeMode::Vaapi
+    };
+    let mut decoder = Decoder::open_with(path, decode_mode, VaapiOptions::default()).unwrap();
+    let mut vulkan = VulkanAsciiBackend::new().unwrap();
+    assert_eq!(vulkan.device_info().vendor_id, 0x8086);
+    let mut sample = P010BenchmarkSample::default();
+    let mut wall_start = Instant::now();
+    let mut cpu_start = Duration::ZERO;
+    for index in 0..336 {
+        if index == 36 {
+            wall_start = Instant::now();
+            cpu_start = process_cpu_time();
+        }
+        let frame_start = Instant::now();
+        let decode_start = Instant::now();
+        let (output, drm_map) = match mode {
+            P010BenchmarkPath::Software | P010BenchmarkPath::VaapiDownload => {
+                let frame = decoder.next_frame().unwrap().unwrap();
+                let decode_call = decode_start.elapsed();
+                let output = vulkan.process(frame, &config()).unwrap();
+                if index >= 36 {
+                    sample.decode_call += decode_call;
+                }
+                (output, Duration::ZERO)
+            }
+            P010BenchmarkPath::VaapiInterop => {
+                let frame = decoder.next_vaapi_frame().unwrap().unwrap();
+                let decode_call = decode_start.elapsed();
+                let mapping = DrmPrimeMapping::map_direct_read(frame).unwrap();
+                let output = vulkan
+                    .process_external_p010(
+                        &decoder.info().frame_desc,
+                        mapping.pts(),
+                        &config(),
+                        mapping.duplicate_external_p010_planes().unwrap(),
+                    )
+                    .unwrap();
+                if index >= 36 {
+                    sample.decode_call += decode_call;
+                }
+                (output, mapping.map_wall())
+            }
+        };
+        let source = decoder.take_timings();
+        if index >= 36 {
+            sample.decode_core += source.packet_submit + source.frame_receive;
+            sample.hardware_download += source.hardware_download;
+            sample.drm_map += drm_map;
+            let timings = output.timings;
+            sample.import_setup += timings.external_capability_query
+                + timings.external_image_create
+                + timings.external_memory_import
+                + timings.external_memory_bind
+                + timings.external_ownership
+                + timings.external_image_destroy;
+            sample.gpu_copy += timings.gpu_external_copy;
+            sample.gpu_map += timings.gpu_mapping;
+            sample.gpu_render += timings.gpu_render;
+            sample.backend_wall += timings.backend_wall;
+            sample.latency += frame_start.elapsed();
+        }
+    }
+    sample.wall = wall_start.elapsed();
+    sample.cpu = process_cpu_time() - cpu_start;
+    assert_eq!(vulkan.validation_error_count(), 0);
+    sample
+}
+
+#[test]
+#[ignore = "Intel Arc 300-frame P010 decode-path benchmark; run in Release without Vulkan Validation"]
+fn ten_bit_p010_decode_paths_300_frame_benchmark() {
+    for (codec, variable, fallback) in [
+        (
+            "HEVC Main10",
+            "ASCIIFLOW_STAGE52B_HEVC_STRESS_INPUT",
+            "/tmp/asciiflow-stage52b-hevc-3000.mp4",
+        ),
+        (
+            "AV1 10-bit",
+            "ASCIIFLOW_STAGE52B_AV1_STRESS_INPUT",
+            "/tmp/asciiflow-stage52b-av1-3000.mp4",
+        ),
+    ] {
+        let path = input(variable, fallback);
+        for mode in [
+            P010BenchmarkPath::Software,
+            P010BenchmarkPath::VaapiDownload,
+            P010BenchmarkPath::VaapiInterop,
+        ] {
+            let mut runs = (1..=3)
+                .map(|run| {
+                    let sample = benchmark_p010_path(&path, mode);
+                    sample.report(codec, mode, &format!("run {run}"));
+                    sample
+                })
+                .collect::<Vec<_>>();
+            runs.sort_by(|left, right| left.fps().total_cmp(&right.fps()));
+            runs[1].report(codec, mode, "median FPS run");
+        }
     }
 }
 

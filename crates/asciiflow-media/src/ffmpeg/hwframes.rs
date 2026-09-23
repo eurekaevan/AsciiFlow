@@ -312,6 +312,14 @@ pub(crate) fn supports_download_nv12(frames: *mut ffi::AVBufferRef) -> Result<bo
     )
 }
 
+pub(crate) fn supports_download_p010(frames: *mut ffi::AVBufferRef) -> Result<bool> {
+    supports_format(
+        frames,
+        ffi::AVHWFrameTransferDirection::AV_HWFRAME_TRANSFER_DIRECTION_FROM,
+        ffi::AVPixelFormat::AV_PIX_FMT_P010LE,
+    )
+}
+
 fn supports_format(
     frames: *mut ffi::AVBufferRef,
     direction: ffi::AVHWFrameTransferDirection,

@@ -1,6 +1,6 @@
 use asciiflow_core::{
     ChromaLocation, ChromaSubsampling, ColorMatrix, ColorPrimaries, ColorRange, ColorSpace,
-    FrameSource, TransferCharacteristic, VideoCodec, VideoProfile,
+    FrameSource, PixelFormat, TransferCharacteristic, VideoCodec, VideoProfile,
 };
 use asciiflow_media::Decoder;
 use std::path::{Path, PathBuf};
@@ -110,25 +110,66 @@ fn main8_decoding_is_byte_and_pts_deterministic() {
 }
 
 #[test]
-fn ten_bit_open_succeeds_but_first_frame_is_explicitly_rejected() {
-    for name in ["hevc-main10-reject.mp4", "av1-main10-reject.mp4"] {
+fn ten_bit_sdr_decodes_to_canonical_p010_and_drains() {
+    for (name, codec, profile) in [
+        (
+            "hevc-main10-sdr-gradient.mp4",
+            VideoCodec::Hevc,
+            VideoProfile::HevcMain10,
+        ),
+        (
+            "av1-main10-sdr-gradient.mp4",
+            VideoCodec::Av1,
+            VideoProfile::Av1Main,
+        ),
+    ] {
         let mut decoder = Decoder::open(fixture(name)).unwrap();
+        assert_eq!(decoder.info().requirements.codec, codec);
+        assert_eq!(decoder.info().requirements.profile, Some(profile));
         assert_eq!(decoder.info().requirements.bit_depth, Some(10), "{name}");
-        let validation = decoder.info().requirements.validate_current_pipeline();
-        assert!(
-            validation.is_err(),
-            "{name} unexpectedly passed requirements validation"
+        assert_eq!(
+            decoder
+                .info()
+                .requirements
+                .validate_processing_input()
+                .unwrap(),
+            PixelFormat::P010Le
         );
         assert!(
-            validation
+            decoder
+                .info()
+                .requirements
+                .validate_current_pipeline()
                 .unwrap_err()
                 .to_string()
-                .contains("10-bit video is not supported")
+                .contains("no production 10-bit output path")
         );
-        let error = decoder.next_frame().unwrap_err();
+        let mut pts = Vec::new();
+        let mut low_bits_seen = [false; 4];
+        while let Some(frame) = decoder.next_frame().unwrap() {
+            assert_eq!(frame.desc().format, PixelFormat::P010Le);
+            assert_eq!(frame.desc().byte_len(), 64 * 64 * 3);
+            assert_eq!(frame.desc().color_space.matrix, ColorMatrix::Bt709);
+            pts.push(frame.pts().unwrap());
+            for word in frame.host().as_slice().chunks_exact(2) {
+                let packed = u16::from_le_bytes([word[0], word[1]]);
+                assert_eq!(packed & 0x3f, 0, "{name} has non-zero P010 padding");
+                low_bits_seen[((packed >> 6) & 3) as usize] = true;
+            }
+        }
+        assert_eq!(pts.len(), 36, "{name}");
+        assert!(pts.windows(2).all(|pair| pair[1] > pair[0]), "{name}");
         assert!(
-            error.to_string().contains("10-bit video is not supported"),
-            "{name}: {error}"
+            low_bits_seen.into_iter().all(|seen| seen),
+            "{name} lacks real low-bit precision"
         );
+        assert_eq!(decode_all(name).len(), 36);
     }
+}
+
+#[test]
+fn ten_bit_pq_is_rejected_before_processing() {
+    let mut decoder = Decoder::open(fixture("hevc-main10-pq-reject.mp4")).unwrap();
+    let error = decoder.next_frame().unwrap_err();
+    assert!(error.to_string().contains("HDR/BT.2020"), "{error}");
 }

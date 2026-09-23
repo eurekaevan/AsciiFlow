@@ -10,3 +10,4 @@ libswscale      9.  5.102 /  9.  5.102
 libswresample   6.  3.102 /  6.  3.102
 
 Exiting with exit code 0
+Python 3.14.7

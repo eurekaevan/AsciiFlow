@@ -7,14 +7,14 @@ use super::{
     ffi,
     frame::Frame,
     hwdevice::HardwareDevice,
-    hwframes::supports_download_nv12,
+    hwframes::{supports_download_nv12, supports_download_p010},
     packet::Packet,
     vaapi::{DecodeMode, VaapiOptions},
 };
 use asciiflow_core::{
     AudioPlan, AudioStreamInfo, ChromaLocation, ChromaSubsampling, ColorMatrix, ColorPrimaries,
-    ColorRange, ColorSpace, FrameDesc, FrameSource, HostFrame, InputRequirements, Rational, Result,
-    SourceTimings, TransferCharacteristic, VideoCodec, VideoFrame, VideoProfile,
+    ColorRange, ColorSpace, FrameDesc, FrameSource, HostFrame, InputRequirements, PixelFormat,
+    Rational, Result, SourceTimings, TransferCharacteristic, VideoCodec, VideoFrame, VideoProfile,
 };
 use std::{
     ffi::{CStr, CString},
@@ -50,6 +50,7 @@ pub struct Decoder {
     drain_sent: bool,
     packet_pending: bool,
     download_format_checked: bool,
+    format_locked: bool,
     audio_streams: Vec<AudioInputStream>,
     selected_audio_streams: Vec<usize>,
     audio_sender: Option<AudioPacketSender>,
@@ -196,7 +197,6 @@ impl Decoder {
             transfer: TransferCharacteristic::Bt709,
             chroma_location: ChromaLocation::Left,
         };
-        let frame_desc = FrameDesc::host_nv12(width, height, color_space)?;
         let guessed = unsafe { ffi::av_guess_frame_rate(format.as_ptr(), stream, ptr::null_mut()) };
         let frame_rate = if guessed.num > 0 && guessed.den > 0 {
             Rational::new(guessed.num, guessed.den)?
@@ -225,13 +225,24 @@ impl Decoder {
                 }),
             },
         );
+        if has_hdr_stream_side_data(parameters)? {
+            return Err(asciiflow_core::Error::UnsupportedFrame(
+                "HDR mastering/display stream metadata is not supported".into(),
+            ));
+        }
+        let frame_desc = if requirements.bit_depth == Some(10) {
+            FrameDesc::host_p010_le(width, height, requirements.color_space)?
+        } else {
+            FrameDesc::host_nv12(width, height, color_space)?
+        };
         let audio_streams = discover_audio_streams(format)?;
         let audio_info = audio_streams
             .iter()
             .map(|stream| stream.info.clone())
             .collect();
         let decoder_pixel_format = unsafe { (*codec.as_ptr()).pix_fmt };
-        let scaler = if mode == DecodeMode::Software
+        let scaler = if frame_desc.format == PixelFormat::Nv12
+            && mode == DecodeMode::Software
             && decoder_pixel_format != ffi::AVPixelFormat::AV_PIX_FMT_NONE
         {
             Some(create_scaler(
@@ -288,6 +299,7 @@ impl Decoder {
             drain_sent: false,
             packet_pending: false,
             download_format_checked: false,
+            format_locked: false,
             audio_streams,
             selected_audio_streams: Vec::new(),
             audio_sender: None,
@@ -347,6 +359,14 @@ impl Decoder {
             } else {
                 native.format
             };
+            if self.mode == DecodeMode::Vaapi
+                && self.info.requirements.bit_depth == Some(10)
+                && format != ffi::AVPixelFormat::AV_PIX_FMT_P010LE as i32
+            {
+                return Err(asciiflow_core::Error::UnsupportedFrame(format!(
+                    "VAAPI 10-bit frames context uses software format {format}; expected P010LE"
+                )));
+            }
             let pixel = if (0..ffi::AVPixelFormat::AV_PIX_FMT_NB as i32).contains(&format) {
                 unsafe {
                     ffi::av_pix_fmt_desc_get(std::mem::transmute::<i32, ffi::AVPixelFormat>(format))
@@ -357,6 +377,11 @@ impl Decoder {
             };
             let mut actual = self.info.requirements.clone();
             actual.bit_depth = pixel.map(|p| p.comp[0].depth as u8);
+            actual.pixel_format = pixel.map(|p| {
+                unsafe { CStr::from_ptr(p.name) }
+                    .to_string_lossy()
+                    .into_owned()
+            });
             actual.chroma_subsampling = pixel.map_or(ChromaSubsampling::Unknown, |p| {
                 if p.nb_components == 3 && p.log2_chroma_w == 1 && p.log2_chroma_h == 1 {
                     ChromaSubsampling::Yuv420
@@ -364,7 +389,44 @@ impl Decoder {
                     ChromaSubsampling::Other
                 }
             });
-            actual.validate_current_pipeline().map_err(|e| {
+            let frame_color = ColorSpace {
+                matrix: map_matrix(native.colorspace),
+                range: map_range(native.color_range),
+                primaries: map_primaries(native.color_primaries),
+                transfer: map_transfer(native.color_trc),
+                chroma_location: map_chroma_location(native.chroma_location),
+            };
+            if actual.bit_depth == Some(10) {
+                merge_frame_color(&mut actual.color_space, frame_color)?;
+            }
+            if matches!(frame_color.primaries, ColorPrimaries::Bt2020)
+                || matches!(
+                    frame_color.transfer,
+                    TransferCharacteristic::Pq | TransferCharacteristic::Hlg
+                )
+            {
+                return Err(asciiflow_core::Error::UnsupportedFrame(
+                    "HDR/BT.2020 input is not supported by the SDR processing pipeline".into(),
+                ));
+            }
+            let has_hdr_side_data = unsafe {
+                !ffi::av_frame_get_side_data(
+                    self.source_frame.as_mut_ptr(),
+                    ffi::AVFrameSideDataType::AV_FRAME_DATA_MASTERING_DISPLAY_METADATA,
+                )
+                .is_null()
+                    || !ffi::av_frame_get_side_data(
+                        self.source_frame.as_mut_ptr(),
+                        ffi::AVFrameSideDataType::AV_FRAME_DATA_CONTENT_LIGHT_LEVEL,
+                    )
+                    .is_null()
+            };
+            if has_hdr_side_data {
+                return Err(asciiflow_core::Error::UnsupportedFrame(
+                    "HDR mastering/display frame metadata is not supported".into(),
+                ));
+            }
+            let working_format = actual.validate_processing_input().map_err(|e| {
                 asciiflow_core::Error::Media(format!(
                     "decoded {:?} profile {:?}, {:?}-bit {:?}, requested {:?}: {e}",
                     actual.codec,
@@ -374,16 +436,30 @@ impl Decoder {
                     self.mode
                 ))
             })?;
-            if matches!(
-                native.color_trc,
-                ffi::AVColorTransferCharacteristic::AVCOL_TRC_SMPTE2084
-                    | ffi::AVColorTransferCharacteristic::AVCOL_TRC_ARIB_STD_B67
-            ) || native.color_primaries == ffi::AVColorPrimaries::AVCOL_PRI_BT2020
-            {
-                return Err(asciiflow_core::Error::Media(format!(
-                    "{:?} HDR/BT.2020 input is not supported by the current SDR NV12 pipeline",
-                    actual.codec
-                )));
+            if self.format_locked && self.info.frame_desc.format != working_format {
+                return Err(asciiflow_core::Error::UnsupportedFrame(
+                    "decoded pixel format changed after the first frame".into(),
+                ));
+            }
+            if !self.format_locked {
+                if working_format == PixelFormat::P010Le
+                    && let Some(scaler) = self.scaler.take()
+                {
+                    unsafe { ffi::sws_freeContext(scaler.as_ptr()) };
+                }
+                self.info.frame_desc = match working_format {
+                    PixelFormat::Nv12 => FrameDesc::host_nv12(
+                        self.info.frame_desc.width,
+                        self.info.frame_desc.height,
+                        ColorSpace::default(),
+                    )?,
+                    PixelFormat::P010Le => FrameDesc::host_p010_le(
+                        self.info.frame_desc.width,
+                        self.info.frame_desc.height,
+                        actual.color_space,
+                    )?,
+                };
+                self.format_locked = true;
             }
             self.info.requirements = actual;
             return Ok(ReceiveResult::Frame(pts));
@@ -538,14 +614,20 @@ impl Decoder {
     }
 
     fn convert_current_to_host(&mut self, pts: Option<i64>) -> Result<VideoFrame> {
+        let desc = self.info.frame_desc.clone();
         let native = unsafe { &*self.source_frame.as_ptr() };
         let source_ptr = if self.mode == DecodeMode::Vaapi {
             if !self.download_format_checked {
-                if !supports_download_nv12(native.hw_frames_ctx)? {
+                let can_download = match desc.format {
+                    PixelFormat::Nv12 => supports_download_nv12(native.hw_frames_ctx)?,
+                    PixelFormat::P010Le => supports_download_p010(native.hw_frames_ctx)?,
+                };
+                if !can_download {
                     self.source_frame.unref();
-                    return Err(asciiflow_core::Error::UnsupportedFrame(
-                        "VAAPI decoded frame cannot be downloaded as 8-bit NV12".into(),
-                    ));
+                    return Err(asciiflow_core::Error::UnsupportedFrame(format!(
+                        "VAAPI decoded frame cannot be downloaded as {:?}",
+                        desc.format
+                    )));
                 }
                 self.download_format_checked = true;
             }
@@ -554,9 +636,11 @@ impl Decoder {
                 .as_mut()
                 .expect("VAAPI decoder download frame missing");
             download.unref();
-            unsafe {
-                (*download.as_mut_ptr()).format = ffi::AVPixelFormat::AV_PIX_FMT_NV12 as i32;
-            }
+            let download_format = match desc.format {
+                PixelFormat::Nv12 => ffi::AVPixelFormat::AV_PIX_FMT_NV12,
+                PixelFormat::P010Le => ffi::AVPixelFormat::AV_PIX_FMT_P010LE,
+            };
+            unsafe { (*download.as_mut_ptr()).format = download_format as i32 };
             let transfer_started = Instant::now();
             let transferred = unsafe {
                 ffi::av_hwframe_transfer_data(
@@ -566,11 +650,11 @@ impl Decoder {
                 )
             };
             self.timings.hardware_download += transfer_started.elapsed();
-            check(transferred, "failed to download VAAPI frame to Host NV12")?;
+            check(transferred, "failed to download VAAPI frame to Host memory")?;
             let downloaded = unsafe { &*download.as_mut_ptr() };
-            if downloaded.format != ffi::AVPixelFormat::AV_PIX_FMT_NV12 as i32 {
+            if downloaded.format != download_format as i32 {
                 return Err(asciiflow_core::Error::UnsupportedFrame(format!(
-                    "VAAPI download produced pixel format {}; expected NV12",
+                    "VAAPI download produced pixel format {}; expected {download_format:?}",
                     downloaded.format
                 )));
             }
@@ -585,6 +669,14 @@ impl Decoder {
                 "decoder returned invalid frame dimensions {}x{}",
                 source.width, source.height
             )));
+        }
+        if desc.format == PixelFormat::P010Le {
+            let result = p010_from_native(source, &desc, pts);
+            if let Some(frame) = &mut self.download_frame {
+                frame.unref();
+            }
+            self.source_frame.unref();
+            return result;
         }
         if self.scaler.is_none() {
             let source_format = if self.mode == DecodeMode::Vaapi {
@@ -608,7 +700,6 @@ impl Decoder {
                 self.source_range,
             )?);
         }
-        let desc = self.info.frame_desc.clone();
         let mut storage = HostFrame::new_zeroed(&desc);
         let width = desc.width as usize;
         let height = desc.height as usize;
@@ -685,6 +776,7 @@ fn input_requirements(
             let name = CStr::from_ptr(name).to_string_lossy();
             match (&codec, name.as_ref()) {
                 (VideoCodec::Hevc, "Main") => VideoProfile::HevcMain,
+                (VideoCodec::Hevc, "Main 10") => VideoProfile::HevcMain10,
                 (VideoCodec::Av1, "Main") => VideoProfile::Av1Main,
                 (VideoCodec::H264, "Main") => VideoProfile::H264Main,
                 _ => VideoProfile::from(name.as_ref()),
@@ -729,18 +821,225 @@ fn input_requirements(
     }
 }
 
+fn has_hdr_stream_side_data(parameters: *const ffi::AVCodecParameters) -> Result<bool> {
+    let count = unsafe { (*parameters).nb_coded_side_data };
+    if !(0..=1024).contains(&count) {
+        return Err(asciiflow_core::Error::Media(
+            "FFmpeg reported an invalid stream side-data count".into(),
+        ));
+    }
+    if count == 0 {
+        return Ok(false);
+    }
+    let pointer = unsafe { (*parameters).coded_side_data };
+    if pointer.is_null() {
+        return Err(asciiflow_core::Error::Media(
+            "FFmpeg reported stream side data without storage".into(),
+        ));
+    }
+    let side_data = unsafe { std::slice::from_raw_parts(pointer, count as usize) };
+    Ok(side_data.iter().any(|entry| {
+        matches!(
+            entry.type_,
+            ffi::AVPacketSideDataType::AV_PKT_DATA_MASTERING_DISPLAY_METADATA
+                | ffi::AVPacketSideDataType::AV_PKT_DATA_CONTENT_LIGHT_LEVEL
+        )
+    }))
+}
+
+fn p010_from_native(
+    source: &ffi::AVFrame,
+    desc: &FrameDesc,
+    pts: Option<i64>,
+) -> Result<VideoFrame> {
+    let width = desc.width as usize;
+    let height = desc.height as usize;
+    if source.width != desc.width as i32 || source.height != desc.height as i32 {
+        return Err(asciiflow_core::Error::UnsupportedFrame(format!(
+            "10-bit frame geometry changed: {}x{}; expected {}x{}",
+            source.width, source.height, desc.width, desc.height
+        )));
+    }
+    let mut storage = HostFrame::try_new_zeroed(desc)?;
+    let (y, uv) = storage.planes_mut(desc);
+    match source.format {
+        value if value == ffi::AVPixelFormat::AV_PIX_FMT_P010LE as i32 => {
+            for row in 0..height {
+                let input = native_row(source, 0, row, width * 2)?;
+                validate_p010_words(input)?;
+                y[row * width * 2..(row + 1) * width * 2].copy_from_slice(input);
+            }
+            for row in 0..height / 2 {
+                let input = native_row(source, 1, row, width * 2)?;
+                validate_p010_words(input)?;
+                uv[row * width * 2..(row + 1) * width * 2].copy_from_slice(input);
+            }
+        }
+        value if value == ffi::AVPixelFormat::AV_PIX_FMT_YUV420P10LE as i32 => {
+            for row in 0..height {
+                let input = native_row(source, 0, row, width * 2)?;
+                let output = &mut y[row * width * 2..(row + 1) * width * 2];
+                repack_planar_row(input, output)?;
+            }
+            for row in 0..height / 2 {
+                let u = native_row(source, 1, row, width)?;
+                let v = native_row(source, 2, row, width)?;
+                let output = &mut uv[row * width * 2..(row + 1) * width * 2];
+                for sample in 0..width / 2 {
+                    let u_code = planar_code(&u[sample * 2..sample * 2 + 2])?;
+                    let v_code = planar_code(&v[sample * 2..sample * 2 + 2])?;
+                    output[sample * 4..sample * 4 + 2]
+                        .copy_from_slice(&(u_code << 6).to_le_bytes());
+                    output[sample * 4 + 2..sample * 4 + 4]
+                        .copy_from_slice(&(v_code << 6).to_le_bytes());
+                }
+            }
+        }
+        other => {
+            return Err(asciiflow_core::Error::UnsupportedFrame(format!(
+                "10-bit decoder returned pixel format {other}; expected P010LE or YUV420P10LE"
+            )));
+        }
+    }
+    VideoFrame::new_host(desc.clone(), pts, storage)
+}
+
+fn native_row(source: &ffi::AVFrame, plane: usize, row: usize, row_bytes: usize) -> Result<&[u8]> {
+    let data = source.data[plane];
+    let stride = source.linesize[plane] as isize;
+    if data.is_null() || stride.unsigned_abs() < row_bytes {
+        return Err(asciiflow_core::Error::UnsupportedFrame(format!(
+            "10-bit plane {plane} has null data or insufficient stride"
+        )));
+    }
+    let offset = isize::try_from(row)
+        .ok()
+        .and_then(|value| value.checked_mul(stride))
+        .ok_or_else(|| {
+            asciiflow_core::Error::UnsupportedFrame("10-bit row offset overflows isize".into())
+        })?;
+    // FFmpeg owns this plane and its signed stride. The caller keeps the AVFrame
+    // referenced while using this row; width/stride are checked above.
+    Ok(unsafe { std::slice::from_raw_parts(data.offset(offset), row_bytes) })
+}
+
+fn planar_code(bytes: &[u8]) -> Result<u16> {
+    let word = u16::from_le_bytes([bytes[0], bytes[1]]);
+    if word & !0x03ff != 0 {
+        return Err(asciiflow_core::Error::UnsupportedFrame(
+            "YUV420P10LE sample has non-zero high padding bits".into(),
+        ));
+    }
+    Ok(word)
+}
+
+fn repack_planar_row(input: &[u8], output: &mut [u8]) -> Result<()> {
+    for (source, destination) in input.chunks_exact(2).zip(output.chunks_exact_mut(2)) {
+        destination.copy_from_slice(&(planar_code(source)? << 6).to_le_bytes());
+    }
+    Ok(())
+}
+
+fn validate_p010_words(input: &[u8]) -> Result<()> {
+    if input.chunks_exact(2).any(|sample| sample[0] & 0x3f != 0) {
+        return Err(asciiflow_core::Error::UnsupportedFrame(
+            "P010LE sample has non-zero low padding bits".into(),
+        ));
+    }
+    Ok(())
+}
+
 fn map_primaries(value: ffi::AVColorPrimaries) -> ColorPrimaries {
     match value {
         ffi::AVColorPrimaries::AVCOL_PRI_BT709 => ColorPrimaries::Bt709,
-        _ => ColorPrimaries::Unspecified,
+        ffi::AVColorPrimaries::AVCOL_PRI_BT2020 => ColorPrimaries::Bt2020,
+        ffi::AVColorPrimaries::AVCOL_PRI_UNSPECIFIED => ColorPrimaries::Unspecified,
+        _ => ColorPrimaries::Other,
     }
 }
 
 fn map_transfer(value: ffi::AVColorTransferCharacteristic) -> TransferCharacteristic {
     match value {
         ffi::AVColorTransferCharacteristic::AVCOL_TRC_BT709 => TransferCharacteristic::Bt709,
-        _ => TransferCharacteristic::Unspecified,
+        ffi::AVColorTransferCharacteristic::AVCOL_TRC_SMPTE2084 => TransferCharacteristic::Pq,
+        ffi::AVColorTransferCharacteristic::AVCOL_TRC_ARIB_STD_B67 => TransferCharacteristic::Hlg,
+        ffi::AVColorTransferCharacteristic::AVCOL_TRC_UNSPECIFIED => {
+            TransferCharacteristic::Unspecified
+        }
+        _ => TransferCharacteristic::Other,
     }
+}
+
+fn map_matrix(value: ffi::AVColorSpace) -> ColorMatrix {
+    match value {
+        ffi::AVColorSpace::AVCOL_SPC_BT709 => ColorMatrix::Bt709,
+        ffi::AVColorSpace::AVCOL_SPC_BT470BG | ffi::AVColorSpace::AVCOL_SPC_SMPTE170M => {
+            ColorMatrix::Bt601
+        }
+        ffi::AVColorSpace::AVCOL_SPC_BT2020_NCL | ffi::AVColorSpace::AVCOL_SPC_BT2020_CL => {
+            ColorMatrix::Bt2020
+        }
+        ffi::AVColorSpace::AVCOL_SPC_UNSPECIFIED => ColorMatrix::Unspecified,
+        _ => ColorMatrix::Other,
+    }
+}
+
+fn map_range(value: ffi::AVColorRange) -> ColorRange {
+    match value {
+        ffi::AVColorRange::AVCOL_RANGE_JPEG => ColorRange::Full,
+        ffi::AVColorRange::AVCOL_RANGE_MPEG => ColorRange::Limited,
+        _ => ColorRange::Unspecified,
+    }
+}
+
+fn merge_frame_color(stream: &mut ColorSpace, frame: ColorSpace) -> Result<()> {
+    fn merge<T: Copy + PartialEq + std::fmt::Debug>(
+        stream: &mut T,
+        frame: T,
+        unspecified: T,
+        name: &str,
+    ) -> Result<()> {
+        if frame != unspecified {
+            if *stream != unspecified && *stream != frame {
+                return Err(asciiflow_core::Error::UnsupportedFrame(format!(
+                    "stream/frame {name} metadata disagree: {:?} vs {:?}",
+                    stream, frame
+                )));
+            }
+            *stream = frame;
+        }
+        Ok(())
+    }
+    merge(
+        &mut stream.matrix,
+        frame.matrix,
+        ColorMatrix::Unspecified,
+        "matrix",
+    )?;
+    merge(
+        &mut stream.range,
+        frame.range,
+        ColorRange::Unspecified,
+        "range",
+    )?;
+    merge(
+        &mut stream.primaries,
+        frame.primaries,
+        ColorPrimaries::Unspecified,
+        "primaries",
+    )?;
+    merge(
+        &mut stream.transfer,
+        frame.transfer,
+        TransferCharacteristic::Unspecified,
+        "transfer",
+    )?;
+    merge(
+        &mut stream.chroma_location,
+        frame.chroma_location,
+        ChromaLocation::Unspecified,
+        "chroma location",
+    )
 }
 
 fn map_chroma_location(value: ffi::AVChromaLocation) -> ChromaLocation {
@@ -940,5 +1239,57 @@ impl Drop for ScalerGuard {
         if let Some(pointer) = self.0 {
             unsafe { ffi::sws_freeContext(pointer.as_ptr()) }
         }
+    }
+}
+
+#[cfg(test)]
+mod p010_tests {
+    use super::*;
+
+    #[test]
+    fn planar_repack_respects_padding_stride_and_preserves_all_channels() {
+        let desc = FrameDesc::host_p010_le(2, 2, ColorSpace::default()).unwrap();
+        let mut y = [0u8; 16];
+        for (offset, code) in [(0, 1u16), (2, 513), (8, 1023), (10, 2)] {
+            y[offset..offset + 2].copy_from_slice(&code.to_le_bytes());
+        }
+        let mut u = [0u8; 4];
+        let mut v = [0u8; 4];
+        u[..2].copy_from_slice(&514u16.to_le_bytes());
+        v[..2].copy_from_slice(&515u16.to_le_bytes());
+        let mut frame = Frame::new().unwrap();
+        let native = unsafe { &mut *frame.as_mut_ptr() };
+        native.format = ffi::AVPixelFormat::AV_PIX_FMT_YUV420P10LE as i32;
+        native.width = 2;
+        native.height = 2;
+        native.data[0] = y.as_mut_ptr();
+        native.data[1] = u.as_mut_ptr();
+        native.data[2] = v.as_mut_ptr();
+        native.linesize[0] = 8;
+        native.linesize[1] = 4;
+        native.linesize[2] = 4;
+        let output = p010_from_native(native, &desc, Some(37)).unwrap();
+        assert_eq!(output.pts(), Some(37));
+        let codes: Vec<u16> = output
+            .host()
+            .as_slice()
+            .chunks_exact(2)
+            .map(|word| u16::from_le_bytes([word[0], word[1]]) >> 6)
+            .collect();
+        assert_eq!(codes, [1, 513, 1023, 2, 514, 515]);
+        assert!(
+            output
+                .host()
+                .as_slice()
+                .chunks_exact(2)
+                .all(|word| word[0] & 0x3f == 0)
+        );
+    }
+
+    #[test]
+    fn invalid_planar_and_p010_padding_are_not_silently_masked() {
+        assert!(planar_code(&0x0400u16.to_le_bytes()).is_err());
+        assert!(validate_p010_words(&0x0041u16.to_le_bytes()).is_err());
+        assert!(validate_p010_words(&0xffc0u16.to_le_bytes()).is_ok());
     }
 }

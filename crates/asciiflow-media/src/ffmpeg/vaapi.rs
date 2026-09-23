@@ -36,6 +36,19 @@ impl VaapiOptions {
     /// loaded for the duration of the query, while the FFmpeg-owned display
     /// remains valid through the device reference.
     pub fn probe_decode_profiles(&self) -> [CapabilitySupport; 3] {
+        let [h264, hevc, av1, _, _] = self.probe_decode_profiles_all();
+        [h264, hevc, av1]
+    }
+
+    /// HEVC Main10 and AV1 Profile0 are qualified separately from the 8-bit
+    /// production facts. Profile/VLD alone is insufficient: both must also
+    /// expose a 10-bit 4:2:0 render target.
+    pub fn probe_decode_10bit_profiles(&self) -> [CapabilitySupport; 2] {
+        let [_, _, _, hevc_main10, av1_10bit] = self.probe_decode_profiles_all();
+        [hevc_main10, av1_10bit]
+    }
+
+    fn probe_decode_profiles_all(&self) -> [CapabilitySupport; 5] {
         let library = match unsafe { libloading::Library::new("libva.so.2") } {
             Ok(value) => value,
             Err(error) => {
@@ -95,8 +108,10 @@ impl VaapiOptions {
     }
 }
 
-fn unsupported_profiles(reason: String) -> [CapabilitySupport; 3] {
+fn unsupported_profiles(reason: String) -> [CapabilitySupport; 5] {
     [
+        CapabilitySupport::unsupported(reason.clone()),
+        CapabilitySupport::unsupported(reason.clone()),
         CapabilitySupport::unsupported(reason.clone()),
         CapabilitySupport::unsupported(reason.clone()),
         CapabilitySupport::unsupported(reason),
@@ -241,14 +256,23 @@ const VA_PROFILE_H264_BASELINE: VaProfile = 5;
 const VA_PROFILE_H264_MAIN: VaProfile = 6;
 const VA_PROFILE_H264_HIGH: VaProfile = 7;
 const VA_PROFILE_HEVC_MAIN: VaProfile = 17;
+const VA_PROFILE_HEVC_MAIN10: VaProfile = 18;
 const VA_PROFILE_AV1_PROFILE0: VaProfile = 32;
 const VA_ENTRYPOINT_VLD: VaEntrypoint = 1;
 const VA_ENTRYPOINT_ENC_SLICE: VaEntrypoint = 6;
+const VA_CONFIG_ATTRIB_RT_FORMAT: i32 = 0;
+const VA_RT_FORMAT_YUV420_10: u32 = 0x0000_0100;
+
+#[repr(C)]
+struct VaConfigAttrib {
+    kind: i32,
+    value: u32,
+}
 
 unsafe fn query_profiles(
     library: &libloading::Library,
     display: VaDisplay,
-) -> [CapabilitySupport; 3] {
+) -> [CapabilitySupport; 5] {
     // The caller retains both the loaded library and FFmpeg-owned display.
     unsafe {
         let max_profiles: libloading::Symbol<unsafe extern "C" fn(VaDisplay) -> i32> = match library
@@ -322,8 +346,85 @@ unsafe fn query_profiles(
                 VA_PROFILE_AV1_PROFILE0,
                 *query_entries,
             ),
+            ten_bit_profile_support(
+                library,
+                display,
+                &available[..count as usize],
+                entries,
+                VA_PROFILE_HEVC_MAIN10,
+                *query_entries,
+            ),
+            ten_bit_profile_support(
+                library,
+                display,
+                &available[..count as usize],
+                entries,
+                VA_PROFILE_AV1_PROFILE0,
+                *query_entries,
+            ),
         ]
     }
+}
+
+unsafe fn ten_bit_profile_support(
+    library: &libloading::Library,
+    display: VaDisplay,
+    available: &[VaProfile],
+    max_entries: i32,
+    profile: VaProfile,
+    query_entries: unsafe extern "C" fn(
+        VaDisplay,
+        VaProfile,
+        *mut VaEntrypoint,
+        *mut i32,
+    ) -> VaStatus,
+) -> CapabilitySupport {
+    let base = unsafe {
+        profile_support(
+            display,
+            available,
+            max_entries,
+            profile,
+            profile,
+            profile,
+            query_entries,
+        )
+    };
+    if !base.is_supported() {
+        return base;
+    }
+    let get_attributes: libloading::Symbol<
+        unsafe extern "C" fn(
+            VaDisplay,
+            VaProfile,
+            VaEntrypoint,
+            *mut VaConfigAttrib,
+            i32,
+        ) -> VaStatus,
+    > = match unsafe { library.get(b"vaGetConfigAttributes\0") } {
+        Ok(value) => value,
+        Err(error) => {
+            return CapabilitySupport::not_probed(format!(
+                "VAAPI RT format query unavailable: {error}"
+            ));
+        }
+    };
+    let mut rt_format = VaConfigAttrib {
+        kind: VA_CONFIG_ATTRIB_RT_FORMAT,
+        value: u32::MAX,
+    };
+    let status = unsafe { get_attributes(display, profile, VA_ENTRYPOINT_VLD, &mut rt_format, 1) };
+    if status != VA_STATUS_SUCCESS {
+        return CapabilitySupport::not_probed(format!(
+            "VAAPI 10-bit render-target query failed ({status})"
+        ));
+    }
+    if rt_format.value & VA_RT_FORMAT_YUV420_10 == 0 {
+        return CapabilitySupport::unsupported(format!(
+            "VAAPI profile {profile} lacks 10-bit 4:2:0 render-target support"
+        ));
+    }
+    CapabilitySupport::supported()
 }
 
 unsafe fn query_encode_profiles(

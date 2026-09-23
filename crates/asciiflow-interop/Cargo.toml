@@ -16,3 +16,6 @@ crossbeam-channel.workspace = true
 ffmpeg-sys-next.workspace = true
 libc = "0.2"
 tracing.workspace = true
+
+[dev-dependencies]
+asciiflow-cpu = { path = "../asciiflow-cpu" }

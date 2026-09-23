@@ -116,6 +116,7 @@ name = "asciiflow-interop"
 version = "2.0.0-alpha.0"
 dependencies = [
  "asciiflow-core",
+ "asciiflow-cpu",
  "asciiflow-media",
  "asciiflow-vulkan",
  "crossbeam-channel",

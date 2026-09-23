@@ -8,6 +8,7 @@ mod glyph;
 mod metrics;
 mod pipeline;
 mod planner;
+mod qualification;
 
 pub use audio::{AudioPlan, AudioPolicy, AudioStreamInfo, AudioStreamPlan, SkippedAudioStream};
 pub use backend::{
@@ -30,4 +31,8 @@ pub use planner::{
     MediaRequest, OutputVideoRequirements, PipelinePlan, PipelinePlanner, PipelinePolicy,
     PixelPath, PlanNode, PlanStep, PlanningResult, ProcessingCapabilities, VideoCodec,
     VideoProfile, VulkanDeviceKind,
+};
+pub use qualification::{
+    InputProcessingCapabilities, InputProcessingDomain, InputProcessingPlan,
+    InputProcessingPlanner, InputProcessingPolicy,
 };

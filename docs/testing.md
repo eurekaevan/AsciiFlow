@@ -75,6 +75,51 @@ checks use synthetic Host P010LE frames, not a Main10 media decoder. Lavapipe
 can verify pixel parity and Vulkan Validation when it provides the required
 16-bit storage feature:
 
+Stage 5.2B software HEVC Main10 and AV1 10-bit fixtures are also exercised by
+the normal workspace suite. The media integration test verifies 36-frame
+decode, P010 padding and real low-bit samples; the interop crate's
+`p010_qualification` test runs software decode→CPU ASCII without an encoder.
+Run real-media CPU/Vulkan byte parity on a Vulkan 1.3 device explicitly:
+
+```bash
+ASCIIFLOW_VULKAN_ALLOW_CPU=1 ASCIIFLOW_VULKAN_VALIDATION=1 \
+cargo test -p asciiflow-interop --test p010_qualification \
+  software_ten_bit_media_cpu_vulkan_ascii_are_byte_exact -- --ignored
+```
+
+On the Intel Arc host, the descriptor, hwdownload and direct P010 input-import
+test compares 30 frames per codec and requires `/dev/dri/renderD128`:
+
+```bash
+ASCIIFLOW_VULKAN_VALIDATION=1 cargo test -p asciiflow-interop --test hardware \
+  ten_bit_vaapi_descriptors_and_hwdownload_reference -- --ignored --nocapture
+```
+
+For the two 3000-frame P010 direct-input stress cases and the paired Release
+benchmark, first create temporary looped inputs from the checked-in 36-frame
+fixtures (or set `ASCIIFLOW_STAGE52B_HEVC_STRESS_INPUT` and
+`ASCIIFLOW_STAGE52B_AV1_STRESS_INPUT` to equivalent absolute paths):
+
+```bash
+ffmpeg -hide_banner -loglevel error -y -stream_loop 84 \
+  -i tests/fixtures/codecs/hevc-main10-sdr-gradient.mp4 \
+  -frames:v 3000 -c copy /tmp/asciiflow-stage52b-hevc-3000.mp4
+ffmpeg -hide_banner -loglevel error -y -stream_loop 84 \
+  -i tests/fixtures/codecs/av1-main10-sdr-gradient.mp4 \
+  -frames:v 3000 -c copy /tmp/asciiflow-stage52b-av1-3000.mp4
+ASCIIFLOW_VULKAN_VALIDATION=1 cargo test -p asciiflow-interop --test hardware \
+  ten_bit_p010_interop_reuse_is_exact_and_fd_bounded -- --ignored --nocapture
+cargo test --release -p asciiflow-interop --test hardware \
+  ten_bit_p010_decode_paths_300_frame_benchmark -- --ignored --nocapture
+```
+
+Run the benchmark without Validation for interpretable timings. It warms up
+36 frames and measures three 300-frame runs for each of software decode,
+VAAPI+hwdownload and VAAPI+DMA-BUF input import. The test prints process CPU,
+decode, download, CPU import setup, GPU copy/map/render, backend wall and
+latency separately. [Stage 5.2B](stage5.2b-p010-decode-validation.md) records
+the Intel results and their 64×64 scope.
+
 ```bash
 ASCIIFLOW_VULKAN_ALLOW_CPU=1 \
 ASCIIFLOW_VULKAN_VALIDATION=1 \
@@ -87,4 +132,5 @@ The `p010_` filter also includes the opt-in 300-frame 1080p benchmark and
 `cargo test --release -p asciiflow-vulkan
 p010_synthetic_1080p_300_frame_benchmark -- --ignored --nocapture`.
 See [the P010 contract and measured scope](p010.md). Production HEVC Main10
-and 10-bit AV1 must continue to fail input qualification.
+and 10-bit AV1 must continue to fail before output creation because no
+10-bit output path is available.

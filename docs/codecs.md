@@ -14,9 +14,14 @@ The common FFmpeg decoder handles all three codecs, including display-order PTS,
 delayed frames and EOF drain. Software selection uses codec-ID discovery; VAAPI
 selection enumerates matching decoders and their hardware configurations (the
 default AV1 software decoder need not support VAAPI). Every decoded frame is
-checked for 8-bit 4:2:0 before conversion/import. Hardware frames must actually
-be VAAPI with a hardware frames context. Ten-bit, unsupported chroma, PQ/HLG
-and BT.2020 frames fail, not silently convert to the current SDR pipeline.
+checked for the supported processing format before conversion/import. Hardware
+frames must actually be VAAPI with a hardware frames context. Internal software
+decode qualification now accepts HEVC Main10 and AV1 Main 10-bit 4:2:0 with
+explicit BT.709 SDR tags and yields P010LE; production CLI output remains
+8-bit-only and rejects those inputs before writing output. Unsupported chroma,
+PQ/HLG and BT.2020 fail rather than convert silently. Intel P010 VAAPI/DRM
+interop is qualified internally on the observed Intel Arc host; see
+[Stage 5.2B](stage5.2b-p010-decode-validation.md).
 
 Capabilities retain Supported/Unsupported/NotProbed states. Native probing checks
 FFmpeg configuration and driver profile + VLD for H.264, HEVC Main and AV1

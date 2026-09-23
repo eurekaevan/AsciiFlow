@@ -415,18 +415,36 @@ impl VulkanAsciiBackend {
         config: &AsciiConfig,
         planes: [ExternalPlaneImage; 2],
     ) -> Result<BackendOutput> {
-        if desc.format != PixelFormat::Nv12 {
-            return Err(Error::Vulkan(
-                "external-image input is qualified only for NV12".into(),
-            ));
-        }
+        self.process_external_input(desc, pts, config, planes, PixelFormat::Nv12)
+    }
+
+    pub fn process_external_p010(
+        &mut self,
+        desc: &FrameDesc,
+        pts: Option<i64>,
+        config: &AsciiConfig,
+        planes: [ExternalPlaneImage; 2],
+    ) -> Result<BackendOutput> {
+        self.process_external_input(desc, pts, config, planes, PixelFormat::P010Le)
+    }
+
+    fn process_external_input(
+        &mut self,
+        desc: &FrameDesc,
+        pts: Option<i64>,
+        config: &AsciiConfig,
+        planes: [ExternalPlaneImage; 2],
+        expected_format: PixelFormat,
+    ) -> Result<BackendOutput> {
+        validate_external_planes(
+            desc,
+            &planes,
+            crate::ExternalImageAccess::Read,
+            "input",
+            expected_format,
+        )?;
         let total_started = Instant::now();
         self.ensure_resources(desc, config)?;
-        if planes[0].kind != ExternalPlaneKind::Y || planes[1].kind != ExternalPlaneKind::Uv {
-            return Err(Error::Vulkan(
-                "external NV12 input must contain Y followed by UV".into(),
-            ));
-        }
         let mut import_timings = ExternalImageTimings::default();
         let [y, uv] = planes;
         let (y, y_timings) = at_stage(
@@ -501,7 +519,34 @@ impl VulkanAsciiBackend {
         config: &AsciiConfig,
         planes: [ExternalPlaneImage; 2],
     ) -> Result<VideoFrame> {
-        validate_external_planes(desc, &planes, crate::ExternalImageAccess::Read, "input")?;
+        self.read_external_input(desc, pts, config, planes, PixelFormat::Nv12)
+    }
+
+    pub fn read_external_p010(
+        &mut self,
+        desc: &FrameDesc,
+        pts: Option<i64>,
+        config: &AsciiConfig,
+        planes: [ExternalPlaneImage; 2],
+    ) -> Result<VideoFrame> {
+        self.read_external_input(desc, pts, config, planes, PixelFormat::P010Le)
+    }
+
+    fn read_external_input(
+        &mut self,
+        desc: &FrameDesc,
+        pts: Option<i64>,
+        config: &AsciiConfig,
+        planes: [ExternalPlaneImage; 2],
+        expected_format: PixelFormat,
+    ) -> Result<VideoFrame> {
+        validate_external_planes(
+            desc,
+            &planes,
+            crate::ExternalImageAccess::Read,
+            "input",
+            expected_format,
+        )?;
         self.ensure_resources(desc, config)?;
         let [y, uv] = planes;
         let (y, _) = ImportedExternalPlane::import(&self.context, y)?;
@@ -511,7 +556,7 @@ impl VulkanAsciiBackend {
         let bytes = resources.download_input(&self.context, desc.byte_len())?;
         uv.destroy();
         y.destroy();
-        VideoFrame::new_host(desc.clone(), pts, HostFrame::from_nv12(desc, bytes)?)
+        VideoFrame::new_host(desc.clone(), pts, HostFrame::from_bytes(desc, bytes)?)
     }
 
     pub fn probe_external_nv12(
@@ -520,7 +565,7 @@ impl VulkanAsciiBackend {
         planes: [ExternalPlaneImage; 2],
         access: crate::ExternalImageAccess,
     ) -> Result<ExternalImageTimings> {
-        validate_external_planes(desc, &planes, access, "probe")?;
+        validate_external_planes(desc, &planes, access, "probe", PixelFormat::Nv12)?;
         let mut total = ExternalImageTimings::default();
         let [y, uv] = planes;
         let (y, timings) = ImportedExternalPlane::import(&self.context, y)?;
@@ -545,12 +590,14 @@ impl VulkanAsciiBackend {
             &input_planes,
             crate::ExternalImageAccess::Read,
             "input",
+            PixelFormat::Nv12,
         )?;
         validate_external_planes(
             desc,
             &output_planes,
             crate::ExternalImageAccess::Write,
             "output",
+            PixelFormat::Nv12,
         )?;
         self.ensure_resources(desc, config)?;
 
@@ -653,6 +700,7 @@ impl VulkanAsciiBackend {
             &output_planes,
             crate::ExternalImageAccess::Write,
             "output",
+            PixelFormat::Nv12,
         )?;
         self.ensure_resources(&desc, config)?;
         let mut output_import = ExternalImageTimings::default();
@@ -723,34 +771,41 @@ fn validate_external_planes(
     planes: &[ExternalPlaneImage; 2],
     access: crate::ExternalImageAccess,
     label: &str,
+    expected_format: PixelFormat,
 ) -> Result<()> {
-    if desc.format != PixelFormat::Nv12 {
-        return Err(Error::Vulkan(
-            "external-image interop is qualified only for NV12".into(),
-        ));
+    if desc.format != expected_format {
+        return Err(Error::Vulkan(format!(
+            "external-image interop expected {expected_format:?}, got {:?}",
+            desc.format
+        )));
     }
-    if planes[0].kind != ExternalPlaneKind::Y
-        || planes[1].kind != ExternalPlaneKind::Uv
+    let (y_kind, uv_kind) = match expected_format {
+        PixelFormat::Nv12 => (ExternalPlaneKind::Y, ExternalPlaneKind::Uv),
+        PixelFormat::P010Le => (ExternalPlaneKind::P010Y, ExternalPlaneKind::P010Uv),
+    };
+    if planes[0].kind != y_kind
+        || planes[1].kind != uv_kind
         || planes.iter().any(|plane| plane.access != access)
     {
         return Err(Error::Vulkan(format!(
-            "external NV12 {label} must contain Y then UV with {access:?} access"
+            "external {expected_format:?} {label} must contain Y then UV with {access:?} access"
         )));
     }
+    let row_bytes = u64::from(desc.width) * expected_format.bytes_per_sample() as u64;
     let expected = [
-        (desc.width, desc.height, u64::from(desc.width)),
-        (desc.width / 2, desc.height / 2, u64::from(desc.width)),
+        (desc.width, desc.height, row_bytes),
+        (desc.width / 2, desc.height / 2, row_bytes),
     ];
     for (plane, (width, height, row_bytes)) in planes.iter().zip(expected) {
         if plane.width != width || plane.height != height {
             return Err(Error::Vulkan(format!(
-                "external NV12 {label} {:?} plane is {}x{}; expected {width}x{height}",
+                "external {expected_format:?} {label} {:?} plane is {}x{}; expected {width}x{height}",
                 plane.kind, plane.width, plane.height
             )));
         }
         if plane.row_pitch < row_bytes {
             return Err(Error::Vulkan(format!(
-                "external NV12 {label} {:?} plane row pitch {} is smaller than {row_bytes} bytes",
+                "external {expected_format:?} {label} {:?} plane row pitch {} is smaller than {row_bytes} bytes",
                 plane.kind, plane.row_pitch
             )));
         }
@@ -760,20 +815,20 @@ fn validate_external_planes(
             .and_then(|offset| offset.checked_add(row_bytes))
             .ok_or_else(|| {
                 Error::Vulkan(format!(
-                    "external NV12 {label} {:?} plane range overflows u64",
+                    "external {expected_format:?} {label} {:?} plane range overflows u64",
                     plane.kind
                 ))
             })?;
         if last_row > plane.object_size {
             return Err(Error::Vulkan(format!(
-                "external NV12 {label} {:?} plane ends at byte {last_row}, beyond object size {}",
+                "external {expected_format:?} {label} {:?} plane ends at byte {last_row}, beyond object size {}",
                 plane.kind, plane.object_size
             )));
         }
     }
     if planes[0].modifier != planes[1].modifier {
         return Err(Error::Vulkan(format!(
-            "external NV12 {label} Y and UV planes must use the same DRM modifier"
+            "external {expected_format:?} {label} Y and UV planes must use the same DRM modifier"
         )));
     }
     Ok(())
@@ -1620,8 +1675,12 @@ impl Resources {
             );
             for plane in planes {
                 let buffer_offset = match plane.kind {
-                    ExternalPlaneKind::Y => 0,
-                    ExternalPlaneKind::Uv => self.key.width as u64 * self.key.height as u64,
+                    ExternalPlaneKind::Y | ExternalPlaneKind::P010Y => 0,
+                    ExternalPlaneKind::Uv | ExternalPlaneKind::P010Uv => {
+                        self.key.width as u64
+                            * self.key.height as u64
+                            * self.key.format.bytes_per_sample() as u64
+                    }
                 };
                 context.device.cmd_copy_image_to_buffer(
                     self.command,
@@ -1735,8 +1794,12 @@ impl Resources {
             );
             for plane in planes {
                 let buffer_offset = match plane.kind {
-                    ExternalPlaneKind::Y => 0,
-                    ExternalPlaneKind::Uv => self.key.width as u64 * self.key.height as u64,
+                    ExternalPlaneKind::Y | ExternalPlaneKind::P010Y => 0,
+                    ExternalPlaneKind::Uv | ExternalPlaneKind::P010Uv => {
+                        self.key.width as u64
+                            * self.key.height as u64
+                            * self.key.format.bytes_per_sample() as u64
+                    }
                 };
                 context.device.cmd_copy_buffer_to_image(
                     self.command,
@@ -2305,17 +2368,30 @@ mod tests {
             plane(ExternalPlaneKind::Y, 1_920, 1_080, 0, object_size),
             plane(ExternalPlaneKind::Uv, 960, 540, 2_088_960, object_size),
         ];
-        validate_external_planes(&desc, &valid, ExternalImageAccess::Write, "output").unwrap();
+        validate_external_planes(
+            &desc,
+            &valid,
+            ExternalImageAccess::Write,
+            "output",
+            asciiflow_core::PixelFormat::Nv12,
+        )
+        .unwrap();
 
         let wrong_geometry = [
             plane(ExternalPlaneKind::Y, 1_919, 1_080, 0, object_size),
             plane(ExternalPlaneKind::Uv, 960, 540, 2_088_960, object_size),
         ];
         assert!(
-            validate_external_planes(&desc, &wrong_geometry, ExternalImageAccess::Write, "output")
-                .unwrap_err()
-                .to_string()
-                .contains("expected 1920x1080")
+            validate_external_planes(
+                &desc,
+                &wrong_geometry,
+                ExternalImageAccess::Write,
+                "output",
+                asciiflow_core::PixelFormat::Nv12
+            )
+            .unwrap_err()
+            .to_string()
+            .contains("expected 1920x1080")
         );
 
         let out_of_bounds = [
@@ -2323,10 +2399,67 @@ mod tests {
             plane(ExternalPlaneKind::Uv, 960, 540, 2_088_960, 3_125_759),
         ];
         assert!(
-            validate_external_planes(&desc, &out_of_bounds, ExternalImageAccess::Write, "output")
-                .unwrap_err()
-                .to_string()
-                .contains("beyond object size")
+            validate_external_planes(
+                &desc,
+                &out_of_bounds,
+                ExternalImageAccess::Write,
+                "output",
+                asciiflow_core::PixelFormat::Nv12
+            )
+            .unwrap_err()
+            .to_string()
+            .contains("beyond object size")
+        );
+    }
+
+    #[test]
+    fn external_p010_planes_require_16_bit_geometry_and_bounded_ranges() {
+        use asciiflow_core::PixelFormat;
+
+        let desc = FrameDesc::host_p010_le(64, 64, ColorSpace::default()).unwrap();
+        let mut valid = [
+            plane(ExternalPlaneKind::P010Y, 64, 64, 0, 16_384),
+            plane(ExternalPlaneKind::P010Uv, 32, 32, 8_192, 16_384),
+        ];
+        for image in &mut valid {
+            image.row_pitch = 128;
+            image.access = ExternalImageAccess::Read;
+        }
+        validate_external_planes(
+            &desc,
+            &valid,
+            ExternalImageAccess::Read,
+            "input",
+            PixelFormat::P010Le,
+        )
+        .unwrap();
+
+        valid[1].row_pitch = 127;
+        assert!(
+            validate_external_planes(
+                &desc,
+                &valid,
+                ExternalImageAccess::Read,
+                "input",
+                PixelFormat::P010Le
+            )
+            .unwrap_err()
+            .to_string()
+            .contains("row pitch")
+        );
+        valid[1].row_pitch = 128;
+        valid[1].object_size = 12_159;
+        assert!(
+            validate_external_planes(
+                &desc,
+                &valid,
+                ExternalImageAccess::Read,
+                "input",
+                PixelFormat::P010Le
+            )
+            .unwrap_err()
+            .to_string()
+            .contains("beyond object size")
         );
     }
 }

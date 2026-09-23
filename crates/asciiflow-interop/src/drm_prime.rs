@@ -1,4 +1,4 @@
-use asciiflow_core::{Error, Result};
+use asciiflow_core::{Error, PixelFormat, Result};
 use asciiflow_media::{VaapiDecodedFrame, VaapiEncoderFrame};
 use ffmpeg_sys_next as ffi;
 use std::{
@@ -11,6 +11,8 @@ use asciiflow_vulkan::{ExternalImageAccess, ExternalPlaneImage, ExternalPlaneKin
 
 const DRM_FORMAT_R8: u32 = u32::from_le_bytes(*b"R8  ");
 const DRM_FORMAT_GR88: u32 = u32::from_le_bytes(*b"GR88");
+const DRM_FORMAT_R16: u32 = u32::from_le_bytes(*b"R16 ");
+const DRM_FORMAT_GR32: u32 = u32::from_le_bytes(*b"GR32");
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct DrmObject {
@@ -148,16 +150,44 @@ impl<T> DrmPrimeMapping<T> {
     }
 
     pub fn duplicate_external_planes(&self) -> Result<[ExternalPlaneImage; 2]> {
-        let desc = &self.descriptor;
-        if desc.width % 2 != 0 || desc.height % 2 != 0 {
+        self.duplicate_planes(PixelFormat::Nv12)
+    }
+
+    /// Duplicate the observed two-layer P010 DRM PRIME layout for Vulkan input.
+    pub fn duplicate_external_p010_planes(&self) -> Result<[ExternalPlaneImage; 2]> {
+        if self.access != ExternalImageAccess::Read {
             return Err(Error::UnsupportedFrame(
-                "VAAPI/Vulkan interop supports even-sized 8-bit NV12 frames only".into(),
+                "P010 DRM PRIME output import is not qualified".into(),
+            ));
+        }
+        self.duplicate_planes(PixelFormat::P010Le)
+    }
+
+    fn duplicate_planes(&self, format: PixelFormat) -> Result<[ExternalPlaneImage; 2]> {
+        let (y_format, uv_format, y_kind, uv_kind) = match format {
+            PixelFormat::Nv12 => (
+                DRM_FORMAT_R8,
+                DRM_FORMAT_GR88,
+                ExternalPlaneKind::Y,
+                ExternalPlaneKind::Uv,
+            ),
+            PixelFormat::P010Le => (
+                DRM_FORMAT_R16,
+                DRM_FORMAT_GR32,
+                ExternalPlaneKind::P010Y,
+                ExternalPlaneKind::P010Uv,
+            ),
+        };
+        let desc = &self.descriptor;
+        if desc.width == 0 || desc.height == 0 || desc.width % 2 != 0 || desc.height % 2 != 0 {
+            return Err(Error::UnsupportedFrame(
+                "VAAPI/Vulkan interop requires non-zero even-sized frames".into(),
             ));
         }
         if desc.objects.len() != 1
             || desc.layers.len() != 2
-            || desc.layers[0].format != DRM_FORMAT_R8
-            || desc.layers[1].format != DRM_FORMAT_GR88
+            || desc.layers[0].format != y_format
+            || desc.layers[1].format != uv_format
             || desc.layers.iter().any(|layer| layer.planes.len() != 1)
             || desc
                 .layers
@@ -165,12 +195,14 @@ impl<T> DrmPrimeMapping<T> {
                 .any(|layer| layer.planes[0].object_index != 0)
         {
             return Err(Error::UnsupportedFrame(format!(
-                "unsupported DRM PRIME NV12 layout: objects={}, layers={:?}; expected one object with R8 and GR88 single-plane layers",
+                "unsupported DRM PRIME layout: objects={}, layers={:?}; expected one object with {} and {} single-plane layers",
                 desc.objects.len(),
                 desc.layers
                     .iter()
                     .map(|layer| fourcc_name(layer.format))
-                    .collect::<Vec<_>>()
+                    .collect::<Vec<_>>(),
+                fourcc_name(y_format),
+                fourcc_name(uv_format),
             )));
         }
         let object = &desc.objects[0];
@@ -181,14 +213,15 @@ impl<T> DrmPrimeMapping<T> {
         }
         let y = &desc.layers[0].planes[0];
         let uv = &desc.layers[1].planes[0];
-        if y.pitch < desc.width as u64 || uv.pitch < desc.width as u64 {
+        let row_bytes = u64::from(desc.width) * format.bytes_per_sample() as u64;
+        if y.pitch < row_bytes || uv.pitch < row_bytes {
             return Err(Error::UnsupportedFrame(format!(
-                "DRM PRIME pitch is too small for NV12: Y={}, UV={}, width={}",
-                y.pitch, uv.pitch, desc.width
+                "DRM PRIME pitch is too small: Y={}, UV={}, row bytes={row_bytes}",
+                y.pitch, uv.pitch
             )));
         }
-        require_plane_in_object("Y", y, desc.height, desc.width as u64, object.size)?;
-        require_plane_in_object("UV", uv, desc.height / 2, desc.width as u64, object.size)?;
+        require_plane_in_object("Y", y, desc.height, row_bytes, object.size)?;
+        require_plane_in_object("UV", uv, desc.height / 2, row_bytes, object.size)?;
         Ok([
             ExternalPlaneImage {
                 fd: duplicate_fd(object.fd)?,
@@ -198,7 +231,7 @@ impl<T> DrmPrimeMapping<T> {
                 row_pitch: y.pitch,
                 width: desc.width,
                 height: desc.height,
-                kind: ExternalPlaneKind::Y,
+                kind: y_kind,
                 access: self.access,
             },
             ExternalPlaneImage {
@@ -209,7 +242,7 @@ impl<T> DrmPrimeMapping<T> {
                 row_pitch: uv.pitch,
                 width: desc.width / 2,
                 height: desc.height / 2,
-                kind: ExternalPlaneKind::Uv,
+                kind: uv_kind,
                 access: self.access,
             },
         ])

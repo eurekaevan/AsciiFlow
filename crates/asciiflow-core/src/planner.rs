@@ -1,4 +1,7 @@
-use crate::{ColorSpace, Error, ProcessingBackend, Rational, Result};
+use crate::{
+    ColorMatrix, ColorPrimaries, ColorRange, ColorSpace, Error, PixelFormat, ProcessingBackend,
+    Rational, Result, TransferCharacteristic,
+};
 use std::fmt;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -109,6 +112,7 @@ pub enum VideoProfile {
     H264Main,
     H264High,
     HevcMain,
+    HevcMain10,
     Av1Main,
     Other(String),
 }
@@ -270,6 +274,11 @@ impl InputRequirements {
 
     pub fn validate_current_pipeline(&self) -> Result<()> {
         if self.bit_depth != Some(8) {
+            if self.bit_depth == Some(10) && self.validate_processing_input().is_ok() {
+                return Err(Error::UnsupportedFrame(
+                    "10-bit decoding and P010 processing are available for qualification, but no production 10-bit output path is available yet".into(),
+                ));
+            }
             return Err(Error::UnsupportedFrame(format!(
                 "{}-bit video is not supported by the current 8-bit NV12 pipeline",
                 self.bit_depth
@@ -305,6 +314,67 @@ impl InputRequirements {
             )));
         }
         Ok(())
+    }
+
+    /// Validate the input processing contract independently of output encoding.
+    /// Production planning still calls `validate_current_pipeline` and remains NV12-only.
+    pub fn validate_processing_input(&self) -> Result<PixelFormat> {
+        match self.bit_depth {
+            Some(8) => {
+                self.validate_current_pipeline()?;
+                Ok(PixelFormat::Nv12)
+            }
+            Some(10) => {
+                if self.chroma_subsampling != ChromaSubsampling::Yuv420 {
+                    return Err(Error::UnsupportedFrame(
+                        "10-bit processing requires 4:2:0 chroma".into(),
+                    ));
+                }
+                if !matches!(
+                    (&self.codec, &self.profile),
+                    (VideoCodec::Hevc, Some(VideoProfile::HevcMain10))
+                        | (VideoCodec::Av1, Some(VideoProfile::Av1Main))
+                ) {
+                    return Err(Error::UnsupportedFrame(format!(
+                        "10-bit {:?} profile {:?} is outside the HEVC Main10 / AV1 Main input contract",
+                        self.codec, self.profile
+                    )));
+                }
+                if self.color_space.primaries != ColorPrimaries::Bt709
+                    || self.color_space.transfer != TransferCharacteristic::Bt709
+                    || self.color_space.matrix != ColorMatrix::Bt709
+                    || !matches!(
+                        self.color_space.range,
+                        ColorRange::Limited | ColorRange::Full
+                    )
+                {
+                    return Err(Error::UnsupportedFrame(format!(
+                        "10-bit input requires explicitly tagged BT.709 SDR primaries, transfer, matrix and range; got {:?}",
+                        self.color_space
+                    )));
+                }
+                if self.width == 0
+                    || self.height == 0
+                    || self.width % 2 != 0
+                    || self.height % 2 != 0
+                    || self.width > i32::MAX as u32
+                    || self.height > i32::MAX as u32
+                {
+                    return Err(Error::UnsupportedFrame(format!(
+                        "P010LE requires even dimensions in 2..={}, got {}x{}",
+                        i32::MAX,
+                        self.width,
+                        self.height
+                    )));
+                }
+                Ok(PixelFormat::P010Le)
+            }
+            _ => Err(Error::UnsupportedFrame(format!(
+                "{}-bit video is outside the 8-bit NV12 / 10-bit P010LE processing contract",
+                self.bit_depth
+                    .map_or_else(|| "unknown".into(), |value| value.to_string())
+            ))),
+        }
     }
 }
 
@@ -1215,7 +1285,7 @@ mod tests {
         let error = r.validate_current_pipeline().unwrap_err();
         assert!(error.to_string().contains("10-bit video is not supported"));
         for (codec, profile) in [
-            (VideoCodec::Hevc, VideoProfile::HevcMain),
+            (VideoCodec::Hevc, VideoProfile::HevcMain10),
             (VideoCodec::Av1, VideoProfile::Av1Main),
         ] {
             let mut requirements = h264();
@@ -1224,8 +1294,15 @@ mod tests {
             requirements.bit_depth = Some(10);
             let error =
                 PipelinePlanner::select(&full(), &requirements, Default::default()).unwrap_err();
-            assert!(error.to_string().contains("10-bit video is not supported"));
+            assert!(
+                error
+                    .to_string()
+                    .contains("no production 10-bit output path")
+            );
             requirements.bit_depth = Some(8);
+            if codec == VideoCodec::Hevc {
+                requirements.profile = Some(VideoProfile::HevcMain);
+            }
             let plan = PipelinePlanner::select(
                 &full(),
                 &requirements,

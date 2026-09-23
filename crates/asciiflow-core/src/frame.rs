@@ -48,6 +48,8 @@ pub enum MemoryDomain {
 pub enum ColorMatrix {
     Bt601,
     Bt709,
+    Bt2020,
+    Other,
     Unspecified,
 }
 
@@ -61,12 +63,17 @@ pub enum ColorRange {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ColorPrimaries {
     Bt709,
+    Bt2020,
+    Other,
     Unspecified,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum TransferCharacteristic {
     Bt709,
+    Pq,
+    Hlg,
+    Other,
     Unspecified,
 }
 

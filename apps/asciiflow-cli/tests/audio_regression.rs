@@ -48,10 +48,32 @@ fn new_codec_ten_bit_failures_do_not_touch_existing_output() {
             .join(name);
         let result = Process::start(&mut command(&input, &ws.output(), "none")).finish();
         assert!(!result.status.success());
-        assert!(String::from_utf8_lossy(&result.stderr).contains("10-bit"));
+        assert!(
+            String::from_utf8_lossy(&result.stderr).contains("no production 10-bit output path"),
+            "{}",
+            String::from_utf8_lossy(&result.stderr)
+        );
         assert_eq!(std::fs::read(ws.output()).unwrap(), b"existing");
         ws.assert_no_staging();
     }
+}
+
+#[test]
+fn ten_bit_hdr_failure_preserves_existing_output() {
+    let ws = Workspace::new();
+    std::fs::write(ws.output(), b"existing").unwrap();
+    let input = fixture("single.mp4")
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .join("codecs/hevc-main10-pq-reject.mp4");
+    let result = Process::start(&mut command(&input, &ws.output(), "none")).finish();
+    assert!(!result.status.success());
+    let error = String::from_utf8_lossy(&result.stderr);
+    assert!(error.contains("HDR/BT.2020"), "{error}");
+    assert_eq!(std::fs::read(ws.output()).unwrap(), b"existing");
+    ws.assert_no_staging();
 }
 
 #[test]
