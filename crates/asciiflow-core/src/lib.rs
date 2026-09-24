@@ -26,11 +26,11 @@ pub use glyph::glyph_lookup_table;
 pub use metrics::{MetricStage, Metrics, MetricsSnapshot};
 pub use pipeline::{Pipeline, PipelineReport};
 pub use planner::{
-    CandidateRejection, CapabilitySnapshot, CapabilitySupport, ChromaSubsampling, FrameDomain,
-    InputRequirements, InteropCapabilities, InteropRequest, MediaCapabilities, MediaImplementation,
-    MediaRequest, OutputVideoRequirements, PipelinePlan, PipelinePlanner, PipelinePolicy,
-    PixelPath, PlanNode, PlanStep, PlanningResult, ProcessingCapabilities, VideoCodec,
-    VideoProfile, VulkanDeviceKind,
+    CandidateRejection, CapabilitySnapshot, CapabilitySupport, ChromaSubsampling,
+    FormatOutputInteropCapabilities, FrameDomain, InputRequirements, InteropCapabilities,
+    InteropRequest, MediaCapabilities, MediaImplementation, MediaRequest, OutputVideoRequirements,
+    PipelinePlan, PipelinePlanner, PipelinePolicy, PixelPath, PlanNode, PlanStep, PlanningResult,
+    ProcessingCapabilities, VideoCodec, VideoProfile, VulkanDeviceKind,
 };
 pub use qualification::{
     InputProcessingCapabilities, InputProcessingDomain, InputProcessingPlan,

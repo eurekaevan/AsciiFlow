@@ -16,6 +16,8 @@ pub use encoder::probe_vaapi_av1_encoder_diagnostic;
 pub use encoder::{
     Encoder, OutputEncoding, VaapiEncoderProbe, probe_vaapi_encoder, probe_vaapi_encoder_for,
 };
+#[cfg(feature = "p010-output-diagnostic")]
+pub use hwframes::VaapiDiagnosticP010Pool;
 pub use hwframes::{VaapiEncoderFrame, VaapiEncoderFrames};
 pub use vaapi::{
     DecodeMode, EncodeMode, VaapiBuildCapabilities, VaapiOptions, probe_decoder_build,

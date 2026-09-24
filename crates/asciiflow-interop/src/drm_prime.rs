@@ -150,20 +150,18 @@ impl<T> DrmPrimeMapping<T> {
     }
 
     pub fn duplicate_external_planes(&self) -> Result<[ExternalPlaneImage; 2]> {
-        self.duplicate_planes(PixelFormat::Nv12)
+        self.duplicate_external_planes_for(PixelFormat::Nv12)
     }
 
-    /// Duplicate the observed two-layer P010 DRM PRIME layout for Vulkan input.
+    /// Duplicate the observed two-layer P010 DRM PRIME layout for Vulkan transfer.
     pub fn duplicate_external_p010_planes(&self) -> Result<[ExternalPlaneImage; 2]> {
-        if self.access != ExternalImageAccess::Read {
-            return Err(Error::UnsupportedFrame(
-                "P010 DRM PRIME output import is not qualified".into(),
-            ));
-        }
-        self.duplicate_planes(PixelFormat::P010Le)
+        self.duplicate_external_planes_for(PixelFormat::P010Le)
     }
 
-    fn duplicate_planes(&self, format: PixelFormat) -> Result<[ExternalPlaneImage; 2]> {
+    pub fn duplicate_external_planes_for(
+        &self,
+        format: PixelFormat,
+    ) -> Result<[ExternalPlaneImage; 2]> {
         let (y_format, uv_format, y_kind, uv_kind) = match format {
             PixelFormat::Nv12 => (
                 DRM_FORMAT_R8,

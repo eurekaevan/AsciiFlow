@@ -8,6 +8,7 @@ rust-version.workspace = true
 [features]
 encode-characterization = []
 av1-encode-diagnostic = []
+p010-output-diagnostic = []
 
 [dependencies]
 libloading = "0.8"

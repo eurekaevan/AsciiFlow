@@ -174,6 +174,19 @@ pub struct VulkanAsciiBackend {
     context: Arc<VulkanContext>,
     allocator: Option<Allocator>,
     resources: Option<Resources>,
+    #[cfg(feature = "p010-output-diagnostic")]
+    output_fault: Option<DiagnosticOutputFault>,
+}
+
+/// One-shot diagnostic checkpoints in the output-surface lifecycle. These
+/// simulate error propagation and cleanup, not driver/device-lost behavior.
+#[cfg(feature = "p010-output-diagnostic")]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum DiagnosticOutputFault {
+    ImageCreate,
+    MemoryImport,
+    QueueSubmit,
+    FenceWaitAfterCompletion,
 }
 
 impl VulkanAsciiBackend {
@@ -197,6 +210,8 @@ impl VulkanAsciiBackend {
             context,
             allocator: Some(allocator),
             resources: None,
+            #[cfg(feature = "p010-output-diagnostic")]
+            output_fault: None,
         })
     }
     pub(crate) fn shared_context(&self) -> Arc<VulkanContext> {
@@ -206,6 +221,24 @@ impl VulkanAsciiBackend {
         let mut fork = Self::from_context(self.context.clone())?;
         fork.supplied_atlas = self.supplied_atlas.clone();
         Ok(fork)
+    }
+
+    #[cfg(feature = "p010-output-diagnostic")]
+    pub fn with_diagnostic_output_fault(mut self, fault: DiagnosticOutputFault) -> Self {
+        self.output_fault = Some(fault);
+        self
+    }
+
+    #[cfg(feature = "p010-output-diagnostic")]
+    fn diagnostic_output_checkpoint(&mut self, point: DiagnosticOutputFault) -> Result<()> {
+        if self.output_fault == Some(point) {
+            self.output_fault = None;
+            Err(Error::Vulkan(format!(
+                "diagnostic P010 output fault at {point:?}"
+            )))
+        } else {
+            Ok(())
+        }
     }
     /// Supply initialization-owned pixels before allocating frame resources.
     pub fn with_atlas(mut self, atlas: GlyphAtlas, config: &AsciiConfig) -> Result<Self> {
@@ -565,7 +598,26 @@ impl VulkanAsciiBackend {
         planes: [ExternalPlaneImage; 2],
         access: crate::ExternalImageAccess,
     ) -> Result<ExternalImageTimings> {
-        validate_external_planes(desc, &planes, access, "probe", PixelFormat::Nv12)?;
+        self.probe_external_output(desc, planes, access, PixelFormat::Nv12)
+    }
+
+    pub fn probe_external_p010(
+        &mut self,
+        desc: &FrameDesc,
+        planes: [ExternalPlaneImage; 2],
+        access: crate::ExternalImageAccess,
+    ) -> Result<ExternalImageTimings> {
+        self.probe_external_output(desc, planes, access, PixelFormat::P010Le)
+    }
+
+    fn probe_external_output(
+        &mut self,
+        desc: &FrameDesc,
+        planes: [ExternalPlaneImage; 2],
+        access: crate::ExternalImageAccess,
+        format: PixelFormat,
+    ) -> Result<ExternalImageTimings> {
+        validate_external_planes(desc, &planes, access, "probe", format)?;
         let mut total = ExternalImageTimings::default();
         let [y, uv] = planes;
         let (y, timings) = ImportedExternalPlane::import(&self.context, y)?;
@@ -584,20 +636,35 @@ impl VulkanAsciiBackend {
         input_planes: [ExternalPlaneImage; 2],
         output_planes: [ExternalPlaneImage; 2],
     ) -> Result<BackendTimings> {
+        if desc.format != PixelFormat::Nv12 {
+            return Err(Error::UnsupportedFrame(
+                "NV12 external-output path received a non-NV12 frame".into(),
+            ));
+        }
+        self.process_external_to_external(desc, config, input_planes, output_planes)
+    }
+
+    pub fn process_external_to_external(
+        &mut self,
+        desc: &FrameDesc,
+        config: &AsciiConfig,
+        input_planes: [ExternalPlaneImage; 2],
+        output_planes: [ExternalPlaneImage; 2],
+    ) -> Result<BackendTimings> {
         let total_started = Instant::now();
         validate_external_planes(
             desc,
             &input_planes,
             crate::ExternalImageAccess::Read,
             "input",
-            PixelFormat::Nv12,
+            desc.format,
         )?;
         validate_external_planes(
             desc,
             &output_planes,
             crate::ExternalImageAccess::Write,
             "output",
-            PixelFormat::Nv12,
+            desc.format,
         )?;
         self.ensure_resources(desc, config)?;
 
@@ -693,6 +760,20 @@ impl VulkanAsciiBackend {
         config: &AsciiConfig,
         output_planes: [ExternalPlaneImage; 2],
     ) -> Result<BackendTimings> {
+        if input.desc().format != PixelFormat::Nv12 {
+            return Err(Error::UnsupportedFrame(
+                "NV12 output path received a non-NV12 frame".into(),
+            ));
+        }
+        self.process_host_to_external(input, config, output_planes)
+    }
+
+    pub fn process_host_to_external(
+        &mut self,
+        input: VideoFrame,
+        config: &AsciiConfig,
+        output_planes: [ExternalPlaneImage; 2],
+    ) -> Result<BackendTimings> {
         let total_started = Instant::now();
         let desc = input.desc().clone();
         validate_external_planes(
@@ -700,9 +781,15 @@ impl VulkanAsciiBackend {
             &output_planes,
             crate::ExternalImageAccess::Write,
             "output",
-            PixelFormat::Nv12,
+            desc.format,
         )?;
         self.ensure_resources(&desc, config)?;
+        #[cfg(feature = "p010-output-diagnostic")]
+        at_stage(
+            self.diagnostic_output_checkpoint(DiagnosticOutputFault::ImageCreate),
+            PipelineStage::OutputInteropRuntime,
+            "create output external image",
+        )?;
         let mut output_import = ExternalImageTimings::default();
         let [output_y, output_uv] = output_planes;
         let (output_y, timings) = at_stage(
@@ -711,6 +798,12 @@ impl VulkanAsciiBackend {
             "import output Y DMA-BUF as TRANSFER_DST",
         )?;
         add_external_timings(&mut output_import, timings);
+        #[cfg(feature = "p010-output-diagnostic")]
+        at_stage(
+            self.diagnostic_output_checkpoint(DiagnosticOutputFault::MemoryImport),
+            PipelineStage::OutputInteropRuntime,
+            "import output external memory",
+        )?;
         let (output_uv, timings) = at_stage(
             ImportedExternalPlane::import(&self.context, output_uv),
             PipelineStage::OutputInteropRuntime,
@@ -718,6 +811,8 @@ impl VulkanAsciiBackend {
         )?;
         add_external_timings(&mut output_import, timings);
 
+        #[cfg(feature = "p010-output-diagnostic")]
+        let output_fault = self.output_fault.take();
         let resources = self.resources.as_mut().expect("resources initialized");
         let upload = at_stage(
             resources.upload_input(&self.context, input.host().as_slice()),
@@ -729,11 +824,30 @@ impl VulkanAsciiBackend {
             PipelineStage::ProcessingRuntime,
             "execute Vulkan ASCII compute",
         )?;
+        #[cfg(feature = "p010-output-diagnostic")]
+        if output_fault == Some(DiagnosticOutputFault::QueueSubmit) {
+            return Err(Error::pipeline(
+                PipelineStage::OutputInteropRuntime,
+                "submit output transfer",
+                Error::Vulkan("diagnostic P010 output fault at QueueSubmit".into()),
+            ));
+        }
         let output = at_stage(
             resources.copy_output_to_external(&self.context, [&output_y, &output_uv]),
             PipelineStage::OutputInteropRuntime,
             "copy Vulkan output to encoder DMA-BUF",
         )?;
+        #[cfg(feature = "p010-output-diagnostic")]
+        if output_fault == Some(DiagnosticOutputFault::FenceWaitAfterCompletion) {
+            // The real fence has signaled. Injecting after completion tests
+            // propagation without pretending that in-flight GPU work is safe
+            // to destroy on an actual timeout or device-lost error.
+            return Err(Error::pipeline(
+                PipelineStage::OutputInteropRuntime,
+                "complete output transfer",
+                Error::Vulkan("diagnostic P010 output fault at FenceWaitAfterCompletion".into()),
+            ));
+        }
         output_import.destroy += output_uv.destroy();
         output_import.destroy += output_y.destroy();
         Ok(BackendTimings {
@@ -763,6 +877,35 @@ impl VulkanAsciiBackend {
             backend_wall: total_started.elapsed(),
             ..BackendTimings::default()
         })
+    }
+
+    /// Diagnostic copy oracle: no ASCII compute, just packed host bytes into
+    /// the same external output planes used by the processing path.
+    #[cfg(feature = "p010-output-diagnostic")]
+    pub fn copy_packed_to_external(
+        &mut self,
+        input: &VideoFrame,
+        config: &AsciiConfig,
+        output_planes: [ExternalPlaneImage; 2],
+    ) -> Result<()> {
+        let desc = input.desc();
+        validate_external_planes(
+            desc,
+            &output_planes,
+            crate::ExternalImageAccess::Write,
+            "output",
+            desc.format,
+        )?;
+        self.ensure_resources(desc, config)?;
+        let [y, uv] = output_planes;
+        let (y, _) = ImportedExternalPlane::import(&self.context, y)?;
+        let (uv, _) = ImportedExternalPlane::import(&self.context, uv)?;
+        let resources = self.resources.as_mut().expect("resources initialized");
+        resources.upload_output(&self.context, input.host().as_slice())?;
+        resources.copy_output_to_external_after_upload(&self.context, [&y, &uv])?;
+        uv.destroy();
+        y.destroy();
+        Ok(())
     }
 }
 
@@ -1219,11 +1362,18 @@ impl Resources {
             "glyph atlas",
             context.info.non_coherent_atom_size,
         )?;
+        let output_usage = vk::BufferUsageFlags::STORAGE_BUFFER
+            | vk::BufferUsageFlags::TRANSFER_SRC
+            | if cfg!(feature = "p010-output-diagnostic") {
+                vk::BufferUsageFlags::TRANSFER_DST
+            } else {
+                vk::BufferUsageFlags::empty()
+            };
         let output_handle = if direct_output {
             pending_buffers
                 .create_cached(
                     frame_bytes,
-                    vk::BufferUsageFlags::STORAGE_BUFFER | vk::BufferUsageFlags::TRANSFER_SRC,
+                    output_usage,
                     "NV12 output",
                     context.info.non_coherent_atom_size,
                 )?
@@ -1233,7 +1383,7 @@ impl Resources {
         } else {
             pending_buffers.create(
                 frame_bytes,
-                vk::BufferUsageFlags::STORAGE_BUFFER | vk::BufferUsageFlags::TRANSFER_SRC,
+                output_usage,
                 MemoryLocation::GpuOnly,
                 "NV12 output",
                 context.info.non_coherent_atom_size,
@@ -1631,6 +1781,11 @@ impl Resources {
     fn upload_input(&mut self, context: &VulkanContext, data: &[u8]) -> Result<UploadTimings> {
         self.upload_buffer(context, data, self.input.handle)
     }
+
+    #[cfg(feature = "p010-output-diagnostic")]
+    fn upload_output(&mut self, context: &VulkanContext, data: &[u8]) -> Result<UploadTimings> {
+        self.upload_buffer(context, data, self.output.handle)
+    }
     fn copy_external_input(
         &mut self,
         context: &VulkanContext,
@@ -1748,10 +1903,36 @@ impl Resources {
         context: &VulkanContext,
         planes: [&ImportedExternalPlane; 2],
     ) -> Result<ExternalCopyTimings> {
+        self.copy_output_to_external_from(context, planes, false)
+    }
+
+    #[cfg(feature = "p010-output-diagnostic")]
+    fn copy_output_to_external_after_upload(
+        &mut self,
+        context: &VulkanContext,
+        planes: [&ImportedExternalPlane; 2],
+    ) -> Result<ExternalCopyTimings> {
+        self.copy_output_to_external_from(context, planes, true)
+    }
+
+    fn copy_output_to_external_from(
+        &mut self,
+        context: &VulkanContext,
+        planes: [&ImportedExternalPlane; 2],
+        transfer_source: bool,
+    ) -> Result<ExternalCopyTimings> {
         self.begin(context)?;
         let output_barrier = [vk::BufferMemoryBarrier2::default()
-            .src_stage_mask(vk::PipelineStageFlags2::COMPUTE_SHADER)
-            .src_access_mask(vk::AccessFlags2::SHADER_WRITE)
+            .src_stage_mask(if transfer_source {
+                vk::PipelineStageFlags2::COPY
+            } else {
+                vk::PipelineStageFlags2::COMPUTE_SHADER
+            })
+            .src_access_mask(if transfer_source {
+                vk::AccessFlags2::TRANSFER_WRITE
+            } else {
+                vk::AccessFlags2::SHADER_WRITE
+            })
             .dst_stage_mask(vk::PipelineStageFlags2::COPY)
             .dst_access_mask(vk::AccessFlags2::TRANSFER_READ)
             .buffer(self.output.handle)
@@ -2433,6 +2614,31 @@ mod tests {
             PixelFormat::P010Le,
         )
         .unwrap();
+
+        for image in &mut valid {
+            image.access = ExternalImageAccess::Write;
+        }
+        validate_external_planes(
+            &desc,
+            &valid,
+            ExternalImageAccess::Write,
+            "output",
+            PixelFormat::P010Le,
+        )
+        .unwrap();
+        assert!(
+            validate_external_planes(
+                &desc,
+                &valid,
+                ExternalImageAccess::Write,
+                "output",
+                PixelFormat::Nv12,
+            )
+            .is_err()
+        );
+        for image in &mut valid {
+            image.access = ExternalImageAccess::Read;
+        }
 
         valid[1].row_pitch = 127;
         assert!(

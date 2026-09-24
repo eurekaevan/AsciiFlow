@@ -7,6 +7,7 @@ rust-version.workspace = true
 
 [features]
 av1-encode-diagnostic = ["asciiflow-media/av1-encode-diagnostic"]
+p010-output-diagnostic = ["asciiflow-media/p010-output-diagnostic", "asciiflow-vulkan/p010-output-diagnostic"]
 
 [dependencies]
 asciiflow-core = { path = "../asciiflow-core" }
@@ -19,3 +20,4 @@ tracing.workspace = true
 
 [dev-dependencies]
 asciiflow-cpu = { path = "../asciiflow-cpu" }
+asciiflow-font = { path = "../asciiflow-font" }

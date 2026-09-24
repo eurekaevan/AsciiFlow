@@ -1,5 +1,9 @@
 use super::{codec::ffmpeg_error, ffi, frame::Frame, hwdevice::HardwareDevice};
-use asciiflow_core::{Error, FrameDesc, HostFrame, Result, VideoFrame};
+#[cfg(feature = "p010-output-diagnostic")]
+use asciiflow_core::ColorSpace;
+use asciiflow_core::{Error, FrameDesc, HostFrame, PixelFormat, Result, VideoFrame};
+#[cfg(feature = "p010-output-diagnostic")]
+use std::path::Path;
 use std::{ptr, ptr::NonNull};
 
 pub(crate) struct HardwareFramesPool {
@@ -8,6 +12,20 @@ pub(crate) struct HardwareFramesPool {
 
 impl HardwareFramesPool {
     pub(crate) fn vaapi_nv12(device: &HardwareDevice, width: u32, height: u32) -> Result<Self> {
+        Self::vaapi(device, width, height, ffi::AVPixelFormat::AV_PIX_FMT_NV12)
+    }
+
+    #[cfg(feature = "p010-output-diagnostic")]
+    pub(crate) fn vaapi_p010(device: &HardwareDevice, width: u32, height: u32) -> Result<Self> {
+        Self::vaapi(device, width, height, ffi::AVPixelFormat::AV_PIX_FMT_P010LE)
+    }
+
+    fn vaapi(
+        device: &HardwareDevice,
+        width: u32,
+        height: u32,
+        sw_format: ffi::AVPixelFormat,
+    ) -> Result<Self> {
         let reference = NonNull::new(unsafe { ffi::av_hwframe_ctx_alloc(device.as_ptr()) })
             .ok_or_else(|| Error::Media("failed to allocate VAAPI frames context".into()))?;
         let mut guard = BufferGuard(Some(reference));
@@ -19,7 +37,7 @@ impl HardwareFramesPool {
         }
         unsafe {
             (*context).format = ffi::AVPixelFormat::AV_PIX_FMT_VAAPI;
-            (*context).sw_format = ffi::AVPixelFormat::AV_PIX_FMT_NV12;
+            (*context).sw_format = sw_format;
             (*context).width = width as i32;
             (*context).height = height as i32;
             // VAAPI supports a dynamic pool. This keeps the pool bounded by
@@ -30,7 +48,7 @@ impl HardwareFramesPool {
         let result = unsafe { ffi::av_hwframe_ctx_init(reference.as_ptr()) };
         if result < 0 {
             return Err(ffmpeg_error(
-                "failed to initialize VAAPI NV12 frames pool",
+                "failed to initialize VAAPI frames pool",
                 result,
             ));
         }
@@ -78,6 +96,45 @@ impl Drop for HardwareFramesPool {
 
 unsafe impl Send for HardwareFramesPool {}
 
+/// Encoder-style P010 surfaces for opt-in output interop qualification only.
+/// This pool never creates or exposes an encoder context.
+#[cfg(feature = "p010-output-diagnostic")]
+pub struct VaapiDiagnosticP010Pool {
+    _device: HardwareDevice,
+    frames: VaapiEncoderFrames,
+}
+
+#[cfg(feature = "p010-output-diagnostic")]
+impl VaapiDiagnosticP010Pool {
+    pub fn new(device_path: &Path, width: u32, height: u32) -> Result<Self> {
+        let desc = FrameDesc::host_p010_le(width, height, ColorSpace::default())?;
+        let device = HardwareDevice::vaapi(Some(device_path))?;
+        let pool = HardwareFramesPool::vaapi_p010(&device, width, height)?;
+        if !supports_format(
+            pool.as_ptr(),
+            ffi::AVHWFrameTransferDirection::AV_HWFRAME_TRANSFER_DIRECTION_TO,
+            ffi::AVPixelFormat::AV_PIX_FMT_P010LE,
+        )? || !supports_download_p010(pool.as_ptr())?
+        {
+            return Err(Error::UnsupportedFrame(
+                "diagnostic VAAPI P010 pool cannot upload and download P010LE".into(),
+            ));
+        }
+        Ok(Self {
+            frames: VaapiEncoderFrames::from_pool(&pool, desc)?,
+            _device: device,
+        })
+    }
+
+    pub fn acquire(&self, pts: i64) -> Result<VaapiEncoderFrame> {
+        self.frames.acquire(pts)
+    }
+
+    pub fn output_frames(&self) -> Result<VaapiEncoderFrames> {
+        self.frames.clone_for_diagnostic()
+    }
+}
+
 pub(crate) struct HardwareFrame {
     frame: Frame,
 }
@@ -116,10 +173,10 @@ impl HardwareFrame {
     }
 }
 
-/// A retained handle to the exact VAAPI frames context configured on an encoder.
+/// A retained handle to a VAAPI frames context, normally configured on an encoder.
 ///
-/// Clones share the native pool; every acquired surface is therefore directly
-/// acceptable to the encoder that produced this handle.
+/// Clones share the native pool. Encoder-owned handles yield frames accepted by
+/// that encoder; the opt-in P010 diagnostic pool has no encoder at all.
 pub struct VaapiEncoderFrames {
     pool: HardwareFramesPool,
     desc: FrameDesc,
@@ -159,11 +216,12 @@ impl VaapiEncoderFrames {
 
 unsafe impl Send for VaapiEncoderFrames {}
 
-/// One encoder-compatible VAAPI input surface.
+/// One VAAPI output surface, normally encoder-compatible.
 ///
 /// The value owns its `AVFrame` reference and may be moved to the interop
-/// worker. It must remain alive until Vulkan has returned foreign ownership,
-/// then is consumed by `Encoder::encode_hardware_frame`.
+/// worker. It must remain alive until Vulkan has returned foreign ownership.
+/// Encoder-owned surfaces may then be consumed by `Encoder::encode_hardware_frame`;
+/// diagnostic surfaces may instead be downloaded for pixel qualification.
 pub struct VaapiEncoderFrame {
     hardware: HardwareFrame,
     desc: FrameDesc,
@@ -200,6 +258,21 @@ impl VaapiEncoderFrame {
     /// Diagnostic upload used to compare the staged and external-image paths
     /// before either surface enters an encoder.
     pub fn upload_nv12(&mut self, frame: &VideoFrame) -> Result<()> {
+        self.upload_host(frame, PixelFormat::Nv12)
+    }
+
+    #[cfg(feature = "p010-output-diagnostic")]
+    pub fn upload_p010(&mut self, frame: &VideoFrame) -> Result<()> {
+        self.upload_host(frame, PixelFormat::P010Le)
+    }
+
+    fn upload_host(&mut self, frame: &VideoFrame, expected: PixelFormat) -> Result<()> {
+        if self.desc.format != expected {
+            return Err(Error::UnsupportedFrame(format!(
+                "diagnostic VAAPI upload expected {expected:?}, surface is {:?}",
+                self.desc.format
+            )));
+        }
         if frame.desc() != &self.desc {
             return Err(Error::Media(
                 "encoder-surface upload received a different frame descriptor".into(),
@@ -207,7 +280,7 @@ impl VaapiEncoderFrame {
         }
         let mut host = Frame::new()?;
         unsafe {
-            (*host.as_mut_ptr()).format = ffi::AVPixelFormat::AV_PIX_FMT_NV12 as i32;
+            (*host.as_mut_ptr()).format = av_pixel_format(expected) as i32;
             (*host.as_mut_ptr()).width = self.desc.width as i32;
             (*host.as_mut_ptr()).height = self.desc.height as i32;
         }
@@ -220,7 +293,7 @@ impl VaapiEncoderFrame {
         }
         let native = unsafe { &mut *host.as_mut_ptr() };
         let (source_y, source_uv) = frame.host().planes(frame.desc());
-        let width = self.desc.width as usize;
+        let width = self.desc.y_stride();
         let height = self.desc.height as usize;
         unsafe {
             for row in 0..height {
@@ -244,7 +317,7 @@ impl VaapiEncoderFrame {
         };
         if uploaded < 0 {
             return Err(ffmpeg_error(
-                "failed to upload staged NV12 into VAAPI encoder surface",
+                "failed to upload staged frame into VAAPI surface",
                 uploaded,
             ));
         }
@@ -254,9 +327,24 @@ impl VaapiEncoderFrame {
 
     /// Diagnostic-only readback used to prove pre-encode pixel parity.
     pub fn download_nv12(&self) -> Result<VideoFrame> {
+        self.download_as(PixelFormat::Nv12)
+    }
+
+    #[cfg(feature = "p010-output-diagnostic")]
+    pub fn download_p010(&self) -> Result<VideoFrame> {
+        self.download_as(PixelFormat::P010Le)
+    }
+
+    fn download_as(&self, expected: PixelFormat) -> Result<VideoFrame> {
+        if self.desc.format != expected {
+            return Err(Error::UnsupportedFrame(format!(
+                "diagnostic VAAPI download expected {expected:?}, surface is {:?}",
+                self.desc.format
+            )));
+        }
         let mut host = Frame::new()?;
         unsafe {
-            (*host.as_mut_ptr()).format = ffi::AVPixelFormat::AV_PIX_FMT_NV12 as i32;
+            (*host.as_mut_ptr()).format = av_pixel_format(expected) as i32;
         }
         let result =
             unsafe { ffi::av_hwframe_transfer_data(host.as_mut_ptr(), self.hardware.as_ptr(), 0) };
@@ -267,17 +355,17 @@ impl VaapiEncoderFrame {
             ));
         }
         let native = unsafe { &*host.as_ptr() };
-        if native.format != ffi::AVPixelFormat::AV_PIX_FMT_NV12 as i32 {
+        if native.format != av_pixel_format(expected) as i32 {
             return Err(Error::UnsupportedFrame(format!(
-                "encoder-surface diagnostic produced pixel format {}; expected NV12",
-                native.format
+                "VAAPI surface diagnostic produced pixel format {}; expected {expected:?}",
+                native.format,
             )));
         }
-        let width = self.desc.width as usize;
+        let width = self.desc.y_stride();
         let height = self.desc.height as usize;
         if native.linesize[0] < width as i32 || native.linesize[1] < width as i32 {
             return Err(Error::Media(
-                "encoder-surface diagnostic returned an undersized NV12 stride".into(),
+                "VAAPI surface diagnostic returned an undersized stride".into(),
             ));
         }
         let mut storage = HostFrame::new_zeroed(&self.desc);
@@ -303,6 +391,13 @@ impl VaapiEncoderFrame {
 }
 
 unsafe impl Send for VaapiEncoderFrame {}
+
+fn av_pixel_format(format: PixelFormat) -> ffi::AVPixelFormat {
+    match format {
+        PixelFormat::Nv12 => ffi::AVPixelFormat::AV_PIX_FMT_NV12,
+        PixelFormat::P010Le => ffi::AVPixelFormat::AV_PIX_FMT_P010LE,
+    }
+}
 
 pub(crate) fn supports_download_nv12(frames: *mut ffi::AVBufferRef) -> Result<bool> {
     supports_format(

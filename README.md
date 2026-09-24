@@ -3,8 +3,8 @@
 Input is detected automatically: H.264 8-bit 4:2:0, HEVC Main 8-bit 4:2:0,
 and AV1 Main 8-bit 4:2:0. Output defaults to H.264; HEVC Main and AV1 Profile0
 8-bit output are available through VAAPI. Production ten-bit HEVC/AV1
-transcoding and HDR are not supported. Internal software 10-bit SDR decoding
-to P010LE is under qualification; Intel P010 VAAPI interop is not yet qualified.
+transcoding and HDR are not supported. Internal P010LE input and diagnostic
+output interop are qualified on Intel Arc; no production 10-bit encoder exists.
 Software decode and Intel Arc Meteor Lake hardware decode/interop
 are qualified for these 8-bit inputs. See [codec support](docs/codecs.md).
 
@@ -12,7 +12,8 @@ AsciiFlow v2 is the primary development path. Host NV12 remains the portable
 production boundary. An internal P010LE processing foundation now exists and
 can consume software-decoded 10-bit SDR HEVC/AV1; the CLI still rejects real
 10-bit output because no 10-bit encoder path is available.
-See [P010 processing contract](docs/p010.md). At startup, AsciiFlow probes the
+See the [P010 processing contract](docs/p010.md) and
+[output qualification](docs/stage5.2c1-p010-output-interop.md). At startup, AsciiFlow probes the
 input and the local runtime, then selects the fastest legal pipeline. On the
 qualified Intel Linux path,
 this can carry decoded VAAPI surfaces into Vulkan and return processed pixels

@@ -4,6 +4,8 @@ mod context;
 mod external;
 mod streaming;
 
+#[cfg(feature = "p010-output-diagnostic")]
+pub use backend::DiagnosticOutputFault;
 pub use backend::{GpuAsciiCell, MemoryAllocationInfo, VulkanAsciiBackend};
 pub use context::{DeviceInfo, MemoryHeapInfo, MemoryTypeInfo, enumerate_devices};
 pub use external::{

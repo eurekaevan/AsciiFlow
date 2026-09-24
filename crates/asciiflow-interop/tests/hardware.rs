@@ -1,13 +1,21 @@
 use asciiflow_core::{AsciiBackend, AsciiConfig, FrameSink, FrameSource, PixelFormat, VideoCodec};
 #[cfg(feature = "av1-encode-diagnostic")]
 use asciiflow_core::{ColorSpace, FrameDesc, HostFrame, Rational, VideoFrame};
+#[cfg(feature = "p010-output-diagnostic")]
+use asciiflow_core::{ColorSpace, FrameDesc, HostFrame, VideoFrame};
 use asciiflow_cpu::CpuAsciiBackend;
+#[cfg(feature = "p010-output-diagnostic")]
+use asciiflow_interop::VulkanVaapiOutputInteropProcessor;
 use asciiflow_interop::{
     DrmPrimeMapping, VaapiVulkanFullInteropProcessor, VaapiVulkanInteropProcessor, fourcc_name,
 };
+#[cfg(feature = "p010-output-diagnostic")]
+use asciiflow_media::VaapiDiagnosticP010Pool;
 use asciiflow_media::{DecodeMode, Decoder, EncodeMode, Encoder, OutputEncoding, VaapiOptions};
 #[cfg(feature = "av1-encode-diagnostic")]
 use asciiflow_media::{probe_vaapi_av1_encoder_diagnostic, probe_vaapi_encoder_for};
+#[cfg(feature = "p010-output-diagnostic")]
+use asciiflow_vulkan::DiagnosticOutputFault;
 use asciiflow_vulkan::VulkanAsciiBackend;
 use std::{
     collections::VecDeque,
@@ -181,6 +189,567 @@ fn ten_bit_vaapi_descriptors_and_hwdownload_reference() {
             // Vulkan copy fences, including the final compute/readback fence.
         }
         assert_eq!(vulkan.validation_error_count(), 0);
+    }
+}
+
+#[test]
+#[cfg(feature = "p010-output-diagnostic")]
+#[ignore = "requires Intel iHD P010 output-style pool; records actual writable DRM descriptor"]
+fn p010_output_surface_descriptor_diagnostic() {
+    let mut vulkan = VulkanAsciiBackend::new().unwrap();
+    for (width, height) in [(64, 64), (1920, 1080)] {
+        let pool = VaapiDiagnosticP010Pool::new(
+            std::path::Path::new("/dev/dri/renderD128"),
+            width,
+            height,
+        )
+        .unwrap();
+        let mapping = DrmPrimeMapping::map_direct_write(pool.acquire(0).unwrap()).unwrap();
+        println!(
+            "P010 output-style {width}x{height} DRM descriptor: {:#?}",
+            mapping.descriptor()
+        );
+        assert_eq!(mapping.descriptor().layers.len(), 2);
+        assert_eq!(fourcc_name(mapping.descriptor().layers[0].format), "R16.");
+        assert_eq!(fourcc_name(mapping.descriptor().layers[1].format), "GR32");
+        vulkan
+            .probe_external_p010(
+                &FrameDesc::host_p010_le(width, height, ColorSpace::default()).unwrap(),
+                mapping.duplicate_external_p010_planes().unwrap(),
+                asciiflow_vulkan::ExternalImageAccess::Write,
+            )
+            .unwrap();
+    }
+    assert_eq!(vulkan.validation_error_count(), 0);
+}
+
+#[test]
+#[cfg(feature = "p010-output-diagnostic")]
+#[ignore = "requires Intel iHD/ANV and writable P010 DMA-BUF"]
+fn p010_packed_output_is_bit_exact() {
+    let desc = FrameDesc::host_p010_le(64, 64, ColorSpace::default()).unwrap();
+    let pool =
+        VaapiDiagnosticP010Pool::new(std::path::Path::new("/dev/dri/renderD128"), 64, 64).unwrap();
+    let mut vulkan = VulkanAsciiBackend::new().unwrap();
+    for pattern in 0..4 {
+        let mut bytes = vec![0_u8; desc.byte_len()];
+        let mut random = 0x1234_5678_u32;
+        for (index, word) in bytes.chunks_exact_mut(2).enumerate() {
+            random ^= random << 13;
+            random ^= random >> 17;
+            random ^= random << 5;
+            let sample = match pattern {
+                0 => (index % 1024) as u16, // gradient
+                1 => {
+                    if (index / 8 + index / 64) % 2 == 0 {
+                        1023
+                    } else {
+                        1
+                    }
+                }
+                2 => (random % 1024) as u16,             // seeded random
+                _ => ((index * 997 + 37) % 1024) as u16, // low active bits
+            };
+            word.copy_from_slice(&(sample << 6).to_le_bytes());
+        }
+        let source = VideoFrame::new_host(
+            desc.clone(),
+            Some(pattern),
+            HostFrame::from_bytes(&desc, bytes).unwrap(),
+        )
+        .unwrap();
+        let mapping = DrmPrimeMapping::map_direct_write(pool.acquire(pattern).unwrap()).unwrap();
+        vulkan
+            .copy_packed_to_external(
+                &source,
+                &config(),
+                mapping.duplicate_external_p010_planes().unwrap(),
+            )
+            .unwrap();
+        let output = mapping.into_source().download_p010().unwrap();
+        assert_eq!(
+            output.host().as_slice(),
+            source.host().as_slice(),
+            "pattern {pattern}"
+        );
+        for word in output.host().as_slice().chunks_exact(2) {
+            assert_eq!(u16::from_le_bytes([word[0], word[1]]) & 0x003f, 0);
+        }
+    }
+    assert_eq!(vulkan.validation_error_count(), 0);
+}
+
+#[cfg(feature = "p010-output-diagnostic")]
+fn synthetic_p010(desc: &FrameDesc, pts: i64) -> VideoFrame {
+    let mut bytes = vec![0_u8; desc.byte_len()];
+    for (index, word) in bytes.chunks_exact_mut(2).enumerate() {
+        let value = (((index * 997 + pts as usize * 73 + 37) % 1024) as u16) << 6;
+        word.copy_from_slice(&value.to_le_bytes());
+    }
+    VideoFrame::new_host(
+        desc.clone(),
+        Some(pts),
+        HostFrame::from_bytes(desc, bytes).unwrap(),
+    )
+    .unwrap()
+}
+
+#[test]
+#[cfg(feature = "p010-output-diagnostic")]
+#[ignore = "requires Intel iHD/ANV; compares 30 P010 processed frames and two-slot drain"]
+fn p010_output_processing_matches_cpu() {
+    let desc = FrameDesc::host_p010_le(128, 64, ColorSpace::default()).unwrap();
+    let pool =
+        VaapiDiagnosticP010Pool::new(std::path::Path::new("/dev/dri/renderD128"), 128, 64).unwrap();
+    let mut cfg = config();
+    cfg.grid_width = 16;
+    let mut cpu = CpuAsciiBackend::new();
+    let mut interop = VulkanVaapiOutputInteropProcessor::new(
+        VulkanAsciiBackend::new().unwrap(),
+        pool.output_frames().unwrap(),
+        desc.clone(),
+        cfg.clone(),
+    )
+    .unwrap();
+    let mut expected = VecDeque::new();
+    let mut compared = 0;
+    for index in 0..30 {
+        let source = synthetic_p010(&desc, index);
+        expected.push_back(cpu.process(source.clone(), &cfg).unwrap().frame);
+        if let Some(output) = interop.submit(source).unwrap() {
+            assert_eq!(output.frame.pts(), compared);
+            let actual = output.frame.download_p010().unwrap();
+            assert_eq!(actual, expected.pop_front().unwrap(), "frame {compared}");
+            compared += 1;
+        }
+    }
+    while let Some(output) = interop.drain().unwrap() {
+        assert_eq!(output.frame.pts(), compared);
+        let actual = output.frame.download_p010().unwrap();
+        assert_eq!(
+            actual,
+            expected.pop_front().unwrap(),
+            "drain frame {compared}"
+        );
+        compared += 1;
+    }
+    assert_eq!(compared, 30);
+    assert_eq!(interop.validation_error_count(), 0);
+}
+
+#[test]
+#[cfg(feature = "p010-output-diagnostic")]
+#[ignore = "requires Intel iHD/ANV; end-to-end P010 decode to output interop"]
+fn p010_full_external_input_and_output_match_cpu() {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../tests/fixtures/codecs/hevc-main10-sdr-gradient.mp4");
+    let mut decoded = vaapi_decoder(&path);
+    let mut reference = Decoder::open(&path).unwrap();
+    let desc = decoded.info().frame_desc.clone();
+    assert_eq!(desc.format, PixelFormat::P010Le);
+    let pool = VaapiDiagnosticP010Pool::new(
+        std::path::Path::new("/dev/dri/renderD128"),
+        desc.width,
+        desc.height,
+    )
+    .unwrap();
+    let mut cfg = config();
+    cfg.grid_width = 8;
+    let mut cpu = CpuAsciiBackend::new();
+    let mut interop = VaapiVulkanFullInteropProcessor::new(
+        VulkanAsciiBackend::new().unwrap(),
+        pool.output_frames().unwrap(),
+        desc,
+        cfg.clone(),
+    )
+    .unwrap();
+    let mut expected = VecDeque::new();
+    let mut compared = 0;
+    for _ in 0..30 {
+        expected.push_back(
+            cpu.process(reference.next_frame().unwrap().unwrap(), &cfg)
+                .unwrap()
+                .frame,
+        );
+        let input = decoded.next_vaapi_frame().unwrap().unwrap();
+        if let Some(output) = interop.submit(input).unwrap() {
+            assert_eq!(output.frame.pts(), compared);
+            let actual = output.frame.download_p010().unwrap();
+            let reference = expected.pop_front().unwrap();
+            assert_eq!(actual.desc(), reference.desc());
+            assert_eq!(
+                actual.host().as_slice(),
+                reference.host().as_slice(),
+                "frame {compared}"
+            );
+            compared += 1;
+        }
+    }
+    while let Some(output) = interop.drain().unwrap() {
+        assert_eq!(output.frame.pts(), compared);
+        let actual = output.frame.download_p010().unwrap();
+        let reference = expected.pop_front().unwrap();
+        assert_eq!(actual.desc(), reference.desc());
+        assert_eq!(
+            actual.host().as_slice(),
+            reference.host().as_slice(),
+            "drain {compared}"
+        );
+        compared += 1;
+    }
+    assert_eq!(compared, 30);
+    assert_eq!(interop.validation_error_count(), 0);
+}
+
+#[test]
+#[cfg(feature = "p010-output-diagnostic")]
+#[ignore = "requires Intel iHD/ANV; 3000-frame P010 output lifetime and FD test"]
+fn p010_output_3000_frame_fd_stress() {
+    let before = fd_count();
+    let mut early = 0;
+    let mut maximum;
+    {
+        let desc = FrameDesc::host_p010_le(128, 64, ColorSpace::default()).unwrap();
+        let pool =
+            VaapiDiagnosticP010Pool::new(std::path::Path::new("/dev/dri/renderD128"), 128, 64)
+                .unwrap();
+        let mut cfg = config();
+        cfg.grid_width = 16;
+        let mut cpu = CpuAsciiBackend::new();
+        let mut interop = VulkanVaapiOutputInteropProcessor::new(
+            VulkanAsciiBackend::new().unwrap(),
+            pool.output_frames().unwrap(),
+            desc.clone(),
+            cfg.clone(),
+        )
+        .unwrap();
+        let active = fd_count();
+        maximum = active;
+        let mut expected = VecDeque::new();
+        let mut compared = 0;
+        for index in 0..3000 {
+            let source = synthetic_p010(&desc, index);
+            expected.push_back(cpu.process(source.clone(), &cfg).unwrap().frame);
+            if let Some(output) = interop.submit(source).unwrap() {
+                assert_eq!(output.frame.pts(), compared);
+                assert_eq!(
+                    output.frame.download_p010().unwrap(),
+                    expected.pop_front().unwrap()
+                );
+                compared += 1;
+            }
+            let count = fd_count();
+            if index == 29 {
+                early = count;
+            }
+            maximum = maximum.max(count);
+            assert!(
+                count <= active + 12,
+                "FD growth at {index}: {count} > {active} + 12"
+            );
+        }
+        while let Some(output) = interop.drain().unwrap() {
+            assert_eq!(output.frame.pts(), compared);
+            assert_eq!(
+                output.frame.download_p010().unwrap(),
+                expected.pop_front().unwrap()
+            );
+            compared += 1;
+        }
+        assert_eq!(compared, 3000);
+        assert_eq!(interop.validation_error_count(), 0);
+    }
+    let after = fd_count();
+    println!("P010 output FD before={before} early={early} max={maximum} after={after}");
+    assert_eq!(after, before, "P010 output FD baseline was not restored");
+}
+
+#[test]
+#[cfg(feature = "p010-output-diagnostic")]
+#[ignore = "requires Intel iHD/ANV and FreeType fixture"]
+fn p010_output_freetype_matches_cpu() {
+    let desc = FrameDesc::host_p010_le(128, 64, ColorSpace::default()).unwrap();
+    let pool =
+        VaapiDiagnosticP010Pool::new(std::path::Path::new("/dev/dri/renderD128"), 128, 64).unwrap();
+    let mut cfg = config();
+    cfg.grid_width = 16;
+    let font = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../tests/fixtures/fonts/Inconsolata-Regular.ttf");
+    let (atlas, _) = asciiflow_font::build_font_atlas(&font, 0, &cfg.charset, 16, 16).unwrap();
+    let mut cpu = CpuAsciiBackend::with_atlas(atlas.clone(), &cfg);
+    let mut interop = VulkanVaapiOutputInteropProcessor::new(
+        VulkanAsciiBackend::new()
+            .unwrap()
+            .with_atlas(atlas, &cfg)
+            .unwrap(),
+        pool.output_frames().unwrap(),
+        desc.clone(),
+        cfg.clone(),
+    )
+    .unwrap();
+    let mut expected = VecDeque::new();
+    let mut compared = 0;
+    for index in 0..5 {
+        let source = synthetic_p010(&desc, index);
+        expected.push_back(cpu.process(source.clone(), &cfg).unwrap().frame);
+        if let Some(output) = interop.submit(source).unwrap() {
+            assert_eq!(
+                output.frame.download_p010().unwrap(),
+                expected.pop_front().unwrap()
+            );
+            compared += 1;
+        }
+    }
+    while let Some(output) = interop.drain().unwrap() {
+        assert_eq!(
+            output.frame.download_p010().unwrap(),
+            expected.pop_front().unwrap()
+        );
+        compared += 1;
+    }
+    assert_eq!(compared, 5);
+    assert_eq!(interop.validation_error_count(), 0);
+}
+
+#[test]
+#[cfg(feature = "p010-output-diagnostic")]
+#[ignore = "requires Intel iHD/ANV; intentionally imports invalid DMA-BUF fd"]
+fn p010_output_import_failure_and_early_drop_recover_fds() {
+    let before = fd_count();
+    {
+        let desc = FrameDesc::host_p010_le(128, 64, ColorSpace::default()).unwrap();
+        let pool =
+            VaapiDiagnosticP010Pool::new(std::path::Path::new("/dev/dri/renderD128"), 128, 64)
+                .unwrap();
+        let mapping = DrmPrimeMapping::map_direct_write(pool.acquire(0).unwrap()).unwrap();
+        let mut planes = mapping.duplicate_external_p010_planes().unwrap();
+        planes[0].fd = std::fs::File::open("/dev/null").unwrap().into();
+        let mut vulkan = VulkanAsciiBackend::new().unwrap();
+        let stable = fd_count() - 2;
+        let error = vulkan
+            .copy_packed_to_external(&synthetic_p010(&desc, 0), &config(), planes)
+            .unwrap_err();
+        assert!(error.to_string().contains("DMA-BUF"));
+        assert_eq!(fd_count(), stable, "failed P010 import leaked FDs");
+        drop(mapping);
+        let mut cfg = config();
+        cfg.grid_width = 16;
+        let mut processor = VulkanVaapiOutputInteropProcessor::new(
+            VulkanAsciiBackend::new().unwrap(),
+            pool.output_frames().unwrap(),
+            desc.clone(),
+            cfg,
+        )
+        .unwrap();
+        processor.submit(synthetic_p010(&desc, 0)).unwrap();
+        processor.submit(synthetic_p010(&desc, 1)).unwrap();
+        // Drop while both slots may still be in flight; worker teardown joins them.
+    }
+    assert_eq!(
+        fd_count(),
+        before,
+        "P010 early-drop FD baseline was not restored"
+    );
+}
+
+#[test]
+#[cfg(feature = "p010-output-diagnostic")]
+#[ignore = "requires Intel iHD/ANV; diagnostic output lifecycle fault checkpoints"]
+fn p010_output_faults_preserve_cause_and_do_not_reuse_surfaces() {
+    for fault in [
+        DiagnosticOutputFault::ImageCreate,
+        DiagnosticOutputFault::MemoryImport,
+        DiagnosticOutputFault::QueueSubmit,
+        DiagnosticOutputFault::FenceWaitAfterCompletion,
+    ] {
+        let before = fd_count();
+        {
+            let desc = FrameDesc::host_p010_le(128, 64, ColorSpace::default()).unwrap();
+            let pool =
+                VaapiDiagnosticP010Pool::new(std::path::Path::new("/dev/dri/renderD128"), 128, 64)
+                    .unwrap();
+            let mut cfg = config();
+            cfg.grid_width = 16;
+            let backend = VulkanAsciiBackend::new()
+                .unwrap()
+                .with_diagnostic_output_fault(fault);
+            let mut processor = VulkanVaapiOutputInteropProcessor::new(
+                backend,
+                pool.output_frames().unwrap(),
+                desc.clone(),
+                cfg,
+            )
+            .unwrap();
+            processor.submit(synthetic_p010(&desc, 0)).unwrap();
+            processor.submit(synthetic_p010(&desc, 1)).unwrap();
+            let error = processor.drain().err().expect("injected fault must fail");
+            assert!(error.to_string().contains(&format!("{fault:?}")), "{error}");
+            assert!(
+                processor.submit(synthetic_p010(&desc, 2)).is_err(),
+                "failed processor reused a surface after {fault:?}"
+            );
+            assert_eq!(processor.validation_error_count(), 0, "{fault:?}");
+        }
+        assert_eq!(fd_count(), before, "{fault:?} leaked FDs");
+    }
+}
+
+#[test]
+#[cfg(feature = "p010-output-diagnostic")]
+#[ignore = "Intel Arc 1920x1080 P010 output-transfer benchmark; run in Release without validation"]
+fn p010_output_300_frame_benchmark() {
+    fn process_cpu() -> Duration {
+        let mut usage = std::mem::MaybeUninit::<libc::rusage>::uninit();
+        assert_eq!(
+            unsafe { libc::getrusage(libc::RUSAGE_SELF, usage.as_mut_ptr()) },
+            0
+        );
+        let usage = unsafe { usage.assume_init() };
+        let timeval = |value: libc::timeval| {
+            Duration::from_secs(value.tv_sec as u64) + Duration::from_micros(value.tv_usec as u64)
+        };
+        timeval(usage.ru_utime) + timeval(usage.ru_stime)
+    }
+    let desc = FrameDesc::host_p010_le(1920, 1080, ColorSpace::default()).unwrap();
+    let source = synthetic_p010(&desc, 0);
+    let cfg = config();
+    for run in 0..3 {
+        let pool =
+            VaapiDiagnosticP010Pool::new(std::path::Path::new("/dev/dri/renderD128"), 1920, 1080)
+                .unwrap();
+        let mut gpu = VulkanAsciiBackend::new().unwrap();
+        let mut staged_upload = Duration::ZERO;
+        let mut staged_readback = Duration::ZERO;
+        let staged_cpu_started = process_cpu();
+        let staged_wall = Instant::now();
+        for index in 0..300 {
+            let processed = gpu.process(source.clone(), &cfg).unwrap();
+            staged_readback += processed.timings.host_readback
+                + processed.timings.host_invalidate
+                + processed.timings.gpu_download;
+            let mut surface = pool.acquire(index).unwrap();
+            let started = Instant::now();
+            surface.upload_p010(&processed.frame).unwrap();
+            staged_upload += started.elapsed();
+        }
+        let staged_total = staged_wall.elapsed();
+        let staged_cpu = process_cpu() - staged_cpu_started;
+        assert_eq!(gpu.validation_error_count(), 0);
+
+        let mut output = VulkanVaapiOutputInteropProcessor::new(
+            VulkanAsciiBackend::new().unwrap(),
+            pool.output_frames().unwrap(),
+            desc.clone(),
+            cfg.clone(),
+        )
+        .unwrap();
+        let mut map = Duration::ZERO;
+        let mut import = Duration::ZERO;
+        let mut copy = Duration::ZERO;
+        let mut submit = Duration::ZERO;
+        let mut wait = Duration::ZERO;
+        let mut completed = 0;
+        let interop_cpu_started = process_cpu();
+        let interop_wall = Instant::now();
+        let mut record = |item: asciiflow_interop::HardwareBackendOutput| {
+            map += item.timings.output_drm_prime_map;
+            import += item.timings.output_external_image_create
+                + item.timings.output_external_memory_import
+                + item.timings.output_external_memory_bind;
+            copy += item.timings.gpu_external_output_copy;
+            submit += item.timings.output_queue_submit;
+            wait += item.timings.output_gpu_wait;
+            completed += 1;
+        };
+        for _ in 0..300 {
+            if let Some(item) = output.submit(source.clone()).unwrap() {
+                record(item);
+            }
+        }
+        while let Some(item) = output.drain().unwrap() {
+            record(item);
+        }
+        let interop_total = interop_wall.elapsed();
+        let interop_cpu = process_cpu() - interop_cpu_started;
+        assert_eq!(completed, 300);
+        assert_eq!(output.validation_error_count(), 0);
+        let ms = |duration: Duration| duration.as_secs_f64() * 1000.0 / 300.0;
+        println!(
+            "P010 run={} staged_total_ms={:.3} staged_cpu={:.0}% staged_readback_ms={:.3} hwupload_ms={:.3} interop_total_ms={:.3} interop_cpu={:.0}% map_ms={:.3} import_ms={:.3} gpu_copy_ms={:.3} submit_ms={:.3} wait_ms={:.3}",
+            run + 1,
+            ms(staged_total),
+            staged_cpu.as_secs_f64() / staged_total.as_secs_f64() * 100.0,
+            ms(staged_readback),
+            ms(staged_upload),
+            ms(interop_total),
+            interop_cpu.as_secs_f64() / interop_total.as_secs_f64() * 100.0,
+            ms(map),
+            ms(import),
+            ms(copy),
+            ms(submit),
+            ms(wait),
+        );
+
+        let nv12_desc = FrameDesc::host_nv12(1920, 1080, ColorSpace::default()).unwrap();
+        let nv12 = VideoFrame::new_host(
+            nv12_desc.clone(),
+            Some(0),
+            HostFrame::new_zeroed(&nv12_desc),
+        )
+        .unwrap();
+        let output_path = temporary_output("stage52c1-nv12-control");
+        let encoder = Encoder::create_with(
+            &output_path,
+            nv12_desc.clone(),
+            asciiflow_core::Rational::new(30, 1).unwrap(),
+            EncodeMode::Vaapi,
+            VaapiOptions::default(),
+        )
+        .unwrap();
+        let mut nv12_output = VulkanVaapiOutputInteropProcessor::new(
+            VulkanAsciiBackend::new().unwrap(),
+            encoder.encoder_frames().unwrap(),
+            nv12_desc,
+            cfg.clone(),
+        )
+        .unwrap();
+        let mut nv12_copy = Duration::ZERO;
+        let mut nv12_import = Duration::ZERO;
+        let mut nv12_count = 0;
+        let nv12_cpu_started = process_cpu();
+        let nv12_wall = Instant::now();
+        let mut record_nv12 = |item: asciiflow_interop::HardwareBackendOutput| {
+            nv12_copy += item.timings.gpu_external_output_copy;
+            nv12_import += item.timings.output_external_image_create
+                + item.timings.output_external_memory_import
+                + item.timings.output_external_memory_bind;
+            nv12_count += 1;
+        };
+        for _ in 0..300 {
+            if let Some(item) = nv12_output.submit(nv12.clone()).unwrap() {
+                record_nv12(item);
+            }
+        }
+        while let Some(item) = nv12_output.drain().unwrap() {
+            record_nv12(item);
+        }
+        let nv12_total = nv12_wall.elapsed();
+        let nv12_cpu = process_cpu() - nv12_cpu_started;
+        assert_eq!(nv12_count, 300);
+        assert_eq!(nv12_output.validation_error_count(), 0);
+        println!(
+            "NV12 control run={} interop_total_ms={:.3} cpu={:.0}% import_ms={:.3} gpu_copy_ms={:.3}",
+            run + 1,
+            ms(nv12_total),
+            nv12_cpu.as_secs_f64() / nv12_total.as_secs_f64() * 100.0,
+            ms(nv12_import),
+            ms(nv12_copy),
+        );
+        drop(nv12_output);
+        drop(encoder);
+        if output_path.exists() {
+            std::fs::remove_file(output_path).unwrap();
+        }
     }
 }
 

@@ -6,6 +6,9 @@ license.workspace = true
 rust-version.workspace = true
 build = "build.rs"
 
+[features]
+p010-output-diagnostic = []
+
 [dependencies]
 ash.workspace = true
 asciiflow-core = { path = "../asciiflow-core" }
@@ -19,4 +22,3 @@ shaderc.workspace = true
 
 [dev-dependencies]
 asciiflow-cpu = { path = "../asciiflow-cpu" }
-

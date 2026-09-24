@@ -120,6 +120,26 @@ decode, download, CPU import setup, GPU copy/map/render, backend wall and
 latency separately. [Stage 5.2B](stage5.2b-p010-decode-validation.md) records
 the Intel results and their 64×64 scope.
 
+Stage 5.2C-1 uses an opt-in, encoder-free VAAPI P010 frames pool to qualify
+the output transfer on `/dev/dri`. The actual descriptors, parity, FD counts,
+Validation results, NV12 control and three-run 1080p output benchmark are in
+[its qualification report](stage5.2c1-p010-output-interop.md):
+
+```bash
+ASCIIFLOW_VULKAN_VALIDATION=1 cargo test -p asciiflow-interop \
+  --features p010-output-diagnostic --test hardware \
+  p010_output_3000_frame_fd_stress -- --ignored --nocapture
+ASCIIFLOW_VULKAN_VALIDATION=1 cargo test -p asciiflow-interop \
+  --features p010-output-diagnostic --test hardware \
+  p010_output_faults_preserve_cause_and_do_not_reuse_surfaces -- --ignored --nocapture
+cargo test --release -p asciiflow-interop \
+  --features p010-output-diagnostic --test hardware \
+  p010_output_300_frame_benchmark -- --ignored --nocapture
+```
+
+The deliberately invalid-FD diagnostic should be run separately without
+Validation. These tests do not enable production 10-bit output.
+
 ```bash
 ASCIIFLOW_VULKAN_ALLOW_CPU=1 \
 ASCIIFLOW_VULKAN_VALIDATION=1 \

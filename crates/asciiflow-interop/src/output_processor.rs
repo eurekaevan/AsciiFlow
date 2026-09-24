@@ -77,7 +77,7 @@ impl WorkerSlot {
                                 })?;
                             let output_map_wall = output_mapping.map_wall();
                             let output_planes = output_mapping
-                                .duplicate_external_planes()
+                                .duplicate_external_planes_for(desc.format)
                                 .map_err(|error| {
                                     Error::pipeline(
                                         PipelineStage::OutputInteropRuntime,
@@ -97,7 +97,7 @@ impl WorkerSlot {
                                         })?;
                                     let input_map_wall = input_mapping.map_wall();
                                     let input_planes = input_mapping
-                                        .duplicate_external_planes()
+                                        .duplicate_external_planes_for(desc.format)
                                         .map_err(|error| {
                                             Error::pipeline(
                                                 PipelineStage::InputInteropRuntime,
@@ -105,7 +105,7 @@ impl WorkerSlot {
                                                 error,
                                             )
                                         })?;
-                                    let mut timings = backend.process_external_nv12_to_external(
+                                    let mut timings = backend.process_external_to_external(
                                         &desc,
                                         &config,
                                         input_planes,
@@ -115,7 +115,7 @@ impl WorkerSlot {
                                     drop(input_mapping);
                                     timings
                                 }
-                                SlotInput::Host(input) => backend.process_nv12_to_external(
+                                SlotInput::Host(input) => backend.process_host_to_external(
                                     input,
                                     &config,
                                     output_planes,

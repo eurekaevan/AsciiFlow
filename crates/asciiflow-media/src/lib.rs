@@ -1,5 +1,7 @@
 pub mod ffmpeg;
 
+#[cfg(feature = "p010-output-diagnostic")]
+pub use ffmpeg::VaapiDiagnosticP010Pool;
 #[cfg(feature = "av1-encode-diagnostic")]
 pub use ffmpeg::probe_vaapi_av1_encoder_diagnostic;
 pub use ffmpeg::{

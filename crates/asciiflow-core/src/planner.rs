@@ -80,6 +80,23 @@ pub struct InteropCapabilities {
     pub av1_output: CapabilitySupport,
 }
 
+/// Format-level output qualification is independent of codec-specific encoder
+/// availability. The production planner deliberately does not consume it yet.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct FormatOutputInteropCapabilities {
+    pub nv12: CapabilitySupport,
+    pub p010: CapabilitySupport,
+}
+
+impl FormatOutputInteropCapabilities {
+    pub fn for_format(&self, format: PixelFormat) -> &CapabilitySupport {
+        match format {
+            PixelFormat::Nv12 => &self.nv12,
+            PixelFormat::P010Le => &self.p010,
+        }
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CapabilitySnapshot {
     pub media: MediaCapabilities,
@@ -1017,6 +1034,28 @@ fn require(reasons: &mut Vec<String>, name: &str, support: &CapabilitySupport) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn output_interop_support_is_independent_by_pixel_format() {
+        let facts = FormatOutputInteropCapabilities {
+            nv12: CapabilitySupport::Supported,
+            p010: CapabilitySupport::not_probed("writable P010 descriptor not inspected"),
+        };
+        assert!(facts.for_format(PixelFormat::Nv12).is_supported());
+        assert!(matches!(
+            facts.for_format(PixelFormat::P010Le),
+            CapabilitySupport::NotProbed(_)
+        ));
+        let unavailable = FormatOutputInteropCapabilities {
+            p010: CapabilitySupport::unsupported("R16 transfer-dst unsupported"),
+            ..facts
+        };
+        assert!(unavailable.for_format(PixelFormat::Nv12).is_supported());
+        assert!(matches!(
+            unavailable.for_format(PixelFormat::P010Le),
+            CapabilitySupport::Unsupported(_)
+        ));
+    }
     fn yes() -> CapabilitySupport {
         CapabilitySupport::Supported
     }
