@@ -186,3 +186,34 @@ FD before/steady/after and decode-back counts. Regular planner/CLI tests cover
 explicit depth policy, exact Main10 failure facts, staged auto replan, and
 strict interop requests. The report records bitstream, AAC, FreeType,
 cancellation, 1080p benchmark, Validation and `spirv-val` evidence.
+
+## AV1 Main 10-bit production encode (Stage 5.2C-3)
+
+Use an explicitly tagged BT.709 SDR, left-chroma, 128×96-or-larger P010 input
+on the qualified Intel node. The 30-frame AV1 input used below was generated
+by the production AV1 10-bit encoder from a true-low-bit HEVC Main10 source;
+the 3000-frame variant is a stream-copy loop. This avoids treating an
+unspecified-chroma intermediate as a qualified input. See the
+[qualification report](stage5.2c3-av1-10bit-encode.md).
+
+```bash
+ASCIIFLOW_STAGE52C3_AV1_INPUT=/absolute/path/to/av1-main-10bit-30.mp4 \
+ASCIIFLOW_VULKAN_VALIDATION=1 cargo test -p asciiflow-interop --test hardware \
+  av1_10bit_encoder_owned_full_interop_30_frame_parity -- --ignored --nocapture
+
+ASCIIFLOW_STAGE52C3_AV1_STRESS_INPUT=/absolute/path/to/av1-main-10bit-3000.mp4 \
+cargo test -p asciiflow-interop --test hardware \
+  av1_10bit_encoder_owned_full_interop_3000_frame_stress -- --ignored --nocapture
+ASCIIFLOW_STAGE52C3_AV1_STRESS_INPUT=/absolute/path/to/av1-main-10bit-3000.mp4 \
+cargo test -p asciiflow-interop --test hardware \
+  av1_10bit_staged_encode_3000_frame_fd_stress -- --ignored --nocapture
+cargo test -p asciiflow-media \
+  injected_av1_10bit_send_receive_and_drain_failures_preserve_cause -- --ignored
+```
+
+The real encoder-owned AV1 P010 surface is compared byte-for-byte before
+encode against staged Vulkan output, including active low bits. Real AV1
+decoded pixels are not expected to be byte-exact after lossy encoding.
+The independent generic P010 output test can be rerun with
+`cargo test -p asciiflow-interop --features p010-output-diagnostic --test
+hardware p010_packed_output_is_bit_exact -- --ignored`.

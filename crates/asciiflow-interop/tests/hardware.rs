@@ -1352,6 +1352,67 @@ fn main10_encoder_surface_cannot_enter_main8_context() {
 }
 
 #[test]
+#[ignore = "requires Intel AV1 10-bit, AV1 Main8, HEVC Main/Main10 and H.264 VAAPI encoders"]
+fn av1_10bit_surface_rejects_every_foreign_encoder_context() {
+    let color = asciiflow_core::ColorSpace::default();
+    let p010 = asciiflow_core::FrameDesc::host_p010_le(128, 128, color).unwrap();
+    let nv12 = asciiflow_core::FrameDesc::host_nv12(128, 128, color).unwrap();
+    let fps = asciiflow_core::Rational::new(30, 1).unwrap();
+    let av1_path = temporary_output("av1-10-ownership");
+    let mut av1 = Encoder::create_with_hardware_frames_codec_and_audio(
+        &av1_path,
+        p010.clone(),
+        fps,
+        VideoCodec::Av1,
+        VaapiOptions::default(),
+        Vec::new(),
+        Default::default(),
+    )
+    .unwrap();
+    for (codec, desc) in [
+        (VideoCodec::Av1, nv12.clone()),
+        (VideoCodec::Hevc, p010.clone()),
+        (VideoCodec::Hevc, nv12.clone()),
+        (VideoCodec::H264, nv12.clone()),
+    ] {
+        let path = temporary_output("foreign-ownership");
+        let same_format = desc.format == PixelFormat::P010Le;
+        let mut foreign = Encoder::create_with_hardware_frames_codec_and_audio(
+            &path,
+            desc,
+            fps,
+            codec,
+            VaapiOptions::default(),
+            Vec::new(),
+            Default::default(),
+        )
+        .unwrap();
+        let av1_frame = av1.encoder_frames().unwrap().acquire(0).unwrap();
+        let error = foreign.encode_hardware_frame(av1_frame).unwrap_err();
+        if same_format {
+            assert!(
+                error.to_string().contains("different AVHWFramesContext"),
+                "{error}"
+            );
+        }
+        let foreign_frame = foreign.encoder_frames().unwrap().acquire(0).unwrap();
+        let error = av1.encode_hardware_frame(foreign_frame).unwrap_err();
+        if same_format {
+            assert!(
+                error.to_string().contains("different AVHWFramesContext"),
+                "{error}"
+            );
+        }
+        foreign.finish().unwrap();
+        drop(foreign);
+        std::fs::remove_file(path).unwrap();
+    }
+    av1.finish().unwrap();
+    drop(av1);
+    std::fs::remove_file(av1_path).unwrap();
+}
+
+#[test]
 #[ignore = "requires Intel iHD H.264, HEVC, and AV1 encode"]
 fn av1_encoder_frames_are_not_cross_submittable() {
     let path = input(
@@ -1482,10 +1543,51 @@ fn main10_encoder_owned_full_interop_3000_frame_stress() {
 #[test]
 #[ignore = "requires a 3000-frame 128x128+ Main10 SDR input and Intel Main10 encode"]
 fn main10_staged_encode_3000_frame_fd_stress() {
-    let path = input(
+    staged_p010_encode_3000_frame_fd_stress(
         "ASCIIFLOW_STAGE52C2_HEVC_STRESS_INPUT",
         "/tmp/asciiflow-main10-3000.mp4",
+        VideoCodec::Hevc,
     );
+}
+
+#[test]
+#[ignore = "requires 128x128+ AV1 10-bit SDR input and Intel AV1 10-bit encode"]
+fn av1_10bit_encoder_owned_full_interop_30_frame_parity() {
+    compare_output_interop_format(
+        30,
+        "ASCIIFLOW_STAGE52C3_AV1_INPUT",
+        "/tmp/asciiflow-av1-10-128.mp4",
+        true,
+        VideoCodec::Av1,
+        PixelFormat::P010Le,
+    );
+}
+
+#[test]
+#[ignore = "requires a 3000-frame 128x128+ AV1 10-bit SDR input and Intel AV1 10-bit encode"]
+fn av1_10bit_encoder_owned_full_interop_3000_frame_stress() {
+    compare_output_interop_format(
+        3000,
+        "ASCIIFLOW_STAGE52C3_AV1_STRESS_INPUT",
+        "/tmp/asciiflow-av1-10-3000.mp4",
+        true,
+        VideoCodec::Av1,
+        PixelFormat::P010Le,
+    );
+}
+
+#[test]
+#[ignore = "requires a 3000-frame 128x128+ AV1 10-bit SDR input and Intel AV1 10-bit encode"]
+fn av1_10bit_staged_encode_3000_frame_fd_stress() {
+    staged_p010_encode_3000_frame_fd_stress(
+        "ASCIIFLOW_STAGE52C3_AV1_STRESS_INPUT",
+        "/tmp/asciiflow-av1-10-3000.mp4",
+        VideoCodec::Av1,
+    );
+}
+
+fn staged_p010_encode_3000_frame_fd_stress(env_name: &str, fallback: &str, codec: VideoCodec) {
+    let path = input(env_name, fallback);
     let output_path = temporary_output("main10-staged-stress");
     let before = fd_count();
     {
@@ -1504,7 +1606,7 @@ fn main10_staged_encode_3000_frame_fd_stress() {
             desc,
             frame_rate,
             OutputEncoding {
-                codec: VideoCodec::Hevc,
+                codec: codec.clone(),
                 mode: EncodeMode::Vaapi,
             },
             VaapiOptions::default(),
@@ -1548,10 +1650,8 @@ fn main10_staged_encode_3000_frame_fd_stress() {
     println!("staged fd_count after={after}");
     assert_eq!(after, before);
     let mut decoded = Decoder::open(&output_path).unwrap();
-    assert_eq!(
-        decoded.info().requirements.profile,
-        Some(asciiflow_core::VideoProfile::HevcMain10)
-    );
+    assert_eq!(decoded.info().requirements.bit_depth, Some(10));
+    assert_eq!(decoded.info().requirements.codec, codec);
     let mut count = 0;
     while decoded.next_frame().unwrap().is_some() {
         count += 1;
@@ -1845,7 +1945,11 @@ fn compare_output_interop_format(
         assert_eq!(decoded.info().requirements.bit_depth, Some(10));
         assert_eq!(
             decoded.info().requirements.profile,
-            Some(asciiflow_core::VideoProfile::HevcMain10)
+            Some(match expected_output_codec {
+                VideoCodec::Hevc => asciiflow_core::VideoProfile::HevcMain10,
+                VideoCodec::Av1 => asciiflow_core::VideoProfile::Av1Main,
+                _ => unreachable!("P010 output is HEVC Main10 or AV1 Main"),
+            })
         );
     }
     let mut decoded_count = 0;

@@ -219,7 +219,21 @@ mod tests {
         ])
         .unwrap();
         assert_eq!(av1.output_codec, OutputCodecArg::Av1);
+        assert_eq!(av1.output_bit_depth, OutputBitDepthArg::Eight);
         assert_eq!(av1.encode, MediaArg::Vaapi);
+
+        let av1_ten = Args::try_parse_from([
+            "asciiflow",
+            "input.mp4",
+            "output.mp4",
+            "--output-codec",
+            "av1",
+            "--output-bit-depth",
+            "10",
+        ])
+        .unwrap();
+        assert_eq!(av1_ten.output_codec, OutputCodecArg::Av1);
+        assert_eq!(av1_ten.output_bit_depth, OutputBitDepthArg::Ten);
 
         let main10 = Args::try_parse_from([
             "asciiflow",

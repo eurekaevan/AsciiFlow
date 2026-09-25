@@ -54,6 +54,8 @@ pub(crate) fn inject_probe_failure(snapshot: &mut CapabilitySnapshot, point: Pro
                 CapabilitySupport::not_probed("VAAPI device probe failed");
             snapshot.media.av1_vaapi_encode =
                 CapabilitySupport::not_probed("VAAPI device probe failed");
+            snapshot.media.av1_10bit_vaapi_encode =
+                CapabilitySupport::not_probed("VAAPI device probe failed");
             snapshot.media.nv12_hardware_frames =
                 CapabilitySupport::not_probed("VAAPI device probe failed");
             snapshot.media.nv12_hardware_upload =
@@ -75,6 +77,8 @@ pub(crate) fn inject_probe_failure(snapshot: &mut CapabilitySnapshot, point: Pro
                 CapabilitySupport::not_probed("VAAPI device probe failed");
             snapshot.interop.p010_output =
                 CapabilitySupport::not_probed("VAAPI device probe failed");
+            snapshot.interop.av1_p010_output =
+                CapabilitySupport::not_probed("VAAPI device probe failed");
         }
         ProbeFaultPoint::VulkanLoader => {
             let reason = "injected Vulkan loader failure";
@@ -94,6 +98,7 @@ pub(crate) fn inject_probe_failure(snapshot: &mut CapabilitySnapshot, point: Pro
             snapshot.interop.av1_output = CapabilitySupport::not_probed(reason);
             snapshot.interop.p010_input = CapabilitySupport::not_probed(reason);
             snapshot.interop.p010_output = CapabilitySupport::not_probed(reason);
+            snapshot.interop.av1_p010_output = CapabilitySupport::not_probed(reason);
         }
         ProbeFaultPoint::InputInteropQualification => {
             snapshot.interop.input = failed("qualify input DMA-BUF import");
@@ -103,6 +108,7 @@ pub(crate) fn inject_probe_failure(snapshot: &mut CapabilitySnapshot, point: Pro
             snapshot.interop.hevc_output = failed("qualify output DMA-BUF import");
             snapshot.interop.av1_output = failed("qualify output DMA-BUF import");
             snapshot.interop.p010_output = failed("qualify P010 output DMA-BUF import");
+            snapshot.interop.av1_p010_output = failed("qualify P010 output DMA-BUF import");
         }
     }
 }
@@ -272,6 +278,7 @@ pub fn probe(
 
     let encode_profiles = vaapi.probe_encode_profiles();
     let main10_profile = vaapi.probe_hevc_main10_encode();
+    let av1_10bit_profile = vaapi.probe_av1_10bit_encode();
     let mut output_interop = [
         CapabilitySupport::not_probed("H.264 VAAPI encode is unavailable"),
         CapabilitySupport::not_probed("HEVC VAAPI encode is unavailable"),
@@ -350,55 +357,72 @@ pub fn probe(
         };
     }
 
-    let mut main10_encode =
-        CapabilitySupport::not_probed("HEVC Main10 output requires a P010 input sample");
-    let mut p010_frames = CapabilitySupport::not_probed("HEVC Main10 encoder not probed");
-    let mut p010_upload = CapabilitySupport::not_probed("HEVC Main10 encoder not probed");
-    let mut p010_output = CapabilitySupport::not_probed("HEVC Main10 output interop not probed");
+    let mut ten_bit_encode = [
+        CapabilitySupport::not_probed("HEVC Main10 output requires a P010 input sample"),
+        CapabilitySupport::not_probed("AV1 10-bit output requires a P010 input sample"),
+    ];
+    let mut p010_frames = CapabilitySupport::not_probed("10-bit encoder not probed");
+    let mut p010_upload = CapabilitySupport::not_probed("10-bit encoder not probed");
+    let mut p010_output = [
+        CapabilitySupport::not_probed("HEVC Main10 output interop not probed"),
+        CapabilitySupport::not_probed("AV1 10-bit output interop not probed"),
+    ];
     if media_info.frame_desc.format == PixelFormat::P010Le {
-        main10_encode = if !build.hevc_encoder {
-            CapabilitySupport::unsupported("FFmpeg exposes no hevc_vaapi encoder")
-        } else if let Some(reason) = main10_profile.unavailable_reason() {
-            CapabilitySupport::unsupported(reason)
-        } else {
-            match probe_vaapi_encoder_for(
-                VideoCodec::Hevc,
-                media_info.frame_desc.clone(),
-                media_info.frame_rate,
-                vaapi.clone(),
-            ) {
-                Ok(probe) => {
-                    p010_frames = CapabilitySupport::supported();
-                    p010_upload = probe.host_upload;
-                    p010_output = match probe
-                        .frames
-                        .acquire(0)
-                        .and_then(DrmPrimeMapping::map_direct_write)
-                    {
-                        Ok(mapping) => match backend.as_mut() {
-                            Some(vulkan) => match mapping
-                                .duplicate_external_planes_for(PixelFormat::P010Le)
-                                .and_then(|planes| {
-                                    vulkan
-                                        .process_host_to_external(
-                                            software_frame.clone(),
-                                            config,
-                                            planes,
-                                        )
-                                        .map(|_| ())
-                                }) {
-                                Ok(()) => CapabilitySupport::supported(),
-                                Err(error) => CapabilitySupport::unsupported(error.to_string()),
+        for (index, codec, build_available, profile) in [
+            (0, VideoCodec::Hevc, build.hevc_encoder, main10_profile),
+            (1, VideoCodec::Av1, build.av1_encoder, av1_10bit_profile),
+        ] {
+            ten_bit_encode[index] = if !build_available {
+                CapabilitySupport::unsupported(format!(
+                    "FFmpeg exposes no {}_vaapi encoder",
+                    match codec {
+                        VideoCodec::Hevc => "hevc",
+                        VideoCodec::Av1 => "av1",
+                        _ => unreachable!("qualified 10-bit output codecs"),
+                    }
+                ))
+            } else if let Some(reason) = profile.unavailable_reason() {
+                CapabilitySupport::unsupported(reason)
+            } else {
+                match probe_vaapi_encoder_for(
+                    codec,
+                    media_info.frame_desc.clone(),
+                    media_info.frame_rate,
+                    vaapi.clone(),
+                ) {
+                    Ok(probe) => {
+                        p010_frames = CapabilitySupport::supported();
+                        p010_upload = probe.host_upload;
+                        p010_output[index] = match probe
+                            .frames
+                            .acquire(0)
+                            .and_then(DrmPrimeMapping::map_direct_write)
+                        {
+                            Ok(mapping) => match backend.as_mut() {
+                                Some(vulkan) => match mapping
+                                    .duplicate_external_planes_for(PixelFormat::P010Le)
+                                    .and_then(|planes| {
+                                        vulkan
+                                            .process_host_to_external(
+                                                software_frame.clone(),
+                                                config,
+                                                planes,
+                                            )
+                                            .map(|_| ())
+                                    }) {
+                                    Ok(()) => CapabilitySupport::supported(),
+                                    Err(error) => CapabilitySupport::unsupported(error.to_string()),
+                                },
+                                None => CapabilitySupport::not_probed("Vulkan is unavailable"),
                             },
-                            None => CapabilitySupport::not_probed("Vulkan is unavailable"),
-                        },
-                        Err(error) => CapabilitySupport::unsupported(error.to_string()),
-                    };
-                    CapabilitySupport::supported()
+                            Err(error) => CapabilitySupport::unsupported(error.to_string()),
+                        };
+                        CapabilitySupport::supported()
+                    }
+                    Err(error) => CapabilitySupport::unsupported(error.to_string()),
                 }
-                Err(error) => CapabilitySupport::unsupported(error.to_string()),
-            }
-        };
+            };
+        }
     }
 
     Ok(CapabilityProbe {
@@ -414,8 +438,9 @@ pub fn probe(
                 hevc_vaapi_encode: encode_facts[1].clone(),
                 hevc_main10_vaapi_decode: hevc_main10_decode,
                 av1_10bit_vaapi_decode: av1_10bit_decode,
-                hevc_main10_vaapi_encode: main10_encode,
+                hevc_main10_vaapi_encode: ten_bit_encode[0].clone(),
                 av1_vaapi_encode: encode_facts[2].clone(),
+                av1_10bit_vaapi_encode: ten_bit_encode[1].clone(),
                 nv12_hardware_frames: nv12_frames,
                 nv12_hardware_upload: nv12_upload,
                 p010_hardware_frames: p010_frames,
@@ -451,7 +476,8 @@ pub fn probe(
                 } else {
                     CapabilitySupport::not_probed("no P010 stream qualified")
                 },
-                p010_output,
+                p010_output: p010_output[0].clone(),
+                av1_p010_output: p010_output[1].clone(),
             },
         },
         media_info,
@@ -546,6 +572,10 @@ pub fn print(
         "AV1 Profile0 8-bit 4:2:0 VAAPI",
         &snapshot.media.av1_vaapi_encode,
     );
+    print_fact(
+        "AV1 Profile0 10-bit 4:2:0 VAAPI",
+        &snapshot.media.av1_10bit_vaapi_encode,
+    );
     print_fact("VAAPI NV12 frames", &snapshot.media.nv12_hardware_frames);
     print_fact(
         "Host to VAAPI NV12 upload",
@@ -629,6 +659,10 @@ pub fn print(
     print_fact("Vulkan -> VAAPI HEVC output", &snapshot.interop.hevc_output);
     print_fact("Vulkan -> VAAPI AV1 output", &snapshot.interop.av1_output);
     print_fact("Vulkan -> VAAPI P010 output", &snapshot.interop.p010_output);
+    print_fact(
+        "Vulkan -> VAAPI AV1 P010 output",
+        &snapshot.interop.av1_p010_output,
+    );
     println!("Probe CPU wall: {:.3} ms", duration.as_secs_f64() * 1e3);
 }
 
@@ -712,6 +746,7 @@ mod tests {
                 av1_10bit_vaapi_decode: supported(),
                 hevc_main10_vaapi_encode: supported(),
                 av1_vaapi_encode: supported(),
+                av1_10bit_vaapi_encode: supported(),
                 nv12_hardware_frames: supported(),
                 nv12_hardware_upload: supported(),
                 p010_hardware_frames: supported(),
@@ -737,6 +772,7 @@ mod tests {
                 av1_output: supported(),
                 p010_input: supported(),
                 p010_output: supported(),
+                av1_p010_output: supported(),
             },
         }
     }

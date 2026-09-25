@@ -1,6 +1,6 @@
 # AsciiFlow v2 architecture
 
-This document describes the Rust architecture through the Stage 5.2C-2 P010
+This document describes the Rust architecture through the Stage 5.2C-3 P010
 processing foundation: a permanent CPU reference backend, a Vulkan 1.3 compute
 backend, optional Linux VAAPI media, and qualified Intel DMA-BUF bridges in both
 pixel directions. Stage 3A
@@ -17,6 +17,8 @@ output, respectively. Device-specific evidence is kept in the stage reports.
 Stage 5.2A adds Host P010LE and CPU/Vulkan processing; 5.2B qualifies 10-bit
 decode and input interop, 5.2C-1 qualifies P010 output interop, and 5.2C-2
 qualifies explicit HEVC Main10 VAAPI/MP4 output on the tested Intel device.
+Stage 5.2C-3 qualifies AV1 Profile0/Main 10-bit output through the same P010
+processing and interop architecture, with an independently probed encode fact.
 The default output remains 8-bit H.264.
 
 ## Workspace and dependency direction
@@ -63,7 +65,7 @@ OutputVideoRequirements (codec/profile/bit depth/pixel format/color/geometry/rat
   -> codec-specific encoder configuration (H.264 software/VAAPI, HEVC or AV1 VAAPI)
   -> generic VAAPI hardware-frame lifecycle when selected
   -> generic encoder-owned Vulkan/VAAPI output interop when selected
-  -> H.264 / HEVC Main / HEVC Main10 / AV1 Profile0 encoder
+  -> H.264 / HEVC Main / HEVC Main10 / AV1 Profile0 Main 8/10-bit encoder
   -> MP4 mux
 ```
 
@@ -74,7 +76,8 @@ in media. The interop crate receives an encoder-owned NV12 or P010 frames contex
 it contains no H.264/HEVC/AV1 branch. See the
 [Stage 5.1A validation](stage5.1a-hevc-encode-validation.md) and
 [Stage 5.1B validation](stage5.1b-av1-encode-validation.md) and
-[Stage 5.2C-2 Main10 validation](stage5.2c2-hevc-main10-encode.md).
+[Stage 5.2C-2 HEVC Main10 validation](stage5.2c2-hevc-main10-encode.md) and
+[Stage 5.2C-3 AV1 10-bit validation](stage5.2c3-av1-10bit-encode.md).
 
 Stage 4.3 adds initialization-only `Font specification -> FreeType -> GlyphAtlas`.
 The CLI builds one owned atlas before staging/mux initialization and passes
@@ -245,7 +248,7 @@ VAAPI or software decode
   -> explicit plan transfer/interop nodes
   -> CPU or Vulkan ASCII
   -> explicit plan transfer/interop nodes
-  -> software H.264, VAAPI H.264/HEVC Main/HEVC Main10/AV1 Profile0 encode
+  -> software H.264, VAAPI H.264/HEVC Main/HEVC Main10/AV1 Main 8/10-bit encode
 ```
 
 Two capacity-three crossbeam channels provide bounded backpressure and ordered
@@ -432,11 +435,12 @@ that distinction explicit.
 - Software decode and VAAPI decode are selected from input requirements and
   capability snapshot. Qualified 8-bit input remains H.264, HEVC Main or AV1
   Main/NV12. HEVC Main10 and AV1 Main 10-bit BT.709 SDR input use P010LE and
-  require explicit HEVC Main10 output; there is no implicit 10→8 conversion.
+  require explicit HEVC Main10 or AV1 Main 10-bit output; there is no implicit
+  10→8 conversion.
 - MP4 output defaults to H.264 (`libx264` for software or `h264_vaapi` for
   VAAPI). HEVC Main, HEVC Main10 and AV1 Profile0 output use `hevc_vaapi` or
-  `av1_vaapi`; Main10 requires `--output-codec hevc --output-bit-depth 10`
-  and VAAPI. Software output for those codecs is unsupported. Explicit
+  `av1_vaapi`; 10-bit requires `--output-codec hevc|av1 --output-bit-depth 10`
+  and qualified VAAPI hardware. Software output for those codecs is unsupported. Explicit
   hardware requests never fall back.
 - `auto` prefers full interop, then qualified staged hardware encode, then
   software media/Vulkan, and finally CPU processing. It does not choose VAAPI
@@ -451,7 +455,7 @@ that distinction explicit.
   with each explicit input/output stream mapping and performs every
   `av_interleaved_write_frame` call. Audio is never decoded or transcoded.
 - Host NV12 remains the default Core/reference contract. Host P010LE has
-  CPU/Vulkan processing parity and explicit production HEVC Main10 output;
+  CPU/Vulkan processing parity and explicit production HEVC Main10/AV1 10-bit output;
   qualified full input/output interop remains codec-neutral and does not make
   native handles part of Core.
 - Built-in 8x8 remains the default; explicit scalable monospaced FreeType fonts

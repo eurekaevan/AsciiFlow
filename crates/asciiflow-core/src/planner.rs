@@ -46,6 +46,7 @@ pub struct MediaCapabilities {
     pub av1_10bit_vaapi_decode: CapabilitySupport,
     pub hevc_main10_vaapi_encode: CapabilitySupport,
     pub av1_vaapi_encode: CapabilitySupport,
+    pub av1_10bit_vaapi_encode: CapabilitySupport,
     pub nv12_hardware_frames: CapabilitySupport,
     pub nv12_hardware_upload: CapabilitySupport,
     pub p010_hardware_frames: CapabilitySupport,
@@ -84,7 +85,10 @@ pub struct InteropCapabilities {
     pub hevc_output: CapabilitySupport,
     pub av1_output: CapabilitySupport,
     pub p010_input: CapabilitySupport,
+    /// HEVC Main10 encoder-owned P010 output qualification (legacy field name).
     pub p010_output: CapabilitySupport,
+    /// AV1 Main 10-bit encoder-owned P010 output qualification.
+    pub av1_p010_output: CapabilitySupport,
 }
 
 /// Format-level output qualification is independent of codec-specific encoder
@@ -161,18 +165,22 @@ impl MediaCapabilities {
     }
 
     pub fn encode_for_output(&self, output: &OutputVideoRequirements) -> &CapabilitySupport {
-        if output.profile == Some(VideoProfile::HevcMain10) {
-            &self.hevc_main10_vaapi_encode
-        } else {
-            self.encode_for(&output.codec)
+        match (&output.codec, output.bit_depth) {
+            (VideoCodec::Hevc, 10) => &self.hevc_main10_vaapi_encode,
+            (VideoCodec::Av1, 10) => &self.av1_10bit_vaapi_encode,
+            _ => self.encode_for(&output.codec),
         }
     }
 
     pub fn disable_encode_output(&mut self, output: &OutputVideoRequirements, reason: &str) {
-        if output.profile == Some(VideoProfile::HevcMain10) {
-            self.hevc_main10_vaapi_encode = CapabilitySupport::unsupported(reason);
-        } else {
-            self.disable_encode(&output.codec, reason);
+        match (&output.codec, output.bit_depth) {
+            (VideoCodec::Hevc, 10) => {
+                self.hevc_main10_vaapi_encode = CapabilitySupport::unsupported(reason)
+            }
+            (VideoCodec::Av1, 10) => {
+                self.av1_10bit_vaapi_encode = CapabilitySupport::unsupported(reason)
+            }
+            _ => self.disable_encode(&output.codec, reason),
         }
     }
 
@@ -208,7 +216,11 @@ impl InteropCapabilities {
 
     pub fn output_for_requirements(&self, output: &OutputVideoRequirements) -> &CapabilitySupport {
         if output.pixel_format == PixelFormat::P010Le {
-            &self.p010_output
+            if output.codec == VideoCodec::Av1 {
+                &self.av1_p010_output
+            } else {
+                &self.p010_output
+            }
         } else {
             self.output_for(&output.codec)
         }
@@ -220,7 +232,11 @@ impl InteropCapabilities {
         fact: CapabilitySupport,
     ) {
         if output.pixel_format == PixelFormat::P010Le {
-            self.p010_output = fact;
+            if output.codec == VideoCodec::Av1 {
+                self.av1_p010_output = fact;
+            } else {
+                self.p010_output = fact;
+            }
         } else {
             self.set_output(&output.codec, fact);
         }
@@ -346,20 +362,25 @@ impl OutputVideoRequirements {
         if bit_depth == 8 {
             return Self::current_nv12(codec, input);
         }
-        if codec != VideoCodec::Hevc || bit_depth != 10 {
+        if !matches!(codec, VideoCodec::Hevc | VideoCodec::Av1) || bit_depth != 10 {
             return Err(Error::InvalidConfig(format!(
-                "{} {}-bit output is not implemented; Main10 is HEVC-only",
+                "{} {}-bit output is not implemented",
                 codec, bit_depth
             )));
         }
         if input.color_space.chroma_location != ChromaLocation::Left {
             return Err(Error::UnsupportedFrame(
-                "HEVC Main10 output currently requires left-sited 4:2:0 chroma".into(),
+                "10-bit output currently requires left-sited 4:2:0 chroma".into(),
             ));
         }
+        let profile = match codec {
+            VideoCodec::Hevc => VideoProfile::HevcMain10,
+            VideoCodec::Av1 => VideoProfile::Av1Main,
+            _ => unreachable!("validated 10-bit output codec"),
+        };
         Ok(Self {
             codec,
-            profile: Some(VideoProfile::HevcMain10),
+            profile: Some(profile),
             bit_depth: 10,
             pixel_format: PixelFormat::P010Le,
             color_space: ColorSpace {
@@ -765,13 +786,12 @@ fn validate_policy(policy: &PipelinePolicy) -> Result<()> {
             "--output-bit-depth must be 8 or 10".into(),
         ));
     }
-    if policy.output_bit_depth == 10 && policy.output_codec != VideoCodec::Hevc {
+    if policy.output_bit_depth == 10
+        && !matches!(policy.output_codec, VideoCodec::Hevc | VideoCodec::Av1)
+    {
         return Err(Error::InvalidConfig(match policy.output_codec {
-            VideoCodec::Av1 => "10-bit AV1 output is not implemented yet".into(),
-            VideoCodec::H264 => {
-                "10-bit H.264 output is not implemented; use --output-codec hevc".into()
-            }
-            _ => "10-bit output requires --output-codec hevc".into(),
+            VideoCodec::H264 => "10-bit H.264 output is not implemented; use HEVC or AV1".into(),
+            _ => "10-bit output requires --output-codec hevc or av1".into(),
         }));
     }
     if policy.output_codec == VideoCodec::Hevc && policy.encode == MediaRequest::Software {
@@ -856,7 +876,7 @@ impl Candidate {
         if self.encode == MediaImplementation::Hardware {
             require(
                 &mut reasons,
-                &format!("VAAPI {} encode", output.codec),
+                &format!("{} {}-bit VAAPI encoding", output.codec, output.bit_depth),
                 caps.media.encode_for_output(output),
             );
             let (frames, upload, label) = if output.pixel_format == PixelFormat::P010Le {
@@ -1217,6 +1237,7 @@ mod tests {
                 av1_10bit_vaapi_decode: yes(),
                 hevc_main10_vaapi_encode: yes(),
                 av1_vaapi_encode: yes(),
+                av1_10bit_vaapi_encode: yes(),
                 nv12_hardware_frames: yes(),
                 nv12_hardware_upload: yes(),
                 p010_hardware_frames: yes(),
@@ -1242,6 +1263,7 @@ mod tests {
                 av1_output: yes(),
                 p010_input: yes(),
                 p010_output: yes(),
+                av1_p010_output: yes(),
             },
         }
     }
@@ -1628,7 +1650,11 @@ mod tests {
             },
         )
         .unwrap_err();
-        assert!(error.to_string().contains("VAAPI HEVC encode unavailable"));
+        assert!(
+            error
+                .to_string()
+                .contains("HEVC 8-bit VAAPI encoding unavailable")
+        );
 
         let error = PipelinePlanner::select(
             &full(),
@@ -1826,19 +1852,17 @@ mod tests {
     #[test]
     fn ten_bit_output_rejects_unsupported_codec_and_conversion() {
         let input = main10_input(VideoCodec::Hevc);
-        for codec in [VideoCodec::H264, VideoCodec::Av1] {
-            let error = PipelinePlanner::select(
-                &full(),
-                &input,
-                PipelinePolicy {
-                    output_codec: codec,
-                    output_bit_depth: 10,
-                    ..Default::default()
-                },
-            )
-            .unwrap_err();
-            assert!(error.to_string().contains("not implemented"));
-        }
+        let error = PipelinePlanner::select(
+            &full(),
+            &input,
+            PipelinePolicy {
+                output_codec: VideoCodec::H264,
+                output_bit_depth: 10,
+                ..Default::default()
+            },
+        )
+        .unwrap_err();
+        assert!(error.to_string().contains("not implemented"));
         let error = PipelinePlanner::select(
             &full(),
             &h264(),
@@ -1850,5 +1874,57 @@ mod tests {
         )
         .unwrap_err();
         assert!(error.to_string().contains("without a conversion path"));
+    }
+
+    #[test]
+    fn av1_10bit_output_is_independent_of_av1_8bit_and_hevc_main10() {
+        let input = main10_input(VideoCodec::Av1);
+        let policy = PipelinePolicy {
+            output_codec: VideoCodec::Av1,
+            output_bit_depth: 10,
+            ..Default::default()
+        };
+        let mut caps = full();
+        let output = PipelinePlanner::select(&caps, &input, policy.clone())
+            .unwrap()
+            .selected
+            .output;
+        assert_eq!(output.profile, Some(VideoProfile::Av1Main));
+        assert_eq!(output.pixel_format, PixelFormat::P010Le);
+        assert_eq!(output.bit_depth, 10);
+
+        caps.interop
+            .set_output_for_requirements(&output, no("AV1 P010 import"));
+        let staged = PipelinePlanner::select(&caps, &input, policy.clone())
+            .unwrap()
+            .selected;
+        assert!(staged.hardware_upload);
+        assert!(!staged.hardware_output_interop);
+        assert!(caps.interop.p010_output.is_supported());
+        assert!(caps.interop.av1_output.is_supported());
+        assert!(
+            PipelinePlanner::select(
+                &caps,
+                &input,
+                PipelinePolicy {
+                    output_interop: InteropRequest::On,
+                    ..policy.clone()
+                }
+            )
+            .unwrap_err()
+            .to_string()
+            .contains("AV1 P010 import")
+        );
+
+        caps.media
+            .disable_encode_output(&output, "AV1 10-bit encoder failed");
+        assert!(
+            PipelinePlanner::select(&caps, &input, policy)
+                .unwrap_err()
+                .to_string()
+                .contains("AV1 10-bit encoder failed")
+        );
+        assert!(caps.media.av1_vaapi_encode.is_supported());
+        assert!(caps.media.hevc_main10_vaapi_encode.is_supported());
     }
 }

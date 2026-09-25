@@ -2,7 +2,8 @@
 
 Status on the tested Intel Arc Meteor Lake render node: **qualified for
 explicit BT.709 SDR P010LE input → HEVC Main10 VAAPI/MP4 output**. This is
-not HDR, AV1 10-bit output, a general device guarantee, or a 10→8 converter.
+not HDR, a general device guarantee, or a 10→8 converter. AV1 10-bit output
+was a later [Stage 5.2C-3](stage5.2c3-av1-10bit-encode.md) qualification.
 `--output-bit-depth` defaults to `8`; Main10 requires both
 `--output-codec hevc --output-bit-depth 10`. An unqualified profile, format,
 driver, import or encoder fails before output commit. Auto may replan from
@@ -160,7 +161,7 @@ ffmpeg -hide_banner -loglevel error -stream_loop 99 \
 ```
 
 See [testing.md](testing.md) for opt-in tests. Exact hardware behavior is
-qualified only for the observed driver/FFmpeg/Vulkan stack. In particular,
-AV1 10-bit encode, HDR/PQ/HLG/BT.2020, software Main10, bitrate/preset UI,
-8→10 or 10→8 production conversion and new interop architecture remain out
-of scope.
+qualified only for the observed driver/FFmpeg/Vulkan stack. At this stage's
+seal, AV1 10-bit encode was not yet qualified. HDR/PQ/HLG/BT.2020, software
+Main10, bitrate/preset UI, 8→10 or 10→8 production conversion and new interop
+architecture remain out of scope.

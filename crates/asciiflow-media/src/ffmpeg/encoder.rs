@@ -10,8 +10,8 @@ use super::{
 };
 use asciiflow_core::{
     CancellationToken, CapabilitySupport, ChromaLocation, ColorMatrix, ColorPrimaries, ColorRange,
-    EncodeDiagnostics, Error, FrameDesc, FrameSink, PipelineStage, PixelFormat, Rational, Result,
-    SinkTimings, TransferCharacteristic, VideoCodec, VideoFrame,
+    EncodeDiagnostics, Error, FrameDesc, FrameSink, HostFrame, PipelineStage, PixelFormat,
+    Rational, Result, SinkTimings, TransferCharacteristic, VideoCodec, VideoFrame,
 };
 use crossbeam_channel::{Receiver, SendTimeoutError, Sender, bounded};
 use std::{
@@ -218,10 +218,70 @@ fn probe_vaapi_encoder_internal(
         )),
         Err(error) => CapabilitySupport::not_probed(error.to_string()),
     };
+    if output_codec == VideoCodec::Av1 && desc.format == PixelFormat::P010Le {
+        if !host_upload.is_supported() {
+            return Err(Error::Media(format!(
+                "AV1 10-bit submission probe needs a P010 uploadable encoder pool: {}",
+                host_upload.unavailable_reason().unwrap_or("unknown reason")
+            )));
+        }
+        probe_av1_10bit_submission(codec, &pool, &desc)?;
+    }
     Ok(VaapiEncoderProbe {
         frames: VaapiEncoderFrames::from_pool(&pool, desc)?,
         host_upload,
     })
+}
+
+fn probe_av1_10bit_submission(
+    codec: NonNull<ffi::AVCodecContext>,
+    pool: &HardwareFramesPool,
+    desc: &FrameDesc,
+) -> Result<()> {
+    let frames = VaapiEncoderFrames::from_pool(pool, desc.clone())?;
+    let mut surface = frames.acquire(0)?;
+    let blank = VideoFrame::new_host(desc.clone(), Some(0), HostFrame::new_zeroed(desc))?;
+    surface.upload_p010(&blank)?;
+    check(
+        unsafe { ffi::avcodec_send_frame(codec.as_ptr(), surface.as_mut_ptr()) },
+        "AV1 10-bit encoder rejected an encoder-owned P010 frame",
+    )?;
+    check(
+        unsafe { ffi::avcodec_send_frame(codec.as_ptr(), ptr::null()) },
+        "AV1 10-bit encoder probe drain failed",
+    )?;
+    let mut packet = Packet::new()?;
+    let mut received = 0usize;
+    loop {
+        let result = unsafe { ffi::avcodec_receive_packet(codec.as_ptr(), packet.as_mut_ptr()) };
+        if result == ffi::AVERROR_EOF {
+            break;
+        }
+        if result < 0 {
+            return Err(ffmpeg_error(
+                "AV1 10-bit encoder probe did not produce a drained packet",
+                result,
+            ));
+        }
+        if packet.size() == 0 {
+            return Err(Error::Media(
+                "AV1 10-bit encoder probe produced an empty packet".into(),
+            ));
+        }
+        received += 1;
+        packet.unref();
+        if received > 16 {
+            return Err(Error::Media(
+                "AV1 10-bit encoder probe produced too many packets".into(),
+            ));
+        }
+    }
+    if received == 0 {
+        return Err(Error::Media(
+            "AV1 10-bit encoder probe produced no packet".into(),
+        ));
+    }
+    Ok(())
 }
 
 impl Encoder {
@@ -978,10 +1038,10 @@ impl Encoder {
 fn require_supported_output(codec: &VideoCodec, desc: &FrameDesc, mode: EncodeMode) -> Result<()> {
     desc.validate_layout()?;
     if desc.format == PixelFormat::P010Le
-        && (*codec != VideoCodec::Hevc || mode != EncodeMode::Vaapi)
+        && (!matches!(codec, VideoCodec::Hevc | VideoCodec::Av1) || mode != EncodeMode::Vaapi)
     {
         return Err(Error::UnsupportedFrame(
-            "P010LE output requires HEVC Main10 VAAPI encoding".into(),
+            "P010LE output requires HEVC Main10 or AV1 Main 10-bit VAAPI encoding".into(),
         ));
     }
     if desc.format == PixelFormat::P010Le
@@ -995,7 +1055,7 @@ fn require_supported_output(codec: &VideoCodec, desc: &FrameDesc, mode: EncodeMo
             ))
     {
         return Err(Error::UnsupportedFrame(
-            "HEVC Main10 output requires explicitly tagged BT.709 SDR color".into(),
+            "10-bit output requires explicitly tagged BT.709 SDR color".into(),
         ));
     }
     Ok(())
@@ -1520,31 +1580,50 @@ mod audio_regression_tests {
         )
         .err()
         .unwrap();
-        assert!(error.to_string().contains("requires HEVC Main10 VAAPI"));
+        assert!(
+            error
+                .to_string()
+                .contains("requires HEVC Main10 or AV1 Main")
+        );
         assert!(!output.exists());
         let error = probe_vaapi_encoder_for(
-            VideoCodec::Av1,
+            VideoCodec::H264,
             desc,
             Rational::new(50, 1).unwrap(),
             VaapiOptions::default(),
         )
         .err()
         .unwrap();
-        assert!(error.to_string().contains("requires HEVC Main10 VAAPI"));
+        assert!(
+            error
+                .to_string()
+                .contains("requires HEVC Main10 or AV1 Main")
+        );
     }
 
     #[test]
     #[ignore = "requires HEVC Main10 VAAPI encode"]
     fn main10_empty_stream_writes_valid_trailer() {
+        assert_ten_bit_empty_stream_trailer(VideoCodec::Hevc);
+    }
+
+    #[test]
+    #[ignore = "requires AV1 10-bit VAAPI encode"]
+    fn av1_10bit_empty_stream_writes_valid_trailer() {
+        assert_ten_bit_empty_stream_trailer(VideoCodec::Av1);
+    }
+
+    fn assert_ten_bit_empty_stream_trailer(codec: VideoCodec) {
         let desc = FrameDesc::host_p010_le(128, 128, ColorSpace::default()).unwrap();
-        let output = OutputPath(
-            std::env::temp_dir().join(format!("asciiflow-main10-empty-{}.mp4", std::process::id())),
-        );
+        let output = OutputPath(std::env::temp_dir().join(format!(
+            "asciiflow-{codec}-10bit-empty-{}.mp4",
+            std::process::id()
+        )));
         let mut encoder = Encoder::create_with_hardware_frames_codec_and_audio(
             &output.0,
             desc,
             Rational::new(30, 1).unwrap(),
-            VideoCodec::Hevc,
+            codec,
             VaapiOptions::default(),
             Vec::new(),
             CancellationToken::new(),
@@ -1604,11 +1683,21 @@ mod audio_regression_tests {
     #[test]
     #[ignore = "requires Main10 VAAPI and a 10-bit AAC input at ASCIIFLOW_STAGE52C2_AAC_INPUT"]
     fn injected_main10_audio_mux_failure_preserves_root_cause() {
-        let input = std::env::var_os("ASCIIFLOW_STAGE52C2_AAC_INPUT")
+        assert_ten_bit_audio_mux_failure(VideoCodec::Hevc, "ASCIIFLOW_STAGE52C2_AAC_INPUT");
+    }
+
+    #[test]
+    #[ignore = "requires AV1 10-bit VAAPI and a 10-bit AAC input at ASCIIFLOW_STAGE52C3_AAC_INPUT"]
+    fn injected_av1_10bit_audio_mux_failure_preserves_root_cause() {
+        assert_ten_bit_audio_mux_failure(VideoCodec::Av1, "ASCIIFLOW_STAGE52C3_AAC_INPUT");
+    }
+
+    fn assert_ten_bit_audio_mux_failure(codec: VideoCodec, input_env: &str) {
+        let input = std::env::var_os(input_env)
             .map(std::path::PathBuf::from)
             .unwrap_or_else(|| "/tmp/asciiflow-main10-single-aac-input.mp4".into());
         let output = OutputPath(std::env::temp_dir().join(format!(
-            "asciiflow-main10-audio-mux-failure-{}.mp4",
+            "asciiflow-{codec}-10bit-audio-mux-failure-{}.mp4",
             std::process::id()
         )));
         let mut decoder = Decoder::open(&input).unwrap();
@@ -1620,7 +1709,7 @@ mod audio_regression_tests {
             decoder.info().frame_desc.clone(),
             decoder.info().frame_rate,
             OutputEncoding {
-                codec: VideoCodec::Hevc,
+                codec,
                 mode: EncodeMode::Vaapi,
             },
             VaapiOptions::default(),
@@ -1692,10 +1781,20 @@ mod audio_regression_tests {
     #[test]
     #[ignore = "requires Intel VAAPI HEVC Main10 encode"]
     fn injected_main10_send_receive_and_drain_failures_preserve_cause() {
+        assert_ten_bit_send_receive_and_drain_failures(VideoCodec::Hevc);
+    }
+
+    #[test]
+    #[ignore = "requires Intel VAAPI AV1 10-bit encode"]
+    fn injected_av1_10bit_send_receive_and_drain_failures_preserve_cause() {
+        assert_ten_bit_send_receive_and_drain_failures(VideoCodec::Av1);
+    }
+
+    fn assert_ten_bit_send_receive_and_drain_failures(codec: VideoCodec) {
         let desc = FrameDesc::host_p010_le(128, 128, ColorSpace::default()).unwrap();
         for failure in ["send", "receive", "drain"] {
             let path = std::env::temp_dir().join(format!(
-                "asciiflow-main10-injected-{failure}-{}.mp4",
+                "asciiflow-{codec}-10bit-injected-{failure}-{}.mp4",
                 std::process::id()
             ));
             let mut encoder = Encoder::create_with_codec_and_audio(
@@ -1703,7 +1802,7 @@ mod audio_regression_tests {
                 desc.clone(),
                 Rational::new(30, 1).unwrap(),
                 OutputEncoding {
-                    codec: VideoCodec::Hevc,
+                    codec: codec.clone(),
                     mode: EncodeMode::Vaapi,
                 },
                 VaapiOptions::default(),
@@ -1732,12 +1831,13 @@ mod audio_regression_tests {
             };
             assert!(
                 error.to_string().contains(if failure == "send" {
-                    "injected HEVC send_frame failure"
+                    "send_frame failure"
                 } else {
-                    "injected HEVC receive_packet failure"
+                    "receive_packet failure"
                 }),
                 "{error}"
             );
+            assert!(error.to_string().contains(&codec.to_string()), "{error}");
             drop(encoder);
             std::fs::remove_file(path).unwrap();
         }

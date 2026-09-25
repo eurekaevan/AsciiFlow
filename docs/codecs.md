@@ -1,4 +1,4 @@
-# Video codecs (through Stage 5.2C-2)
+# Video codecs (through Stage 5.2C-3)
 
 Qualified software input scope: H.264 8-bit 4:2:0, HEVC Main 8-bit 4:2:0,
 and AV1 Main 8-bit 4:2:0. Codec identity comes from probing; no input-codec flag
@@ -9,8 +9,11 @@ are independent. Software HEVC/AV1 encoding is explicitly unsupported, and
 an unavailable AV1 encoder never changes the requested output codec.
 `--output-codec hevc --output-bit-depth 10` explicitly selects HEVC Main10,
 P010LE, 10-bit 4:2:0, BT.709 SDR VAAPI/MP4 output. The depth default is 8;
-`--output-codec hevc` alone continues to select HEVC Main/NV12. H.264/10 and
-AV1/10 output are unsupported. Ten-bit input with default 8-bit output is
+`--output-codec hevc` alone continues to select HEVC Main/NV12.
+`--output-codec av1 --output-bit-depth 10` selects AV1 Profile0/Main,
+P010LE, 10-bit 4:2:0 BT.709 SDR VAAPI/MP4 output. AV1 Profile0 is the
+native profile for both 8- and 10-bit 4:2:0; bit depth is separate. H.264/10
+remains unsupported. Ten-bit input with default 8-bit output is
 rejected before staging: there is no implicit P010→NV12 conversion. Eight-bit
 input to Main10 is likewise outside this stage's production contract.
 `--decode software|vaapi|auto` applies to the detected codec. Explicit VAAPI
@@ -24,7 +27,7 @@ checked for the supported processing format before conversion/import. Hardware
 frames must actually be VAAPI with a hardware frames context. Internal software
 decode qualification now accepts HEVC Main10 and AV1 Main 10-bit 4:2:0 with
 explicit BT.709 SDR tags and yields P010LE; the production CLI accepts those
-inputs only when HEVC Main10 output is explicitly selected. Unsupported chroma,
+inputs only when HEVC Main10 or AV1 10-bit output is explicitly selected. Unsupported chroma,
 PQ/HLG and BT.2020 fail rather than convert silently. Intel P010 VAAPI/DRM
 interop is qualified internally on the observed Intel Arc host; see
 [Stage 5.2B](stage5.2b-p010-decode-validation.md).
@@ -34,7 +37,11 @@ FFmpeg configuration and driver profile + VLD for H.264, HEVC Main and AV1
 Profile0 input, and matching EncSlice profiles for all three hardware output
 codecs. HEVC Main10 encode is a separate fact: Main10/EncSlice, a 10-bit render
 target, FFmpeg `hevc_vaapi` opening with a P010 frames context, and path-specific
-host-upload/output-import checks. It dynamically loads system libva using the existing libloading stack;
+host-upload/output-import checks.
+AV1 10-bit is a distinct fact from AV1 Main8: AV1 Profile0/EncSlice and
+10-bit render-target support must accompany FFmpeg `av1_vaapi` plus a P010
+frames context and the actual encoder-owned import qualification. Native
+probing dynamically loads system libva using the existing libloading stack;
 software-only use does not require libva development headers. The selected stream
 is additionally decoded and mapped: static profile support is not proof that an
 arbitrary stream's surface can be imported. The actual DRM descriptor, modifier
@@ -45,8 +52,8 @@ Input interop and initialization replan are scoped by codec/stream. Auto still
 prefers software decode when input interop is unavailable, rather than automatic
 VAAPI hwdownload. At most one initialization replan is allowed; runtime errors
 remain terminal. Output replan facts are codec/profile/format-scoped: failure to
-import a Main10 P010 surface can replan to staged P010 without disabling HEVC
-Main 8-bit.
+import a HEVC or AV1 10-bit P010 surface can replan to staged P010 without
+disabling the other codec or either 8-bit fact.
 FFmpeg manages
 decoder and encoder reference surfaces; no new fixed DPB pool was added.
 
@@ -77,5 +84,9 @@ It covers HEVC Main via VAAPI only. AV1 output qualification is recorded in
 [stage5.1b-av1-encode-validation.md](stage5.1b-av1-encode-validation.md).
 AV1 output is Profile0, NV12, 8-bit 4:2:0 and VAAPI-only. HEVC Main10
 qualification is recorded in [Stage 5.2C-2](stage5.2c2-hevc-main10-encode.md).
-There is no software HEVC/AV1 encoder, AV1 10-bit encode, HDR/tone mapping, 4:2:2/4:4:4 output,
+AV1 Profile0/Main 10-bit P010 VAAPI output is qualified in
+[Stage 5.2C-3](stage5.2c3-av1-10bit-encode.md). Both 10-bit outputs require
+explicit `--output-bit-depth 10` and qualified VAAPI hardware; their codecs
+remain independent of the 10-bit HEVC/AV1 input codec. There is no software
+HEVC/AV1 encoder, HDR/tone mapping, 4:2:2/4:4:4 output,
 quality/preset/bitrate UI, AV1 tuning, or new GPU vendor/platform support.

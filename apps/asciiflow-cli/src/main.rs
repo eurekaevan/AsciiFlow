@@ -1479,6 +1479,7 @@ mod stage40_tests {
                 av1_10bit_vaapi_decode: supported(),
                 hevc_main10_vaapi_encode: supported(),
                 av1_vaapi_encode: supported(),
+                av1_10bit_vaapi_encode: supported(),
                 nv12_hardware_frames: supported(),
                 nv12_hardware_upload: supported(),
                 p010_hardware_frames: supported(),
@@ -1504,6 +1505,7 @@ mod stage40_tests {
                 av1_output: supported(),
                 p010_input: supported(),
                 p010_output: supported(),
+                av1_p010_output: supported(),
             },
         }
     }
@@ -1893,6 +1895,73 @@ mod stage40_tests {
             assert!(!snapshot.media.hevc_main10_vaapi_encode.is_supported());
             assert!(snapshot.media.hevc_vaapi_encode.is_supported());
             assert!(snapshot.media.h264_vaapi_encode.is_supported());
+        }
+    }
+
+    #[test]
+    fn av1_10bit_initialization_failures_preserve_codec_and_main8_facts() {
+        let policy = PipelinePolicy {
+            output_codec: VideoCodec::Av1,
+            output_bit_depth: 10,
+            ..Default::default()
+        };
+        let requirements = main10_requirements();
+        for point in [
+            InitializationPoint::OutputVaapiFrameAcquire,
+            InitializationPoint::OutputDrmPrimeMap,
+            InitializationPoint::OutputDmaBufImport,
+        ] {
+            let mut snapshot = full_capabilities();
+            let initial =
+                PipelinePlanner::select(&snapshot, &requirements, policy.clone()).unwrap();
+            assert!(initial.selected.hardware_output_interop);
+            let capability = point.capability(&initial.selected);
+            let mut attempts = 0;
+            let initialized = initialize_with_replan(
+                &mut snapshot,
+                &requirements,
+                policy.clone(),
+                initial,
+                |plan| {
+                    attempts += 1;
+                    if attempts == 1 {
+                        Err(injected(capability, "injected AV1 P010 interop failure"))
+                    } else {
+                        Ok(plan.clone())
+                    }
+                },
+                || Ok(()),
+            )
+            .unwrap();
+            assert_eq!(attempts, 2);
+            assert_eq!(initialized.value.output.codec, VideoCodec::Av1);
+            assert_eq!(initialized.value.output.bit_depth, 10);
+            assert!(initialized.value.hardware_upload);
+            assert!(!snapshot.interop.av1_p010_output.is_supported());
+            assert!(snapshot.interop.p010_output.is_supported());
+        }
+
+        for point in [
+            InitializationPoint::EncoderCreate,
+            InitializationPoint::VaapiFramesPoolCreate,
+        ] {
+            let mut snapshot = full_capabilities();
+            let initial =
+                PipelinePlanner::select(&snapshot, &requirements, policy.clone()).unwrap();
+            let capability = point.capability(&initial.selected);
+            let error = initialize_with_replan(
+                &mut snapshot,
+                &requirements,
+                policy.clone(),
+                initial,
+                |_| Err::<(), _>(injected(capability, "injected AV1 10-bit encoder failure")),
+                || Ok(()),
+            )
+            .unwrap_err();
+            assert!(error.to_string().contains("AV1 10-bit encoder failure"));
+            assert!(!snapshot.media.av1_10bit_vaapi_encode.is_supported());
+            assert!(snapshot.media.av1_vaapi_encode.is_supported());
+            assert!(snapshot.media.hevc_main10_vaapi_encode.is_supported());
         }
     }
 
