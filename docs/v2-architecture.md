@@ -1,6 +1,6 @@
 # AsciiFlow v2 architecture
 
-This document describes the Rust architecture through the Stage 5.2A P010
+This document describes the Rust architecture through the Stage 5.2C-2 P010
 processing foundation: a permanent CPU reference backend, a Vulkan 1.3 compute
 backend, optional Linux VAAPI media, and qualified Intel DMA-BUF bridges in both
 pixel directions. Stage 3A
@@ -14,8 +14,10 @@ single-owner interleaved mux path; it does not change video planning or pixels.
 Stage 4.3 adds optional FreeType atlases. Stage 5.0 qualifies HEVC Main and AV1
 Main input; Stages 5.1A and 5.1B qualify HEVC Main and AV1 Profile0 VAAPI
 output, respectively. Device-specific evidence is kept in the stage reports.
-Stage 5.2A adds an internal Host P010LE format and CPU/Vulkan processing
-variants; production media planning and native interop remain 8-bit NV12.
+Stage 5.2A adds Host P010LE and CPU/Vulkan processing; 5.2B qualifies 10-bit
+decode and input interop, 5.2C-1 qualifies P010 output interop, and 5.2C-2
+qualifies explicit HEVC Main10 VAAPI/MP4 output on the tested Intel device.
+The default output remains 8-bit H.264.
 
 ## Workspace and dependency direction
 
@@ -56,22 +58,23 @@ the output reports below.
 The output selection boundary is:
 
 ```text
-OutputVideoRequirements (codec/profile/8-bit 4:2:0/geometry/rate)
+OutputVideoRequirements (codec/profile/bit depth/pixel format/color/geometry/rate)
   -> codec-specific software/VAAPI capability and policy
   -> codec-specific encoder configuration (H.264 software/VAAPI, HEVC or AV1 VAAPI)
   -> generic VAAPI hardware-frame lifecycle when selected
   -> generic encoder-owned Vulkan/VAAPI output interop when selected
-  -> H.264 / HEVC Main / AV1 Profile0 encoder
+  -> H.264 / HEVC Main / HEVC Main10 / AV1 Profile0 encoder
   -> MP4 mux
 ```
 
 Core contains portable identities only. FFmpeg codec IDs, named encoder lookup,
-VAProfileHEVCMain and VAProfileAV1Profile0 EncSlice qualification, CQP options
+VAProfileHEVCMain, VAProfileHEVCMain10 and VAProfileAV1Profile0 EncSlice qualification, CQP options
 and AVHWFramesContext stay
-in media. The interop crate receives only an encoder-owned NV12 frames context;
+in media. The interop crate receives an encoder-owned NV12 or P010 frames context;
 it contains no H.264/HEVC/AV1 branch. See the
 [Stage 5.1A validation](stage5.1a-hevc-encode-validation.md) and
-[Stage 5.1B validation](stage5.1b-av1-encode-validation.md).
+[Stage 5.1B validation](stage5.1b-av1-encode-validation.md) and
+[Stage 5.2C-2 Main10 validation](stage5.2c2-hevc-main10-encode.md).
 
 Stage 4.3 adds initialization-only `Font specification -> FreeType -> GlyphAtlas`.
 The CLI builds one owned atlas before staging/mux initialization and passes
@@ -126,8 +129,8 @@ scratch packet, and sends selected packets through a bounded queue to the mux
 owner.
 Stage 2 downloads/uploads within `asciiflow-media`. Stage 3A uses a specialized
 Media/Interop pipeline carrying `VaapiDecodedFrame` outside Core, then returns
-the processed result through the production Host NV12 contract. Internal P010LE
-tests construct Host frames directly; no native decoder produces them yet.
+the processed result through the selected Host NV12 or P010LE contract. The
+qualified 10-bit decoder and interop paths preserve P010LE through processing.
 
 ## CPU data flow
 
@@ -242,7 +245,7 @@ VAAPI or software decode
   -> explicit plan transfer/interop nodes
   -> CPU or Vulkan ASCII
   -> explicit plan transfer/interop nodes
-  -> software H.264, VAAPI H.264/HEVC Main/AV1 Profile0 encode
+  -> software H.264, VAAPI H.264/HEVC Main/HEVC Main10/AV1 Profile0 encode
 ```
 
 Two capacity-three crossbeam channels provide bounded backpressure and ordered
@@ -426,30 +429,31 @@ that distinction explicit.
 
 ## Media contract and current limitations
 
-- Software decode and VAAPI decode are selected from the input requirements and
-  capability snapshot. Qualified input is H.264, HEVC Main or AV1 Main,
-  8-bit 4:2:0 and NV12-compatible. Ten-bit input is rejected before output
-  creation; it is never silently reduced to 8-bit.
+- Software decode and VAAPI decode are selected from input requirements and
+  capability snapshot. Qualified 8-bit input remains H.264, HEVC Main or AV1
+  Main/NV12. HEVC Main10 and AV1 Main 10-bit BT.709 SDR input use P010LE and
+  require explicit HEVC Main10 output; there is no implicit 10→8 conversion.
 - MP4 output defaults to H.264 (`libx264` for software or `h264_vaapi` for
-  VAAPI). HEVC Main and AV1 Profile0 output use `hevc_vaapi` and `av1_vaapi`,
-  respectively; software output for those codecs is unsupported. Explicit
+  VAAPI). HEVC Main, HEVC Main10 and AV1 Profile0 output use `hevc_vaapi` or
+  `av1_vaapi`; Main10 requires `--output-codec hevc --output-bit-depth 10`
+  and VAAPI. Software output for those codecs is unsupported. Explicit
   hardware requests never fall back.
 - `auto` prefers full interop, then qualified staged hardware encode, then
   software media/Vulkan, and finally CPU processing. It does not choose VAAPI
   decode plus `hwdownload` solely because a VAAPI device exists.
-- The qualified VAAPI path supports only 8-bit 4:2:0 NV12 semantics. Stage 3A
-  currently accepts the observed single-object R8+GR88 iHD export with a known,
-  importable modifier. P010/HDR, 4:4:4, multi-object, unknown-modifier, and incompatible
-  layer topologies are rejected rather than copied or silently reduced.
+- Qualified VAAPI paths support NV12/8-bit or P010/10-bit 4:2:0 as selected.
+  Stage 3A accepts the observed R8+GR88 or R16+GR32 iHD export with a known,
+  importable modifier. HDR, 4:4:4, multi-object, unknown-modifier, and
+  incompatible layer topologies are rejected rather than silently reduced.
 - Compatible compressed audio streams can be copied into MP4. One mux worker
   owns the output `AVFormatContext` and accepts both encoded video packets and
   passthrough audio packets through a bounded queue. It rescales timestamps
   with each explicit input/output stream mapping and performs every
   `av_interleaved_write_frame` call. Audio is never decoded or transcoded.
-- Host NV12 remains the production Core/reference contract. Internal P010LE
-  Host frames have CPU/Vulkan processing parity, but no production codec or
-  DMA-BUF path yet. Full interop and output-only interop remain NV12-only and
-  do not make native handles part of Core.
+- Host NV12 remains the default Core/reference contract. Host P010LE has
+  CPU/Vulkan processing parity and explicit production HEVC Main10 output;
+  qualified full input/output interop remains codec-neutral and does not make
+  native handles part of Core.
 - Built-in 8x8 remains the default; explicit scalable monospaced FreeType fonts
   provide grayscale tiles without changing glyph ordering or grid geometry.
 - Source presentation timestamps are represented on decoded frames, but Stage

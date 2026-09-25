@@ -1,9 +1,11 @@
 # Stage 5.2C-1: P010 Vulkan → VAAPI output interop qualification
 
-This stage qualifies an internal output transfer, **not** a production 10-bit
-encoder. H.264, HEVC and AV1 production outputs remain NV12 8-bit; the CLI
-still rejects real 10-bit transcoding before output staging. No HDR, 10→8
-conversion, codec policy or encoder context was added for P010.
+This historical stage qualifies an internal output transfer, **not** a
+production 10-bit encoder. At its seal, H.264, HEVC and AV1 production outputs
+remained NV12 8-bit, and the CLI rejected 10-bit transcode before staging. No
+HDR, 10→8 conversion, codec policy or encoder context was added here.
+[Stage 5.2C-2](stage5.2c2-hevc-main10-encode.md) subsequently connected
+this generic P010 interop to an encoder-owned HEVC Main10 surface.
 
 ## Surface and format evidence
 
@@ -135,7 +137,8 @@ The three P010 B wall values were 1.942/1.836/1.817 ms, versus NV12 control
 1.409/1.396/1.474 ms. P010 copies twice NV12's packed byte volume; this
 moderate increase is not pathological. GPU timestamps, CPU scopes and fence
 wait overlap and must **not** be added. The B setup starts from a Host P010
-test frame because no production 10-bit decoder→encoder pipeline exists; it
+test frame because no production 10-bit decoder→encoder pipeline existed at
+this stage's seal; it
 still writes the processing output buffer directly to VAAPI with no Host
 readback/hwupload. NV12 control uses H.264-owned NV12 frames but never encodes
 them. Neither number is codec encode FPS or an auto-policy recommendation.

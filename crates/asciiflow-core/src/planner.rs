@@ -1,6 +1,6 @@
 use crate::{
-    ColorMatrix, ColorPrimaries, ColorRange, ColorSpace, Error, PixelFormat, ProcessingBackend,
-    Rational, Result, TransferCharacteristic,
+    ChromaLocation, ColorMatrix, ColorPrimaries, ColorRange, ColorSpace, Error, PixelFormat,
+    ProcessingBackend, Rational, Result, TransferCharacteristic,
 };
 use std::fmt;
 
@@ -42,9 +42,14 @@ pub struct MediaCapabilities {
     pub av1_vaapi_decode: CapabilitySupport,
     pub h264_vaapi_encode: CapabilitySupport,
     pub hevc_vaapi_encode: CapabilitySupport,
+    pub hevc_main10_vaapi_decode: CapabilitySupport,
+    pub av1_10bit_vaapi_decode: CapabilitySupport,
+    pub hevc_main10_vaapi_encode: CapabilitySupport,
     pub av1_vaapi_encode: CapabilitySupport,
     pub nv12_hardware_frames: CapabilitySupport,
     pub nv12_hardware_upload: CapabilitySupport,
+    pub p010_hardware_frames: CapabilitySupport,
+    pub p010_hardware_upload: CapabilitySupport,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -78,10 +83,12 @@ pub struct InteropCapabilities {
     pub output: CapabilitySupport,
     pub hevc_output: CapabilitySupport,
     pub av1_output: CapabilitySupport,
+    pub p010_input: CapabilitySupport,
+    pub p010_output: CapabilitySupport,
 }
 
 /// Format-level output qualification is independent of codec-specific encoder
-/// availability. The production planner deliberately does not consume it yet.
+/// availability. Production uses profile-specific facts in `InteropCapabilities`.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct FormatOutputInteropCapabilities {
     pub nv12: CapabilitySupport,
@@ -145,6 +152,30 @@ impl From<&str> for VideoProfile {
 }
 
 impl MediaCapabilities {
+    pub fn decode_for_input(&self, input: &InputRequirements) -> &CapabilitySupport {
+        match (&input.codec, input.bit_depth) {
+            (VideoCodec::Hevc, Some(10)) => &self.hevc_main10_vaapi_decode,
+            (VideoCodec::Av1, Some(10)) => &self.av1_10bit_vaapi_decode,
+            _ => self.decode_for(&input.codec),
+        }
+    }
+
+    pub fn encode_for_output(&self, output: &OutputVideoRequirements) -> &CapabilitySupport {
+        if output.profile == Some(VideoProfile::HevcMain10) {
+            &self.hevc_main10_vaapi_encode
+        } else {
+            self.encode_for(&output.codec)
+        }
+    }
+
+    pub fn disable_encode_output(&mut self, output: &OutputVideoRequirements, reason: &str) {
+        if output.profile == Some(VideoProfile::HevcMain10) {
+            self.hevc_main10_vaapi_encode = CapabilitySupport::unsupported(reason);
+        } else {
+            self.disable_encode(&output.codec, reason);
+        }
+    }
+
     pub fn decode_for(&self, codec: &VideoCodec) -> &CapabilitySupport {
         match codec {
             VideoCodec::H264 => &self.h264_vaapi_decode,
@@ -167,6 +198,34 @@ static UNSUPPORTED_CODEC: std::sync::LazyLock<CapabilitySupport> = std::sync::La
     CapabilitySupport::not_probed("codec is outside the qualified hardware input set")
 });
 impl InteropCapabilities {
+    pub fn input_for_requirements(&self, input: &InputRequirements) -> &CapabilitySupport {
+        if input.bit_depth == Some(10) {
+            &self.p010_input
+        } else {
+            self.input_for(&input.codec)
+        }
+    }
+
+    pub fn output_for_requirements(&self, output: &OutputVideoRequirements) -> &CapabilitySupport {
+        if output.pixel_format == PixelFormat::P010Le {
+            &self.p010_output
+        } else {
+            self.output_for(&output.codec)
+        }
+    }
+
+    pub fn set_output_for_requirements(
+        &mut self,
+        output: &OutputVideoRequirements,
+        fact: CapabilitySupport,
+    ) {
+        if output.pixel_format == PixelFormat::P010Le {
+            self.p010_output = fact;
+        } else {
+            self.set_output(&output.codec, fact);
+        }
+    }
+
     pub fn input_for(&self, codec: &VideoCodec) -> &CapabilitySupport {
         match codec {
             VideoCodec::H264 => &self.input,
@@ -250,6 +309,8 @@ pub struct OutputVideoRequirements {
     /// Explicitly required profile. H.264 retains the encoder's existing profile selection.
     pub profile: Option<VideoProfile>,
     pub bit_depth: u8,
+    pub pixel_format: PixelFormat,
+    pub color_space: ColorSpace,
     pub chroma_subsampling: ChromaSubsampling,
     pub width: u32,
     pub height: u32,
@@ -272,6 +333,39 @@ impl OutputVideoRequirements {
             codec,
             profile,
             bit_depth: 8,
+            pixel_format: PixelFormat::Nv12,
+            color_space: ColorSpace::default(),
+            chroma_subsampling: ChromaSubsampling::Yuv420,
+            width: input.width,
+            height: input.height,
+            frame_rate: input.frame_rate,
+        })
+    }
+
+    pub fn selected(codec: VideoCodec, bit_depth: u8, input: &InputRequirements) -> Result<Self> {
+        if bit_depth == 8 {
+            return Self::current_nv12(codec, input);
+        }
+        if codec != VideoCodec::Hevc || bit_depth != 10 {
+            return Err(Error::InvalidConfig(format!(
+                "{} {}-bit output is not implemented; Main10 is HEVC-only",
+                codec, bit_depth
+            )));
+        }
+        if input.color_space.chroma_location != ChromaLocation::Left {
+            return Err(Error::UnsupportedFrame(
+                "HEVC Main10 output currently requires left-sited 4:2:0 chroma".into(),
+            ));
+        }
+        Ok(Self {
+            codec,
+            profile: Some(VideoProfile::HevcMain10),
+            bit_depth: 10,
+            pixel_format: PixelFormat::P010Le,
+            color_space: ColorSpace {
+                range: input.color_space.range,
+                ..ColorSpace::default()
+            },
             chroma_subsampling: ChromaSubsampling::Yuv420,
             width: input.width,
             height: input.height,
@@ -293,7 +387,7 @@ impl InputRequirements {
         if self.bit_depth != Some(8) {
             if self.bit_depth == Some(10) && self.validate_processing_input().is_ok() {
                 return Err(Error::UnsupportedFrame(
-                    "10-bit decoding and P010 processing are available for qualification, but no production 10-bit output path is available yet".into(),
+                    "10-bit P010 input is outside the 8-bit NV12 validation contract; select explicit HEVC Main10 output for production".into(),
                 ));
             }
             return Err(Error::UnsupportedFrame(format!(
@@ -334,7 +428,7 @@ impl InputRequirements {
     }
 
     /// Validate the input processing contract independently of output encoding.
-    /// Production planning still calls `validate_current_pipeline` and remains NV12-only.
+    /// Production subsequently checks the selected output format without conversion.
     pub fn validate_processing_input(&self) -> Result<PixelFormat> {
         match self.bit_depth {
             Some(8) => {
@@ -419,6 +513,7 @@ pub struct PipelinePolicy {
     pub input_interop: InteropRequest,
     pub output_interop: InteropRequest,
     pub output_codec: VideoCodec,
+    pub output_bit_depth: u8,
 }
 
 impl Default for PipelinePolicy {
@@ -430,6 +525,7 @@ impl Default for PipelinePolicy {
             input_interop: InteropRequest::Auto,
             output_interop: InteropRequest::Auto,
             output_codec: VideoCodec::H264,
+            output_bit_depth: 8,
         }
     }
 }
@@ -455,6 +551,9 @@ pub enum FrameDomain {
     HostNv12,
     HardwareNv12,
     VulkanNv12Buffer,
+    HostP010,
+    HardwareP010,
+    VulkanP010Buffer,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -581,9 +680,22 @@ impl PipelinePlanner {
         policy: PipelinePolicy,
     ) -> Result<PlanningResult> {
         validate_policy(&policy)?;
-        requirements.validate_current_pipeline()?;
-        let output =
-            OutputVideoRequirements::current_nv12(policy.output_codec.clone(), requirements)?;
+        let input_format = requirements.validate_processing_input()?;
+        let output = OutputVideoRequirements::selected(
+            policy.output_codec.clone(),
+            policy.output_bit_depth,
+            requirements,
+        )?;
+        if input_format != output.pixel_format {
+            return Err(Error::UnsupportedFrame(format!(
+                "{} input cannot be sent to {}-bit {} output without a conversion path",
+                requirements
+                    .bit_depth
+                    .map_or_else(|| "unknown".into(), |depth| format!("{depth}-bit")),
+                output.bit_depth,
+                output.codec
+            )));
+        }
         let mut accepted = Vec::new();
         let mut rejected = Vec::new();
         let mut ordinal = 0_u16;
@@ -648,6 +760,20 @@ impl PipelinePlanner {
 }
 
 fn validate_policy(policy: &PipelinePolicy) -> Result<()> {
+    if policy.output_bit_depth != 8 && policy.output_bit_depth != 10 {
+        return Err(Error::InvalidConfig(
+            "--output-bit-depth must be 8 or 10".into(),
+        ));
+    }
+    if policy.output_bit_depth == 10 && policy.output_codec != VideoCodec::Hevc {
+        return Err(Error::InvalidConfig(match policy.output_codec {
+            VideoCodec::Av1 => "10-bit AV1 output is not implemented yet".into(),
+            VideoCodec::H264 => {
+                "10-bit H.264 output is not implemented; use --output-codec hevc".into()
+            }
+            _ => "10-bit output requires --output-codec hevc".into(),
+        }));
+    }
     if policy.output_codec == VideoCodec::Hevc && policy.encode == MediaRequest::Software {
         return Err(Error::InvalidConfig(
             "HEVC software encoding is not implemented".into(),
@@ -716,9 +842,9 @@ impl Candidate {
             require(
                 &mut reasons,
                 &format!("VAAPI {} decode", req.codec),
-                caps.media.decode_for(&req.codec),
+                caps.media.decode_for_input(req),
             );
-            if !req.supports_current_hardware_path() {
+            if !req.supports_current_hardware_path() && req.bit_depth != Some(10) {
                 reasons.push(format!(
                     "input {:?} {:?}-bit {:?} is outside the qualified 8-bit 4:2:0 hardware path",
                     req.codec, req.bit_depth, req.chroma_subsampling
@@ -731,18 +857,27 @@ impl Candidate {
             require(
                 &mut reasons,
                 &format!("VAAPI {} encode", output.codec),
-                caps.media.encode_for(&output.codec),
+                caps.media.encode_for_output(output),
             );
-            require(
-                &mut reasons,
-                "NV12 hardware frames",
-                &caps.media.nv12_hardware_frames,
-            );
+            let (frames, upload, label) = if output.pixel_format == PixelFormat::P010Le {
+                (
+                    &caps.media.p010_hardware_frames,
+                    &caps.media.p010_hardware_upload,
+                    "P010",
+                )
+            } else {
+                (
+                    &caps.media.nv12_hardware_frames,
+                    &caps.media.nv12_hardware_upload,
+                    "NV12",
+                )
+            };
+            require(&mut reasons, &format!("{label} hardware frames"), frames);
             if !self.output_interop {
                 require(
                     &mut reasons,
-                    "Host to VAAPI NV12 upload",
-                    &caps.media.nv12_hardware_upload,
+                    &format!("Host to VAAPI {label} upload"),
+                    upload,
                 );
             }
         } else {
@@ -798,7 +933,7 @@ impl Candidate {
             require(
                 &mut reasons,
                 "VAAPI to Vulkan input interop",
-                caps.interop.input_for(&req.codec),
+                caps.interop.input_for_requirements(req),
             );
         }
         if self.output_interop {
@@ -810,7 +945,7 @@ impl Candidate {
             require(
                 &mut reasons,
                 "Vulkan to VAAPI output interop",
-                caps.interop.output_for(&output.codec),
+                caps.interop.output_for_requirements(output),
             );
         }
         reasons
@@ -843,7 +978,7 @@ impl Candidate {
     }
 
     fn label(self) -> String {
-        self.steps()
+        self.steps(PixelFormat::Nv12)
             .iter()
             .map(|s| s.node.to_string())
             .collect::<Vec<_>>()
@@ -896,6 +1031,7 @@ impl Candidate {
         } else if self.encode == MediaImplementation::Hardware {
             reasons.push("VAAPI encode lowers CPU cost even when hwupload is required".into());
         }
+        let steps = self.steps(output.pixel_format);
         PipelinePlan {
             backend: self.backend,
             decode: self.decode,
@@ -905,7 +1041,7 @@ impl Candidate {
             hardware_upload,
             hardware_input_interop: self.input_interop,
             hardware_output_interop: self.output_interop,
-            steps: self.steps(),
+            steps,
             pixel_path,
             preference_cost,
             reasons,
@@ -913,37 +1049,41 @@ impl Candidate {
         }
     }
 
-    fn steps(self) -> Vec<PlanStep> {
+    fn steps(self, format: PixelFormat) -> Vec<PlanStep> {
+        let (host_domain, hardware_domain, vulkan_domain) = match format {
+            PixelFormat::Nv12 => (
+                FrameDomain::HostNv12,
+                FrameDomain::HardwareNv12,
+                FrameDomain::VulkanNv12Buffer,
+            ),
+            PixelFormat::P010Le => (
+                FrameDomain::HostP010,
+                FrameDomain::HardwareP010,
+                FrameDomain::VulkanP010Buffer,
+            ),
+        };
         let mut steps = Vec::new();
         let decode_domain = if self.decode == MediaImplementation::Hardware {
-            steps.push(step(
-                PlanNode::VaapiDecode,
-                None,
-                Some(FrameDomain::HardwareNv12),
-            ));
-            FrameDomain::HardwareNv12
+            steps.push(step(PlanNode::VaapiDecode, None, Some(hardware_domain)));
+            hardware_domain
         } else {
-            steps.push(step(
-                PlanNode::SoftwareDecode,
-                None,
-                Some(FrameDomain::HostNv12),
-            ));
-            FrameDomain::HostNv12
+            steps.push(step(PlanNode::SoftwareDecode, None, Some(host_domain)));
+            host_domain
         };
         let processing_input = if self.input_interop {
             steps.push(step(
                 PlanNode::InputHardwareInterop,
                 Some(decode_domain),
-                Some(FrameDomain::VulkanNv12Buffer),
+                Some(vulkan_domain),
             ));
-            FrameDomain::VulkanNv12Buffer
-        } else if decode_domain == FrameDomain::HardwareNv12 {
+            vulkan_domain
+        } else if decode_domain == hardware_domain {
             steps.push(step(
                 PlanNode::HardwareDownload,
                 Some(decode_domain),
-                Some(FrameDomain::HostNv12),
+                Some(host_domain),
             ));
-            FrameDomain::HostNv12
+            host_domain
         } else {
             decode_domain
         };
@@ -951,32 +1091,32 @@ impl Candidate {
             steps.push(step(
                 PlanNode::VulkanAscii,
                 Some(processing_input),
-                Some(FrameDomain::VulkanNv12Buffer),
+                Some(vulkan_domain),
             ));
-            FrameDomain::VulkanNv12Buffer
+            vulkan_domain
         } else {
             steps.push(step(
                 PlanNode::CpuAscii,
                 Some(processing_input),
-                Some(FrameDomain::HostNv12),
+                Some(host_domain),
             ));
-            FrameDomain::HostNv12
+            host_domain
         };
         let encode_input = if self.output_interop {
             steps.push(step(
                 PlanNode::OutputHardwareInterop,
                 Some(processing_output),
-                Some(FrameDomain::HardwareNv12),
+                Some(hardware_domain),
             ));
-            FrameDomain::HardwareNv12
+            hardware_domain
         } else {
-            let host = if processing_output == FrameDomain::VulkanNv12Buffer {
+            let host = if processing_output == vulkan_domain {
                 steps.push(step(
                     PlanNode::HostReadback,
                     Some(processing_output),
-                    Some(FrameDomain::HostNv12),
+                    Some(host_domain),
                 ));
-                FrameDomain::HostNv12
+                host_domain
             } else {
                 processing_output
             };
@@ -984,9 +1124,9 @@ impl Candidate {
                 steps.push(step(
                     PlanNode::HardwareUpload,
                     Some(host),
-                    Some(FrameDomain::HardwareNv12),
+                    Some(hardware_domain),
                 ));
-                FrameDomain::HardwareNv12
+                hardware_domain
             } else {
                 host
             }
@@ -1073,9 +1213,14 @@ mod tests {
                 av1_vaapi_decode: yes(),
                 h264_vaapi_encode: yes(),
                 hevc_vaapi_encode: yes(),
+                hevc_main10_vaapi_decode: yes(),
+                av1_10bit_vaapi_decode: yes(),
+                hevc_main10_vaapi_encode: yes(),
                 av1_vaapi_encode: yes(),
                 nv12_hardware_frames: yes(),
                 nv12_hardware_upload: yes(),
+                p010_hardware_frames: yes(),
+                p010_hardware_upload: yes(),
             },
             processing: ProcessingCapabilities {
                 cpu: yes(),
@@ -1095,6 +1240,8 @@ mod tests {
                 output: yes(),
                 hevc_output: yes(),
                 av1_output: yes(),
+                p010_input: yes(),
+                p010_output: yes(),
             },
         }
     }
@@ -1333,11 +1480,7 @@ mod tests {
             requirements.bit_depth = Some(10);
             let error =
                 PipelinePlanner::select(&full(), &requirements, Default::default()).unwrap_err();
-            assert!(
-                error
-                    .to_string()
-                    .contains("no production 10-bit output path")
-            );
+            assert!(error.to_string().contains("without a conversion path"));
             requirements.bit_depth = Some(8);
             if codec == VideoCodec::Hevc {
                 requirements.profile = Some(VideoProfile::HevcMain);
@@ -1602,5 +1745,110 @@ mod tests {
         )
         .unwrap_err();
         assert!(error.to_string().contains("AV1 import rejected"));
+    }
+
+    fn main10_input(codec: VideoCodec) -> InputRequirements {
+        let mut input = h264();
+        input.codec = codec.clone();
+        input.profile = Some(match codec {
+            VideoCodec::Hevc => VideoProfile::HevcMain10,
+            VideoCodec::Av1 => VideoProfile::Av1Main,
+            _ => unreachable!(),
+        });
+        input.pixel_format = Some("yuv420p10le".into());
+        input.bit_depth = Some(10);
+        input
+    }
+
+    #[test]
+    fn main10_production_plan_is_explicit_and_format_aware() {
+        let policy = PipelinePolicy {
+            output_codec: VideoCodec::Hevc,
+            output_bit_depth: 10,
+            ..Default::default()
+        };
+        for codec in [VideoCodec::Hevc, VideoCodec::Av1] {
+            let plan = PipelinePlanner::select(&full(), &main10_input(codec), policy.clone())
+                .unwrap()
+                .selected;
+            assert_eq!(plan.output.profile, Some(VideoProfile::HevcMain10));
+            assert_eq!(plan.output.pixel_format, PixelFormat::P010Le);
+            assert_eq!(plan.output.bit_depth, 10);
+            assert_eq!(plan.pixel_path, PixelPath::GpuResident);
+            assert_eq!(plan.steps[0].output, Some(FrameDomain::HardwareP010));
+            assert!(
+                plan.steps
+                    .iter()
+                    .any(|step| step.output == Some(FrameDomain::VulkanP010Buffer))
+            );
+        }
+    }
+
+    #[test]
+    fn main10_replan_stays_main10_and_isolates_main8_facts() {
+        let mut caps = full();
+        let policy = PipelinePolicy {
+            output_codec: VideoCodec::Hevc,
+            output_bit_depth: 10,
+            ..Default::default()
+        };
+        let input = main10_input(VideoCodec::Hevc);
+        let output = PipelinePlanner::select(&caps, &input, policy.clone())
+            .unwrap()
+            .selected
+            .output;
+        caps.interop
+            .set_output_for_requirements(&output, no("P010 import"));
+        let staged = PipelinePlanner::select(&caps, &input, policy.clone())
+            .unwrap()
+            .selected;
+        assert!(staged.hardware_upload);
+        assert!(!staged.hardware_output_interop);
+        assert_eq!(staged.output.profile, Some(VideoProfile::HevcMain10));
+        assert!(caps.interop.hevc_output.is_supported());
+        let explicit_error = PipelinePlanner::select(
+            &caps,
+            &input,
+            PipelinePolicy {
+                output_interop: InteropRequest::On,
+                ..policy.clone()
+            },
+        )
+        .unwrap_err();
+        assert!(explicit_error.to_string().contains("P010 import"));
+        caps.media
+            .disable_encode_output(&output, "Main10 encoder failed");
+        let error = PipelinePlanner::select(&caps, &input, policy).unwrap_err();
+        assert!(error.to_string().contains("Main10 encoder failed"));
+        assert!(caps.media.hevc_vaapi_encode.is_supported());
+    }
+
+    #[test]
+    fn ten_bit_output_rejects_unsupported_codec_and_conversion() {
+        let input = main10_input(VideoCodec::Hevc);
+        for codec in [VideoCodec::H264, VideoCodec::Av1] {
+            let error = PipelinePlanner::select(
+                &full(),
+                &input,
+                PipelinePolicy {
+                    output_codec: codec,
+                    output_bit_depth: 10,
+                    ..Default::default()
+                },
+            )
+            .unwrap_err();
+            assert!(error.to_string().contains("not implemented"));
+        }
+        let error = PipelinePlanner::select(
+            &full(),
+            &h264(),
+            PipelinePolicy {
+                output_codec: VideoCodec::Hevc,
+                output_bit_depth: 10,
+                ..Default::default()
+            },
+        )
+        .unwrap_err();
+        assert!(error.to_string().contains("without a conversion path"));
     }
 }

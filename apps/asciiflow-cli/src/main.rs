@@ -122,6 +122,7 @@ fn run(args: Args, cancellation: CancellationToken) -> Result<()> {
             args.vaapi_vulkan_output_interop.into()
         },
         output_codec: args.output_codec.into(),
+        output_bit_depth: args.output_bit_depth.into(),
     };
     PipelinePlanner::validate_policy(policy.clone()).map_err(|error| {
         asciiflow_core::Error::pipeline(PipelineStage::Planning, "validate pipeline policy", error)
@@ -129,17 +130,6 @@ fn run(args: Args, cancellation: CancellationToken) -> Result<()> {
     let vaapi = VaapiOptions::new(args.hw_device.clone());
     let probe = capabilities::probe(&args.input, &vaapi, &config)?;
     ensure_not_cancelled(&cancellation)?;
-    probe
-        .media_info
-        .requirements
-        .validate_current_pipeline()
-        .map_err(|error| {
-            asciiflow_core::Error::pipeline(
-                PipelineStage::InputProbe,
-                "validate the current 8-bit NV12 media contract",
-                error,
-            )
-        })?;
     let planning_started = Instant::now();
     let mut snapshot = probe.snapshot;
     let decision =
@@ -286,6 +276,10 @@ fn run(args: Args, cancellation: CancellationToken) -> Result<()> {
         mapping_strategy,
         gpu_slots,
     } = selection;
+    let host_format = match info.frame_desc.format {
+        asciiflow_core::PixelFormat::Nv12 => "Host NV12",
+        asciiflow_core::PixelFormat::P010Le => "Host P010LE",
+    };
     println!(
         "输入 {}x{} · {:.3} FPS · {} · {:?} backend · {} 槽",
         info.frame_desc.width,
@@ -294,7 +288,7 @@ fn run(args: Args, cancellation: CancellationToken) -> Result<()> {
         if plan.hardware_input_interop {
             "VAAPI DRM PRIME input"
         } else {
-            "Host NV12"
+            host_format
         },
         plan.backend,
         plan.buffer_capacity
@@ -314,7 +308,7 @@ fn run(args: Args, cancellation: CancellationToken) -> Result<()> {
         if plan.hardware_download {
             media_plan.push("hwdownload");
         }
-        media_plan.push("Host NV12");
+        media_plan.push(host_format);
         media_plan.push(match plan.backend {
             ProcessingBackend::Cpu => "CPU ASCII",
             ProcessingBackend::Vulkan => "Vulkan ASCII",
@@ -329,7 +323,7 @@ fn run(args: Args, cancellation: CancellationToken) -> Result<()> {
             "VAAPI encode",
         ]);
     } else {
-        media_plan.push("Host NV12");
+        media_plan.push(host_format);
         if plan.hardware_upload {
             media_plan.push("hwupload");
         }
@@ -565,20 +559,36 @@ impl InitCapability {
     fn mark_unsupported(
         self,
         snapshot: &mut CapabilitySnapshot,
-        input_codec: &asciiflow_core::VideoCodec,
-        output_codec: &asciiflow_core::VideoCodec,
+        input: &asciiflow_core::InputRequirements,
+        output: &asciiflow_core::OutputVideoRequirements,
         reason: &str,
     ) {
         let unsupported = || CapabilitySupport::unsupported(reason);
         match self {
-            Self::HardwareDecode => snapshot.media.disable_decode(input_codec, reason),
+            Self::HardwareDecode => match (&input.codec, input.bit_depth) {
+                (asciiflow_core::VideoCodec::Hevc, Some(10)) => {
+                    snapshot.media.hevc_main10_vaapi_decode = unsupported()
+                }
+                (asciiflow_core::VideoCodec::Av1, Some(10)) => {
+                    snapshot.media.av1_10bit_vaapi_decode = unsupported()
+                }
+                _ => snapshot.media.disable_decode(&input.codec, reason),
+            },
             Self::Vulkan => {
                 snapshot.processing.vulkan = unsupported();
                 snapshot.processing.vulkan_auto_eligible = false;
             }
-            Self::HardwareEncode => snapshot.media.disable_encode(output_codec, reason),
-            Self::InputInterop => snapshot.interop.set_input(input_codec, unsupported()),
-            Self::OutputInterop => snapshot.interop.set_output(output_codec, unsupported()),
+            Self::HardwareEncode => snapshot.media.disable_encode_output(output, reason),
+            Self::InputInterop => {
+                if input.bit_depth == Some(10) {
+                    snapshot.interop.p010_input = unsupported();
+                } else {
+                    snapshot.interop.set_input(&input.codec, unsupported());
+                }
+            }
+            Self::OutputInterop => snapshot
+                .interop
+                .set_output_for_requirements(output, unsupported()),
             Self::SoftwareDecode | Self::SoftwareEncode | Self::Muxer | Self::Configuration => {}
         }
     }
@@ -746,8 +756,8 @@ fn initialize_with_replan<T>(
             let first_failure = first.to_string();
             first.capability.mark_unsupported(
                 snapshot,
-                &requirements.codec,
-                &policy.output_codec,
+                requirements,
+                &initial_plan.output,
                 &first_failure,
             );
             reset_staging().context("initialization replan: clean failed staging output")?;
@@ -1465,9 +1475,14 @@ mod stage40_tests {
                 av1_vaapi_decode: supported(),
                 h264_vaapi_encode: supported(),
                 hevc_vaapi_encode: supported(),
+                hevc_main10_vaapi_decode: supported(),
+                av1_10bit_vaapi_decode: supported(),
+                hevc_main10_vaapi_encode: supported(),
                 av1_vaapi_encode: supported(),
                 nv12_hardware_frames: supported(),
                 nv12_hardware_upload: supported(),
+                p010_hardware_frames: supported(),
+                p010_hardware_upload: supported(),
             },
             processing: ProcessingCapabilities {
                 cpu: supported(),
@@ -1487,6 +1502,8 @@ mod stage40_tests {
                 output: supported(),
                 hevc_output: supported(),
                 av1_output: supported(),
+                p010_input: supported(),
+                p010_output: supported(),
             },
         }
     }
@@ -1594,6 +1611,7 @@ mod stage40_tests {
             input_interop: asciiflow_core::InteropRequest::On,
             output_interop: asciiflow_core::InteropRequest::On,
             output_codec: asciiflow_core::VideoCodec::H264,
+            output_bit_depth: 8,
         };
         assert!(!InitCapability::HardwareDecode.is_auto(&explicit));
         assert!(!InitCapability::HardwareEncode.is_auto(&explicit));
@@ -1781,6 +1799,101 @@ mod stage40_tests {
         assert!(snapshot.interop.output.is_supported());
         assert!(snapshot.interop.hevc_output.is_supported());
         assert!(snapshot.media.av1_vaapi_encode.is_supported());
+    }
+
+    fn main10_requirements() -> asciiflow_core::InputRequirements {
+        let mut input = requirements();
+        input.codec = VideoCodec::Hevc;
+        input.profile = Some(asciiflow_core::VideoProfile::HevcMain10);
+        input.pixel_format = Some("yuv420p10le".into());
+        input.bit_depth = Some(10);
+        input
+    }
+
+    #[test]
+    fn main10_output_interop_init_failure_replans_to_p010_staged_only() {
+        let policy = PipelinePolicy {
+            output_codec: VideoCodec::Hevc,
+            output_bit_depth: 10,
+            ..Default::default()
+        };
+        let requirements = main10_requirements();
+        for point in [
+            InitializationPoint::OutputVaapiFrameAcquire,
+            InitializationPoint::OutputDrmPrimeMap,
+            InitializationPoint::OutputDmaBufImport,
+        ] {
+            let mut snapshot = full_capabilities();
+            let initial =
+                PipelinePlanner::select(&snapshot, &requirements, policy.clone()).unwrap();
+            assert!(initial.selected.hardware_output_interop);
+            let capability = point.capability(&initial.selected);
+            let mut attempts = 0;
+            let initialized = initialize_with_replan(
+                &mut snapshot,
+                &requirements,
+                policy.clone(),
+                initial,
+                |plan| {
+                    attempts += 1;
+                    if attempts == 1 {
+                        Err(injected(
+                            capability,
+                            "injected P010 output initialization failure",
+                        ))
+                    } else {
+                        Ok(plan.clone())
+                    }
+                },
+                || Ok(()),
+            )
+            .unwrap();
+            assert_eq!(attempts, 2);
+            assert_eq!(
+                initialized.value.output.profile,
+                Some(asciiflow_core::VideoProfile::HevcMain10)
+            );
+            assert_eq!(
+                initialized.value.output.pixel_format,
+                asciiflow_core::PixelFormat::P010Le
+            );
+            assert!(initialized.value.hardware_upload);
+            assert!(!initialized.value.hardware_output_interop);
+            assert!(!snapshot.interop.p010_output.is_supported());
+            assert!(snapshot.interop.hevc_output.is_supported());
+        }
+    }
+
+    #[test]
+    fn main10_encoder_init_failure_is_terminal_and_does_not_disable_main8() {
+        let policy = PipelinePolicy {
+            output_codec: VideoCodec::Hevc,
+            output_bit_depth: 10,
+            ..Default::default()
+        };
+        let requirements = main10_requirements();
+        for point in [
+            InitializationPoint::EncoderCreate,
+            InitializationPoint::VaapiFramesPoolCreate,
+        ] {
+            let mut snapshot = full_capabilities();
+            let initial =
+                PipelinePlanner::select(&snapshot, &requirements, policy.clone()).unwrap();
+            let capability = point.capability(&initial.selected);
+            let error = initialize_with_replan(
+                &mut snapshot,
+                &requirements,
+                policy.clone(),
+                initial,
+                |_| Err::<(), _>(injected(capability, "injected Main10 encoder/pool failure")),
+                || Ok(()),
+            )
+            .unwrap_err();
+            assert!(error.to_string().contains("Main10 encoder/pool failure"));
+            assert!(!snapshot.media.hevc_main10_vaapi_encode.is_supported());
+            assert!(snapshot.media.hevc_vaapi_encode.is_supported());
+            assert!(snapshot.media.h264_vaapi_encode.is_supported());
+        }
     }
 
     #[test]

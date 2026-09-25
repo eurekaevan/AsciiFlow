@@ -78,6 +78,18 @@ impl VaapiOptions {
 
     /// Probe the exact 8-bit VAAPI encode profiles used by the output planner.
     pub fn probe_encode_profiles(&self) -> [CapabilitySupport; 3] {
+        let [h264, hevc, av1, _] = self.probe_encode_profiles_all();
+        [h264, hevc, av1]
+    }
+
+    /// Main10 encode is a separate fact from HEVC Main: profile, EncSlice and
+    /// the 10-bit render target must all be present.
+    pub fn probe_hevc_main10_encode(&self) -> CapabilitySupport {
+        let [_, _, _, main10] = self.probe_encode_profiles_all();
+        main10
+    }
+
+    fn probe_encode_profiles_all(&self) -> [CapabilitySupport; 4] {
         let library = match unsafe { libloading::Library::new("libva.so.2") } {
             Ok(value) => value,
             Err(error) => {
@@ -118,8 +130,9 @@ fn unsupported_profiles(reason: String) -> [CapabilitySupport; 5] {
     ]
 }
 
-fn unsupported_encode_profiles(reason: String) -> [CapabilitySupport; 3] {
+fn unsupported_encode_profiles(reason: String) -> [CapabilitySupport; 4] {
     [
+        CapabilitySupport::unsupported(reason.clone()),
         CapabilitySupport::unsupported(reason.clone()),
         CapabilitySupport::unsupported(reason.clone()),
         CapabilitySupport::unsupported(reason),
@@ -430,7 +443,7 @@ unsafe fn ten_bit_profile_support(
 unsafe fn query_encode_profiles(
     library: &libloading::Library,
     display: VaDisplay,
-) -> [CapabilitySupport; 3] {
+) -> [CapabilitySupport; 4] {
     unsafe {
         let max_profiles: libloading::Symbol<unsafe extern "C" fn(VaDisplay) -> i32> =
             match library.get(b"vaMaxNumProfiles\0") {
@@ -516,8 +529,77 @@ unsafe fn query_encode_profiles(
                 VA_ENTRYPOINT_ENC_SLICE,
                 *query_entries,
             ),
+            profile_entrypoint_10bit_support(
+                library,
+                display,
+                available,
+                entries,
+                VA_PROFILE_HEVC_MAIN10,
+                *query_entries,
+            ),
         ]
     }
+}
+
+unsafe fn profile_entrypoint_10bit_support(
+    library: &libloading::Library,
+    display: VaDisplay,
+    available: &[VaProfile],
+    entries: i32,
+    profile: VaProfile,
+    query_entries: unsafe extern "C" fn(
+        VaDisplay,
+        VaProfile,
+        *mut VaEntrypoint,
+        *mut i32,
+    ) -> VaStatus,
+) -> CapabilitySupport {
+    let base = unsafe {
+        profile_entrypoint_support(
+            display,
+            available,
+            entries,
+            &[profile],
+            VA_ENTRYPOINT_ENC_SLICE,
+            query_entries,
+        )
+    };
+    if !base.is_supported() {
+        return base;
+    }
+    let get_attributes: libloading::Symbol<
+        unsafe extern "C" fn(
+            VaDisplay,
+            VaProfile,
+            VaEntrypoint,
+            *mut VaConfigAttrib,
+            i32,
+        ) -> VaStatus,
+    > = match unsafe { library.get(b"vaGetConfigAttributes\0") } {
+        Ok(value) => value,
+        Err(error) => {
+            return CapabilitySupport::not_probed(format!(
+                "VAAPI RT format query unavailable: {error}"
+            ));
+        }
+    };
+    let mut rt_format = VaConfigAttrib {
+        kind: VA_CONFIG_ATTRIB_RT_FORMAT,
+        value: u32::MAX,
+    };
+    let status =
+        unsafe { get_attributes(display, profile, VA_ENTRYPOINT_ENC_SLICE, &mut rt_format, 1) };
+    if status != VA_STATUS_SUCCESS {
+        return CapabilitySupport::not_probed(format!(
+            "VAAPI Main10 encode render-target query failed ({status})"
+        ));
+    }
+    if rt_format.value & VA_RT_FORMAT_YUV420_10 == 0 {
+        return CapabilitySupport::unsupported(
+            "VAAPI HEVC Main10 EncSlice lacks 10-bit 4:2:0 render-target support",
+        );
+    }
+    CapabilitySupport::supported()
 }
 
 unsafe fn profile_entrypoint_support(

@@ -138,7 +138,8 @@ cargo test --release -p asciiflow-interop \
 ```
 
 The deliberately invalid-FD diagnostic should be run separately without
-Validation. These tests do not enable production 10-bit output.
+Validation. These C-1 tests are diagnostic, not an encoder; Stage 5.2C-2
+qualifies the separate production path.
 
 ```bash
 ASCIIFLOW_VULKAN_ALLOW_CPU=1 \
@@ -151,6 +152,37 @@ The `p010_` filter also includes the opt-in 300-frame 1080p benchmark and
 3000-frame reuse test. Run the benchmark in Release for interpretable timing:
 `cargo test --release -p asciiflow-vulkan
 p010_synthetic_1080p_300_frame_benchmark -- --ignored --nocapture`.
-See [the P010 contract and measured scope](p010.md). Production HEVC Main10
-and 10-bit AV1 must continue to fail before output creation because no
-10-bit output path is available.
+See [the P010 contract and measured scope](p010.md). Production AV1 10-bit
+output remains unsupported. HEVC Main10 requires explicit
+`--output-codec hevc --output-bit-depth 10` and BT.709 SDR P010 input.
+
+## HEVC Main10 production encode (Stage 5.2C-2)
+
+On the qualified Intel render node, use a 128×128-or-larger true-10-bit
+HEVC Main10 BT.709 SDR input. The checked-in 64×64 fixture is deliberately too
+small for this driver's Main10 encoder. Set the paths below to retained inputs
+or generate them as described in the [qualification report](stage5.2c2-hevc-main10-encode.md):
+
+```bash
+ASCIIFLOW_STAGE52C2_HEVC_INPUT=/absolute/path/to/main10-30.mp4 \
+ASCIIFLOW_VULKAN_VALIDATION=1 cargo test -p asciiflow-interop --test hardware \
+  main10_encoder_owned_full_interop_30_frame_parity -- --ignored --nocapture
+
+ASCIIFLOW_STAGE52C2_HEVC_STRESS_INPUT=/absolute/path/to/main10-3000.mp4 \
+cargo test -p asciiflow-interop --test hardware \
+  main10_encoder_owned_full_interop_3000_frame_stress -- --ignored --nocapture
+ASCIIFLOW_STAGE52C2_HEVC_STRESS_INPUT=/absolute/path/to/main10-3000.mp4 \
+cargo test -p asciiflow-interop --test hardware \
+  main10_staged_encode_3000_frame_fd_stress -- --ignored --nocapture
+cargo test -p asciiflow-media \
+  injected_main10_send_receive_and_drain_failures_preserve_cause -- --ignored
+```
+
+The parity test downloads the real encoder-owned P010 surface before sending
+it, compares all 30 frames byte-for-byte to the staged P010 reference, and
+checks that active 10-bit low bits remain. It does **not** demand byte-exact
+equality from the lossy decoded HEVC stream. The two 3000-frame tests record
+FD before/steady/after and decode-back counts. Regular planner/CLI tests cover
+explicit depth policy, exact Main10 failure facts, staged auto replan, and
+strict interop requests. The report records bitstream, AAC, FreeType,
+cancellation, 1080p benchmark, Validation and `spirv-val` evidence.

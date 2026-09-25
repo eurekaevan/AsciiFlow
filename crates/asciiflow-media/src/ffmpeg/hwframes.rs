@@ -15,7 +15,6 @@ impl HardwareFramesPool {
         Self::vaapi(device, width, height, ffi::AVPixelFormat::AV_PIX_FMT_NV12)
     }
 
-    #[cfg(feature = "p010-output-diagnostic")]
     pub(crate) fn vaapi_p010(device: &HardwareDevice, width: u32, height: u32) -> Result<Self> {
         Self::vaapi(device, width, height, ffi::AVPixelFormat::AV_PIX_FMT_P010LE)
     }
@@ -83,6 +82,14 @@ impl HardwareFramesPool {
             self.reference.as_ptr(),
             ffi::AVHWFrameTransferDirection::AV_HWFRAME_TRANSFER_DIRECTION_TO,
             ffi::AVPixelFormat::AV_PIX_FMT_NV12,
+        )
+    }
+
+    pub(crate) fn supports_upload_p010(&self) -> Result<bool> {
+        supports_format(
+            self.reference.as_ptr(),
+            ffi::AVHWFrameTransferDirection::AV_HWFRAME_TRANSFER_DIRECTION_TO,
+            ffi::AVPixelFormat::AV_PIX_FMT_P010LE,
         )
     }
 }
@@ -261,7 +268,6 @@ impl VaapiEncoderFrame {
         self.upload_host(frame, PixelFormat::Nv12)
     }
 
-    #[cfg(feature = "p010-output-diagnostic")]
     pub fn upload_p010(&mut self, frame: &VideoFrame) -> Result<()> {
         self.upload_host(frame, PixelFormat::P010Le)
     }
@@ -330,7 +336,6 @@ impl VaapiEncoderFrame {
         self.download_as(PixelFormat::Nv12)
     }
 
-    #[cfg(feature = "p010-output-diagnostic")]
     pub fn download_p010(&self) -> Result<VideoFrame> {
         self.download_as(PixelFormat::P010Le)
     }

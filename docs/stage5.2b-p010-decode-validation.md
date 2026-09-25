@@ -1,10 +1,11 @@
 # Stage 5.2B: 10-bit SDR decode and input interop qualification
 
-This is an evidence ledger, **not** a declaration of production 10-bit
-transcoding. The output encoders still accept NV12 8-bit only. The CLI rejects
-otherwise valid Main10/AV1 10-bit input before staging an output, explaining
-that no production 10-bit output path exists. HDR, PQ, HLG, BT.2020 and silent
-10→8 conversion remain unsupported.
+This historical evidence ledger was **not** a declaration of production 10-bit
+transcoding. At the Stage 5.2B seal, output encoders accepted NV12 8-bit only
+and the CLI rejected otherwise valid Main10/AV1 10-bit input before staging an
+output. [Stage 5.2C-2](stage5.2c2-hevc-main10-encode.md) subsequently qualified
+explicit HEVC Main10 output. HDR, PQ, HLG, BT.2020 and silent 10→8 conversion
+remain unsupported.
 
 ## Portable and software evidence
 

@@ -41,6 +41,24 @@ impl From<OutputCodecArg> for VideoCodec {
     }
 }
 
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, ValueEnum)]
+pub enum OutputBitDepthArg {
+    #[default]
+    #[value(name = "8")]
+    Eight,
+    #[value(name = "10")]
+    Ten,
+}
+
+impl From<OutputBitDepthArg> for u8 {
+    fn from(value: OutputBitDepthArg) -> Self {
+        match value {
+            OutputBitDepthArg::Eight => 8,
+            OutputBitDepthArg::Ten => 10,
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq, ValueEnum)]
 pub enum InteropArg {
     Auto,
@@ -98,7 +116,7 @@ impl From<InteropArg> for InteropRequest {
 #[command(
     name = "asciiflow",
     version,
-    about = "AsciiFlow v2: bounded NV12 ASCII video pipeline"
+    about = "AsciiFlow v2: bounded NV12/P010 ASCII video pipeline"
 )]
 pub struct Args {
     pub input: PathBuf,
@@ -113,6 +131,8 @@ pub struct Args {
     pub encode: MediaArg,
     #[arg(long, value_enum, default_value = "h264")]
     pub output_codec: OutputCodecArg,
+    #[arg(long, value_enum, default_value = "8")]
+    pub output_bit_depth: OutputBitDepthArg,
     #[arg(long, value_enum, default_value = "auto")]
     pub audio: AudioArg,
     #[arg(long)]
@@ -171,6 +191,7 @@ mod tests {
     fn output_codec_defaults_to_h264_and_parses_hardware_codecs_independently() {
         let default = Args::try_parse_from(["asciiflow", "input.mp4", "output.mp4"]).unwrap();
         assert_eq!(default.output_codec, OutputCodecArg::H264);
+        assert_eq!(default.output_bit_depth, OutputBitDepthArg::Eight);
         assert_eq!(default.encode, MediaArg::Auto);
 
         let hevc = Args::try_parse_from([
@@ -184,6 +205,7 @@ mod tests {
         ])
         .unwrap();
         assert_eq!(hevc.output_codec, OutputCodecArg::Hevc);
+        assert_eq!(hevc.output_bit_depth, OutputBitDepthArg::Eight);
         assert_eq!(hevc.encode, MediaArg::Vaapi);
 
         let av1 = Args::try_parse_from([
@@ -198,5 +220,27 @@ mod tests {
         .unwrap();
         assert_eq!(av1.output_codec, OutputCodecArg::Av1);
         assert_eq!(av1.encode, MediaArg::Vaapi);
+
+        let main10 = Args::try_parse_from([
+            "asciiflow",
+            "input.mp4",
+            "output.mp4",
+            "--output-codec",
+            "hevc",
+            "--output-bit-depth",
+            "10",
+        ])
+        .unwrap();
+        assert_eq!(main10.output_bit_depth, OutputBitDepthArg::Ten);
+        assert!(
+            Args::try_parse_from([
+                "asciiflow",
+                "input.mp4",
+                "output.mp4",
+                "--output-bit-depth",
+                "12",
+            ])
+            .is_err()
+        );
     }
 }

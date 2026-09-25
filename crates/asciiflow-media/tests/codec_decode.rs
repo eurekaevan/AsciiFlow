@@ -142,7 +142,7 @@ fn ten_bit_sdr_decodes_to_canonical_p010_and_drains() {
                 .validate_current_pipeline()
                 .unwrap_err()
                 .to_string()
-                .contains("no production 10-bit output path")
+                .contains("select explicit HEVC Main10 output")
         );
         let mut pts = Vec::new();
         let mut low_bits_seen = [false; 4];

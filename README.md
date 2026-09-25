@@ -1,19 +1,17 @@
 # 🌊 AsciiFlow v2 — Rust CPU + Vulkan pipeline
 
-Input is detected automatically: H.264 8-bit 4:2:0, HEVC Main 8-bit 4:2:0,
-and AV1 Main 8-bit 4:2:0. Output defaults to H.264; HEVC Main and AV1 Profile0
-8-bit output are available through VAAPI. Production ten-bit HEVC/AV1
-transcoding and HDR are not supported. Internal P010LE input and diagnostic
-output interop are qualified on Intel Arc; no production 10-bit encoder exists.
-Software decode and Intel Arc Meteor Lake hardware decode/interop
-are qualified for these 8-bit inputs. See [codec support](docs/codecs.md).
+Input is detected automatically: H.264, HEVC Main and AV1 Main 8-bit 4:2:0,
+plus explicitly tagged BT.709 SDR HEVC Main10 and AV1 Main 10-bit 4:2:0.
+Output defaults to H.264 8-bit. HEVC Main and AV1 Profile0 8-bit output use
+VAAPI; explicit `--output-codec hevc --output-bit-depth 10` enables HEVC
+Main10 VAAPI output for P010 input. HDR, AV1 10-bit output, and implicit
+bit-depth conversion are not supported. See [codec support](docs/codecs.md).
 
-AsciiFlow v2 is the primary development path. Host NV12 remains the portable
-production boundary. An internal P010LE processing foundation now exists and
-can consume software-decoded 10-bit SDR HEVC/AV1; the CLI still rejects real
-10-bit output because no 10-bit encoder path is available.
+AsciiFlow v2 is the primary development path. Host NV12 remains the default
+portable production boundary. P010LE processing can consume software- or
+VAAPI-decoded 10-bit SDR HEVC/AV1 and feed the explicit HEVC Main10 output path.
 See the [P010 processing contract](docs/p010.md) and
-[output qualification](docs/stage5.2c1-p010-output-interop.md). At startup, AsciiFlow probes the
+[Main10 qualification](docs/stage5.2c2-hevc-main10-encode.md). At startup, AsciiFlow probes the
 input and the local runtime, then selects the fastest legal pipeline. On the
 qualified Intel Linux path,
 this can carry decoded VAAPI surfaces into Vulkan and return processed pixels
@@ -21,10 +19,10 @@ to encoder-owned VAAPI surfaces without Host pixel copies:
 
 ```text
 FFmpeg software or VAAPI decode
-  -> hardware download to Host NV12, or DRM PRIME / DMA-BUF import
+  -> hardware download to Host NV12/P010LE, or DRM PRIME / DMA-BUF import
   -> CPU ASCII, or Vulkan mapping pass + render pass
-  -> Host NV12 + optional hardware upload, or writable encoder DMA-BUF import
-  -> FFmpeg software H.264, or VAAPI H.264/HEVC Main/AV1 Profile0 MP4 encode
+  -> Host NV12/P010LE + optional hardware upload, or writable encoder DMA-BUF import
+  -> FFmpeg software H.264, or VAAPI H.264/HEVC Main/HEVC Main10/AV1 Profile0 MP4 encode
 
 FFmpeg demux -> compatible compressed audio packets -> the same MP4 mux owner
 ```
@@ -76,6 +74,12 @@ cargo run --release --bin asciiflow -- input.mp4 output-hevc.mp4 \
 # AV1 Profile0 output uses VAAPI hardware encode; H.264 remains the default.
 cargo run --release --bin asciiflow -- input.mp4 output-av1.mp4 \
   --output-codec av1 --encode auto --width 80 --verbose
+
+# Explicit BT.709 SDR 10-bit input to HEVC Main10; auto prefers qualified
+# encoder-owned P010 full interop and can stage P010 when output interop fails.
+cargo run --release --bin asciiflow -- input-main10.mp4 output-main10.mp4 \
+  --output-codec hevc --output-bit-depth 10 --encode vaapi \
+  --hw-device /dev/dri/renderD128 --width 80 --verbose
 ```
 
 Supported options are positional `input` and optional `output` (output is not
@@ -83,14 +87,16 @@ needed for `--capabilities` or `--explain-plan`), plus
 `--backend auto|cpu|vulkan`, `--vulkan-mapping auto|gpu|cpu`,
 `--decode auto|software|vaapi`, `--encode auto|software|vaapi`,
 `--output-codec h264|hevc|av1` (default `h264`),
+`--output-bit-depth 8|10` (default `8`),
 `--audio auto|copy|none`, optional
 `--hw-device`, `--vaapi-vulkan-input-interop auto|off|on` (also
 `--input-interop`), `--vaapi-vulkan-output-interop auto|off|on` (also
 `--output-interop`), `--capabilities`, `--explain-plan`, `--width`,
 `--height`, `--charset`, `--font`, `--color`, `--max-frames`, `--no-progress`,
 and `--verbose`. Output is MP4 with H.264, HEVC or AV1 video. HEVC Main and
-AV1 Profile0 output are 8-bit 4:2:0 and VAAPI-only; neither silently changes
-codec or falls back to software encoding.
+AV1 Profile0 remain 8-bit 4:2:0; HEVC Main10 requires explicit depth 10 and
+P010 processing. All HEVC/AV1 outputs are VAAPI-only; none silently changes
+codec, bit depth or falls back to software encoding.
 Audio defaults to `auto`, which
 copies every MP4-compatible compressed audio stream without decoding it and
 warns when an incompatible stream is skipped. `--audio copy` is strict;

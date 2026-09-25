@@ -9,8 +9,9 @@ use super::{
     vaapi::{EncodeMode, VaapiOptions},
 };
 use asciiflow_core::{
-    CancellationToken, EncodeDiagnostics, Error, FrameDesc, FrameSink, PipelineStage, PixelFormat,
-    Rational, Result, SinkTimings, VideoCodec, VideoFrame,
+    CancellationToken, CapabilitySupport, ChromaLocation, ColorMatrix, ColorPrimaries, ColorRange,
+    EncodeDiagnostics, Error, FrameDesc, FrameSink, PipelineStage, PixelFormat, Rational, Result,
+    SinkTimings, TransferCharacteristic, VideoCodec, VideoFrame,
 };
 use crossbeam_channel::{Receiver, SendTimeoutError, Sender, bounded};
 use std::{
@@ -91,7 +92,7 @@ unsafe impl Send for MuxOutput {}
 
 pub struct VaapiEncoderProbe {
     pub frames: VaapiEncoderFrames,
-    pub host_upload_supported: bool,
+    pub host_upload: CapabilitySupport,
 }
 
 pub struct OutputEncoding {
@@ -133,7 +134,7 @@ fn probe_vaapi_encoder_internal(
     frame_rate: Rational,
     vaapi: VaapiOptions,
 ) -> Result<VaapiEncoderProbe> {
-    require_nv12_output(&desc)?;
+    require_supported_output(&output_codec, &desc, EncodeMode::Vaapi)?;
     let codec_name = output_codec_name(&output_codec)?;
     let width = i32::try_from(desc.width)
         .map_err(|_| Error::Media("encoder probe width exceeds FFmpeg i32 range".into()))?;
@@ -168,13 +169,13 @@ fn probe_vaapi_encoder_internal(
             num: frame_rate.numerator,
             den: frame_rate.denominator,
         };
-        (*codec.as_ptr()).color_range = ffi::AVColorRange::AVCOL_RANGE_MPEG;
+        (*codec.as_ptr()).color_range = output_color_range(&desc);
         (*codec.as_ptr()).colorspace = ffi::AVColorSpace::AVCOL_SPC_BT709;
         (*codec.as_ptr()).color_primaries = ffi::AVColorPrimaries::AVCOL_PRI_BT709;
         (*codec.as_ptr()).color_trc = ffi::AVColorTransferCharacteristic::AVCOL_TRC_BT709;
         (*codec.as_ptr()).chroma_sample_location = ffi::AVChromaLocation::AVCHROMA_LOC_LEFT;
         if output_codec == VideoCodec::Hevc {
-            (*codec.as_ptr()).profile = ffi::FF_PROFILE_HEVC_MAIN;
+            (*codec.as_ptr()).profile = hevc_profile(desc.format);
         } else if output_codec == VideoCodec::Av1 {
             (*codec.as_ptr()).global_quality = 25;
         }
@@ -182,7 +183,7 @@ fn probe_vaapi_encoder_internal(
         (*codec.as_ptr()).gop_size = 250;
     }
     let device = vaapi.create_device()?;
-    let pool = HardwareFramesPool::vaapi_nv12(&device, desc.width, desc.height)?;
+    let pool = encoder_pool(&device, &desc)?;
     unsafe { (*codec.as_ptr()).hw_frames_ctx = pool.try_clone_ref()? };
     let mut options = ptr::null_mut();
     let options_for_codec = vaapi_codec_options(&output_codec);
@@ -200,8 +201,8 @@ fn probe_vaapi_encoder_internal(
     check(
         opened,
         &format!(
-            "failed to configure {codec_name}_vaapi encoder probe for {}x{} NV12",
-            desc.width, desc.height
+            "failed to configure {codec_name}_vaapi encoder probe for {}x{} {:?}",
+            desc.width, desc.height, desc.format
         ),
     )?;
     if unused_options != 0 {
@@ -209,9 +210,17 @@ fn probe_vaapi_encoder_internal(
             "{output_codec} encoder probe rejected {unused_options} configuration option(s)"
         )));
     }
+    let host_upload = match pool_supports_upload(&pool, desc.format) {
+        Ok(true) => CapabilitySupport::supported(),
+        Ok(false) => CapabilitySupport::unsupported(format!(
+            "VAAPI frames context cannot upload Host {:?}",
+            desc.format
+        )),
+        Err(error) => CapabilitySupport::not_probed(error.to_string()),
+    };
     Ok(VaapiEncoderProbe {
         frames: VaapiEncoderFrames::from_pool(&pool, desc)?,
-        host_upload_supported: pool.supports_upload_nv12()?,
+        host_upload,
     })
 }
 
@@ -370,7 +379,7 @@ impl Encoder {
         frame_rate: Rational,
         options: EncoderCreateOptions,
     ) -> Result<Self> {
-        require_nv12_output(&desc)?;
+        require_supported_output(&options.codec, &desc, options.mode)?;
         let EncoderCreateOptions {
             codec: output_codec,
             mode,
@@ -455,13 +464,13 @@ impl Encoder {
                 num: frame_rate.numerator,
                 den: frame_rate.denominator,
             };
-            (*codec.as_ptr()).color_range = ffi::AVColorRange::AVCOL_RANGE_MPEG;
+            (*codec.as_ptr()).color_range = output_color_range(&desc);
             (*codec.as_ptr()).colorspace = ffi::AVColorSpace::AVCOL_SPC_BT709;
             (*codec.as_ptr()).color_primaries = ffi::AVColorPrimaries::AVCOL_PRI_BT709;
             (*codec.as_ptr()).color_trc = ffi::AVColorTransferCharacteristic::AVCOL_TRC_BT709;
             (*codec.as_ptr()).chroma_sample_location = ffi::AVChromaLocation::AVCHROMA_LOC_LEFT;
             if output_codec == VideoCodec::Hevc {
-                (*codec.as_ptr()).profile = ffi::FF_PROFILE_HEVC_MAIN;
+                (*codec.as_ptr()).profile = hevc_profile(desc.format);
             } else if output_codec == VideoCodec::Av1 {
                 (*codec.as_ptr()).global_quality = 25;
             }
@@ -475,11 +484,12 @@ impl Encoder {
         }
         let (hardware_device, frames_pool) = if mode == EncodeMode::Vaapi {
             let device = vaapi.create_device()?;
-            let pool = HardwareFramesPool::vaapi_nv12(&device, desc.width, desc.height)?;
-            if require_host_upload && !pool.supports_upload_nv12()? {
-                return Err(asciiflow_core::Error::UnsupportedFrame(
-                    "VAAPI device cannot upload Host NV12 frames".into(),
-                ));
+            let pool = encoder_pool(&device, &desc)?;
+            if require_host_upload && !pool_supports_upload(&pool, desc.format)? {
+                return Err(asciiflow_core::Error::UnsupportedFrame(format!(
+                    "VAAPI device cannot upload Host {:?} frames",
+                    desc.format
+                )));
             }
             unsafe {
                 (*codec.as_ptr()).hw_frames_ctx = pool.try_clone_ref()?;
@@ -511,8 +521,8 @@ impl Encoder {
         unsafe { ffi::av_dict_free(&mut options) };
         let configure_operation = if mode == EncodeMode::Vaapi {
             format!(
-                "failed to configure {encoder_name} encoder for {}x{} NV12",
-                desc.width, desc.height
+                "failed to configure {encoder_name} encoder for {}x{} {:?}",
+                desc.width, desc.height, desc.format
             )
         } else {
             "failed to configure software H.264 encoder".into()
@@ -622,7 +632,10 @@ impl Encoder {
         }
         let mut frame = Frame::new()?;
         unsafe {
-            (*frame.as_mut_ptr()).format = ffi::AVPixelFormat::AV_PIX_FMT_NV12 as i32;
+            (*frame.as_mut_ptr()).format = match desc.format {
+                PixelFormat::Nv12 => ffi::AVPixelFormat::AV_PIX_FMT_NV12,
+                PixelFormat::P010Le => ffi::AVPixelFormat::AV_PIX_FMT_P010LE,
+            } as i32;
             (*frame.as_mut_ptr()).width = desc.width as i32;
             (*frame.as_mut_ptr()).height = desc.height as i32;
         }
@@ -962,14 +975,58 @@ impl Encoder {
     }
 }
 
-fn require_nv12_output(desc: &FrameDesc) -> Result<()> {
+fn require_supported_output(codec: &VideoCodec, desc: &FrameDesc, mode: EncodeMode) -> Result<()> {
     desc.validate_layout()?;
-    if desc.format != PixelFormat::Nv12 {
+    if desc.format == PixelFormat::P010Le
+        && (*codec != VideoCodec::Hevc || mode != EncodeMode::Vaapi)
+    {
         return Err(Error::UnsupportedFrame(
-            "production encoders accept NV12 8-bit only; P010LE codec output is not enabled".into(),
+            "P010LE output requires HEVC Main10 VAAPI encoding".into(),
+        ));
+    }
+    if desc.format == PixelFormat::P010Le
+        && (desc.color_space.matrix != ColorMatrix::Bt709
+            || desc.color_space.primaries != ColorPrimaries::Bt709
+            || desc.color_space.transfer != TransferCharacteristic::Bt709
+            || desc.color_space.chroma_location != ChromaLocation::Left
+            || !matches!(
+                desc.color_space.range,
+                ColorRange::Limited | ColorRange::Full
+            ))
+    {
+        return Err(Error::UnsupportedFrame(
+            "HEVC Main10 output requires explicitly tagged BT.709 SDR color".into(),
         ));
     }
     Ok(())
+}
+
+fn output_color_range(desc: &FrameDesc) -> ffi::AVColorRange {
+    match (desc.format, desc.color_space.range) {
+        (PixelFormat::P010Le, ColorRange::Full) => ffi::AVColorRange::AVCOL_RANGE_JPEG,
+        _ => ffi::AVColorRange::AVCOL_RANGE_MPEG,
+    }
+}
+
+fn hevc_profile(format: PixelFormat) -> i32 {
+    match format {
+        PixelFormat::Nv12 => ffi::FF_PROFILE_HEVC_MAIN,
+        PixelFormat::P010Le => ffi::FF_PROFILE_HEVC_MAIN_10,
+    }
+}
+
+fn encoder_pool(device: &HardwareDevice, desc: &FrameDesc) -> Result<HardwareFramesPool> {
+    match desc.format {
+        PixelFormat::Nv12 => HardwareFramesPool::vaapi_nv12(device, desc.width, desc.height),
+        PixelFormat::P010Le => HardwareFramesPool::vaapi_p010(device, desc.width, desc.height),
+    }
+}
+
+fn pool_supports_upload(pool: &HardwareFramesPool, format: PixelFormat) -> Result<bool> {
+    match format {
+        PixelFormat::Nv12 => pool.supports_upload_nv12(),
+        PixelFormat::P010Le => pool.supports_upload_p010(),
+    }
 }
 impl FrameSink for Encoder {
     fn encode(&mut self, frame: VideoFrame) -> Result<()> {
@@ -981,7 +1038,7 @@ impl FrameSink for Encoder {
         self.frame.make_writable()?;
         let native = unsafe { &mut *self.frame.as_mut_ptr() };
         let (source_y, source_uv) = frame.host().planes(frame.desc());
-        let width = self.desc.width as usize;
+        let width = self.desc.y_stride();
         let height = self.desc.height as usize;
         unsafe {
             for row in 0..height {
@@ -1020,7 +1077,7 @@ impl FrameSink for Encoder {
                 )
             };
             self.timings.hardware_upload += upload_started.elapsed();
-            check(uploaded, "failed to upload Host NV12 frame to VAAPI")?;
+            check(uploaded, "failed to upload Host frame to VAAPI")?;
             unsafe { (*hardware_frame.as_mut_ptr()).pts = pts };
             hardware_frame.as_mut_ptr()
         } else {
@@ -1463,7 +1520,7 @@ mod audio_regression_tests {
         )
         .err()
         .unwrap();
-        assert!(error.to_string().contains("NV12 8-bit only"));
+        assert!(error.to_string().contains("requires HEVC Main10 VAAPI"));
         assert!(!output.exists());
         let error = probe_vaapi_encoder_for(
             VideoCodec::Av1,
@@ -1473,7 +1530,31 @@ mod audio_regression_tests {
         )
         .err()
         .unwrap();
-        assert!(error.to_string().contains("NV12 8-bit only"));
+        assert!(error.to_string().contains("requires HEVC Main10 VAAPI"));
+    }
+
+    #[test]
+    #[ignore = "requires HEVC Main10 VAAPI encode"]
+    fn main10_empty_stream_writes_valid_trailer() {
+        let desc = FrameDesc::host_p010_le(128, 128, ColorSpace::default()).unwrap();
+        let output = OutputPath(
+            std::env::temp_dir().join(format!("asciiflow-main10-empty-{}.mp4", std::process::id())),
+        );
+        let mut encoder = Encoder::create_with_hardware_frames_codec_and_audio(
+            &output.0,
+            desc,
+            Rational::new(30, 1).unwrap(),
+            VideoCodec::Hevc,
+            VaapiOptions::default(),
+            Vec::new(),
+            CancellationToken::new(),
+        )
+        .unwrap();
+        encoder.finish().unwrap();
+        drop(encoder);
+        let bytes = std::fs::read(&output.0).unwrap();
+        assert!(bytes.windows(4).any(|window| window == b"ftyp"));
+        assert!(bytes.windows(4).any(|window| window == b"moov"));
     }
 
     #[test]
@@ -1521,6 +1602,55 @@ mod audio_regression_tests {
     }
 
     #[test]
+    #[ignore = "requires Main10 VAAPI and a 10-bit AAC input at ASCIIFLOW_STAGE52C2_AAC_INPUT"]
+    fn injected_main10_audio_mux_failure_preserves_root_cause() {
+        let input = std::env::var_os("ASCIIFLOW_STAGE52C2_AAC_INPUT")
+            .map(std::path::PathBuf::from)
+            .unwrap_or_else(|| "/tmp/asciiflow-main10-single-aac-input.mp4".into());
+        let output = OutputPath(std::env::temp_dir().join(format!(
+            "asciiflow-main10-audio-mux-failure-{}.mp4",
+            std::process::id()
+        )));
+        let mut decoder = Decoder::open(&input).unwrap();
+        assert_eq!(decoder.info().frame_desc.format, PixelFormat::P010Le);
+        let plan = AudioPlan::select(AudioPolicy::Copy, &decoder.info().audio_streams).unwrap();
+        let cancellation = CancellationToken::new();
+        let encoder = Encoder::create_with_codec_and_audio(
+            &output.0,
+            decoder.info().frame_desc.clone(),
+            decoder.info().frame_rate,
+            OutputEncoding {
+                codec: VideoCodec::Hevc,
+                mode: EncodeMode::Vaapi,
+            },
+            VaapiOptions::default(),
+            decoder.audio_output_templates(&plan).unwrap(),
+            cancellation.clone(),
+        )
+        .unwrap();
+        encoder
+            .send_mux_message(MuxMessage::FailAudioAfter(2))
+            .unwrap();
+        decoder.attach_audio_passthrough(&plan, encoder.audio_packet_sender());
+        let error = Pipeline::new(2)
+            .unwrap()
+            .run_with_cancellation(
+                decoder,
+                Identity,
+                encoder,
+                AsciiConfig::default(),
+                cancellation.clone(),
+            )
+            .unwrap_err();
+        assert_eq!(error.stage(), Some(PipelineStage::MuxRuntime));
+        assert!(
+            error.to_string().contains("injected audio mux failure"),
+            "{error}"
+        );
+        assert!(cancellation.is_cancelled());
+    }
+
+    #[test]
     #[ignore = "requires Intel VAAPI HEVC encode"]
     fn injected_hevc_send_and_receive_failures_keep_encode_runtime_context() {
         let desc = FrameDesc::host_nv12(1920, 1080, ColorSpace::default()).unwrap();
@@ -1554,6 +1684,60 @@ mod audio_regression_tests {
             } else {
                 "injected HEVC send_frame failure"
             }));
+            drop(encoder);
+            std::fs::remove_file(path).unwrap();
+        }
+    }
+
+    #[test]
+    #[ignore = "requires Intel VAAPI HEVC Main10 encode"]
+    fn injected_main10_send_receive_and_drain_failures_preserve_cause() {
+        let desc = FrameDesc::host_p010_le(128, 128, ColorSpace::default()).unwrap();
+        for failure in ["send", "receive", "drain"] {
+            let path = std::env::temp_dir().join(format!(
+                "asciiflow-main10-injected-{failure}-{}.mp4",
+                std::process::id()
+            ));
+            let mut encoder = Encoder::create_with_codec_and_audio(
+                &path,
+                desc.clone(),
+                Rational::new(30, 1).unwrap(),
+                OutputEncoding {
+                    codec: VideoCodec::Hevc,
+                    mode: EncodeMode::Vaapi,
+                },
+                VaapiOptions::default(),
+                Vec::new(),
+                CancellationToken::new(),
+            )
+            .unwrap();
+            let frame = || {
+                VideoFrame::new_host(desc.clone(), Some(0), HostFrame::new_zeroed(&desc)).unwrap()
+            };
+            let error = match failure {
+                "send" => {
+                    encoder.inject_send_failure = true;
+                    encoder.encode(frame()).unwrap_err()
+                }
+                "receive" => {
+                    encoder.inject_receive_failure = true;
+                    encoder.encode(frame()).unwrap_err()
+                }
+                "drain" => {
+                    encoder.encode(frame()).unwrap();
+                    encoder.inject_receive_failure = true;
+                    encoder.finish().unwrap_err()
+                }
+                _ => unreachable!(),
+            };
+            assert!(
+                error.to_string().contains(if failure == "send" {
+                    "injected HEVC send_frame failure"
+                } else {
+                    "injected HEVC receive_packet failure"
+                }),
+                "{error}"
+            );
             drop(encoder);
             std::fs::remove_file(path).unwrap();
         }

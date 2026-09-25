@@ -1,5 +1,7 @@
 use crate::DrmPrimeMapping;
-use asciiflow_core::{AsciiConfig, BackendOutput, Error, FrameDesc, PipelineStage, Result};
+use asciiflow_core::{
+    AsciiConfig, BackendOutput, Error, FrameDesc, PipelineStage, PixelFormat, Result,
+};
 use asciiflow_media::VaapiDecodedFrame;
 use asciiflow_vulkan::{DeviceInfo, VulkanAsciiBackend};
 use std::{
@@ -60,19 +62,29 @@ impl WorkerSlot {
                                     )
                                 })?;
                             let map_wall = mapping.map_wall();
-                            let planes = mapping.duplicate_external_planes().map_err(|error| {
-                                Error::pipeline(
-                                    PipelineStage::InputInteropRuntime,
-                                    "duplicate input DMA-BUF planes",
-                                    error,
-                                )
-                            })?;
-                            let mut output = backend.process_external_nv12(
-                                &desc,
-                                mapping.pts(),
-                                &config,
-                                planes,
-                            )?;
+                            let planes = mapping
+                                .duplicate_external_planes_for(desc.format)
+                                .map_err(|error| {
+                                    Error::pipeline(
+                                        PipelineStage::InputInteropRuntime,
+                                        "duplicate input DMA-BUF planes",
+                                        error,
+                                    )
+                                })?;
+                            let mut output = match desc.format {
+                                PixelFormat::Nv12 => backend.process_external_nv12(
+                                    &desc,
+                                    mapping.pts(),
+                                    &config,
+                                    planes,
+                                ),
+                                PixelFormat::P010Le => backend.process_external_p010(
+                                    &desc,
+                                    mapping.pts(),
+                                    &config,
+                                    planes,
+                                ),
+                            }?;
                             // `mapping` retains both FFmpeg frames until the
                             // slot fence has completed inside the backend.
                             output.timings.drm_prime_map = map_wall;

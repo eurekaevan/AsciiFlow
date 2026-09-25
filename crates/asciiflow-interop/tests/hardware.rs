@@ -1311,6 +1311,47 @@ fn h264_and_hevc_encoder_frames_are_not_cross_submittable() {
 }
 
 #[test]
+#[ignore = "requires Intel HEVC Main and Main10 VAAPI encode"]
+fn main10_encoder_surface_cannot_enter_main8_context() {
+    let color = asciiflow_core::ColorSpace::default();
+    let main8_desc = asciiflow_core::FrameDesc::host_nv12(128, 128, color).unwrap();
+    let main10_desc = asciiflow_core::FrameDesc::host_p010_le(128, 128, color).unwrap();
+    let fps = asciiflow_core::Rational::new(30, 1).unwrap();
+    let main8_path = temporary_output("main8-ownership");
+    let main10_path = temporary_output("main10-ownership");
+    let mut main8 = Encoder::create_with_hardware_frames_codec_and_audio(
+        &main8_path,
+        main8_desc,
+        fps,
+        VideoCodec::Hevc,
+        VaapiOptions::default(),
+        Vec::new(),
+        Default::default(),
+    )
+    .unwrap();
+    let mut main10 = Encoder::create_with_hardware_frames_codec_and_audio(
+        &main10_path,
+        main10_desc,
+        fps,
+        VideoCodec::Hevc,
+        VaapiOptions::default(),
+        Vec::new(),
+        Default::default(),
+    )
+    .unwrap();
+    let foreign = main10.encoder_frames().unwrap().acquire(0).unwrap();
+    assert!(main8.encode_hardware_frame(foreign).is_err());
+    let foreign = main8.encoder_frames().unwrap().acquire(0).unwrap();
+    assert!(main10.encode_hardware_frame(foreign).is_err());
+    main8.finish().unwrap();
+    main10.finish().unwrap();
+    drop(main8);
+    drop(main10);
+    std::fs::remove_file(main8_path).unwrap();
+    std::fs::remove_file(main10_path).unwrap();
+}
+
+#[test]
 #[ignore = "requires Intel iHD H.264, HEVC, and AV1 encode"]
 fn av1_encoder_frames_are_not_cross_submittable() {
     let path = input(
@@ -1412,6 +1453,114 @@ fn av1_full_interop_surface_reuse_is_exact_and_fd_bounded() {
     );
 }
 
+#[test]
+#[ignore = "requires 128x128+ HEVC Main10 SDR input and Intel Main10 encode"]
+fn main10_encoder_owned_full_interop_30_frame_parity() {
+    compare_output_interop_format(
+        30,
+        "ASCIIFLOW_STAGE52C2_HEVC_INPUT",
+        "/tmp/asciiflow-main10-128.mp4",
+        true,
+        VideoCodec::Hevc,
+        PixelFormat::P010Le,
+    );
+}
+
+#[test]
+#[ignore = "requires a 3000-frame 128x128+ Main10 SDR input and Intel Main10 encode"]
+fn main10_encoder_owned_full_interop_3000_frame_stress() {
+    compare_output_interop_format(
+        3000,
+        "ASCIIFLOW_STAGE52C2_HEVC_STRESS_INPUT",
+        "/tmp/asciiflow-main10-3000.mp4",
+        true,
+        VideoCodec::Hevc,
+        PixelFormat::P010Le,
+    );
+}
+
+#[test]
+#[ignore = "requires a 3000-frame 128x128+ Main10 SDR input and Intel Main10 encode"]
+fn main10_staged_encode_3000_frame_fd_stress() {
+    let path = input(
+        "ASCIIFLOW_STAGE52C2_HEVC_STRESS_INPUT",
+        "/tmp/asciiflow-main10-3000.mp4",
+    );
+    let output_path = temporary_output("main10-staged-stress");
+    let before = fd_count();
+    {
+        let mut decoder = vaapi_decoder(&path);
+        let desc = decoder.info().frame_desc.clone();
+        assert_eq!(desc.format, PixelFormat::P010Le);
+        let frame_rate = decoder.info().frame_rate;
+        let mut processor = VaapiVulkanInteropProcessor::new(
+            VulkanAsciiBackend::new().unwrap(),
+            desc.clone(),
+            config(),
+        )
+        .unwrap();
+        let mut encoder = Encoder::create_with_codec_and_audio(
+            &output_path,
+            desc,
+            frame_rate,
+            OutputEncoding {
+                codec: VideoCodec::Hevc,
+                mode: EncodeMode::Vaapi,
+            },
+            VaapiOptions::default(),
+            Vec::new(),
+            Default::default(),
+        )
+        .unwrap();
+        let active_baseline = fd_count();
+        let mut max_seen = active_baseline;
+        let mut encoded = 0usize;
+        for index in 0..3000 {
+            let source = decoder
+                .next_vaapi_frame()
+                .unwrap()
+                .unwrap_or_else(|| panic!("input ended at {index}"));
+            if let Some(output) = processor.submit(source).unwrap() {
+                encoder.encode(output.frame).unwrap();
+                encoded += 1;
+            }
+            if index % 250 == 249 {
+                let current = fd_count();
+                max_seen = max_seen.max(current);
+                assert!(
+                    current <= active_baseline + 8,
+                    "staged FD count grew at frame {index}: {current}"
+                );
+            }
+        }
+        while let Some(output) = processor.drain().unwrap() {
+            encoder.encode(output.frame).unwrap();
+            encoded += 1;
+        }
+        encoder.finish().unwrap();
+        assert_eq!(encoded, 3000);
+        assert_eq!(processor.validation_error_count(), 0);
+        println!(
+            "staged fd_count before={before} active_baseline={active_baseline} max_steady={max_seen}"
+        );
+    }
+    let after = fd_count();
+    println!("staged fd_count after={after}");
+    assert_eq!(after, before);
+    let mut decoded = Decoder::open(&output_path).unwrap();
+    assert_eq!(
+        decoded.info().requirements.profile,
+        Some(asciiflow_core::VideoProfile::HevcMain10)
+    );
+    let mut count = 0;
+    while decoded.next_frame().unwrap().is_some() {
+        count += 1;
+    }
+    assert_eq!(count, 3000);
+    drop(decoded);
+    std::fs::remove_file(output_path).unwrap();
+}
+
 fn compare_full_ascii(frames: usize, env_name: &str, fallback: &str, check_fds: bool) {
     let path = input(env_name, fallback);
     let before = fd_count();
@@ -1488,6 +1637,24 @@ fn compare_output_interop(
     check_fds: bool,
     output_codec: VideoCodec,
 ) {
+    compare_output_interop_format(
+        frames,
+        env_name,
+        fallback,
+        check_fds,
+        output_codec,
+        PixelFormat::Nv12,
+    );
+}
+
+fn compare_output_interop_format(
+    frames: usize,
+    env_name: &str,
+    fallback: &str,
+    check_fds: bool,
+    output_codec: VideoCodec,
+    format: PixelFormat,
+) {
     let path = input(env_name, fallback);
     let output_path = temporary_output(if check_fds {
         "stage3b-stress"
@@ -1529,8 +1696,12 @@ fn compare_output_interop(
         println!("encoder_descriptor={encoder_drm:#?}");
         assert_eq!(encoder_drm.objects.len(), 1);
         assert_eq!(encoder_drm.layers.len(), 2);
-        assert_eq!(fourcc_name(encoder_drm.layers[0].format), "R8..");
-        assert_eq!(fourcc_name(encoder_drm.layers[1].format), "GR88");
+        let expected_fourcc = match format {
+            PixelFormat::Nv12 => ("R8..", "GR88"),
+            PixelFormat::P010Le => ("R16.", "GR32"),
+        };
+        assert_eq!(fourcc_name(encoder_drm.layers[0].format), expected_fourcc.0);
+        assert_eq!(fourcc_name(encoder_drm.layers[1].format), expected_fourcc.1);
         drop(descriptor_mapping);
 
         let full_backend = VulkanAsciiBackend::new().unwrap();
@@ -1541,6 +1712,7 @@ fn compare_output_interop(
         max_seen = max_seen.max(active_baseline);
         let mut expected = VecDeque::with_capacity(3);
         let mut compared = 0;
+        let mut non_four_aligned_samples = 0usize;
 
         for index in 0..frames {
             let reference_input = reference_decoder
@@ -1548,6 +1720,15 @@ fn compare_output_interop(
                 .unwrap()
                 .unwrap_or_else(|| panic!("reference ended at frame {index}; expected {frames}"));
             if let Some(output) = reference.submit(reference_input).unwrap() {
+                if format == PixelFormat::P010Le {
+                    non_four_aligned_samples += output
+                        .frame
+                        .host()
+                        .as_slice()
+                        .chunks_exact(2)
+                        .filter(|bytes| (u16::from_le_bytes([bytes[0], bytes[1]]) >> 6) & 3 != 0)
+                        .count();
+                }
                 expected.push_back(output.frame);
             }
             let direct_input = direct_decoder
@@ -1559,10 +1740,22 @@ fn compare_output_interop(
             if let Some(output) = full.submit(direct_input).unwrap() {
                 let expected = expected.pop_front().unwrap();
                 assert_eq!(output.frame.pts(), compared as i64);
-                let actual = output.frame.download_nv12().unwrap();
+                let actual = match format {
+                    PixelFormat::Nv12 => output.frame.download_nv12(),
+                    PixelFormat::P010Le => output.frame.download_p010(),
+                }
+                .unwrap();
                 let mut staged = staged_frames.acquire(compared as i64).unwrap();
-                staged.upload_nv12(&expected).unwrap();
-                let staged = staged.download_nv12().unwrap();
+                match format {
+                    PixelFormat::Nv12 => staged.upload_nv12(&expected),
+                    PixelFormat::P010Le => staged.upload_p010(&expected),
+                }
+                .unwrap();
+                let staged = match format {
+                    PixelFormat::Nv12 => staged.download_nv12(),
+                    PixelFormat::P010Le => staged.download_p010(),
+                }
+                .unwrap();
                 assert_eq!(
                     actual.desc(),
                     expected.desc(),
@@ -1571,7 +1764,8 @@ fn compare_output_interop(
                 assert_eq!(
                     actual.host().as_slice(),
                     expected.host().as_slice(),
-                    "pre-encode NV12 mismatch at {compared}"
+                    "pre-encode {:?} mismatch at {compared}",
+                    format
                 );
                 assert_eq!(staged, expected, "staged surface mismatch at {compared}");
                 encoder.encode_hardware_frame(output.frame).unwrap();
@@ -1587,15 +1781,36 @@ fn compare_output_interop(
             }
         }
         while let Some(output) = reference.drain().unwrap() {
+            if format == PixelFormat::P010Le {
+                non_four_aligned_samples += output
+                    .frame
+                    .host()
+                    .as_slice()
+                    .chunks_exact(2)
+                    .filter(|bytes| (u16::from_le_bytes([bytes[0], bytes[1]]) >> 6) & 3 != 0)
+                    .count();
+            }
             expected.push_back(output.frame);
         }
         while let Some(output) = full.drain().unwrap() {
             let expected = expected.pop_front().unwrap();
             assert_eq!(output.frame.pts(), compared as i64);
-            let actual = output.frame.download_nv12().unwrap();
+            let actual = match format {
+                PixelFormat::Nv12 => output.frame.download_nv12(),
+                PixelFormat::P010Le => output.frame.download_p010(),
+            }
+            .unwrap();
             let mut staged = staged_frames.acquire(compared as i64).unwrap();
-            staged.upload_nv12(&expected).unwrap();
-            let staged = staged.download_nv12().unwrap();
+            match format {
+                PixelFormat::Nv12 => staged.upload_nv12(&expected),
+                PixelFormat::P010Le => staged.upload_p010(&expected),
+            }
+            .unwrap();
+            let staged = match format {
+                PixelFormat::Nv12 => staged.download_nv12(),
+                PixelFormat::P010Le => staged.download_p010(),
+            }
+            .unwrap();
             assert_eq!(
                 actual.desc(),
                 expected.desc(),
@@ -1604,7 +1819,8 @@ fn compare_output_interop(
             assert_eq!(
                 actual.host().as_slice(),
                 expected.host().as_slice(),
-                "pre-encode NV12 mismatch at {compared}"
+                "pre-encode {:?} mismatch at {compared}",
+                format
             );
             assert_eq!(staged, expected, "staged surface mismatch at {compared}");
             encoder.encode_hardware_frame(output.frame).unwrap();
@@ -1612,12 +1828,26 @@ fn compare_output_interop(
         }
         encoder.finish().unwrap();
         assert_eq!(compared, frames);
+        if format == PixelFormat::P010Le {
+            println!("pre_encode_non_four_aligned_samples={non_four_aligned_samples}");
+            assert!(
+                non_four_aligned_samples > 0,
+                "Main10 processing lost low active bits before encode"
+            );
+        }
         assert!(expected.is_empty());
         assert_eq!(reference.validation_error_count(), 0);
         assert_eq!(full.validation_error_count(), 0);
     }
     let mut decoded = Decoder::open(&output_path).unwrap();
     assert_eq!(decoded.info().requirements.codec, expected_output_codec);
+    if format == PixelFormat::P010Le {
+        assert_eq!(decoded.info().requirements.bit_depth, Some(10));
+        assert_eq!(
+            decoded.info().requirements.profile,
+            Some(asciiflow_core::VideoProfile::HevcMain10)
+        );
+    }
     let mut decoded_count = 0;
     let mut previous_pts = None;
     while let Some(frame) = decoded.next_frame().unwrap() {
