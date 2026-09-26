@@ -1037,6 +1037,11 @@ impl Encoder {
 
 fn require_supported_output(codec: &VideoCodec, desc: &FrameDesc, mode: EncodeMode) -> Result<()> {
     desc.validate_layout()?;
+    if desc.color_space.range != ColorRange::Limited {
+        return Err(Error::UnsupportedFrame(
+            "ASCII output currently emits limited-range code values; full/unspecified range cannot be tagged safely".into(),
+        ));
+    }
     if desc.format == PixelFormat::P010Le
         && (!matches!(codec, VideoCodec::Hevc | VideoCodec::Av1) || mode != EncodeMode::Vaapi)
     {
@@ -1049,10 +1054,7 @@ fn require_supported_output(codec: &VideoCodec, desc: &FrameDesc, mode: EncodeMo
             || desc.color_space.primaries != ColorPrimaries::Bt709
             || desc.color_space.transfer != TransferCharacteristic::Bt709
             || desc.color_space.chroma_location != ChromaLocation::Left
-            || !matches!(
-                desc.color_space.range,
-                ColorRange::Limited | ColorRange::Full
-            ))
+            || desc.color_space.range != ColorRange::Limited)
     {
         return Err(Error::UnsupportedFrame(
             "10-bit output requires explicitly tagged BT.709 SDR color".into(),
@@ -1062,10 +1064,8 @@ fn require_supported_output(codec: &VideoCodec, desc: &FrameDesc, mode: EncodeMo
 }
 
 fn output_color_range(desc: &FrameDesc) -> ffi::AVColorRange {
-    match (desc.format, desc.color_space.range) {
-        (PixelFormat::P010Le, ColorRange::Full) => ffi::AVColorRange::AVCOL_RANGE_JPEG,
-        _ => ffi::AVColorRange::AVCOL_RANGE_MPEG,
-    }
+    debug_assert_eq!(desc.color_space.range, ColorRange::Limited);
+    ffi::AVColorRange::AVCOL_RANGE_MPEG
 }
 
 fn hevc_profile(format: PixelFormat) -> i32 {

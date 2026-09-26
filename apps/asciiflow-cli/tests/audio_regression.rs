@@ -71,7 +71,7 @@ fn ten_bit_hdr_failure_preserves_existing_output() {
     let result = Process::start(&mut command(&input, &ws.output(), "none")).finish();
     assert!(!result.status.success());
     let error = String::from_utf8_lossy(&result.stderr);
-    assert!(error.contains("HDR/BT.2020"), "{error}");
+    assert!(error.contains("HDR PQ input detected"), "{error}");
     assert_eq!(std::fs::read(ws.output()).unwrap(), b"existing");
     ws.assert_no_staging();
 }
@@ -102,10 +102,72 @@ fn explicit_main10_hdr_failure_preserves_existing_output() {
         let result = Process::start(&mut cmd).finish();
         assert!(!result.status.success(), "{codec}");
         let error = String::from_utf8_lossy(&result.stderr);
-        assert!(error.contains("HDR/BT.2020"), "{codec}: {error}");
+        assert!(error.contains("HDR PQ input detected"), "{codec}: {error}");
         assert_eq!(std::fs::read(ws.output()).unwrap(), b"existing");
         ws.assert_no_staging();
     }
+}
+
+#[test]
+fn unsupported_color_semantics_fail_before_output_staging() {
+    for (name, expected) in [
+        ("av1-main10-pq.mp4", "HDR PQ input detected"),
+        ("hevc-main10-hlg.mp4", "HDR HLG input detected"),
+        (
+            "hevc-main10-bt2020-sdr.mp4",
+            "wide-gamut SDR input detected",
+        ),
+        (
+            "hevc-main10-unspecified.mp4",
+            "color semantics cannot be resolved",
+        ),
+        (
+            "hevc-main10-sdr-full.mp4",
+            "full-range input is not qualified",
+        ),
+        (
+            "hevc-main10-pq-bt709-conflict.mp4",
+            "conflicting color metadata",
+        ),
+    ] {
+        let ws = Workspace::new();
+        std::fs::write(ws.output(), b"existing").unwrap();
+        let input = fixture("single.mp4")
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .join("codecs")
+            .join(name);
+        let result = Process::start(&mut command(&input, &ws.output(), "none")).finish();
+        assert!(!result.status.success(), "{name}");
+        let error = String::from_utf8_lossy(&result.stderr);
+        assert!(error.contains(expected), "{name}: {error}");
+        assert_eq!(std::fs::read(ws.output()).unwrap(), b"existing", "{name}");
+        ws.assert_no_staging();
+    }
+}
+
+#[test]
+fn explain_plan_reports_detected_hdr_before_rejection() {
+    let input = fixture("single.mp4")
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .join("codecs/av1-main10-pq.mp4");
+    let mut cmd = std::process::Command::new(env!("CARGO_BIN_EXE_asciiflow"));
+    cmd.arg(input).arg("--explain-plan");
+    cmd.stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped());
+    let result = Process::start(&mut cmd).finish();
+    assert!(!result.status.success());
+    let output = String::from_utf8_lossy(&result.stdout);
+    assert!(output.contains("dynamic range: HdrPq"), "{output}");
+    assert!(
+        output.contains("processing support: Err(UnsupportedHdrPq)"),
+        "{output}"
+    );
 }
 
 #[test]

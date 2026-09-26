@@ -1,0 +1,22 @@
+Stage 5.3A canonical 10-bit baseline v1 toolchain (2026-09-26)
+
+FFmpeg: 8.1.3, Fedora/RPM Fusion ffmpeg-8.1.3-1.fc44.x86_64
+FFmpeg source RPM: ffmpeg-8.1.3-1.fc44.src.rpm
+ffmpeg-libs: 8.1.3-1.fc44.x86_64
+x265-libs: 4.1-4.fc44.x86_64, source RPM x265-4.1-4.fc44.src.rpm
+Python: 3.14.7 (standard library only)
+
+/usr/bin/ffmpeg SHA-256: c71eb1c6b9d57114ea567b1525c393295285df3ad21b17ad8144e02832d8ed92
+/usr/lib64/libx265.so.215 SHA-256: 4076f7e910ff4b4981492045e00407d19336c1496b96a756d35aa2aacf61ddb8
+Complete `ffmpeg -version` output SHA-256 (including configure flags and library versions):
+87e52642589a2ffec4fd56da1eeb8d36810c3ba81cac81a4a71039041b89331e
+libavutil 60.26.103; libavcodec 62.28.103; libavformat 62.12.103;
+libavfilter 11.14.103; libswscale 9.5.103; libswresample 6.3.103.
+
+The build enables libx265, libdrm and VAAPI, with shared libraries, GPL, and
+Fedora's compiler and linker hardening flags. To inspect the exact configure
+line on a candidate generator, run `ffmpeg -version`; the complete output
+must match the digest above for an exact-toolchain replay. Otherwise perform
+a fresh three-run byte-identity qualification before treating it as
+equivalent. The earlier small codec fixtures remain pinned to FFmpeg 8.1.2
+and are not regenerated with this toolchain.

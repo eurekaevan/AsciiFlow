@@ -317,6 +317,9 @@ pub struct InputRequirements {
     pub height: u32,
     pub frame_rate: Rational,
     pub color_space: ColorSpace,
+    /// Stream/frame signal and the resolved processing decision. Decoder inputs
+    /// always populate this after the first qualification frame.
+    pub color_semantics: Option<crate::ResolvedColorSemantics>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -402,6 +405,9 @@ impl InputRequirements {
             VideoCodec::H264 | VideoCodec::Hevc | VideoCodec::Av1
         ) && self.bit_depth == Some(8)
             && self.chroma_subsampling == ChromaSubsampling::Yuv420
+            && self.color_space.primaries == ColorPrimaries::Bt709
+            && self.color_space.matrix == ColorMatrix::Bt709
+            && self.color_space.transfer == TransferCharacteristic::Bt709
     }
 
     pub fn validate_current_pipeline(&self) -> Result<()> {
@@ -451,6 +457,21 @@ impl InputRequirements {
     /// Validate the input processing contract independently of output encoding.
     /// Production subsequently checks the selected output format without conversion.
     pub fn validate_processing_input(&self) -> Result<PixelFormat> {
+        if let Some(color) = self.color_semantics {
+            if let Err(reason) = color.support {
+                return Err(Error::UnsupportedColor {
+                    reason,
+                    stream: color.stream.space,
+                    frame: color.frame.space,
+                    effective: color.effective,
+                });
+            }
+        }
+        if self.color_space.range == ColorRange::Full {
+            return Err(Error::UnsupportedFrame(
+                "full-range input is not qualified: the ASCII renderer emits limited-range code values".into(),
+            ));
+        }
         match self.bit_depth {
             Some(8) => {
                 self.validate_current_pipeline()?;
@@ -1278,7 +1299,35 @@ mod tests {
             height: 1080,
             frame_rate: Rational::new(50, 1).unwrap(),
             color_space: ColorSpace::default(),
+            color_semantics: None,
         }
+    }
+
+    #[test]
+    fn legacy_bt601_sdr_requires_software_decode_normalization() {
+        let mut input = h264();
+        input.color_space.matrix = ColorMatrix::Bt601;
+        input.color_space.primaries = ColorPrimaries::Smpte170M;
+        input.color_space.transfer = TransferCharacteristic::Smpte170M;
+        let raw = crate::ColorMetadataRaw {
+            space: input.color_space,
+            ..crate::ColorMetadataRaw::unspecified()
+        };
+        input.color_semantics = Some(
+            crate::ResolvedColorSemantics::resolve(
+                raw,
+                crate::ColorMetadataRaw::unspecified(),
+                crate::ColorResolutionPolicy::LegacyEightBit,
+            )
+            .unwrap(),
+        );
+        let plan = PipelinePlanner::select(&full(), &input, PipelinePolicy::default()).unwrap();
+        assert_eq!(plan.selected.decode, MediaImplementation::Software);
+        let explicit_hardware = PipelinePolicy {
+            decode: MediaRequest::Hardware,
+            ..PipelinePolicy::default()
+        };
+        assert!(PipelinePlanner::select(&full(), &input, explicit_hardware).is_err());
     }
 
     #[test]

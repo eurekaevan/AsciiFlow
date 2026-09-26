@@ -1,6 +1,7 @@
 use asciiflow_core::{
     ChromaLocation, ChromaSubsampling, ColorMatrix, ColorPrimaries, ColorRange, ColorSpace,
-    FrameSource, PixelFormat, TransferCharacteristic, VideoCodec, VideoProfile,
+    ColorSupportReason, DynamicRangeClass, FrameSource, PixelFormat, TransferCharacteristic,
+    VideoCodec, VideoProfile,
 };
 use asciiflow_media::Decoder;
 use std::path::{Path, PathBuf};
@@ -28,6 +29,99 @@ fn hevc_av1_software_and_vaapi_download_are_exact() {
             assert_eq!(frame.host().as_slice(), bytes);
         }
         assert!(decoder.next_frame().unwrap().is_none());
+    }
+}
+
+#[test]
+#[ignore = "requires Intel VAAPI decode; compares first-frame raw and resolved color semantics"]
+fn hevc_av1_main10_software_and_vaapi_color_semantics_agree() {
+    for name in [
+        "hevc-main10-sdr-gradient.mp4",
+        "av1-main10-sdr-gradient.mp4",
+    ] {
+        let input = fixture(name);
+        let mut software = Decoder::open(&input).unwrap();
+        let mut hardware = Decoder::open_with(
+            &input,
+            asciiflow_media::DecodeMode::Vaapi,
+            Default::default(),
+        )
+        .unwrap();
+        software.next_frame().unwrap().unwrap();
+        hardware.next_frame().unwrap().unwrap();
+        let expected = software.info().requirements.color_semantics.unwrap();
+        let actual = hardware.info().requirements.color_semantics.unwrap();
+        println!("{name} software: {expected:#?}");
+        println!("{name} VAAPI: {actual:#?}");
+        assert_eq!(expected.stream, actual.stream, "{name} stream raw metadata");
+        assert_eq!(expected.frame, actual.frame, "{name} frame raw metadata");
+        assert_eq!(expected.effective, actual.effective, "{name}");
+        assert_eq!(expected.provenance, actual.provenance, "{name}");
+        assert_eq!(expected.dynamic_range, actual.dynamic_range, "{name}");
+        assert_eq!(expected.support, actual.support, "{name}");
+        assert_eq!(
+            expected.effective_static_metadata(),
+            actual.effective_static_metadata(),
+            "{name}"
+        );
+    }
+}
+
+#[test]
+#[ignore = "requires Intel VAAPI decode; checks unsupported color before pixel processing"]
+fn vaapi_rejects_unsupported_color_with_classification_intact() {
+    for (name, class, reason) in [
+        (
+            "hevc-main10-sdr-full.mp4",
+            DynamicRangeClass::Sdr,
+            ColorSupportReason::UnsupportedFullRange,
+        ),
+        (
+            "hevc-main10-bt2020-sdr.mp4",
+            DynamicRangeClass::Sdr,
+            ColorSupportReason::UnsupportedWideGamutSdr,
+        ),
+        (
+            "hevc-main10-pq-reject.mp4",
+            DynamicRangeClass::HdrPq,
+            ColorSupportReason::UnsupportedHdrPq,
+        ),
+        (
+            "hevc-main10-hlg.mp4",
+            DynamicRangeClass::HdrHlg,
+            ColorSupportReason::UnsupportedHdrHlg,
+        ),
+        (
+            "av1-main10-pq.mp4",
+            DynamicRangeClass::HdrPq,
+            ColorSupportReason::UnsupportedHdrPq,
+        ),
+        (
+            "hevc-main10-pq-static-metadata.mp4",
+            DynamicRangeClass::HdrPq,
+            ColorSupportReason::UnsupportedHdrPq,
+        ),
+    ] {
+        for mode in [
+            asciiflow_media::DecodeMode::Software,
+            asciiflow_media::DecodeMode::Vaapi,
+        ] {
+            let mut decoder = Decoder::open_with(fixture(name), mode, Default::default()).unwrap();
+            let error = decoder.next_frame().unwrap_err();
+            let color = decoder.info().requirements.color_semantics.unwrap();
+            println!("{name} {mode:?}: {color:#?}; rejected: {error}");
+            assert_eq!(color.dynamic_range, class, "{name} {mode:?}");
+            assert_eq!(color.support, Err(reason), "{name} {mode:?}");
+            if name == "hevc-main10-pq-static-metadata.mp4" {
+                let (mastering, light) = color.effective_static_metadata();
+                let mastering = mastering.unwrap();
+                assert_eq!(mastering.max_luminance.unwrap().numerator, 10_000_000);
+                assert_eq!(mastering.max_luminance.unwrap().denominator, 10_000);
+                let light = light.unwrap();
+                assert_eq!(light.max_cll, Some(1000));
+                assert_eq!(light.max_fall, Some(400));
+            }
+        }
     }
 }
 
@@ -171,5 +265,141 @@ fn ten_bit_sdr_decodes_to_canonical_p010_and_drains() {
 fn ten_bit_pq_is_rejected_before_processing() {
     let mut decoder = Decoder::open(fixture("hevc-main10-pq-reject.mp4")).unwrap();
     let error = decoder.next_frame().unwrap_err();
-    assert!(error.to_string().contains("HDR/BT.2020"), "{error}");
+    assert!(
+        error.to_string().contains("HDR PQ input detected"),
+        "{error}"
+    );
+}
+
+#[test]
+fn hdr_and_wide_gamut_fixtures_classify_without_pixel_processing() {
+    for (name, class, support, error_text) in [
+        (
+            "hevc-main10-pq-reject.mp4",
+            DynamicRangeClass::HdrPq,
+            ColorSupportReason::UnsupportedHdrPq,
+            "HDR PQ",
+        ),
+        (
+            "av1-main10-pq.mp4",
+            DynamicRangeClass::HdrPq,
+            ColorSupportReason::UnsupportedHdrPq,
+            "HDR PQ",
+        ),
+        (
+            "hevc-main10-hlg.mp4",
+            DynamicRangeClass::HdrHlg,
+            ColorSupportReason::UnsupportedHdrHlg,
+            "HDR HLG",
+        ),
+        (
+            "hevc-main10-bt2020-sdr.mp4",
+            DynamicRangeClass::Sdr,
+            ColorSupportReason::UnsupportedWideGamutSdr,
+            "wide-gamut SDR",
+        ),
+        (
+            "hevc-main10-unspecified.mp4",
+            DynamicRangeClass::Unknown,
+            ColorSupportReason::Unknown,
+            "cannot be resolved",
+        ),
+        (
+            "hevc-main10-pq-bt709-conflict.mp4",
+            DynamicRangeClass::HdrPq,
+            ColorSupportReason::Conflicting,
+            "conflicting color",
+        ),
+    ] {
+        let mut decoder = Decoder::open(fixture(name)).unwrap();
+        let error = decoder.next_frame().unwrap_err();
+        assert!(error.to_string().contains(error_text), "{name}: {error}");
+        let color = decoder.info().requirements.color_semantics.unwrap();
+        assert_eq!(color.dynamic_range, class, "{name}");
+        assert_eq!(color.support, Err(support), "{name}");
+    }
+}
+
+#[test]
+fn hevc_and_av1_resolve_equivalent_sdr_and_pq_semantics() {
+    let mut hevc = Decoder::open(fixture("hevc-main10-sdr-gradient.mp4")).unwrap();
+    let mut av1 = Decoder::open(fixture("av1-main10-sdr-gradient.mp4")).unwrap();
+    hevc.next_frame().unwrap().unwrap();
+    av1.next_frame().unwrap().unwrap();
+    let hevc_sdr = hevc.info().requirements.color_semantics.unwrap();
+    let av1_sdr = av1.info().requirements.color_semantics.unwrap();
+    assert_eq!(hevc_sdr.effective.primaries, av1_sdr.effective.primaries);
+    assert_eq!(hevc_sdr.effective.transfer, av1_sdr.effective.transfer);
+    assert_eq!(hevc_sdr.effective.matrix, av1_sdr.effective.matrix);
+    assert_eq!(hevc_sdr.effective.range, av1_sdr.effective.range);
+    assert_eq!(hevc_sdr.dynamic_range, av1_sdr.dynamic_range);
+
+    let mut hevc = Decoder::open(fixture("hevc-main10-pq-reject.mp4")).unwrap();
+    let mut av1 = Decoder::open(fixture("av1-main10-pq.mp4")).unwrap();
+    assert!(hevc.next_frame().is_err());
+    assert!(av1.next_frame().is_err());
+    let hevc_pq = hevc.info().requirements.color_semantics.unwrap();
+    let av1_pq = av1.info().requirements.color_semantics.unwrap();
+    assert_eq!(hevc_pq.effective.primaries, av1_pq.effective.primaries);
+    assert_eq!(hevc_pq.effective.transfer, av1_pq.effective.transfer);
+    assert_eq!(hevc_pq.effective.matrix, av1_pq.effective.matrix);
+    assert_eq!(hevc_pq.effective.range, av1_pq.effective.range);
+    assert_eq!(hevc_pq.dynamic_range, av1_pq.dynamic_range);
+}
+
+#[test]
+fn static_hdr_metadata_is_parsed_without_defining_hdr_class() {
+    let mut decoder = Decoder::open(fixture("hevc-main10-pq-static-metadata.mp4")).unwrap();
+    let error = decoder.next_frame().unwrap_err();
+    assert!(error.to_string().contains("HDR PQ"), "{error}");
+    let color = decoder.info().requirements.color_semantics.unwrap();
+    assert_eq!(color.dynamic_range, DynamicRangeClass::HdrPq);
+    let mastering = color
+        .frame
+        .mastering_display
+        .or(color.stream.mastering_display)
+        .unwrap();
+    assert_eq!(mastering.max_luminance.unwrap().numerator, 10_000_000);
+    assert_eq!(mastering.max_luminance.unwrap().denominator, 10_000);
+    let light = color
+        .frame
+        .content_light
+        .or(color.stream.content_light)
+        .unwrap();
+    assert_eq!(light.max_cll, Some(1000));
+    assert_eq!(light.max_fall, Some(400));
+
+    let mut without = Decoder::open(fixture("hevc-main10-pq-reject.mp4")).unwrap();
+    assert!(without.next_frame().is_err());
+    let color = without.info().requirements.color_semantics.unwrap();
+    assert_eq!(color.dynamic_range, DynamicRangeClass::HdrPq);
+    assert!(color.frame.mastering_display.is_none());
+}
+
+#[test]
+fn full_range_p010_is_not_mislabeled_as_supported() {
+    let mut decoder = Decoder::open(fixture("hevc-main10-sdr-full.mp4")).unwrap();
+    let error = decoder.next_frame().unwrap_err();
+    assert!(
+        error
+            .to_string()
+            .contains("full-range input is not qualified"),
+        "{error}"
+    );
+    let color = decoder.info().requirements.color_semantics.unwrap();
+    assert_eq!(color.dynamic_range, DynamicRangeClass::Sdr);
+    assert_eq!(color.effective.range, ColorRange::Full);
+}
+
+#[test]
+fn legacy_bt601_main8_is_normalized_to_bt709_nv12() {
+    let mut decoder = Decoder::open(fixture("hevc-main8-bt601.mp4")).unwrap();
+    let frame = decoder.next_frame().unwrap().unwrap();
+    assert_eq!(frame.desc().format, PixelFormat::Nv12);
+    assert_eq!(frame.desc().color_space, ColorSpace::default());
+    let color = decoder.info().requirements.color_semantics.unwrap();
+    assert_eq!(color.dynamic_range, DynamicRangeClass::Sdr);
+    assert_eq!(color.support, Ok(()));
+    assert_eq!(color.effective.matrix, ColorMatrix::Bt601);
+    assert_eq!(decode_all("hevc-main8-bt601.mp4").len(), 36);
 }

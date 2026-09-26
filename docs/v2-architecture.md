@@ -1,6 +1,7 @@
 # AsciiFlow v2 architecture
 
-This document describes the Rust architecture through the Stage 5.2C-3 P010
+This document describes the Rust architecture through the Stage 5.3A color
+metadata implementation on the Stage 5.2C-3 P010
 processing foundation: a permanent CPU reference backend, a Vulkan 1.3 compute
 backend, optional Linux VAAPI media, and qualified Intel DMA-BUF bridges in both
 pixel directions. Stage 3A
@@ -20,6 +21,22 @@ qualifies explicit HEVC Main10 VAAPI/MP4 output on the tested Intel device.
 Stage 5.2C-3 qualifies AV1 Profile0/Main 10-bit output through the same P010
 processing and interop architecture, with an independently probed encode fact.
 The default output remains 8-bit H.264.
+Stage 5.3A adds portable raw and resolved color semantics without changing
+pixel processing or claiming HDR support. The Intel color-regression gate is
+still open in the current `/dev/dri`-less environment.
+
+```text
+codec parameters / decoded AVFrame metadata
+  -> portable raw stream and frame color facts
+  -> resolved semantics + provenance + dynamic-range class
+  -> software color support decision
+  -> pipeline planner
+  -> unchanged NV12/P010 pixel pipeline
+  -> BT.709 limited-range output metadata for accepted SDR
+```
+
+See [color semantics](color-semantics.md) and the
+[Stage 5.3A status](stage5.3a-color-metadata.md).
 
 ## Workspace and dependency direction
 

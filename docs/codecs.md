@@ -1,4 +1,4 @@
-# Video codecs (through Stage 5.2C-3)
+# Video codecs and color processing (Stage 5.3A implementation)
 
 Qualified software input scope: H.264 8-bit 4:2:0, HEVC Main 8-bit 4:2:0,
 and AV1 Main 8-bit 4:2:0. Codec identity comes from probing; no input-codec flag
@@ -90,3 +90,21 @@ explicit `--output-bit-depth 10` and qualified VAAPI hardware; their codecs
 remain independent of the 10-bit HEVC/AV1 input codec. There is no software
 HEVC/AV1 encoder, HDR/tone mapping, 4:2:2/4:4:4 output,
 quality/preset/bitrate UI, AV1 tuning, or new GPU vendor/platform support.
+
+## Color processing is separate from codec capability
+
+The currently qualified pixel contract is **BT.709 limited-range SDR** for
+both NV12 and P010. Stage 5.3A classifies PQ and HLG by transfer function,
+independent of codec or bit depth, but rejects them before output staging.
+BT.2020 with an SDR transfer remains SDR, not HDR; wide-gamut SDR is rejected
+because BT.2020/P3 pixel math is not implemented. Unknown and conflicting
+metadata also fail closed on the strict 10-bit path. Missing 8-bit fields keep
+the documented legacy BT.709/limited default. Full-range SDR is detected but
+currently rejected: the ASCII renderer emits limited-range code values.
+Static mastering/CLL data is parsed but neither creates HDR classification nor
+enables HDR output. Details and the open hardware-validation gates are in
+[color-semantics.md](color-semantics.md) and
+[Stage 5.3A report](stage5.3a-color-metadata.md).
+Legacy 8-bit BT.601/170M limited-range SDR can still enter through software
+decode, where libswscale normalizes it to BT.709 NV12; VAAPI direct decode is
+not a legal candidate for that conversion.

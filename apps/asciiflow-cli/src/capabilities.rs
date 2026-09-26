@@ -515,6 +515,49 @@ pub fn print(
         requirements.frame_rate.denominator,
         requirements.color_space
     );
+    if let Some(color) = requirements.color_semantics {
+        println!("Color semantics:");
+        println!(
+            "  primaries: {:?} ({:?})",
+            color.effective.primaries, color.provenance.primaries
+        );
+        println!(
+            "  transfer: {:?} ({:?})",
+            color.effective.transfer, color.provenance.transfer
+        );
+        println!(
+            "  matrix: {:?} ({:?})",
+            color.effective.matrix, color.provenance.matrix
+        );
+        println!(
+            "  range: {:?} ({:?})",
+            color.effective.range, color.provenance.range
+        );
+        println!("  dynamic range: {:?}", color.dynamic_range);
+        println!("  processing support: {:?}", color.support);
+        println!(
+            "  mastering display metadata: {}",
+            color
+                .frame
+                .mastering_display
+                .or(color.stream.mastering_display)
+                .is_some()
+        );
+        println!(
+            "  content light metadata: {}",
+            color
+                .frame
+                .content_light
+                .or(color.stream.content_light)
+                .is_some()
+        );
+    }
+    println!("Color processing (software policy, not hardware capability):");
+    println!("  BT.709 limited-range SDR: Supported");
+    println!("  BT.601/170M limited-range SDR: Software decode normalization only");
+    println!("  PQ / HLG HDR: Detected, unsupported");
+    println!("  BT.2020 / P3 wide-gamut SDR: Detected, unsupported");
+    println!("  full-range SDR: Not qualified for current ASCII output code values");
     println!("Video decode:");
     print_fact("software decode", &snapshot.media.software_decode);
     print_fact("VAAPI device", &snapshot.media.vaapi_device);
@@ -666,6 +709,18 @@ pub fn print(
     println!("Probe CPU wall: {:.3} ms", duration.as_secs_f64() * 1e3);
 }
 
+pub fn print_rejected_color(requirements: &asciiflow_core::InputRequirements) {
+    if let Some(color) = requirements.color_semantics {
+        println!("Color semantics (processing rejected):");
+        println!("  stream signal: {:?}", color.stream.space);
+        println!("  decoded frame signal: {:?}", color.frame.space);
+        println!("  effective: {:?}", color.effective);
+        println!("  provenance: {:?}", color.provenance);
+        println!("  dynamic range: {:?}", color.dynamic_range);
+        println!("  processing support: {:?}", color.support);
+    }
+}
+
 pub fn print_plan(plan: &PipelinePlan) {
     println!("Selected pipeline:\n  {plan}");
     let profile = match plan.output.profile.as_ref() {
@@ -788,6 +843,7 @@ mod tests {
             height: 1080,
             frame_rate: Rational::new(50, 1).unwrap(),
             color_space: ColorSpace::default(),
+            color_semantics: None,
         }
     }
 

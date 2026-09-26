@@ -1564,6 +1564,25 @@ fn av1_10bit_encoder_owned_full_interop_30_frame_parity() {
 }
 
 #[test]
+#[ignore = "requires Intel P010 input/output interop; compares canonical v1 before encode"]
+fn canonical_v1_main10_full_interop_300_frame_preencode_parity() {
+    let input = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../tests/fixtures/codecs/hevc-main10-canonical-v1.mp4"
+    );
+    for codec in [VideoCodec::Hevc, VideoCodec::Av1] {
+        compare_output_interop_format(
+            300,
+            "ASCIIFLOW_STAGE53A_CANONICAL_INPUT",
+            input,
+            true,
+            codec,
+            PixelFormat::P010Le,
+        );
+    }
+}
+
+#[test]
 #[ignore = "requires a 3000-frame 128x128+ AV1 10-bit SDR input and Intel AV1 10-bit encode"]
 fn av1_10bit_encoder_owned_full_interop_3000_frame_stress() {
     compare_output_interop_format(

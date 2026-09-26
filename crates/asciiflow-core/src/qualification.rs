@@ -202,6 +202,7 @@ mod tests {
             height: 1080,
             frame_rate: Rational::new(30, 1).unwrap(),
             color_space: ColorSpace::default(),
+            color_semantics: None,
         }
     }
 

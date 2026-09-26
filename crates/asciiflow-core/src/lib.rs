@@ -1,6 +1,7 @@
 mod audio;
 mod backend;
 mod cancellation;
+mod color;
 mod config;
 mod error;
 mod frame;
@@ -16,6 +17,11 @@ pub use backend::{
     SinkTimings, SourceTimings,
 };
 pub use cancellation::CancellationToken;
+pub use color::{
+    ColorError, ColorFieldProvenance, ColorMetadataRaw, ColorProvenance, ColorRational,
+    ColorResolutionPolicy, ColorSupportReason, ContentLightLevelMetadata, DynamicRangeClass,
+    MasteringDisplayMetadata, ResolvedColorSemantics,
+};
 pub use config::{AsciiConfig, ProcessingBackend};
 pub use error::{Error, PipelineError, PipelineStage, Result};
 pub use frame::{

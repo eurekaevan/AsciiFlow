@@ -12,9 +12,11 @@ use super::{
     vaapi::{DecodeMode, VaapiOptions},
 };
 use asciiflow_core::{
-    AudioPlan, AudioStreamInfo, ChromaLocation, ChromaSubsampling, ColorMatrix, ColorPrimaries,
-    ColorRange, ColorSpace, FrameDesc, FrameSource, HostFrame, InputRequirements, PixelFormat,
-    Rational, Result, SourceTimings, TransferCharacteristic, VideoCodec, VideoFrame, VideoProfile,
+    AudioPlan, AudioStreamInfo, ChromaLocation, ChromaSubsampling, ColorError, ColorMatrix,
+    ColorMetadataRaw, ColorPrimaries, ColorRange, ColorRational, ColorResolutionPolicy, ColorSpace,
+    ContentLightLevelMetadata, FrameDesc, FrameSource, HostFrame, InputRequirements,
+    MasteringDisplayMetadata, PixelFormat, Rational, ResolvedColorSemantics, Result, SourceTimings,
+    TransferCharacteristic, VideoCodec, VideoFrame, VideoProfile,
 };
 use std::{
     ffi::{CStr, CString},
@@ -51,6 +53,8 @@ pub struct Decoder {
     packet_pending: bool,
     download_format_checked: bool,
     format_locked: bool,
+    stream_color: ColorMetadataRaw,
+    first_color: Option<ResolvedColorSemantics>,
     audio_streams: Vec<AudioInputStream>,
     selected_audio_streams: Vec<usize>,
     audio_sender: Option<AudioPacketSender>,
@@ -216,7 +220,7 @@ impl Decoder {
             source_height as u32,
             frame_rate,
             ColorSpace {
-                matrix: source_matrix,
+                matrix: map_matrix(unsafe { (*codec.as_ptr()).colorspace }),
                 range: source_range,
                 primaries: map_primaries(unsafe { (*codec.as_ptr()).color_primaries }),
                 transfer: map_transfer(unsafe { (*codec.as_ptr()).color_trc }),
@@ -225,11 +229,10 @@ impl Decoder {
                 }),
             },
         );
-        if has_hdr_stream_side_data(parameters)? {
-            return Err(asciiflow_core::Error::UnsupportedFrame(
-                "HDR mastering/display stream metadata is not supported".into(),
-            ));
-        }
+        let stream_color = ColorMetadataRaw {
+            space: requirements.color_space,
+            ..read_stream_static_metadata(parameters)?
+        };
         let frame_desc = if requirements.bit_depth == Some(10) {
             FrameDesc::host_p010_le(width, height, requirements.color_space)?
         } else {
@@ -300,6 +303,8 @@ impl Decoder {
             packet_pending: false,
             download_format_checked: false,
             format_locked: false,
+            stream_color,
+            first_color: None,
             audio_streams,
             selected_audio_streams: Vec::new(),
             audio_sender: None,
@@ -389,43 +394,35 @@ impl Decoder {
                     ChromaSubsampling::Other
                 }
             });
-            let frame_color = ColorSpace {
-                matrix: map_matrix(native.colorspace),
-                range: map_range(native.color_range),
-                primaries: map_primaries(native.color_primaries),
-                transfer: map_transfer(native.color_trc),
-                chroma_location: map_chroma_location(native.chroma_location),
+            let frame_color = read_frame_color(native)?;
+            let policy = if actual.bit_depth == Some(10) {
+                ColorResolutionPolicy::StrictTenBit
+            } else {
+                ColorResolutionPolicy::LegacyEightBit
             };
-            if actual.bit_depth == Some(10) {
-                merge_frame_color(&mut actual.color_space, frame_color)?;
-            }
-            if matches!(frame_color.primaries, ColorPrimaries::Bt2020)
-                || matches!(
-                    frame_color.transfer,
-                    TransferCharacteristic::Pq | TransferCharacteristic::Hlg
-                )
-            {
-                return Err(asciiflow_core::Error::UnsupportedFrame(
-                    "HDR/BT.2020 input is not supported by the SDR processing pipeline".into(),
-                ));
-            }
-            let has_hdr_side_data = unsafe {
-                !ffi::av_frame_get_side_data(
-                    self.source_frame.as_mut_ptr(),
-                    ffi::AVFrameSideDataType::AV_FRAME_DATA_MASTERING_DISPLAY_METADATA,
-                )
-                .is_null()
-                    || !ffi::av_frame_get_side_data(
-                        self.source_frame.as_mut_ptr(),
-                        ffi::AVFrameSideDataType::AV_FRAME_DATA_CONTENT_LIGHT_LEVEL,
-                    )
-                    .is_null()
+            let color = if let Some(first) = self.first_color {
+                if frame_color == first.frame {
+                    first
+                } else {
+                    let next =
+                        ResolvedColorSemantics::resolve(self.stream_color, frame_color, policy)?;
+                    first.ensure_stable(next)?;
+                    next
+                }
+            } else {
+                ResolvedColorSemantics::resolve(self.stream_color, frame_color, policy)?
             };
-            if has_hdr_side_data {
-                return Err(asciiflow_core::Error::UnsupportedFrame(
-                    "HDR mastering/display frame metadata is not supported".into(),
-                ));
+            self.info.requirements.color_semantics = Some(color);
+            if let Err(reason) = color.support {
+                return Err(asciiflow_core::Error::UnsupportedColor {
+                    reason,
+                    stream: color.stream.space,
+                    frame: color.frame.space,
+                    effective: color.effective,
+                });
             }
+            actual.color_space = color.effective;
+            actual.color_semantics = Some(color);
             let working_format = actual.validate_processing_input().map_err(|e| {
                 asciiflow_core::Error::Media(format!(
                     "decoded {:?} profile {:?}, {:?}-bit {:?}, requested {:?}: {e}",
@@ -436,6 +433,44 @@ impl Decoder {
                     self.mode
                 ))
             })?;
+            let scaler_matrix =
+                if color.provenance.matrix == asciiflow_core::ColorProvenance::LegacyDefault {
+                    self.source_matrix
+                } else {
+                    color.effective.matrix
+                };
+            let scaler_range =
+                if color.provenance.range == asciiflow_core::ColorProvenance::LegacyDefault {
+                    self.source_range
+                } else {
+                    color.effective.range
+                };
+            if self.mode == DecodeMode::Software && working_format == PixelFormat::Nv12 {
+                if self.scaler.is_some()
+                    && (self.source_matrix != scaler_matrix || self.source_range != scaler_range)
+                {
+                    pixel.ok_or_else(|| {
+                        asciiflow_core::Error::UnsupportedFrame(
+                            "decoded frame has no recognized pixel format".into(),
+                        )
+                    })?;
+                    let replacement = create_scaler(
+                        native.width,
+                        native.height,
+                        unsafe { std::mem::transmute::<i32, ffi::AVPixelFormat>(native.format) },
+                        self.info.frame_desc.width,
+                        self.info.frame_desc.height,
+                        scaler_matrix,
+                        scaler_range,
+                    )?;
+                    if let Some(previous) = self.scaler.replace(replacement) {
+                        unsafe { ffi::sws_freeContext(previous.as_ptr()) };
+                    }
+                }
+                self.source_matrix = scaler_matrix;
+                self.source_range = scaler_range;
+            }
+            self.first_color.get_or_insert(color);
             if self.format_locked && self.info.frame_desc.format != working_format {
                 return Err(asciiflow_core::Error::UnsupportedFrame(
                     "decoded pixel format changed after the first frame".into(),
@@ -818,10 +853,79 @@ fn input_requirements(
         height,
         frame_rate,
         color_space,
+        color_semantics: None,
     }
 }
 
-fn has_hdr_stream_side_data(parameters: *const ffi::AVCodecParameters) -> Result<bool> {
+#[repr(C)]
+#[derive(Clone, Copy)]
+struct NativeMasteringDisplay {
+    display_primaries: [[ffi::AVRational; 2]; 3],
+    white_point: [ffi::AVRational; 2],
+    min_luminance: ffi::AVRational,
+    max_luminance: ffi::AVRational,
+    has_primaries: i32,
+    has_luminance: i32,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy)]
+struct NativeContentLight {
+    max_cll: u32,
+    max_fall: u32,
+}
+
+fn read_payload<T: Copy>(data: *const u8, size: usize) -> Result<T> {
+    if data.is_null() || size < std::mem::size_of::<T>() {
+        return Err(ColorError::MalformedMasteringMetadata.into());
+    }
+    // The FFmpeg header defines these C-layout payloads, but ffmpeg-sys-next
+    // omits their bindings. Check the payload extent before reading its prefix.
+    Ok(unsafe { data.cast::<T>().read_unaligned() })
+}
+
+fn rational(value: ffi::AVRational) -> ColorRational {
+    ColorRational {
+        numerator: value.num,
+        denominator: value.den,
+    }
+}
+
+fn parse_mastering(data: *const u8, size: usize) -> Result<MasteringDisplayMetadata> {
+    let native: NativeMasteringDisplay = read_payload(data, size)?;
+    if !matches!(native.has_primaries, 0 | 1) || !matches!(native.has_luminance, 0 | 1) {
+        return Err(ColorError::MalformedMasteringMetadata.into());
+    }
+    let primaries = native.has_primaries == 1;
+    let luminance = native.has_luminance == 1;
+    MasteringDisplayMetadata {
+        display_primaries: primaries.then(|| native.display_primaries.map(|xy| xy.map(rational))),
+        white_point: primaries.then(|| native.white_point.map(rational)),
+        min_luminance: luminance.then(|| rational(native.min_luminance)),
+        max_luminance: luminance.then(|| rational(native.max_luminance)),
+    }
+    .validate()
+    .map_err(Into::into)
+}
+
+fn parse_content_light(data: *const u8, size: usize) -> Result<ContentLightLevelMetadata> {
+    if data.is_null() || size < std::mem::size_of::<NativeContentLight>() {
+        return Err(ColorError::MalformedContentLightMetadata.into());
+    }
+    let native = unsafe { data.cast::<NativeContentLight>().read_unaligned() };
+    if native.max_cll != 0 && native.max_fall > native.max_cll {
+        return Err(ColorError::MalformedContentLightMetadata.into());
+    }
+    Ok(ContentLightLevelMetadata {
+        max_cll: (native.max_cll != 0).then_some(native.max_cll),
+        max_fall: (native.max_fall != 0).then_some(native.max_fall),
+    })
+}
+
+fn read_stream_static_metadata(
+    parameters: *const ffi::AVCodecParameters,
+) -> Result<ColorMetadataRaw> {
+    let mut result = ColorMetadataRaw::unspecified();
     let count = unsafe { (*parameters).nb_coded_side_data };
     if !(0..=1024).contains(&count) {
         return Err(asciiflow_core::Error::Media(
@@ -829,7 +933,7 @@ fn has_hdr_stream_side_data(parameters: *const ffi::AVCodecParameters) -> Result
         ));
     }
     if count == 0 {
-        return Ok(false);
+        return Ok(result);
     }
     let pointer = unsafe { (*parameters).coded_side_data };
     if pointer.is_null() {
@@ -838,13 +942,57 @@ fn has_hdr_stream_side_data(parameters: *const ffi::AVCodecParameters) -> Result
         ));
     }
     let side_data = unsafe { std::slice::from_raw_parts(pointer, count as usize) };
-    Ok(side_data.iter().any(|entry| {
-        matches!(
-            entry.type_,
-            ffi::AVPacketSideDataType::AV_PKT_DATA_MASTERING_DISPLAY_METADATA
-                | ffi::AVPacketSideDataType::AV_PKT_DATA_CONTENT_LIGHT_LEVEL
+    for entry in side_data {
+        match entry.type_ {
+            ffi::AVPacketSideDataType::AV_PKT_DATA_MASTERING_DISPLAY_METADATA => {
+                if result.mastering_display.is_some() {
+                    return Err(ColorError::MalformedMasteringMetadata.into());
+                }
+                result.mastering_display = Some(parse_mastering(entry.data, entry.size)?);
+            }
+            ffi::AVPacketSideDataType::AV_PKT_DATA_CONTENT_LIGHT_LEVEL => {
+                if result.content_light.is_some() {
+                    return Err(ColorError::MalformedContentLightMetadata.into());
+                }
+                result.content_light = Some(parse_content_light(entry.data, entry.size)?);
+            }
+            _ => {}
+        }
+    }
+    Ok(result)
+}
+
+fn read_frame_color(frame: &ffi::AVFrame) -> Result<ColorMetadataRaw> {
+    let mut result = ColorMetadataRaw {
+        space: ColorSpace {
+            matrix: map_matrix(frame.colorspace),
+            range: map_range(frame.color_range),
+            primaries: map_primaries(frame.color_primaries),
+            transfer: map_transfer(frame.color_trc),
+            chroma_location: map_chroma_location(frame.chroma_location),
+        },
+        ..ColorMetadataRaw::unspecified()
+    };
+    let frame_ptr = frame as *const ffi::AVFrame as *mut ffi::AVFrame;
+    let mastering = unsafe {
+        ffi::av_frame_get_side_data(
+            frame_ptr,
+            ffi::AVFrameSideDataType::AV_FRAME_DATA_MASTERING_DISPLAY_METADATA,
         )
-    }))
+    };
+    if let Some(side) = unsafe { mastering.as_ref() } {
+        result.mastering_display = Some(parse_mastering(side.data, side.size)?);
+    }
+    let light = unsafe {
+        ffi::av_frame_get_side_data(
+            frame_ptr,
+            ffi::AVFrameSideDataType::AV_FRAME_DATA_CONTENT_LIGHT_LEVEL,
+        )
+    };
+    if let Some(side) = unsafe { light.as_ref() } {
+        result.content_light = Some(parse_content_light(side.data, side.size)?);
+    }
+    Ok(result)
 }
 
 fn p010_from_native(
@@ -953,34 +1101,45 @@ fn map_primaries(value: ffi::AVColorPrimaries) -> ColorPrimaries {
     match value {
         ffi::AVColorPrimaries::AVCOL_PRI_BT709 => ColorPrimaries::Bt709,
         ffi::AVColorPrimaries::AVCOL_PRI_BT2020 => ColorPrimaries::Bt2020,
+        ffi::AVColorPrimaries::AVCOL_PRI_BT470BG => ColorPrimaries::Bt470Bg,
+        ffi::AVColorPrimaries::AVCOL_PRI_SMPTE170M => ColorPrimaries::Smpte170M,
+        ffi::AVColorPrimaries::AVCOL_PRI_SMPTE240M => ColorPrimaries::Smpte240M,
+        ffi::AVColorPrimaries::AVCOL_PRI_SMPTE432 => ColorPrimaries::DisplayP3,
         ffi::AVColorPrimaries::AVCOL_PRI_UNSPECIFIED => ColorPrimaries::Unspecified,
-        _ => ColorPrimaries::Other,
+        _ => ColorPrimaries::Unknown(value as i32),
     }
 }
 
 fn map_transfer(value: ffi::AVColorTransferCharacteristic) -> TransferCharacteristic {
     match value {
         ffi::AVColorTransferCharacteristic::AVCOL_TRC_BT709 => TransferCharacteristic::Bt709,
+        ffi::AVColorTransferCharacteristic::AVCOL_TRC_SMPTE170M => {
+            TransferCharacteristic::Smpte170M
+        }
+        ffi::AVColorTransferCharacteristic::AVCOL_TRC_IEC61966_2_1 => TransferCharacteristic::Srgb,
+        ffi::AVColorTransferCharacteristic::AVCOL_TRC_GAMMA22 => TransferCharacteristic::Gamma22,
+        ffi::AVColorTransferCharacteristic::AVCOL_TRC_GAMMA28 => TransferCharacteristic::Gamma28,
+        ffi::AVColorTransferCharacteristic::AVCOL_TRC_LINEAR => TransferCharacteristic::Linear,
         ffi::AVColorTransferCharacteristic::AVCOL_TRC_SMPTE2084 => TransferCharacteristic::Pq,
         ffi::AVColorTransferCharacteristic::AVCOL_TRC_ARIB_STD_B67 => TransferCharacteristic::Hlg,
         ffi::AVColorTransferCharacteristic::AVCOL_TRC_UNSPECIFIED => {
             TransferCharacteristic::Unspecified
         }
-        _ => TransferCharacteristic::Other,
+        _ => TransferCharacteristic::Unknown(value as i32),
     }
 }
 
 fn map_matrix(value: ffi::AVColorSpace) -> ColorMatrix {
     match value {
         ffi::AVColorSpace::AVCOL_SPC_BT709 => ColorMatrix::Bt709,
+        ffi::AVColorSpace::AVCOL_SPC_RGB => ColorMatrix::Identity,
         ffi::AVColorSpace::AVCOL_SPC_BT470BG | ffi::AVColorSpace::AVCOL_SPC_SMPTE170M => {
             ColorMatrix::Bt601
         }
-        ffi::AVColorSpace::AVCOL_SPC_BT2020_NCL | ffi::AVColorSpace::AVCOL_SPC_BT2020_CL => {
-            ColorMatrix::Bt2020
-        }
+        ffi::AVColorSpace::AVCOL_SPC_BT2020_NCL => ColorMatrix::Bt2020,
+        ffi::AVColorSpace::AVCOL_SPC_BT2020_CL => ColorMatrix::Bt2020Constant,
         ffi::AVColorSpace::AVCOL_SPC_UNSPECIFIED => ColorMatrix::Unspecified,
-        _ => ColorMatrix::Other,
+        _ => ColorMatrix::Unknown(value as i32),
     }
 }
 
@@ -990,56 +1149,6 @@ fn map_range(value: ffi::AVColorRange) -> ColorRange {
         ffi::AVColorRange::AVCOL_RANGE_MPEG => ColorRange::Limited,
         _ => ColorRange::Unspecified,
     }
-}
-
-fn merge_frame_color(stream: &mut ColorSpace, frame: ColorSpace) -> Result<()> {
-    fn merge<T: Copy + PartialEq + std::fmt::Debug>(
-        stream: &mut T,
-        frame: T,
-        unspecified: T,
-        name: &str,
-    ) -> Result<()> {
-        if frame != unspecified {
-            if *stream != unspecified && *stream != frame {
-                return Err(asciiflow_core::Error::UnsupportedFrame(format!(
-                    "stream/frame {name} metadata disagree: {:?} vs {:?}",
-                    stream, frame
-                )));
-            }
-            *stream = frame;
-        }
-        Ok(())
-    }
-    merge(
-        &mut stream.matrix,
-        frame.matrix,
-        ColorMatrix::Unspecified,
-        "matrix",
-    )?;
-    merge(
-        &mut stream.range,
-        frame.range,
-        ColorRange::Unspecified,
-        "range",
-    )?;
-    merge(
-        &mut stream.primaries,
-        frame.primaries,
-        ColorPrimaries::Unspecified,
-        "primaries",
-    )?;
-    merge(
-        &mut stream.transfer,
-        frame.transfer,
-        TransferCharacteristic::Unspecified,
-        "transfer",
-    )?;
-    merge(
-        &mut stream.chroma_location,
-        frame.chroma_location,
-        ChromaLocation::Unspecified,
-        "chroma location",
-    )
 }
 
 fn map_chroma_location(value: ffi::AVChromaLocation) -> ChromaLocation {
@@ -1247,6 +1356,50 @@ mod p010_tests {
     use super::*;
 
     #[test]
+    #[ignore = "requires Intel VAAPI; reports codecpar/context color provenance"]
+    fn intel_color_source_provenance() {
+        for name in [
+            "hevc-main10-sdr-gradient.mp4",
+            "av1-main10-sdr-gradient.mp4",
+        ] {
+            let input = Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../tests/fixtures/codecs")
+                .join(name);
+            for mode in [DecodeMode::Software, DecodeMode::Vaapi] {
+                let mut decoder =
+                    Decoder::open_with(&input, mode, VaapiOptions::default()).unwrap();
+                let stream = unsafe {
+                    *(*decoder.format.as_ptr())
+                        .streams
+                        .add(decoder.stream_index as usize)
+                };
+                let codecpar = unsafe { &*(*stream).codecpar };
+                let context = unsafe { decoder.codec.as_ref() };
+                let codecpar_color = ColorSpace {
+                    primaries: map_primaries(codecpar.color_primaries),
+                    transfer: map_transfer(codecpar.color_trc),
+                    matrix: map_matrix(codecpar.color_space),
+                    range: map_range(codecpar.color_range),
+                    chroma_location: map_chroma_location(codecpar.chroma_location),
+                };
+                let context_color = ColorSpace {
+                    primaries: map_primaries(context.color_primaries),
+                    transfer: map_transfer(context.color_trc),
+                    matrix: map_matrix(context.colorspace),
+                    range: map_range(context.color_range),
+                    chroma_location: map_chroma_location(context.chroma_sample_location),
+                };
+                decoder.next_frame().unwrap().unwrap();
+                let color = decoder.info().requirements.color_semantics.unwrap();
+                println!(
+                    "{name} {mode:?}: codecpar={codecpar_color:?} context={context_color:?} frame={:?}",
+                    color.frame.space
+                );
+            }
+        }
+    }
+
+    #[test]
     fn planar_repack_respects_padding_stride_and_preserves_all_channels() {
         let desc = FrameDesc::host_p010_le(2, 2, ColorSpace::default()).unwrap();
         let mut y = [0u8; 16];
@@ -1291,5 +1444,66 @@ mod p010_tests {
         assert!(planar_code(&0x0400u16.to_le_bytes()).is_err());
         assert!(validate_p010_words(&0x0041u16.to_le_bytes()).is_err());
         assert!(validate_p010_words(&0xffc0u16.to_le_bytes()).is_ok());
+    }
+
+    #[test]
+    fn ffmpeg_color_values_map_to_independent_portable_dimensions() {
+        assert_eq!(
+            map_primaries(ffi::AVColorPrimaries::AVCOL_PRI_SMPTE432),
+            ColorPrimaries::DisplayP3
+        );
+        assert_eq!(
+            map_transfer(ffi::AVColorTransferCharacteristic::AVCOL_TRC_SMPTE2084),
+            TransferCharacteristic::Pq
+        );
+        assert_eq!(
+            map_transfer(ffi::AVColorTransferCharacteristic::AVCOL_TRC_ARIB_STD_B67),
+            TransferCharacteristic::Hlg
+        );
+        assert_eq!(
+            map_matrix(ffi::AVColorSpace::AVCOL_SPC_BT2020_NCL),
+            ColorMatrix::Bt2020
+        );
+        assert_eq!(
+            map_matrix(ffi::AVColorSpace::AVCOL_SPC_BT2020_CL),
+            ColorMatrix::Bt2020Constant
+        );
+        assert_eq!(
+            map_range(ffi::AVColorRange::AVCOL_RANGE_JPEG),
+            ColorRange::Full
+        );
+    }
+
+    #[test]
+    fn malformed_static_payloads_fail_before_interpretation() {
+        assert!(parse_mastering(std::ptr::null(), 0).is_err());
+        assert!(parse_content_light(std::ptr::null(), 0).is_err());
+        let bad = NativeContentLight {
+            max_cll: 400,
+            max_fall: 1000,
+        };
+        assert!(
+            parse_content_light(
+                (&bad as *const NativeContentLight).cast(),
+                std::mem::size_of::<NativeContentLight>(),
+            )
+            .is_err()
+        );
+        let bad_rational = ffi::AVRational { num: 1, den: 0 };
+        let bad = NativeMasteringDisplay {
+            display_primaries: [[bad_rational; 2]; 3],
+            white_point: [bad_rational; 2],
+            min_luminance: bad_rational,
+            max_luminance: bad_rational,
+            has_primaries: 1,
+            has_luminance: 1,
+        };
+        assert!(
+            parse_mastering(
+                (&bad as *const NativeMasteringDisplay).cast(),
+                std::mem::size_of::<NativeMasteringDisplay>(),
+            )
+            .is_err()
+        );
     }
 }

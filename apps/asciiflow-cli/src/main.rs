@@ -127,6 +127,22 @@ fn run(args: Args, cancellation: CancellationToken) -> Result<()> {
     PipelinePlanner::validate_policy(policy.clone()).map_err(|error| {
         asciiflow_core::Error::pipeline(PipelineStage::Planning, "validate pipeline policy", error)
     })?;
+    if args.explain_plan {
+        // Diagnostics may need to explain an input rejected by first-frame
+        // color qualification, before the full capability probe can return.
+        let mut inspection = Decoder::open(&args.input).map_err(|error| {
+            asciiflow_core::Error::pipeline(PipelineStage::InputProbe, "open input media", error)
+        })?;
+        if let Err(error) = inspection.next_frame() {
+            capabilities::print_rejected_color(&inspection.info().requirements);
+            return Err(asciiflow_core::Error::pipeline(
+                PipelineStage::InputProbe,
+                "decode input qualification frame",
+                error,
+            )
+            .into());
+        }
+    }
     let vaapi = VaapiOptions::new(args.hw_device.clone());
     let probe = capabilities::probe(&args.input, &vaapi, &config)?;
     ensure_not_cancelled(&cancellation)?;
@@ -1521,6 +1537,7 @@ mod stage40_tests {
             height: 1080,
             frame_rate: Rational::new(50, 1).unwrap(),
             color_space: ColorSpace::default(),
+            color_semantics: None,
         }
     }
 

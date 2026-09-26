@@ -4,8 +4,11 @@ Input is detected automatically: H.264, HEVC Main and AV1 Main 8-bit 4:2:0,
 plus explicitly tagged BT.709 SDR HEVC Main10 and AV1 Main 10-bit 4:2:0.
 Output defaults to H.264 8-bit. HEVC Main and AV1 Profile0 8-bit output use
 VAAPI; explicit `--output-codec hevc|av1 --output-bit-depth 10` selects a
-VAAPI-only 10-bit P010 output path on qualified hardware. HDR and implicit
-bit-depth conversion are not supported. See [codec support](docs/codecs.md).
+VAAPI-only 10-bit P010 output path on qualified hardware. PQ/HLG HDR inputs
+are classified and rejected explicitly; HDR pixel processing and implicit
+bit-depth conversion are not supported. Current ASCII output is qualified for
+BT.709 limited-range SDR. See [codec support](docs/codecs.md) and
+[color semantics](docs/color-semantics.md).
 
 AsciiFlow v2 is the primary development path. Host NV12 remains the default
 portable production boundary. P010LE processing can consume software- or

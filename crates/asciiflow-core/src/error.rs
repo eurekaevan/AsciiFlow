@@ -85,6 +85,17 @@ impl StdError for PipelineError {
 
 #[derive(Debug, Error)]
 pub enum Error {
+    #[error("color semantics: {0}")]
+    Color(#[from] crate::ColorError),
+    #[error(
+        "unsupported color: {reason}; stream={stream:?}; frame={frame:?}; resolved={effective:?}"
+    )]
+    UnsupportedColor {
+        reason: crate::ColorSupportReason,
+        stream: crate::ColorSpace,
+        frame: crate::ColorSpace,
+        effective: crate::ColorSpace,
+    },
     #[error("invalid configuration: {0}")]
     InvalidConfig(String),
     #[error("unsupported frame: {0}")]

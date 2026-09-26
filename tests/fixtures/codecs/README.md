@@ -3,18 +3,28 @@
 All files are small, deterministic synthetic media; no third-party recordings
 are included. The Main 8 fixtures use FFmpeg `testsrc2` and `sine` and include
 mono 48 kHz AAC audio. The Stage 5.2B gradient fixtures use generated raw
-`yuv420p10le` planes and contain video only. All are 64×64, 30 fps, and 36
-frames.
+`yuv420p10le` planes and contain video only. The small codec fixtures are
+64×64, 30 fps, and 36 frames; the Stage 5.3A canonical production input
+below is the documented 1920×1080/300-frame exception.
 
 | File | Contract |
 | --- | --- |
 | `hevc-main8-bframes.mp4` | HEVC Main, 8-bit 4:2:0; normal B pictures/reorder |
 | `av1-main8-nofilmgrain.mp4` | AV1 Main, 8-bit 4:2:0; film grain disabled |
-| `hevc-main10-reject.mp4` | HEVC Main 10, 10-bit 4:2:0 with BT.709 tags; rejection fixture |
-| `av1-main10-reject.mp4` | AV1 Main, 10-bit 4:2:0 with BT.709 tags; rejection fixture |
+| `hevc-main10-reject.mp4` | Historical HEVC Main 10 BT.709 fixture, named when 10-bit output was unsupported |
+| `av1-main10-reject.mp4` | Historical AV1 Main 10 BT.709 fixture, named when 10-bit output was unsupported |
 | `hevc-main10-sdr-gradient.mp4` | HEVC Main 10, BT.709 limited-range SDR; gradient with all four low-bit patterns |
+| `hevc-main10-canonical-v1.mp4` | Stage 5.3A canonical 1920×1080/50 fps/300-frame Main10 production input; deterministic replacement regression source, not the lost Stage 5.2C-3 input |
 | `av1-main10-sdr-gradient.mp4` | AV1 Main, 10-bit BT.709 limited-range SDR; gradient with all four low-bit patterns |
 | `hevc-main10-pq-reject.mp4` | HEVC Main 10, BT.2020 / SMPTE ST 2084 PQ; HDR rejection fixture |
+| `hevc-main10-sdr-full.mp4` | BT.709 SDR, full-range HEVC Main 10; unrestricted synthetic gradient codes |
+| `hevc-main10-bt2020-sdr.mp4` | BT.2020 primaries/matrix with BT.709 SDR transfer; wide gamut alone is not HDR |
+| `hevc-main10-hlg.mp4` | BT.2020 / ARIB STD-B67 HLG transfer, without static HDR metadata |
+| `av1-main10-pq.mp4` | AV1 Main 10, BT.2020 / SMPTE ST 2084 PQ transfer |
+| `hevc-main10-unspecified.mp4` | Unspecified primaries, transfer and matrix; limited range remains explicitly signaled |
+| `hevc-main10-pq-bt709-conflict.mp4` | PQ transfer with BT.709 primaries/matrix for semantic conflict handling |
+| `hevc-main10-pq-static-metadata.mp4` | PQ with mastering-display SEI and MaxCLL 1000 / MaxFALL 400; compare with the PQ fixture without static metadata |
+| `hevc-main8-bt601.mp4` | 8-bit SMPTE 170M primaries/transfer and BT.601 matrix; legacy software color normalization |
 
 Recreate with `sh tests/fixtures/codecs/generate.sh`. The generator accepts
 only FFmpeg **8.1.2**; set `ASCIIFLOW_FIXTURE_FFMPEG` when the pinned binary is
@@ -29,8 +39,74 @@ records the FFmpeg build/library versions and Python version; `SHA256SUMS`
 records all checked-in MP4 hashes.
 Tests consume these checked-in bytes and never require a runtime generator.
 
+## Canonical 10-bit production input v1
+
+`hevc-main10-canonical-v1.mp4` is a **new** fully reproducible regression
+input, not a recovery of the historical Stage 5.2C-3 file. It is 6,733,222
+bytes, SHA-256
+`df69c98ca6592b08c6bc34127b2bb5cf4125c759fd852b830e5426d5818fccda`.
+`ffprobe` reports HEVC Main 10, 1920×1080, 300 frames, 50/1 fps,
+`yuv420p10le`, BT.709 primaries/transfer/matrix, limited (`tv`) range and
+left chroma. The deterministic standard-library Python source generator
+creates 192×108 true-10-bit Y/U/V gradients with moving rectangle and circle
+and time-varying chroma; FFmpeg upscales each plane 10× with nearest neighbor
+and encodes Main10. Decoding all 300 frames found **700,261,022 of
+933,120,000** samples (75.0451%) with nonzero low two bits. This is not an
+8-bit source shifted into a 10-bit container.
+
+Generate with the exact command below. The shell script contains the complete
+fixed FFmpeg invocation (raw pixel format, input/output rates, frame count,
+scaling, x265 settings, P/T/M/range, chroma location and MP4 timescale):
+
+```bash
+bash tests/fixtures/codecs/generate-10bit-baseline.sh \
+  tests/fixtures/codecs/hevc-main10-canonical-v1.mp4
+```
+
+It requires FFmpeg **8.1.3**; the older small-fixture generator above remains
+pinned to 8.1.2. See `canonical-generator-version.txt` for the exact package,
+source RPM, x265, executable/library hashes and full-build fingerprint. The
+shell script SHA-256 is
+`8162c4764b27810d9cd35107be9d534b1e619fb29abda5cb0ffcabea45f5f026`;
+the Python generator SHA-256 is
+`faae4e25dd94783e54c936c646ffa3668d2e474f803d1501ac612ccd04844069`.
+Three independent runs, including a deletion and rebuild, yielded the exact
+input SHA-256 above. Future regeneration must compare against the checked-in
+entry in `SHA256SUMS`; no tool-version change silently replaces it.
+
+Recheck the decoded active low bits without storing a 1.87 GB raw stream:
+
+```bash
+set -o pipefail
+ffmpeg -v error -i tests/fixtures/codecs/hevc-main10-canonical-v1.mp4 \
+  -map 0:v:0 -f rawvideo -pix_fmt yuv420p10le - |
+  python3 tests/fixtures/codecs/count-10bit-low-bits.py
+```
+
+The Stage 5.3A metadata variants retain this synthetic 10-bit video; they are
+classification inputs, not visually calibrated HDR masters. The script changes
+both MP4 stream fields and coded HEVC/AV1 headers so the first decoded frame
+exposes the intended fields. x265 writes mastering-display coordinates and
+luminance as integer-scaled SEI values, plus content-light SEI values. The
+static-metadata file is remuxed once after encoding so its MP4 stream fields
+also match its coded PQ signal. Full-range code values are from the original
+unrestricted 0–1023 gradient; no video-range conversion is applied.
+
 Verify existing artifacts with:
 
 ```sh
 cd tests/fixtures/codecs && sha256sum -c SHA256SUMS
+```
+
+For each metadata fixture, inspect both the stream and the first decoded
+frame. The second command also prints mastering-display and content-light side
+data when present:
+
+```sh
+ffprobe -v error -select_streams v:0 \
+  -show_entries stream=color_range,color_space,color_transfer,color_primaries \
+  -of json tests/fixtures/codecs/hevc-main10-pq-static-metadata.mp4
+ffprobe -v error -select_streams v:0 -read_intervals '%+#1' \
+  -show_frames -of json \
+  tests/fixtures/codecs/hevc-main10-pq-static-metadata.mp4
 ```

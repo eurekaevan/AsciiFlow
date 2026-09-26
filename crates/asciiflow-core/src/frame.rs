@@ -48,9 +48,13 @@ pub enum MemoryDomain {
 pub enum ColorMatrix {
     Bt601,
     Bt709,
+    /// BT.2020 non-constant luminance.
     Bt2020,
+    Bt2020Constant,
+    Identity,
     Other,
     Unspecified,
+    Unknown(i32),
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -64,17 +68,28 @@ pub enum ColorRange {
 pub enum ColorPrimaries {
     Bt709,
     Bt2020,
+    Bt470Bg,
+    Smpte170M,
+    Smpte240M,
+    DisplayP3,
     Other,
     Unspecified,
+    Unknown(i32),
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum TransferCharacteristic {
     Bt709,
+    Smpte170M,
+    Srgb,
+    Gamma22,
+    Gamma28,
+    Linear,
     Pq,
     Hlg,
     Other,
     Unspecified,
+    Unknown(i32),
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

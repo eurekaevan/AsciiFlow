@@ -6,6 +6,70 @@ tests are opt-in because they require a qualified device, drivers, and sometimes
 a retained long-form input. Stage-specific measurements and hardware outcomes
 live in their validation reports.
 
+Stage 5.3A color tests use the checked-in codec fixtures and run in the normal
+workspace suite. They exercise BT.709 SDR, BT.2020 SDR, PQ, HLG, unknown and
+contradictory signaling, exact-rational static HDR data, safe-output rejection,
+and a synthetic mid-stream SDR→PQ change. On an Intel render node, additionally
+run the ignored software/VAAPI color parity check:
+
+```bash
+cargo test -p asciiflow-media --test codec_decode \
+  hevc_av1_main10_software_and_vaapi_color_semantics_agree -- --ignored --nocapture
+cargo test -p asciiflow-media intel_color_source_provenance \
+  -- --ignored --nocapture
+cargo test -p asciiflow-media --test codec_decode \
+  vaapi_rejects_unsupported_color_with_classification_intact \
+  -- --ignored --nocapture
+```
+
+The [Stage 5.3A hardware closure report](stage5.3a-hardware-closure.md)
+records the Intel results. The three retained 8-bit hashes match. The original
+Stage 5.2C-3 10-bit input/hash were not retained; those two old output hashes
+are historical references, **not current regression gates**. The replacement
+canonical 10-bit baseline v1 is checked in under
+`tests/fixtures/codecs/hevc-main10-canonical-v1.mp4`, SHA-256
+`df69c98ca6592b08c6bc34127b2bb5cf4125c759fd852b830e5426d5818fccda`.
+Regenerate with the exact FFmpeg 8.1.3 command in
+`tests/fixtures/codecs/generate-10bit-baseline.sh`; the fixture README records
+toolchain and three-run byte reproducibility. (Use the authoritative checksum
+in `tests/fixtures/codecs/SHA256SUMS` when validating the file.)
+
+For Intel Arc Meteor Lake, build Release and run the two canonical production
+profiles below. The output filename may differ, but all other flags are part
+of the regression configuration. Repeat each profile three times and compare
+SHA-256; the Stage 5.3A values are HEVC Main10
+`07f231ab49eebd54cc0e85012f7dd12e424f580d17005bc20028b458168323fe`
+and AV1 10-bit
+`2ab82984f690ea3fe5472c874dfce7cc474f7c46266f5cd86ed8deee20b36fda`.
+
+```bash
+cargo build --release --workspace
+target/release/asciiflow tests/fixtures/codecs/hevc-main10-canonical-v1.mp4 \
+  /tmp/asciiflow-canonical-hevc-run1.mp4 \
+  --width 80 --font builtin-8x8 --color true --audio none --max-frames 300 \
+  --decode vaapi --backend vulkan --vulkan-mapping gpu --encode vaapi \
+  --hw-device /dev/dri/renderD128 --vaapi-vulkan-input-interop on \
+  --vaapi-vulkan-output-interop on --output-codec hevc \
+  --output-bit-depth 10 --no-progress
+target/release/asciiflow tests/fixtures/codecs/hevc-main10-canonical-v1.mp4 \
+  /tmp/asciiflow-canonical-av1-run1.mp4 \
+  --width 80 --font builtin-8x8 --color true --audio none --max-frames 300 \
+  --decode vaapi --backend vulkan --vulkan-mapping gpu --encode vaapi \
+  --hw-device /dev/dri/renderD128 --vaapi-vulkan-input-interop on \
+  --vaapi-vulkan-output-interop on --output-codec av1 \
+  --output-bit-depth 10 --no-progress
+```
+
+The opt-in
+`canonical_v1_main10_full_interop_300_frame_preencode_parity` hardware test
+compares all 300 pre-encode P010 frames, byte-for-byte, with a staged reference
+for both codecs. It also checks FD return and Vulkan Validation when enabled.
+For every future retained benchmark or output regression, preserve the input
+generator, generator/tool version and exact command, input SHA-256, full output
+command, and output SHA-256 (or a structured packet/timestamp/decoded-pixel
+oracle if hardware output is nondeterministic). Do not promote a hash whose
+input identity cannot be independently reproduced.
+
 Audio Stage 4.2.1 has three layers:
 
 - A: core policy tests and native packet/queue fault tests, without GPU access.
