@@ -39,54 +39,25 @@ scratch/
 !crates/asciiflow-media/tests/fixtures/*.mp4
 
 # -------------------------------------------------------------------------
-# 3. .NET 编译及构建非源码文件 (Build & compilation artifacts)
+# 3. Build and native binary artifacts
 # -------------------------------------------------------------------------
-[Bb]in/
-[Oo]bj/
-[Tt]emp/
-[Ll]og/
-*.user
-*.userosscache
-*.sln.docstates
-*.userprefs
-*.suo
-
-# NuGet 临时文件
-*.nupkg
-*.snupkg
-*.nuget.props
-*.nuget.targets
-project.lock.json
-project.assets.json
-
-# 编译产生的动态/静态库和调试符号
 *.dll
 *.exe
 *.pdb
 *.so
 *.so.*
 *.dylib
+target/
+third_party/ffmpeg/source/
+third_party/ffmpeg/install/
+third_party/ffmpeg/downloads/
 
 # -------------------------------------------------------------------------
 # 4. IDE 及编辑器配置文件 (IDE & Editor files)
 # -------------------------------------------------------------------------
-.vs/
 .idea/
 .vscode/
 *.swp
 *~
 .DS_Store
 Thumbs.db
-
-# -------------------------------------------------------------------------
-# 5. FFmpeg 本地二进制动态库目录 (FFmpeg binary libraries)
-# -------------------------------------------------------------------------
-ffmpeg/windows/
-ffmpeg/linux/
-ffmpeg/macos/
-
-# Rust build and locally acquired native SDKs
-target/
-third_party/ffmpeg/source/
-third_party/ffmpeg/install/
-third_party/ffmpeg/downloads/

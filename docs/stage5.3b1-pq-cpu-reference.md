@@ -344,3 +344,16 @@ no PQ math changed. The remaining boundary is intentional: production HDR
 is still rejected. v2 whole-file hashes are only exact-build/driver gates,
 not promises across FFmpeg, Intel driver or Mesa updates. Stage 5.3B-2
 Vulkan PQ implementation is now justified, but was **not started**.
+
+### Rust-only repository consolidation recheck
+
+After retiring the former C# tree, the Rust CLI's `--help` description stopped
+calling the application “v2”. This changed the Release binary SHA-256 to
+`67efb4a6635e989fa02915be652b923e086ca3c2d58b3980b0bc5d27a87b86ea`
+on `HEAD aa04abd225a5af8546bcfe2b91e19e19491cfdb8` plus that help-only
+source edit. FFmpeg, Intel driver, both input SHA-256 values and the production
+script were unchanged. All five full-GPU conversions were run three more times
+under the new binary; **all fifteen whole-file hashes exactly matched the
+table above**. The manifest records both binary identities and the recheck.
+This is a build-identity requalification, not a new product or media-baseline
+generation. The historical stage evidence above remains intact.

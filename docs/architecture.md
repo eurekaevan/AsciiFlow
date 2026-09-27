@@ -1,98 +1,574 @@
-# AsciiFlow 架构说明
+# AsciiFlow architecture
 
-本文记录当前实现的职责边界、数据流和关键不变量。面向使用者的安装、参数和示例请先
-阅读项目根目录的 [README](../README.md)。
+This is the canonical architecture for the Rust application. The former C#
+implementation has left the active tree; its distinct user-facing features
+are tracked in [legacy-feature-parity.md](legacy-feature-parity.md), not treated
+as a second execution path. Stage 5.3B-1 is sealed on the qualified Intel
+hardware; production HDR remains rejected. Stage 5.3B-2 Vulkan PQ work is
+justified but has not begun.
 
-## 模块边界
-
-| 模块 | 职责 | 不负责 |
-| --- | --- | --- |
-| `AsciiFlow.App` | CLI 解析、请求校验、流水线编排、终端输出、取消与输出提交 | FFmpeg 编解码细节、字符像素绘制算法 |
-| `AsciiFlow.Core.Video` | FFmpeg 初始化、媒体探测、视频解码、源音轨包转交 | 进度展示、输出文件提交 |
-| `AsciiFlow.Core.AsciiMapping` | 将 RGB 帧映射为字符及字符颜色 | 字体栅格化、容器封装 |
-| `AsciiFlow.Core.Rendering` | 使用 SkiaSharp 将字符帧直接渲染为 BT.709 limited-range YUV420P | 视频压缩、音轨兼容性决策 |
-| `AsciiFlow.Core.Encoding` | 输出扩展名到容器/编码器的映射、H.264/VP9 编码、兼容音轨透传和封装 | CLI 默认值、最终文件替换 |
-
-Core 不依赖终端交互；应用层通过接口组装解码器、映射器、渲染器和编码器。旧的 RGB
-渲染/编码接口仍作为兼容边界保留，正常视频流水线要求并使用直接 YUV420P 能力接口。
-
-## 数据流与并发上界
-
-每个视频帧依次经过：
+This document describes the sole Rust implementation through the Stage 5.3B-1
+internal PQ CPU oracle on the Stage 5.2C-3 P010
+processing foundation: a permanent CPU reference backend, a Vulkan 1.3 compute
+backend, optional Linux VAAPI media, and qualified Intel DMA-BUF bridges in both
+pixel directions. Stage 3A
+eliminates decode-side Host copies; Stage 3B fills encoder-owned VAAPI
+surfaces directly from Vulkan. Stage 4.0 adds a runtime capability graph and
+automatic selection without changing the portable Host reference paths. Stage
+4.1 adds structured failures, bounded initialization replan, cooperative
+cancellation, transactional output, and failure-path resource guarantees.
+Stage 4.2 adds a separate compressed-audio passthrough plan and one bounded,
+single-owner interleaved mux path; it does not change video planning or pixels.
+Stage 4.3 adds optional FreeType atlases. Stage 5.0 qualifies HEVC Main and AV1
+Main input; Stages 5.1A and 5.1B qualify HEVC Main and AV1 Profile0 VAAPI
+output, respectively. Device-specific evidence is kept in the stage reports.
+Stage 5.2A adds Host P010LE and CPU/Vulkan processing; 5.2B qualifies 10-bit
+decode and input interop, 5.2C-1 qualifies P010 output interop, and 5.2C-2
+qualifies explicit HEVC Main10 VAAPI/MP4 output on the tested Intel device.
+Stage 5.2C-3 qualifies AV1 Profile0/Main 10-bit output through the same P010
+processing and interop architecture, with an independently probed encode fact.
+The default output remains 8-bit H.264.
+Stage 5.3A adds portable raw and resolved color semantics without changing
+pixel processing or claiming HDR support. The Intel color-regression gate is
+recorded separately in its sealed hardware report. Stage 5.3B-1 adds an
+independent, internal-only BT.2020/PQ P010 CPU reference; it does not enable
+production HDR processing or change the SDR hot path.
 
 ```text
-FFmpeg 解码 RGB24
-  -> 灰度、颜色采样与字符映射
-  -> SkiaSharp 字符栅格化为 YUV420P
-  -> libx264 或 libvpx-vp9 编码
-  -> 与兼容的原音轨交错封装
+internal qualification only:
+limited BT.2020/PQ P010 -> BT.2020 NCL -> per-channel PQ EOTF
+  -> absolute linear RGB -> linear cell average / R8 coverage blend
+  -> inverse PQ -> BT.2020 NCL -> limited P010
+production: HDR PQ/HLG remain Unsupported before target mutation
 ```
 
-`VideoPipeline` 启动解码、渲染和编码三个有序任务。它预分配三个 `FrameBufferSlot`，
-每个槽包含源 RGB24 缓冲和目标 YUV420P 缓冲；两个容量为 3 的有界通道只传递这些槽
-的所有权。通道满时生产者等待，因此慢阶段会向上游施加背压，不会随视频长度持续分配
-整帧缓冲。编码完成后槽才回到可用队列，所以同一槽不会被两个阶段同时写入。
+See [HDR PQ pixel semantics](hdr-pq-semantics.md) and the
+[Stage 5.3B-1 report](stage5.3b1-pq-cpu-reference.md).
 
-帧顺序由单读者通道保持。任一阶段失败会取消关联流水线并完成通道；外部
-`CancellationToken` 同样会传入整个流水线。音频包可能在视频解码期间写入，编码器以
-同一把封装锁串行化音视频的 `av_interleaved_write_frame` 调用。
+```text
+codec parameters / decoded AVFrame metadata
+  -> portable raw stream and frame color facts
+  -> resolved semantics + provenance + dynamic-range class
+  -> software color support decision
+  -> pipeline planner
+  -> unchanged NV12/P010 pixel pipeline
+  -> BT.709 limited-range output metadata for accepted SDR
+```
 
-## 尺寸、颜色与帧率
+See [color semantics](color-semantics.md) and the
+[Stage 5.3A status](stage5.3a-color-metadata.md).
 
-- ASCII 网格控制字符采样密度，不改变目标视频的视觉画布大小。
-- 网格默认宽 240 字符，高度按源画面比例计算；显式宽高不会超过源视频尺寸。
-- 输出像素尺寸沿用源视频；奇数宽高补到相邻偶数，满足 YUV420P 平面要求。
-- 正常路径直接生成连续的 Y、U、V 平面，不创建整帧 RGB24 渲染结果。
-- YUV 数据使用 MPEG/limited range，并标注 BT.709 色彩空间、原色和传递特性。
-- 未指定 `--framerate` 时保留源有理帧率，例如 `30000/1001`；显式小数帧率会转换为
-  约分后的有理数。源帧率无效时才回退到 30 FPS。
+## Workspace and dependency direction
 
-## 帧数与进度语义
+```text
+apps/asciiflow-cli
+  ├── crates/asciiflow-core
+  ├── crates/asciiflow-media ──> asciiflow-core
+  ├── crates/asciiflow-cpu    ──> asciiflow-core + asciiflow-font
+  ├── crates/asciiflow-vulkan ──> asciiflow-core + asciiflow-font + ash
+  └── crates/asciiflow-interop ─> media + vulkan + core
+```
 
-源流提供的 `nb_frames` 是已知总帧数。只有它缺失、媒体时长为正且平均帧率有效时，
-才计算 `时长 × 平均帧率` 作为估算值。估算值不会写回权威总帧数字段，也不会替代
-最终实际解码数量。
+`asciiflow-core` owns configuration, frame metadata/storage, backend and media
+traits, the bounded pipeline, planning, metrics, and shared errors. It has no
+FFmpeg, font, graphics, or platform dependency. The CLI is the composition
+root; keeping implementation crates as siblings avoids a dependency cycle and
+is the concrete form of the intended Core/Media/backend boundary.
 
-终端会将估算总数标记为“约”，并把估算进度限制在 99.9%，避免在真正读到流尾之前
-宣称完成。`--max-frames` 存在时以该上限显示进度；完成摘要始终使用实际完成编码的
-帧数。
+`asciiflow-media` owns ordinary FFmpeg decode/encode. `asciiflow-interop` is
+the only crate that relates its opaque retained VAAPI frame to FFmpeg DRM PRIME
+and Vulkan external memory. `asciiflow-cpu`
+implements the permanent CPU reference backend. `asciiflow-font` owns the R8
+glyph atlas independently of either video backend. `asciiflow-vulkan` contains
+all Vulkan types and calls; Core does not depend on `ash` or `gpu-allocator`.
 
-## 输出容器与音频
+## Native and unsafe boundary
 
-输出扩展名是容器和视频编码器的契约：
+Stage 5.0 adds portable HEVC/AV1 codec and Main-profile identities. Native codec
+discovery, actual decoded format validation and libva profile/VLD probing stay
+in media. Decode capability and stream input-interop qualification are keyed
+by codec; initialization replan changes only the failing codec's fact. The DRM
+importer is reused. Stage 5.1A separates portable output requirements from the
+encoder backend. Stages 5.1A and 5.1B qualify HEVC Main and AV1 Profile0
+VAAPI encoder-owned surfaces through the same output interop as H.264 on Intel
+Arc Meteor Lake; see [input codec validation](stage5.0-codec-validation.md) and
+the output reports below.
 
-| 扩展名 | 容器 | 视频编码器 |
-| --- | --- | --- |
-| `.mp4`、`.m4v` | MP4 | `libx264` |
-| `.mov` | MOV | `libx264` |
-| `.mkv` | Matroska | `libx264` |
-| `.avi` | AVI | `libx264` |
-| `.ts`、`.m2ts` | MPEG-TS | `libx264` |
-| `.webm` | WebM | `libvpx-vp9` |
+The output selection boundary is:
 
-音频不转码。编码器仅在 FFmpeg 确认源音频编码与目标容器兼容，或代码中存在经过验证
-的容器/编码组合例外时，才创建音频输出流；否则忽略音轨并在 `--verbose` 输出中说明。
-例如，AAC 音轨不能直接复制到 WebM 时，视频转换仍可成功完成，但输出不含该音轨。
+```text
+OutputVideoRequirements (codec/profile/bit depth/pixel format/color/geometry/rate)
+  -> codec-specific software/VAAPI capability and policy
+  -> codec-specific encoder configuration (H.264 software/VAAPI, HEVC or AV1 VAAPI)
+  -> generic VAAPI hardware-frame lifecycle when selected
+  -> generic encoder-owned Vulkan/VAAPI output interop when selected
+  -> H.264 / HEVC Main / HEVC Main10 / AV1 Profile0 Main 8/10-bit encoder
+  -> MP4 mux
+```
 
-## 安全输出与失败边界
+Core contains portable identities only. FFmpeg codec IDs, named encoder lookup,
+VAProfileHEVCMain, VAProfileHEVCMain10 and VAProfileAV1Profile0 EncSlice qualification, CQP options
+and AVHWFramesContext stay
+in media. The interop crate receives an encoder-owned NV12 or P010 frames context;
+it contains no H.264/HEVC/AV1 branch. See the
+[Stage 5.1A validation](stage5.1a-hevc-encode-validation.md) and
+[Stage 5.1B validation](stage5.1b-av1-encode-validation.md) and
+[Stage 5.2C-2 HEVC Main10 validation](stage5.2c2-hevc-main10-encode.md) and
+[Stage 5.2C-3 AV1 10-bit validation](stage5.2c3-av1-10bit-encode.md).
 
-编码器先在目标目录创建带相同最终扩展名的隐藏暂存文件。这样 FFmpeg 仍能按正确扩展名
-选择容器，同时暂存文件与最终文件处于同一文件系统。只有所有帧处理完毕且容器 trailer
-成功写入后，应用才以移动并覆盖的方式提交最终文件。
+Stage 4.3 adds initialization-only `Font specification -> FreeType -> GlyphAtlas`.
+The CLI builds one owned atlas before staging/mux initialization and passes
+identical pixels to CPU/Vulkan. FreeType objects never enter core, frames or
+workers; atlas data has no native types. Vulkan forks preserve atlas identity
+and initialize their own static upload and coordinate LUT. Font validity is
+render configuration, not a hardware capability or a replan opportunity.
+See [fonts.md](fonts.md) and [validation](stage4.3-font-validation.md).
 
-初始化、处理、收尾或取消失败时不会替换既有目标；释放流水线时会尽力删除暂存文件。
-这保证的是应用层文件提交语义，不等同于断电场景下的持久化事务保证。
+The media crate uses the raw `ffmpeg-sys-next` binding and wraps it in internal
+RAII types for `AVFrame`, `AVPacket`, decoder/format/scaler state, and
+encoder/muxer state. FFmpeg `unsafe` is confined to
+`crates/asciiflow-media/src/ffmpeg` plus the narrowly scoped DRM PRIME bridge,
+and Vulkan `unsafe` to `crates/asciiflow-vulkan`. A documented unsafe pointer
+borrow exists solely for the sibling interop crate; no native pointer or Linux
+graphics type enters Core or the CLI.
 
-## 原生依赖边界
+The binding is generated from the FFmpeg headers selected by `pkg-config`, or
+from `FFMPEG_DIR/include` when `FFMPEG_DIR` points at a fixed installation. The
+matching libraries are linked dynamically. For a reproducible Fedora x86_64
+build, `third_party/ffmpeg/version.toml` pins the upstream archive, checksum,
+and configure flags, while `third_party/ffmpeg/scripts` fetches and builds into
+an ignored local installation. At runtime its `lib` directory must be visible
+to the dynamic loader.
 
-AsciiFlow 通过 FFmpeg.AutoGen 在进程内调用 FFmpeg 共享库。托管绑定版本、FFmpeg
-共享库 ABI、所有 `libav*` 依赖以及 `libx264`/`libvpx-vp9` 编码器能力必须彼此匹配。
-更换原生库时应将同一构建的整套文件一起替换，并至少验证：
+The pinned build enables `libx264` and therefore GPL components. This changes
+distribution obligations even though AsciiFlow's own source remains MIT.
 
-1. Release 构建和全部测试；
-2. H.264 输出样本；
-3. VP9/WebM 输出样本；
-4. 至少一个带兼容音轨和一个带不兼容音轨的样本；
-5. 目标平台能够从预期目录加载库，且最终媒体可由独立探测工具读取。
+## Frame model and ownership
 
-单元测试主要覆盖托管逻辑，不能替代目标平台上的原生库加载与真实媒体回归。
+`FrameDesc` describes even-sized NV12 or P010LE 4:2:0 video, portable color
+metadata, and the `Host` memory domain. `HostFrame` owns tightly packed bytes:
+NV12 uses one byte per sample, while P010LE uses little-endian 16-bit words
+with 10 signal bits in bits 15..6. `VideoFrame` owns a `HostFrame`; byte slices
+are borrowed and the backing allocation cannot be shared mutably. A frame moves
+through the traits:
+
+```text
+FrameSource -> bounded channel -> AsciiBackend -> bounded channel -> FrameSink
+```
+
+There is no `Arc<Mutex<VideoFrame>>`. Once a stage sends a frame, that stage no
+longer owns it. The Core memory-domain enum intentionally contains only `Host`.
+The planner's `FrameDomain` is a separate, non-owning vocabulary for describing
+hardware transitions; it does not make native hardware frames part of the Core
+storage contract.
+
+Compressed audio never becomes a Core frame. Core contains only portable audio
+stream facts, policy, plan, and counters. The media crate retains native codec
+parameters, moves reference-counted `AVPacket` ownership out of the demux
+scratch packet, and sends selected packets through a bounded queue to the mux
+owner.
+Stage 2 downloads/uploads within `asciiflow-media`. Stage 3A uses a specialized
+Media/Interop pipeline carrying `VaapiDecodedFrame` outside Core, then returns
+the processed result through the selected Host NV12 or P010LE contract. The
+qualified 10-bit decoder and interop paths preserve P010LE through processing.
+
+## CPU data flow
+
+The decoder converts decoded software frames directly to host NV12 with
+libswscale, normalizing color metadata to BT.709 limited range. The mapper
+reduces the Y plane per ASCII cell, applies smoothstep contrast, and selects a
+glyph index. It aggregates interleaved UV samples separately for colored
+glyphs. The intermediate `CellGrid` contains compact `AsciiCell` values rather
+than strings.
+
+The font crate creates an owned R8 atlas during initialization: built-in 8x8 by
+default, or cell-sized FreeType tiles for an explicit font file. The renderer
+composites that atlas directly into a new NV12 frame.
+It does not create RGB24 frames and does not rasterize glyphs per video frame.
+The CPU backend is the permanent correctness/reference backend, not temporary
+legacy code. FreeType is never called in the per-frame renderer.
+
+## Capability, policy, plan, and execution
+
+Stage 4.0 keeps four concepts separate:
+
+* `CapabilitySnapshot` records facts observed from FFmpeg, VAAPI, Vulkan, and
+  DRM PRIME. Each fact is `Supported`, `Unsupported(reason)`, or
+  `NotProbed(reason)`; native handles and pointers never enter Core.
+* `PipelinePolicy` records user intent. `auto`, `software`, `hardware`,
+  `cpu`, `vulkan`, and interop `auto|off|on` are policy values, not capability
+  claims.
+* `PipelinePlan` is the selected, printable sequence of logical nodes and
+  frame domains. It includes transfer nodes, pixel-path classification,
+  preference cost, and human-readable reasons.
+* The CLI composition root is the execution factory. Only after a plan is
+  selected does it construct concrete FFmpeg, Vulkan, CPU, and interop
+  resources. The planner itself creates no native resources.
+
+`AudioPolicy` and `AudioPlan` are deliberately parallel to, not embedded in,
+the video candidate graph. Container compatibility is queried from FFmpeg's
+MP4 muxer. Therefore choosing, rejecting, or disabling audio cannot change the
+selected `PixelPath`, decoder, processor, interop mode, or encoder.
+
+The normal startup flow is:
+
+```text
+probe input requirements and runtime capabilities once
+  -> validate policy
+  -> enumerate finite candidates
+  -> retain rejection reasons
+  -> stable preference score and tie-break
+  -> select PipelinePlan
+  -> build concrete execution resources
+  -> run the bounded pipeline and commit the output
+```
+
+The current logical nodes are `SoftwareDecode`, `VaapiDecode`,
+`HardwareDownload`, `InputHardwareInterop`, `CpuAscii`, `VulkanAscii`,
+`HostReadback`, `HardwareUpload`, `OutputHardwareInterop`,
+`SoftwareEncode`, and `VaapiEncode`. The portable frame domains are
+`HostNv12`, `HardwareNv12`, and `VulkanNv12Buffer`; native `VASurfaceID`,
+`VkImage`, and DMA-BUF handles remain implementation details.
+
+The default automatic preference is evidence-based and qualitative rather
+than a machine-learning model or portable millisecond table:
+
+1. Full VAAPI decode → input interop → Vulkan → output interop → VAAPI encode.
+2. Input interop → Vulkan → Host → VAAPI encode when output interop is absent.
+3. Input interop → Vulkan → software encode when VAAPI encode is absent.
+4. Software decode → Vulkan → output interop → VAAPI encode when only output
+   interop is available.
+5. Software decode → Vulkan → software encode.
+6. Software decode → CPU → software or VAAPI encode, when Vulkan is unavailable
+   or not eligible for automatic use.
+
+Automatic planning does not choose staged VAAPI decode plus `hwdownload` merely
+because a VAAPI device exists. That path remains available for an explicit
+`--decode vaapi` request. CPU Vulkan implementations such as llvmpipe/lavapipe
+are excluded from automatic processing, although explicit diagnostic use may
+be enabled through the existing Vulkan test hook.
+
+Every capability-ineligible candidate that matches the current policy retains
+its reason, for example an unavailable H.264
+profile, an unsupported 10-bit input, an unqualified DRM modifier, or a Vulkan
+device that is not eligible for automatic processing. This makes
+`--explain-plan` diagnostic rather than a second, divergent planner.
+
+Explicit policy is strict: an explicitly requested unavailable decoder,
+encoder, backend, or interop direction is an error. Only `auto` may select a
+different legal candidate. Contradictions such as software encode with output
+interop, software decode with input interop, or CPU processing with hardware
+interop fail during centralized policy validation.
+
+Capability probing is per process invocation, not a persistent hardware cache.
+The input probe opens the media once, obtains codec/profile/format/size/frame
+rate requirements, and qualifies the actual VAAPI/Vulkan interop surfaces when
+possible. `--capabilities` prints this snapshot; `--explain-plan` prints it,
+the rejected candidates, the selected plan, and planning time. Neither mode
+creates an output staging file.
+
+Initialization fallback is deliberately bounded: if a selected plan that
+contains `auto` fails during concrete resource initialization, the execution
+factory may mark the exact failed capability, re-plan once, and retry. An
+explicit plan fails immediately. Once processing has started there is no
+mid-stream fallback; codec state, timestamps, and output determinism remain
+owned by one plan. The CLI preflights the known VAAPI/DRM/Vulkan requirements
+and classifies factory failures before execution. The diagnostic preserves the
+initial plan, first failure, replanned plan, and any terminal retry failure.
+
+## Pipeline, failure, and metrics
+
+The selected plan is executed through one of the existing bounded pipelines:
+
+```text
+VAAPI or software decode
+  -> explicit plan transfer/interop nodes
+  -> CPU or Vulkan ASCII
+  -> explicit plan transfer/interop nodes
+  -> software H.264, VAAPI H.264/HEVC Main/HEVC Main10/AV1 Main 8/10-bit encode
+```
+
+Two capacity-three crossbeam channels provide bounded backpressure and ordered
+single-consumer delivery. The backend contract explicitly separates `submit`
+from `drain`: synchronous CPU backends return immediately from `submit`, while
+the production Vulkan backend may retain at most two frames and returns only
+the oldest completed frame. End-of-input drains those frames before the
+processed channel closes. Each stage owns its input. A stage error sets the
+shared cancellation flag, stops sends/receives through short bounded waits,
+closes the channels, and is returned with the failing stage name. This avoids
+an upstream producer blocking forever after a downstream failure. Cancellation
+does not emit buffered frames; dropping the Vulkan backend joins both slot
+workers after their pending device work is safe to destroy.
+
+Metrics are independent of backend implementation. CPU reports mapping and
+render wall time. Vulkan timestamps the upload copy, Pass 1, Pass 2, download
+copy, and the whole upload-begin to download-end GPU busy span on the device.
+Separate CPU wall clocks cover the mapped upload, queue submission, fence
+waiting, mapped readback, and submit-to-completion per-frame latency.
+With two slots the busy span can include another frame's interleaved queue
+work; it is an elapsed device timeline span, not exclusive execution cost.
+Fence wait overlaps the timestamped GPU work by definition, so these values are
+diagnostic scopes rather than additive pipeline slices. VAAPI packet submit,
+frame receive, DRM PRIME mapping, external-image create/import/bind/destroy,
+download, upload, and encode submit/receive are CPU-wall scopes. The external
+image→buffer copy is measured with Vulkan timestamps. Pipeline latency runs
+from the decode call that produces a frame through encoder acceptance; total
+FPS remains the throughput measure.
+
+## Vulkan Stage 1 data flow
+
+```text
+Host NV12
+  -> reusable upload staging buffer
+  -> GPU NV12 storage buffer
+  -> Pass 1: one workgroup per ASCII cell, shared-memory Y/U/V reduction
+  -> aligned GpuAsciiCell storage buffer
+  -> Pass 2: one logical invocation per 2x2 output block
+  -> GPU NV12 storage buffer
+  -> reusable readback staging buffer
+  -> Host NV12
+```
+
+The 256-entry glyph lookup table is generated by Core and shared by CPU and
+GPU mapping, which makes glyph selection bit-exact without duplicating the
+floating-point S-curve in GLSL. The font crate generates the owned R8 atlas; the
+Vulkan backend uploads it only when the resource key changes. Pass 2 writes Y
+and interleaved UV directly and creates no full-frame RGB/RGBA intermediate.
+
+Pass 1 has a checked u32 common path and a u64 correctness fallback. The host
+proves the cell sums, counts, boundary numerators, indexes, frame byte length,
+and cell count before selecting u32. The default u32 shader uses 32 lanes after
+the Stage 1.3 Intel Arc workgroup sweep. `shaderInt64` remains a device
+requirement because otherwise-supported large one-cell workloads can exceed a
+u32 reduction sum. `--vulkan-mapping cpu` is an explicit diagnostic hybrid:
+the CLI composes the existing CPU mapper with Vulkan Pass 2 without adding a
+CPU dependency to the Vulkan crate. `auto` continues to select GPU mapping.
+
+The production Vulkan backend has two bounded worker slots on one logical
+device and compute queue. Each slot owns its upload/input/cell/output/readback
+buffers, descriptor state, command buffer, fence, and query pool; queue submits
+are externally synchronized. FIFO sequence numbers, rather than PTS, define
+completion order because PTS need not be unique or monotonic. Both slots retain
+the existing three-command-buffer upload/compute/download path, so the measured
+1-slot/2-slot comparison does not conflate command batching with concurrency.
+`ASCIIFLOW_VULKAN_FRAME_SLOTS=1` is the diagnostic one-slot control; the default
+is two after the real-device production gate passed. Resources are fixed to the
+constructor's geometry/configuration while frames are pending.
+
+Synchronization2 barriers cover transfer to compute, Pass 1 to Pass 2, and
+compute to transfer. A failed queue submission or device loss makes the
+pipelined backend terminal; Stage 1 does not attempt recovery. Fence waits are
+still intentionally blocking. A driver that wedges without reporting device
+loss can therefore stall the process; bounded waits need a safe abandoned-device
+teardown design rather than merely timing out while resources remain in flight.
+
+Host NV12 and P010LE are tightly packed: both plane strides equal width times
+the format's bytes per sample. This is an invariant of Host storage, not a
+promise for a future pitched hardware-frame domain. P010LE selects separate
+map/render SPIR-V at resource initialization; both passes load/store 16-bit
+words and calculate in 32-bit integers, with the existing u64 map fallback for
+large cells. The glyph atlas remains R8 and the coordinate LUT is shared.
+P010LE storage requires `storageBuffer16BitAccess`; the generated shaders do
+not require `shaderInt16`. See [P010 processing](p010.md).
+
+GLSL is compiled to embedded SPIR-V at build time by the Rust `shaderc` crate,
+targeting Vulkan 1.3 with performance optimization. Runtime execution needs the
+system Vulkan loader and a suitable ICD, not a shader compiler or Vulkan SDK.
+Set `ASCIIFLOW_VULKAN_VALIDATION=1` to require the Khronos validation layer and
+enable its synchronization validation feature.
+CPU Vulkan devices are excluded from normal selection; the
+`ASCIIFLOW_VULKAN_ALLOW_CPU=1` escape hatch exists only for software-driver CI
+or development checks.
+
+## Stage 3A VAAPI-to-Vulkan input interop
+
+The `--vaapi-vulkan-input-interop on` path requires explicit VAAPI decode,
+Vulkan processing, the two-slot configuration, and all four Linux external
+memory/modifier/foreign-queue extensions. `auto` may select it only after the
+actual input frame and Vulkan external-image access have been qualified. It
+never falls back to `hwdownload` when explicitly requested.
+
+```text
+retained AV_PIX_FMT_VAAPI frame
+  -> av_hwframe_map(READ | DIRECT)
+  -> retained DRM PRIME mapped frame
+  -> validated descriptor snapshot + duplicated CLOEXEC fds
+  -> dedicated Vulkan external R8 and R8G8 images
+  -> FOREIGN_EXT acquire in GENERAL layout
+  -> two image-to-buffer copies into the existing tightly packed NV12 input
+  -> FOREIGN_EXT release back to GENERAL
+  -> unchanged Pass 1 / Pass 2 / cached Host output readback
+```
+
+The validated Intel iHD descriptor has one DMA-BUF object and separate R8 and
+GR88 layers. Each duplicated fd is consumed by one successful Vulkan memory
+import; failure leaves its `OwnedFd` responsible for closing it. The original
+fd remains owned by FFmpeg. The mapped frame retains the source VAAPI surface,
+and the worker job retains both until the slot fence has completed. This keeps
+the decoder pool from reusing a surface while Vulkan is reading it.
+
+`av_hwframe_map(READ)` synchronizes the VAAPI producer in the validated iHD
+implementation. Vulkan uses explicit FOREIGN_EXT ownership acquire/release;
+Linux DMA-BUF implicit synchronization and the GENERAL-layout convention are
+accepted only for the tested Intel iHD 26.1.5 + Mesa ANV 26.1.8 combination.
+They are not asserted as a portable Vulkan guarantee.
+
+Stage 3A creates/imports two images per frame. The measured lifecycle is well
+below the 0.2 ms cache gate, so no surface cache or fd-number identity shortcut
+was introduced. This path is not end-to-end zero-copy: an image→buffer GPU copy
+and Vulkan output→Host readback remain.
+
+## Stage 3B Vulkan-to-VAAPI output interop
+
+The `--vaapi-vulkan-output-interop on` path requires VAAPI encode, Vulkan GPU
+mapping, and two bounded slots. It can be combined with Stage 3A input
+interop for the full GPU-resident path, or used independently with software
+decode and Host input. `auto` selects it only after the encoder-owned surface
+and writable external-image access have been qualified. It never falls back
+to Host readback or `hwupload` when explicitly requested.
+
+```text
+encoder's existing AVHWFramesContext
+  -> fresh AV_PIX_FMT_VAAPI input surface
+  -> av_hwframe_map(WRITE | OVERWRITE | DIRECT)
+  -> validated DRM PRIME descriptor + duplicated CLOEXEC fds
+  -> dedicated writable Vulkan R8 and R8G8 external images
+  -> FOREIGN_EXT acquire in GENERAL layout
+  -> unchanged Pass 2 output buffer copied into Y/UV images
+  -> FOREIGN_EXT release back to GENERAL
+  -> slot fence completion
+  -> unmap DRM PRIME while retaining the original VAAPI frame
+  -> common selected VAAPI encoder submit/receive path
+```
+
+The encoder pool, not Vulkan, determines allocation, pitch, modifier, tiling,
+and codec compatibility. The actual encoder descriptor is probed separately
+even though the validated Intel iHD surface matches the decoder's one-object
+R8+GR88, 4-tiled shape. Read and write imports share one Vulkan external-image
+implementation; access mode selects TRANSFER_SRC or TRANSFER_DST capability,
+usage, barriers, and layouts.
+
+The production return type remains private to the interop/media composition:
+Core sees only portable hardware/Host/interop plan concepts and metrics, never
+an AVFrame, fd, DRM format, modifier, VkImage, or VA surface. The output surface
+and mapped frame remain alive until the Vulkan fence and foreign release are
+complete. The mapped frame is then dropped and the original hardware frame is
+consumed by the existing encoder packet/mux path.
+
+Stage 3B is GPU-resident for pixels but intentionally synchronous. It retains
+the Stage 3A image-to-buffer copy, the existing Pass 1/2 buffers and shaders,
+and an output buffer-to-image copy. It introduces no sync-file bridge, external
+semaphore, direct shader image writes, or import cache; measured costs do not
+justify those changes.
+
+For output-only interop, software or VAAPI decoding produces the Host input
+consumed by the Vulkan backend, while the final Vulkan buffer is copied into an
+encoder-owned writable DMA-BUF surface. This path is partially staged, not
+GPU-resident from decode through encode; the `PixelPath` classification makes
+that distinction explicit.
+
+## Media contract and current limitations
+
+- Software decode and VAAPI decode are selected from input requirements and
+  capability snapshot. Qualified 8-bit input remains H.264, HEVC Main or AV1
+  Main/NV12. HEVC Main10 and AV1 Main 10-bit BT.709 SDR input use P010LE and
+  require explicit HEVC Main10 or AV1 Main 10-bit output; there is no implicit
+  10→8 conversion.
+- MP4 output defaults to H.264 (`libx264` for software or `h264_vaapi` for
+  VAAPI). HEVC Main, HEVC Main10 and AV1 Profile0 output use `hevc_vaapi` or
+  `av1_vaapi`; 10-bit requires `--output-codec hevc|av1 --output-bit-depth 10`
+  and qualified VAAPI hardware. Software output for those codecs is unsupported. Explicit
+  hardware requests never fall back.
+- `auto` prefers full interop, then qualified staged hardware encode, then
+  software media/Vulkan, and finally CPU processing. It does not choose VAAPI
+  decode plus `hwdownload` solely because a VAAPI device exists.
+- Qualified VAAPI paths support NV12/8-bit or P010/10-bit 4:2:0 as selected.
+  Stage 3A accepts the observed R8+GR88 or R16+GR32 iHD export with a known,
+  importable modifier. HDR, 4:4:4, multi-object, unknown-modifier, and
+  incompatible layer topologies are rejected rather than silently reduced.
+- Compatible compressed audio streams can be copied into MP4. One mux worker
+  owns the output `AVFormatContext` and accepts both encoded video packets and
+  passthrough audio packets through a bounded queue. It rescales timestamps
+  with each explicit input/output stream mapping and performs every
+  `av_interleaved_write_frame` call. Audio is never decoded or transcoded.
+- Host NV12 remains the default Core/reference contract. Host P010LE has
+  CPU/Vulkan processing parity and explicit production HEVC Main10/AV1 10-bit output;
+  qualified full input/output interop remains codec-neutral and does not make
+  native handles part of Core.
+- Built-in 8x8 remains the default; explicit scalable monospaced FreeType fonts
+  provide grayscale tiles without changing glyph ordering or grid geometry.
+- Source presentation timestamps are represented on decoded frames, but Stage
+  0 encoding uses an ordered constant-frame-rate sequence based on the source
+  frame-rate rational. With audio selected, the mux layer preserves the first
+  video's timestamp origin and rejects source timestamps that deviate from
+  that CFR sequence. See [audio.md](audio.md) for timing and frame-limit details.
+- Output commit uses the host's rename semantics. Fedora/Linux replaces an
+  existing destination atomically; cross-platform replacement semantics need a
+  dedicated Stage after the Rust baseline.
+- Temporary output names are hidden, per-invocation names containing process,
+  timestamp, and sequence components. The CLI reserves them with exclusive
+  creation before encoder startup.
+- Ctrl+C sets a cooperative cancellation token and returns status 130 only
+  after workers have joined and the staging file has been removed. It never
+  commits a partial output.
+
+## Verification
+
+Static verification:
+
+```bash
+cargo fmt --all --check
+cargo clippy --workspace --all-targets -- -D warnings
+cargo build --workspace
+cargo test --workspace
+```
+
+Stage 4.0 planner tests use synthetic capability snapshots and therefore do
+not require a GPU. They cover full GPU-resident selection, missing input or
+output interop, missing VAAPI encode/device, unsuitable Vulkan, explicit
+software/CPU overrides, conflicting policies, unsupported explicit hardware,
+10-bit rejection, stable domains, and printable plan output. Native CLI smoke
+tests remain opt-in and are required for the real capability probe,
+`--capabilities`, `--explain-plan`, automatic full interop, explicit-versus-
+automatic parity, and the 300-frame performance comparison.
+
+The real-media test is opt-in because it requires native libraries and a local
+fixture:
+
+```bash
+ASCIIFLOW_TEST_VIDEO=input.mp4 cargo test -p asciiflow-cli --test media_smoke -- --ignored
+ASCIIFLOW_TEST_VIDEO=input.mp4 cargo test -p asciiflow-cli --test media_smoke converts_real_video_with_vulkan -- --ignored
+```
+
+Unit tests cover deterministic NV12 mapping/rendering, exact CPU/Vulkan parity,
+ordered ownership, failure cancellation, and allocation through FFmpeg RAII wrappers. A native
+smoke run plus independent `ffprobe` is still required before claiming a given
+FFmpeg build or target platform is supported.
+
+Current Intel Arc compute evidence is recorded in
+[`stage1-validation.md`](stage1-validation.md). VAAPI capability, correctness,
+and the Host-transfer baseline are recorded in
+[`stage2-validation.md`](stage2-validation.md). DMA-BUF descriptor, parity,
+stress, validation, and benchmark evidence is in
+[`stage3a-validation.md`](stage3a-validation.md). Encoder descriptor, writable
+import, parity, lifetime, validation, and benchmark evidence is in
+[`stage3b-validation.md`](stage3b-validation.md).
+
+Stage 4.0 planning facts and policy details are recorded in
+[`auto-planner.md`](auto-planner.md). The implementation performs one
+capability probe per invocation and reports its duration separately from video
+processing metrics. An auto-selected capability that fails while the unified
+execution factory constructs resources is excluded and replanned exactly once.
+Explicit policy failures and every failure after processing begins remain
+terminal; there is no mid-stream fallback.
+
+Stage 4.1's lifecycle, structured errors, first-failure propagation, bounded
+GPU teardown, cancellation, and transactional output guarantees are specified
+in [`failure-semantics.md`](failure-semantics.md).
+
+Stage 1.3 permits exactly two GPU frames in flight. Stage 2's explicit VAAPI ↔
+Host NV12 transfer remains the reference path. Stage 3A adds decode-side
+DMA-BUF import and Stage 3B adds encoder-owned writable DMA-BUF import. Neither
+stage adds a transfer queue, timeline semaphore, sync-file bridge, or direct
+image shader access. Any later work must preserve Host NV12 and the CPU backend
+as usable reference boundaries rather than silently replacing them.

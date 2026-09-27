@@ -1,6 +1,6 @@
 # Failure and cancellation semantics
 
-Stage 4.1 makes failure behavior part of the AsciiFlow v2 contract. It does not
+Stage 4.1 makes failure behavior part of the AsciiFlow contract. It does not
 add a codec, pixel format, backend, or performance optimization.
 
 ## Failure model

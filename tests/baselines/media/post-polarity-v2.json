@@ -4,11 +4,15 @@
   "status": "qualified on Intel Arc Meteor Lake, FFmpeg 8.1.3 exact build",
   "historical_v1": "stage53b1.json remains the pre-polarity record; its output hashes are not current pixel gates",
   "source": {
-    "head": "fffed5a8c446a87dc3595c479837d1b5b9056621",
+    "head": "aa04abd225a5af8546bcfe2b91e19e19491cfdb8",
     "polarity_change": "HEAD: crates/asciiflow-core/src/config.rs STANDARD_CHARSET and apps/asciiflow-cli/src/args.rs; old @%#*+=-:.  -> new  .:-=+*#%@",
-    "production_source_changes_after_head": false,
+    "source_change_after_head": "CLI --help description only; no media planning, pixel, shader, interop or encode code changed",
     "cargo_lock_sha256": "f8cf97f855fcbcb422ef1b74f2367a7ac40b612dcc41cc0a1d8a23f3e27746b8",
-    "release_binary_sha256": "8340679c08ce627dbe1b27fae7577f24f455f7ab42eaed002856970b29cc7bda"
+    "release_binary_sha256": "67efb4a6635e989fa02915be652b923e086ca3c2d58b3980b0bc5d27a87b86ea",
+    "original_qualification": {
+      "head": "fffed5a8c446a87dc3595c479837d1b5b9056621",
+      "release_binary_sha256": "8340679c08ce627dbe1b27fae7577f24f455f7ab42eaed002856970b29cc7bda"
+    }
   },
   "toolchain": {
     "ffmpeg_package": "ffmpeg-8.1.3-1.fc44.x86_64",
@@ -75,6 +79,13 @@
     "tier1c_decoded_frames_and_pts": "PASS",
     "tier2_structure": "PASS",
     "tier3_whole_file": "PASS"
+  },
+  "rust_only_cleanup_requalification": {
+    "reason": "CLI --help wording no longer distinguishes a second application version",
+    "input_hashes_and_ffmpeg_intel_driver_versions": "unchanged",
+    "runs_per_codec": 3,
+    "result": "All 15 new whole-file SHA-256 values exactly match the corresponding initial qualification hashes above; therefore the retained packet, decoded-frame, structure and metadata oracles are byte-identical without another oracle exception.",
+    "local_artifact_directory": "/tmp/asciiflow-rust-only-requal"
   },
   "decoded_ten_bit_low_precision_sample_frames": {
     "frame_indices": [0, 150, 299],

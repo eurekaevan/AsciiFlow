@@ -118,7 +118,7 @@ impl From<InteropArg> for InteropRequest {
 #[command(
     name = "asciiflow",
     version,
-    about = "AsciiFlow v2: bounded NV12/P010 ASCII video pipeline"
+    about = "Bounded NV12/P010 ASCII video pipeline"
 )]
 pub struct Args {
     pub input: PathBuf,

@@ -1,9 +1,0 @@
-<Solution>
-  <Folder Name="/src/">
-    <Project Path="src/AsciiFlow.App/AsciiFlow.App.csproj" />
-    <Project Path="src/AsciiFlow.Core/AsciiFlow.Core.csproj" />
-  </Folder>
-  <Folder Name="/tests/">
-    <Project Path="tests/AsciiFlow.Core.Tests/AsciiFlow.Core.Tests.csproj" />
-  </Folder>
-</Solution>
