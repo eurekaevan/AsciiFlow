@@ -1,5 +1,8 @@
 use crate::{Error, Result};
 
+/// Sparse to dense: luma increases toward glyphs with more ink on black.
+pub const STANDARD_CHARSET: &str = " .:-=+*#%@";
+
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum ProcessingBackend {
     #[default]
@@ -22,7 +25,7 @@ impl Default for AsciiConfig {
         Self {
             grid_width: 160,
             grid_height: None,
-            charset: "@%#*+=-:. ".into(),
+            charset: STANDARD_CHARSET.into(),
             font: "builtin-8x8".into(),
             color: true,
         }

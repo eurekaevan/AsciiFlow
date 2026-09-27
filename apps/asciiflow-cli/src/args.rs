@@ -1,4 +1,6 @@
-use asciiflow_core::{AudioPolicy, InteropRequest, MediaRequest, ProcessingBackend, VideoCodec};
+use asciiflow_core::{
+    AudioPolicy, InteropRequest, MediaRequest, ProcessingBackend, STANDARD_CHARSET, VideoCodec,
+};
 use clap::{Parser, ValueEnum};
 use std::path::PathBuf;
 
@@ -174,9 +176,14 @@ pub struct Args {
 impl Args {
     pub fn resolved_charset(&self) -> String {
         match self.charset.as_str() {
-            "standard" => "@%#*+=-:. ".into(),
+            "standard" => STANDARD_CHARSET.into(),
             "detailed" => {
-                "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\\|()1{}[]?-_+~<>i!lI;:,\"^`'. ".into()
+                // The legacy spelling is dense-to-sparse; reverse it so the
+                // shared dark-to-light LUT selects sparse-to-dense glyphs.
+                "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\\|()1{}[]?-_+~<>i!lI;:,\"^`'. "
+                    .chars()
+                    .rev()
+                    .collect()
             }
             literal => literal.into(),
         }
@@ -256,5 +263,27 @@ mod tests {
             ])
             .is_err()
         );
+    }
+
+    #[test]
+    fn built_in_ramps_are_sparse_to_dense_on_a_black_background() {
+        let default = Args::try_parse_from(["asciiflow", "input.mp4", "output.mp4"]).unwrap();
+        assert_eq!(default.resolved_charset(), STANDARD_CHARSET);
+        assert_eq!(
+            default.resolved_charset(),
+            asciiflow_core::AsciiConfig::default().charset
+        );
+
+        let detailed = Args::try_parse_from([
+            "asciiflow",
+            "input.mp4",
+            "output.mp4",
+            "--charset",
+            "detailed",
+        ])
+        .unwrap();
+        let ramp = detailed.resolved_charset();
+        assert_eq!(ramp.chars().next(), Some(' '));
+        assert_eq!(ramp.chars().last(), Some('$'));
     }
 }

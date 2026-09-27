@@ -309,7 +309,7 @@ dotnet run --project src/AsciiFlow.App -- -i input.mp4 -o output.mp4 --max-frame
 | `-h` | `--height` | `0` (自动) | ASCII 字符画高度（`0` 表示根据原视频比例自动计算，16:9 对应 `135`） |
 | `-f` | `--framerate` | `0.0` (自动) | 输出视频帧率（`0` 表示自动与原视频一致） |
 | `-C` | `--color` | `true` | 是否启用彩色模式 (`true` / `false`) |
-| `-c` | `--charset` | `standard` | 字符集选用：`standard`（70 字符）或 `detailed`（16 字符） |
+| `-c` | `--charset` | `standard` | `standard`（10 字符）、`detailed` 或自定义字符；黑底渲染按稀疏到密集排序 |
 | | `--font-family` | `Consolas` | 渲染字体族名称（跨平台自动回退） |
 | | `--font-size` | `12` | 渲染字体大小 (px) |
 | | `--max-frames` | `0` | 最大转换帧数（`0` 表示转换全片） |

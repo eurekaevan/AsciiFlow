@@ -6,6 +6,80 @@ tests are opt-in because they require a qualified device, drivers, and sometimes
 a retained long-form input. Stage-specific measurements and hardware outcomes
 live in their validation reports.
 
+## Media regression policy
+
+The default ASCII ramp was corrected from dense-to-sparse to sparse-to-dense
+for black-background rendering. This intentionally changes the processed
+pixels for default `standard` and `detailed` output. All pre-correction
+retained output hashes and the Stage 5.3B-1 five-case comparison remain
+historical evidence for the old polarity; they are **not** current-output
+regression gates. Keep their values unchanged. Establish replacement output
+baselines only after rerunning the production paths and recording the new
+source/build identities. Explicit literal `--charset` values are unchanged;
+callers should supply them sparse-to-dense for the black-background contract.
+
+Whole-MP4 SHA-256 is an exact artifact identity check, not a universal media
+correctness oracle. A mismatch always triggers the three-tier comparison below;
+it is never silently ignored or automatically called a regression.
+
+1. **Tier 1 — media semantics (authoritative correctness):** compare ordered
+   packets *within each stream* including stream identity, count, PTS, DTS,
+   duration, flags, side data and exact compressed payload bytes; compare every
+   decoded visible-plane frame digest, PTS, dimensions and format. Codec,
+   profile, bit depth, color primaries/transfer/matrix/range, audio compressed
+   payload, routing, language and disposition are semantic fields.
+2. **Tier 2 — container structure:** compare stream count/order, time bases,
+   durations, codec parameters and extradata, dispositions and all nonvolatile
+   metadata. Cross-stream packet interleave is reported separately as a
+   structural difference, not mislabeled as a packet-payload change.
+3. **Tier 3 — whole-file SHA-256:** require equality only when the input
+   generator/artifact, exact FFmpeg/libavcodec/libavformat and AsciiFlow builds,
+   driver qualification scope, and output command are pinned. Keep historical
+   hashes as toolchain-bound evidence; do not overwrite them on an upgrade.
+
+The hardware-independent comparator is
+`crates/asciiflow-media/tests/common/media_regression.rs`, exercised by the
+`media_regression` integration test. It uses FFmpeg's native stream/packet API
+and AsciiFlow's software decoder; it does **not** parse command-line probe
+text, access `/dev/dri`, or hash `AVFrame` padding. Its only volatile allowlist
+is `format.tags.encoder=Lavf<major>.<minor>.<patch>` or, if present,
+`stream.tags.encoder=Lavc<major>.<minor>.<patch>`, with unchanged major/minor.
+Every approved value change appears in the result. Unapproved tags,
+extradata, packet payload, timestamps, color and decoded pixels fail. In
+addition, a supplementary raw-byte guard rejects unexplained file bytes even
+when all parsed fields match; it masks only the explicitly approved,
+equal-length version tag values *after* the native media comparison. It never
+excuses a changed packet. Each parsed tag authorizes exactly one byte
+occurrence; a duplicate in an opaque atom fails closed. A hash match printed
+by the comparator is a byte-equality observation, not independent attestation
+of the builds, libraries and driver required for a strict Tier 3 gate. In
+particular, an encoder version string *inside a packet* is not treated as a
+container tag. The [machine-readable baseline record](../tests/baselines/media/stage53b1.json)
+keeps the five input/output identities, observed tier results, conversion
+configuration and expected stream summary without checking in thousands of
+packet hashes. Candidate files in `/tmp` are local execution artifacts, not
+durable retained fixtures.
+
+To compare retained files on any host with the linked FFmpeg libraries:
+
+```bash
+ASCIIFLOW_REGRESSION_REFERENCE=/absolute/reference.mp4 \
+ASCIIFLOW_REGRESSION_CANDIDATE=/absolute/candidate.mp4 \
+  cargo test -p asciiflow-media --test media_regression \
+  compare_pair_from_env -- --ignored --nocapture
+```
+
+Candidate generation remains a separate opt-in Intel hardware operation.
+After an FFmpeg, Mesa or driver upgrade, run Tier 1/Tier 2 first and inspect
+every difference. If only the narrowly approved tool-version tags differ,
+media regression may pass without rewriting old Tier 3 hashes. A new strict
+hash baseline requires an explicit decision to pin a new exact toolchain and
+must retain the old hash. The Stage 5.3B-1 closure found an important
+exception: H.264 embeds `Lavc…102→…103` in its first *compressed packet*.
+Under the current exact-packet rule it fails Tier 1 despite equal decoded
+frames; this is not allowlisted as metadata. See the
+[Stage 5.3B-1 closure report](stage5.3b1-pq-cpu-reference.md).
+
 Stage 5.3A color tests use the checked-in codec fixtures and run in the normal
 workspace suite. They exercise BT.709 SDR, BT.2020 SDR, PQ, HLG, unknown and
 contradictory signaling, exact-rational static HDR data, safe-output rejection,
@@ -23,7 +97,8 @@ cargo test -p asciiflow-media --test codec_decode \
 ```
 
 The [Stage 5.3A hardware closure report](stage5.3a-hardware-closure.md)
-records the Intel results. The three retained 8-bit hashes match. The original
+records the Intel results under that run's toolchain. The three retained 8-bit
+hashes matched at that time. The original
 Stage 5.2C-3 10-bit input/hash were not retained; those two old output hashes
 are historical references, **not current regression gates**. The replacement
 canonical 10-bit baseline v1 is checked in under

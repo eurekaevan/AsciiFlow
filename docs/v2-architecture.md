@@ -1,7 +1,7 @@
 # AsciiFlow v2 architecture
 
-This document describes the Rust architecture through the Stage 5.3A color
-metadata implementation on the Stage 5.2C-3 P010
+This document describes the Rust architecture through the Stage 5.3B-1
+internal PQ CPU oracle on the Stage 5.2C-3 P010
 processing foundation: a permanent CPU reference backend, a Vulkan 1.3 compute
 backend, optional Linux VAAPI media, and qualified Intel DMA-BUF bridges in both
 pixel directions. Stage 3A
@@ -23,7 +23,20 @@ processing and interop architecture, with an independently probed encode fact.
 The default output remains 8-bit H.264.
 Stage 5.3A adds portable raw and resolved color semantics without changing
 pixel processing or claiming HDR support. The Intel color-regression gate is
-still open in the current `/dev/dri`-less environment.
+recorded separately in its sealed hardware report. Stage 5.3B-1 adds an
+independent, internal-only BT.2020/PQ P010 CPU reference; it does not enable
+production HDR processing or change the SDR hot path.
+
+```text
+internal qualification only:
+limited BT.2020/PQ P010 -> BT.2020 NCL -> per-channel PQ EOTF
+  -> absolute linear RGB -> linear cell average / R8 coverage blend
+  -> inverse PQ -> BT.2020 NCL -> limited P010
+production: HDR PQ/HLG remain Unsupported before target mutation
+```
+
+See [HDR PQ pixel semantics](hdr-pq-semantics.md) and the
+[Stage 5.3B-1 report](stage5.3b1-pq-cpu-reference.md).
 
 ```text
 codec parameters / decoded AVFrame metadata

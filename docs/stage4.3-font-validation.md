@@ -1,5 +1,9 @@
 # Stage 4.3 font validation
 
+Historical note: the default ramp described below was dense-to-sparse at the
+time of Stage 4.3. The later black-background polarity correction changed the
+current default to ` .:-=+*#%@`; this report's hashes remain historical.
+
 ## Pre-change contract audit
 
 The canonical default ramp is `@%#*+=-:. ` in `AsciiConfig`; user-resolved charset

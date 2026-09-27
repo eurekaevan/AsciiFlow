@@ -6,6 +6,7 @@ mod config;
 mod error;
 mod frame;
 mod glyph;
+pub mod hdr_pq;
 mod metrics;
 mod pipeline;
 mod planner;
@@ -22,7 +23,7 @@ pub use color::{
     ColorResolutionPolicy, ColorSupportReason, ContentLightLevelMetadata, DynamicRangeClass,
     MasteringDisplayMetadata, ResolvedColorSemantics,
 };
-pub use config::{AsciiConfig, ProcessingBackend};
+pub use config::{AsciiConfig, ProcessingBackend, STANDARD_CHARSET};
 pub use error::{Error, PipelineError, PipelineStage, Result};
 pub use frame::{
     ChromaLocation, ColorMatrix, ColorPrimaries, ColorRange, ColorSpace, FrameDesc, HostFrame,
