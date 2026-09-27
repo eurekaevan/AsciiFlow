@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "name": "Stage 5.3B-1 post-polarity production baseline v2",
+  "status": "qualified on Intel Arc Meteor Lake, FFmpeg 8.1.3 exact build",
+  "historical_v1": "stage53b1.json remains the pre-polarity record; its output hashes are not current pixel gates",
+  "source": {
+    "head": "fffed5a8c446a87dc3595c479837d1b5b9056621",
+    "polarity_change": "HEAD: crates/asciiflow-core/src/config.rs STANDARD_CHARSET and apps/asciiflow-cli/src/args.rs; old @%#*+=-:.  -> new  .:-=+*#%@",
+    "production_source_changes_after_head": false,
+    "cargo_lock_sha256": "f8cf97f855fcbcb422ef1b74f2367a7ac40b612dcc41cc0a1d8a23f3e27746b8",
+    "release_binary_sha256": "8340679c08ce627dbe1b27fae7577f24f455f7ab42eaed002856970b29cc7bda"
+  },
+  "toolchain": {
+    "ffmpeg_package": "ffmpeg-8.1.3-1.fc44.x86_64",
+    "ffmpeg_libraries_package": "ffmpeg-libs-8.1.3-1.fc44.x86_64",
+    "libavcodec": "62.28.103",
+    "libavformat": "62.12.103",
+    "vaapi": "Intel iHD 26.1.5-1.fc44.x86_64, VAAPI 1.23",
+    "vulkan": "Intel Arc Meteor Lake, mesa-vulkan-drivers-26.2.3-1.fc44.x86_64",
+    "render_node": "/dev/dri/renderD128"
+  },
+  "inputs": {
+    "eight_bit": {
+      "generator": "tests/fixtures/codecs/generate-8bit-production-baseline.sh",
+      "generator_sha256": "7962394e54915e6db67c55018a4cfd27562d65f3c5bff81c4b6f2f3c876bbe3c",
+      "generator_invocation": "tests/fixtures/codecs/generate-8bit-production-baseline.sh /tmp/asciiflow-stage53b1-v2-input8-run1.mp4",
+      "sha256": "6e5c214b813dca3e1db65629b1241cfb663166eb565cda1c48b5ee74ed0dce6b",
+      "generation_run_sha256": ["6e5c214b813dca3e1db65629b1241cfb663166eb565cda1c48b5ee74ed0dce6b", "6e5c214b813dca3e1db65629b1241cfb663166eb565cda1c48b5ee74ed0dce6b"],
+      "bytes": 19672925,
+      "format": "H.264 Constrained Baseline, 1920x1080, yuv420p, 50 fps, 300 frames, BT.709 limited"
+    },
+    "ten_bit": {
+      "path": "tests/fixtures/codecs/hevc-main10-canonical-v1.mp4",
+      "generator": "tests/fixtures/codecs/generate-10bit-baseline.sh",
+      "generator_sha256": "8162c4764b27810d9cd35107be9d534b1e619fb29abda5cb0ffcabea45f5f026",
+      "sha256": "df69c98ca6592b08c6bc34127b2bb5cf4125c759fd852b830e5426d5818fccda",
+      "format": "HEVC Main 10, 1920x1080, yuv420p10le, 50 fps, 300 frames, BT.709 limited",
+      "input_nonzero_low_two_bit_samples": 700261022,
+      "input_sample_count": 933120000
+    }
+  },
+  "production": {
+    "script": "tests/baselines/media/generate-post-polarity-v2.sh",
+    "script_sha256": "284728fd7b53328c3ae89065484ba399f770c328aad5712fd0ea36cd261f4f7e",
+    "invocation": "tests/baselines/media/generate-post-polarity-v2.sh /tmp/asciiflow-stage53b1-v2-input8-run1.mp4 tests/fixtures/codecs/hevc-main10-canonical-v1.mp4 /tmp/asciiflow-stage53b1-post-polarity-v2",
+    "common_arguments": ["--width", "80", "--charset", "standard", "--font", "builtin-8x8", "--color", "true", "--audio", "none", "--max-frames", "300", "--decode", "vaapi", "--backend", "vulkan", "--vulkan-mapping", "gpu", "--encode", "vaapi", "--hw-device", "/dev/dri/renderD128", "--vaapi-vulkan-input-interop", "on", "--vaapi-vulkan-output-interop", "on", "--no-progress"],
+    "per_case_arguments": ["--output-codec", "<codec>", "--output-bit-depth", "<8|10>"],
+    "path": "VAAPI decode -> NV12/P010 DMA-BUF input interop -> Vulkan ASCII -> NV12/P010 DMA-BUF output interop -> VAAPI encode"
+  },
+  "expected": {
+    "video_streams": 1,
+    "audio_streams": 0,
+    "video_packets": 300,
+    "decoded_frames": 300,
+    "decoded_pts": "0..299 inclusive at 1/50 s, duration 1 tick each",
+    "resolution": "1920x1080",
+    "fps": "50/1",
+    "duration_seconds": 6,
+    "primaries": "bt709",
+    "transfer": "bt709",
+    "matrix": "bt709",
+    "range": "tv (limited)"
+  },
+  "cases": [
+    {"name": "h264-8", "codec": "h264", "profile": "High", "pixel_format": "yuv420p", "output_sha256_runs_1_2_3": ["7c8a7572320b8c6c999143dfece4a76d487d6c9e7788206b7af52df9acd4e1cc", "7c8a7572320b8c6c999143dfece4a76d487d6c9e7788206b7af52df9acd4e1cc", "7c8a7572320b8c6c999143dfece4a76d487d6c9e7788206b7af52df9acd4e1cc"], "decoded_framemd5_sha256_runs_1_2_3": ["c5b5f8bcd31bdbdc5b40cdb3a4e075332e2359c46c4a35317a60de1e2d0a263c", "c5b5f8bcd31bdbdc5b40cdb3a4e075332e2359c46c4a35317a60de1e2d0a263c", "c5b5f8bcd31bdbdc5b40cdb3a4e075332e2359c46c4a35317a60de1e2d0a263c"]},
+    {"name": "hevc-8", "codec": "hevc", "profile": "Main", "pixel_format": "yuv420p", "output_sha256_runs_1_2_3": ["294a1b63ac5b0e440dcf60c4c60f975594c6e944829478b69f09f981d268ff71", "294a1b63ac5b0e440dcf60c4c60f975594c6e944829478b69f09f981d268ff71", "294a1b63ac5b0e440dcf60c4c60f975594c6e944829478b69f09f981d268ff71"], "decoded_framemd5_sha256_runs_1_2_3": ["755bdcd256c58b748b95d2a5417461b5077656ec0d7265a1dfe1d78a8d6fa799", "755bdcd256c58b748b95d2a5417461b5077656ec0d7265a1dfe1d78a8d6fa799", "755bdcd256c58b748b95d2a5417461b5077656ec0d7265a1dfe1d78a8d6fa799"]},
+    {"name": "av1-8", "codec": "av1", "profile": "Main", "pixel_format": "yuv420p", "output_sha256_runs_1_2_3": ["1531e29f52ae4e747251cf1889003dfd420303c523fb0ddc55cc9140e3bf2a4c", "1531e29f52ae4e747251cf1889003dfd420303c523fb0ddc55cc9140e3bf2a4c", "1531e29f52ae4e747251cf1889003dfd420303c523fb0ddc55cc9140e3bf2a4c"], "decoded_framemd5_sha256_runs_1_2_3": ["086c1821e563822576d872af8761f4282ae8c0e41972d1008870578fde5b4dc6", "086c1821e563822576d872af8761f4282ae8c0e41972d1008870578fde5b4dc6", "086c1821e563822576d872af8761f4282ae8c0e41972d1008870578fde5b4dc6"]},
+    {"name": "hevc-10", "codec": "hevc", "profile": "Main 10", "pixel_format": "yuv420p10le", "output_sha256_runs_1_2_3": ["f213a9f75542421bb816550cd7a93796db98ae36296a00636f7273492740a142", "f213a9f75542421bb816550cd7a93796db98ae36296a00636f7273492740a142", "f213a9f75542421bb816550cd7a93796db98ae36296a00636f7273492740a142"], "decoded_framemd5_sha256_runs_1_2_3": ["3eeb03862bf1d3aa1762192bc393fddd25024f0f187ce4982323accfb8eef517", "3eeb03862bf1d3aa1762192bc393fddd25024f0f187ce4982323accfb8eef517", "3eeb03862bf1d3aa1762192bc393fddd25024f0f187ce4982323accfb8eef517"]},
+    {"name": "av1-10", "codec": "av1", "profile": "Main", "pixel_format": "yuv420p10le", "output_sha256_runs_1_2_3": ["b69c68525ac6ab2464e04b8fc1f123d887b45bba580377bafad99dc74cf62ad7", "b69c68525ac6ab2464e04b8fc1f123d887b45bba580377bafad99dc74cf62ad7", "b69c68525ac6ab2464e04b8fc1f123d887b45bba580377bafad99dc74cf62ad7"], "decoded_framemd5_sha256_runs_1_2_3": ["21ba0466e1805b28281675312619f1cd192a8e67fdb577024c7dadddcf7af933", "21ba0466e1805b28281675312619f1cd192a8e67fdb577024c7dadddcf7af933", "21ba0466e1805b28281675312619f1cd192a8e67fdb577024c7dadddcf7af933"]}
+  ],
+  "same_build_repeats": {
+    "comparisons": 10,
+    "tier1a_raw_packets": "PASS",
+    "tier1b_coded_semantics": "PASS",
+    "tier1c_decoded_frames_and_pts": "PASS",
+    "tier2_structure": "PASS",
+    "tier3_whole_file": "PASS"
+  },
+  "decoded_ten_bit_low_precision_sample_frames": {
+    "frame_indices": [0, 150, 299],
+    "samples_per_codec": 9331200,
+    "hevc_nonzero_low_two_bits": 5358353,
+    "av1_nonzero_low_two_bits": 5396166
+  },
+  "hardware_closure": {
+    "p010_production_stress_frames": 3000,
+    "p010_output_interop_fd_stress": {"before": 4, "early": 21, "peak": 22, "after": 4},
+    "canonical_p010_preencode_parity": "byte exact, 300 frames",
+    "nv12_and_p010_input_output_interop": "PASS",
+    "nv12_and_p010_khronos_validation": "PASS, zero Validation Error/VUID/sync errors",
+    "aac_single_8bit_and_10bit": "PASS",
+    "aac_dual_track": "PASS",
+    "freetype_nv12_and_p010": "PASS"
+  },
+  "portability": "Whole-file hashes are scoped to the pinned exact FFmpeg, AsciiFlow binary, VAAPI and Vulkan driver build. They are not portable across FFmpeg, driver or Mesa changes."
+}

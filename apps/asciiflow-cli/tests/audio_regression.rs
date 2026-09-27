@@ -2,6 +2,31 @@ mod audio_support;
 use asciiflow_core::FrameSource;
 
 #[test]
+#[ignore = "set ASCIIFLOW_AUDIO_REFERENCE and ASCIIFLOW_AUDIO_CANDIDATE to retained files"]
+fn retained_audio_pair_from_env() {
+    let reference = std::path::PathBuf::from(
+        std::env::var_os("ASCIIFLOW_AUDIO_REFERENCE").expect("reference path"),
+    );
+    let candidate = std::path::PathBuf::from(
+        std::env::var_os("ASCIIFLOW_AUDIO_CANDIDATE").expect("candidate path"),
+    );
+    let source = inspect(&reference);
+    let output = inspect(&candidate);
+    let source_audio = audio(&source);
+    let output_audio = audio(&output);
+    assert!(!source_audio.is_empty(), "reference has no audio");
+    assert_eq!(
+        source_audio.len(),
+        output_audio.len(),
+        "audio stream count changed"
+    );
+    for (before, after) in source_audio.iter().zip(output_audio) {
+        same_audio(before, after);
+    }
+    assert_audio_decodes(&candidate);
+}
+
+#[test]
 fn hevc_av1_software_input_retains_audio_font_and_h264_output() {
     for name in ["hevc-main8-bframes.mp4", "av1-main8-nofilmgrain.mp4"] {
         let ws = Workspace::new();

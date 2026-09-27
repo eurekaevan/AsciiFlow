@@ -18,16 +18,38 @@ baselines only after rerunning the production paths and recording the new
 source/build identities. Explicit literal `--charset` values are unchanged;
 callers should supply them sparse-to-dense for the black-background contract.
 
+Baseline generations are explicit. [v1](../tests/baselines/media/stage53b1.json)
+is the historical pre-polarity five-output record, retained for the H.264
+`.102`/`.103` forensic oracle and methodology tests; none of its decoded
+pixels or whole-file hashes gates current default rendering. [v2](../tests/baselines/media/post-polarity-v2.json)
+is the post-polarity Intel production record and the current regression gate.
+Its 8-bit input is generated twice with the checked-in
+[`generate-8bit-production-baseline.sh`](../tests/fixtures/codecs/generate-8bit-production-baseline.sh)
+using FFmpeg `8.1.3-1.fc44`; both generations have SHA-256
+`6e5c214b813dca3e1db65629b1241cfb663166eb565cda1c48b5ee74ed0dce6b`.
+The complete generator command, pinned version check and color parameters
+are in that script. The 10-bit input remains checked-in canonical v1, SHA-256
+`df69c98ca6592b08c6bc34127b2bb5cf4125c759fd852b830e5426d5818fccda`.
+The v2 production script fixes all conversion flags and executes five codecs
+three times. Each whole-file hash is exact-build/driver scoped, **not portable**
+across FFmpeg, VAAPI, Mesa or AsciiFlow binary changes; Tier 1B/1C/Tier 2
+semantic comparison remains the approved cross-tool-version correctness gate.
+
 Whole-MP4 SHA-256 is an exact artifact identity check, not a universal media
 correctness oracle. A mismatch always triggers the three-tier comparison below;
 it is never silently ignored or automatically called a regression.
 
-1. **Tier 1 — media semantics (authoritative correctness):** compare ordered
-   packets *within each stream* including stream identity, count, PTS, DTS,
-   duration, flags, side data and exact compressed payload bytes; compare every
-   decoded visible-plane frame digest, PTS, dimensions and format. Codec,
-   profile, bit depth, color primaries/transfer/matrix/range, audio compressed
-   payload, routing, language and disposition are semantic fields.
+1. **Tier 1 — media identity:** Tier 1A reports exact per-stream raw coded
+   packet bytes, an exact-build diagnostic. Tier 1B is the cross-approved-patch
+   encoded-media gate: packet count/identity, PTS/DTS/duration/flags/side data,
+   codec/profile/bit depth/color and audio payload/routing/language/disposition
+   remain exact. HEVC and AV1 packet bytes remain exact. For H.264 only, the
+   [test-only AVCC/SEI parser](../crates/asciiflow-media/tests/common/h264_bitstream.rs)
+   permits the measured `user_data_unregistered` UUID and fixed VAAPI encoder
+   identifier to differ solely in a three-digit `Lavc62.28` patch version;
+   every other NAL and SEI message stays byte-exact. Tier 1C independently
+   compares every decoded visible-plane frame digest, PTS, dimensions and
+   format. Tier 1B + Tier 1C are the cross-approved-patch correctness gate.
 2. **Tier 2 — container structure:** compare stream count/order, time bases,
    durations, codec parameters and extradata, dispositions and all nonvolatile
    metadata. Cross-stream packet interleave is reported separately as a
@@ -41,19 +63,21 @@ The hardware-independent comparator is
 `crates/asciiflow-media/tests/common/media_regression.rs`, exercised by the
 `media_regression` integration test. It uses FFmpeg's native stream/packet API
 and AsciiFlow's software decoder; it does **not** parse command-line probe
-text, access `/dev/dri`, or hash `AVFrame` padding. Its only volatile allowlist
-is `format.tags.encoder=Lavf<major>.<minor>.<patch>` or, if present,
+text, access `/dev/dri`, or hash `AVFrame` padding. Container-tag volatility is
+limited to `format.tags.encoder=Lavf<major>.<minor>.<patch>` and, if present,
 `stream.tags.encoder=Lavc<major>.<minor>.<patch>`, with unchanged major/minor.
-Every approved value change appears in the result. Unapproved tags,
-extradata, packet payload, timestamps, color and decoded pixels fail. In
-addition, a supplementary raw-byte guard rejects unexplained file bytes even
-when all parsed fields match; it masks only the explicitly approved,
-equal-length version tag values *after* the native media comparison. It never
-excuses a changed packet. Each parsed tag authorizes exactly one byte
-occurrence; a duplicate in an opaque atom fails closed. A hash match printed
+The H.264 SEI rule is separate; it is not a general packet or metadata
+wildcard. Every approval includes packet/NAL/SEI position, UUID and both full
+identifiers. SPS, PPS, VCL, unknown/timing/recovery/HDR SEI, extradata,
+timestamps, color, decoded pixels and audio remain strict. A supplementary
+raw-byte guard rejects unexplained file bytes after native comparison; each
+approved container tag or parsed SEI version token authorizes exactly one
+same-length byte occurrence. Duplicates in opaque atoms fail closed. AVPacket
+payload can contain standardized non-VCL codec metadata; raw packet identity
+is therefore stronger than encoded-picture semantic identity. A hash match printed
 by the comparator is a byte-equality observation, not independent attestation
 of the builds, libraries and driver required for a strict Tier 3 gate. In
-particular, an encoder version string *inside a packet* is not treated as a
+particular, an encoder version string *inside a packet* is never treated as a
 container tag. The [machine-readable baseline record](../tests/baselines/media/stage53b1.json)
 keeps the five input/output identities, observed tier results, conversion
 configuration and expected stream summary without checking in thousands of
@@ -69,15 +93,22 @@ ASCIIFLOW_REGRESSION_CANDIDATE=/absolute/candidate.mp4 \
   compare_pair_from_env -- --ignored --nocapture
 ```
 
+Only after separately attesting exact reference/candidate build identity,
+set `ASCIIFLOW_REGRESSION_EXACT_BUILD=attested` on that invocation to require
+Tier 1A and Tier 3 equality as well. The comparator cannot infer that identity
+from a filename or matching version text. Without that explicit attestation,
+it still prints both byte-identity results but gates on Tier 1B/1C/Tier 2.
+
 Candidate generation remains a separate opt-in Intel hardware operation.
-After an FFmpeg, Mesa or driver upgrade, run Tier 1/Tier 2 first and inspect
-every difference. If only the narrowly approved tool-version tags differ,
-media regression may pass without rewriting old Tier 3 hashes. A new strict
-hash baseline requires an explicit decision to pin a new exact toolchain and
-must retain the old hash. The Stage 5.3B-1 closure found an important
-exception: H.264 embeds `Lavc…102→…103` in its first *compressed packet*.
-Under the current exact-packet rule it fails Tier 1 despite equal decoded
-frames; this is not allowlisted as metadata. See the
+After an FFmpeg, Mesa or driver upgrade, run the structured oracle and inspect
+every difference. An approved patch-version-only difference may pass Tier 1B,
+Tier 1C and Tier 2 without rewriting old Tier 1A/Tier 3 hashes. Exact-build
+identity must be independently attested (input, binary, libavcodec,
+libavformat, encoder/driver and command); select the strict policy requiring
+both raw packets and whole-file SHA for such runs. Matching filenames or
+version strings alone do not establish exact-build identity. A new strict
+hash baseline requires an explicit decision to pin that toolchain and must
+retain the old hash. See the
 [Stage 5.3B-1 closure report](stage5.3b1-pq-cpu-reference.md).
 
 Stage 5.3A color tests use the checked-in codec fixtures and run in the normal

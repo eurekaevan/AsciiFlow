@@ -170,6 +170,60 @@ mod tests {
                     right > left,
                     "white must stay brighter: {format:?} color={color}"
                 );
+
+                // The pre-fix ramp was exactly reversed. The same mapper and
+                // renderer must now differ only through glyph coverage.
+                let legacy = AsciiConfig {
+                    charset: "@%#*+=-:. ".into(),
+                    ..config.clone()
+                };
+                assert_eq!(
+                    config.charset.chars().rev().collect::<String>(),
+                    legacy.charset
+                );
+                let legacy_frame = CpuAsciiBackend::new()
+                    .process(input.clone(), &legacy)
+                    .unwrap()
+                    .frame;
+                let (legacy_y, _) = legacy_frame.host().planes(&desc);
+                let legacy_black: u32 = if format == PixelFormat::Nv12 {
+                    legacy_y
+                        .chunks_exact(16)
+                        .flat_map(|row| &row[..8])
+                        .map(|&v| u32::from(v))
+                        .sum()
+                } else {
+                    legacy_y
+                        .chunks_exact(32)
+                        .flat_map(|row| row[..16].chunks_exact(2))
+                        .map(|bytes| u32::from(u16::from_le_bytes([bytes[0], bytes[1]]) >> 6))
+                        .sum()
+                };
+                let legacy_white: u32 = if format == PixelFormat::Nv12 {
+                    legacy_y
+                        .chunks_exact(16)
+                        .flat_map(|row| &row[8..])
+                        .map(|&v| u32::from(v))
+                        .sum()
+                } else {
+                    legacy_y
+                        .chunks_exact(32)
+                        .flat_map(|row| row[16..].chunks_exact(2))
+                        .map(|bytes| u32::from(u16::from_le_bytes([bytes[0], bytes[1]]) >> 6))
+                        .sum()
+                };
+                if color {
+                    assert_eq!(left, legacy_black, "black changed: {format:?}");
+                } else {
+                    assert!(
+                        left < legacy_black,
+                        "dark polarity did not change: {format:?}"
+                    );
+                }
+                assert!(
+                    right > legacy_white,
+                    "polarity did not change: {format:?} color={color}"
+                );
             }
         }
     }

@@ -139,7 +139,7 @@ remains applicable because no decoder, planner, interop, shader or encoder
 source changed. This pass changed only test-side oracle files, the baseline
 record and documentation; the prior uncommitted PQ CPU reference is preserved.
 
-**Status: NOT SEALED.** The PQ CPU reference gates and four of five structured
+**Earlier strict-packet checkpoint: NOT SEALED.** The PQ CPU reference gates and four of five structured
 media regressions are green. H.264's first compressed packet is not byte-equal
 under the explicitly retained Tier 1 rule. Stage 5.3B-2 is therefore **not
 formally justified**; this pass stops without Vulkan PQ, HLG, tone mapping,
@@ -149,3 +149,198 @@ Subsequent default-ramp polarity correction changes rendered pixels by design.
 The five hashes and comparisons above remain a pre-correction snapshot, not
 current-output gates; no historical hash was rewritten. See
 [the current regression policy](testing.md#media-regression-policy).
+
+## H.264 coded-bitstream forensic closure (pre-polarity artifacts)
+
+The retained first H.264 video packets are both 597,001 bytes. Their AVCC
+four-byte-length NAL sequence has the same count, order and lengths:
+
+| NAL index | Type | Bytes | Reference SHA-256 | Candidate SHA-256 |
+| --- | --- | ---: | --- | --- |
+| 0 | 7 SPS | 30 | `bb44950a5699cbecf46ed08ae32f91fd7bc93d4bc44a49036a067a9facd8b550` | identical |
+| 1 | 8 PPS | 5 | `402b01292bfbde28cda0e0becb663f7215a4961a4d3a472e58de450212c412bf` | identical |
+| 2 | 6 SEI | 106 | `f7fe9a41e8873738b2bf76468027b97ec095700295f5224729f2493f35499c92` | `469b532ed650a07fc5036e7f83531e7e6e156f014248e389c99dde2dfb3492b2` |
+| 3 | 5 IDR | 596,844 | `1699d8a58f20c47a34ba197a3c864d88a9421f60e069ed9085adc1012fbdc55d` | identical |
+
+The SEI RBSP has exactly one message: payload type 5
+(`user_data_unregistered`), payload size 102, UUID
+`59948b2811ec45af967519d41feaa94d`. Its null-terminated identifier is:
+
+```text
+reference: Lavc62.28.102 / VAAPI 1.23.0 / Intel iHD driver for Intel(R) Gen Graphics - 26.1.5 ()
+candidate: Lavc62.28.103 / VAAPI 1.23.0 / Intel iHD driver for Intel(R) Gen Graphics - 26.1.5 ()
+```
+
+Exactly one first-packet byte changes (offset 78, zero-based): ASCII `2` to
+`3` in the `Lavc` patch version. SPS, PPS, VCL and all other packet bytes are
+identical; the sequence, UUID, payload type/size and identifier suffix match.
+The [test-only parser](../crates/asciiflow-media/tests/common/h264_bitstream.rs)
+approves this one fixed UUID/VAAPI identifier role after parsing AVCC NALs and
+SEI messages, not by searching for a string. Unknown/other SEI, SPS, PPS,
+VCL, changed UUID or changed identifier content fail. The raw mismatch stays
+visible. It also requires all raw SEI bytes outside the unique approved
+version token to match, so an alternate EBSP encoding cannot hide another
+change. AsciiFlow configures `h264_vaapi` with CQP/`qp=20`/`async_depth=2`
+and does not set an identifier or SEI option; the observed text is generated
+on the FFmpeg/VAAPI encoder path. This source audit does not distinguish
+whether the FFmpeg wrapper or the driver inserted the message.
+
+The new comparator reran all five *preserved pre-polarity* candidates:
+
+| Case | Tier 1A raw | Tier 1B coded | Tier 1C decoded | Tier 2 | Tier 3 bytes |
+| --- | --- | --- | --- | --- | --- |
+| H.264 8-bit | FAIL | PASS | PASS | PASS | different |
+| HEVC Main8 | PASS | PASS | PASS | PASS | different |
+| AV1 Main8 | PASS | PASS | PASS | PASS | different |
+| HEVC Main10 | PASS | PASS | PASS | PASS | match |
+| AV1 10-bit | PASS | PASS | PASS | PASS | match |
+
+The H.264 approved difference is reported with packet/NAL/SEI indices, UUID
+and full identifiers; its `Lavf` container tag difference is separately
+reported. Synthetic tests establish positive version-only approval and hard
+failure for changed SPS, PPS, IDR slice, unknown SEI, UUID and non-version
+payload content. Existing packet timestamp, color, decoded-frame, audio and
+container negative tests remain in force. HEVC, AV1 and audio retain exact
+packet bytes. Exact-build runs can opt into raw-packet and whole-file identity
+gates using `ASCIIFLOW_REGRESSION_EXACT_BUILD=attested`; matching version
+strings alone do not attest an exact build.
+
+**Current-source status: NOT SEALED.** The forensic H.264 blocker is resolved
+for those historical files, but the later default-ramp polarity correction
+changes production pixels. Those five outputs do not qualify the current
+source tree, and `/dev/dri` was unavailable for a fresh Intel full-GPU run.
+No pre-correction hash was rewritten or promoted as a current gate. Stage
+5.3B-2 remains unjustified until the current outputs are requalified.
+
+## Final Intel hardware closure — post-polarity baseline v2 (2026-09-27)
+
+**Stage 5.3B-1: SEALED.** This later qualification supersedes the
+"current-source NOT SEALED" checkpoint above, without changing its historical
+results. No Stage 5.3B-2 pixel or Vulkan HDR work was started.
+
+The current source is `fffed5a8c446a87dc3595c479837d1b5b9056621`
+plus test/oracle/documentation changes shown by `git status --short`;
+`git diff --check` was clean. The pre-run tracked binary diff SHA-256 was
+`57b159b96c9018adfb1e129ed5857365dc413de910e6a1c70dd63adabe6be74b`;
+the two newly added generator scripts are separately pinned in the
+[v2 manifest](../tests/baselines/media/post-polarity-v2.json). No production
+Rust source changed after the baseline binary was built. `Cargo.lock` SHA-256
+is `f8cf97f855fcbcb422ef1b74f2367a7ac40b612dcc41cc0a1d8a23f3e27746b8`;
+the qualified Release binary SHA-256 is
+`8340679c08ce627dbe1b27fae7577f24f455f7ab42eaed002856970b29cc7bda`.
+The host-accessible `/dev/dri/renderD128` used Intel Arc Meteor Lake, Intel
+iHD `26.1.5` / VAAPI `1.23`, Mesa Vulkan `26.2.3`, and Fedora FFmpeg/FFmpeg
+libraries `8.1.3-1.fc44` (libavcodec `62.28.103`, libavformat `62.12.103`).
+The normal project sandbox did not expose the render node; the device-backed
+checks ran in the approved host-accessible execution context against this
+*same* checkout, lockfile, binary and fixtures. No temporary source copy was
+made.
+
+`HEAD` introduced the intentional polarity correction in
+[`config.rs`](../crates/asciiflow-core/src/config.rs) and the `standard`/
+`detailed` CLI ramp selection in
+[`args.rs`](../apps/asciiflow-cli/src/args.rs): the old default
+`@%#*+=-:. ` (dense to sparse) became ` .:-=+*#%@` (sparse to dense)
+for glyphs rendered on black. **v1** is therefore historical *pre-polarity*
+evidence, including all five retained hashes and the `.102`/`.103` H.264
+forensic case; its pixels are not expected to equal v2. **v2** is the new
+*post-polarity* current-output gate. The existing 8-bit v1 input had SHA-256
+`6b47b510c4a8f604e6404b1fbbc5f68bdaa77043976acdad0153ef83524b6e34`,
+but its original generation command was not retained, so it was not promoted
+as a reproducible v2 input. The new algorithmic 8-bit generator is pinned to
+FFmpeg 8.1.3, with the full command in
+[`generate-8bit-production-baseline.sh`](../tests/fixtures/codecs/generate-8bit-production-baseline.sh).
+Two independent generations were byte-identical at SHA-256
+`6e5c214b813dca3e1db65629b1241cfb663166eb565cda1c48b5ee74ed0dce6b`
+(19,672,925 bytes). The checked-in 10-bit input remains SHA-256
+`df69c98ca6592b08c6bc34127b2bb5cf4125c759fd852b830e5426d5818fccda`.
+Both inputs are 1920×1080, 300 frames, 50 fps, BT.709 limited. The 10-bit
+fixture has 700,261,022 samples with nonzero low two bits out of 933,120,000.
+
+The exact generation and conversion commands are the complete contents of
+those checked-in scripts. To replay v2 on this qualified host:
+
+```bash
+tests/fixtures/codecs/generate-8bit-production-baseline.sh \
+  /tmp/asciiflow-stage53b1-v2-input8-run1.mp4
+tests/baselines/media/generate-post-polarity-v2.sh \
+  /tmp/asciiflow-stage53b1-v2-input8-run1.mp4 \
+  tests/fixtures/codecs/hevc-main10-canonical-v1.mp4 \
+  /tmp/asciiflow-stage53b1-post-polarity-v2
+```
+
+The production script runs `target/release/asciiflow INPUT OUTPUT` with
+`--width 80 --charset standard --font builtin-8x8 --color true --audio none
+--max-frames 300 --decode vaapi --backend vulkan --vulkan-mapping gpu
+--encode vaapi --hw-device /dev/dri/renderD128
+--vaapi-vulkan-input-interop on --vaapi-vulkan-output-interop on
+--output-codec CODEC --output-bit-depth DEPTH --no-progress` for each of
+`h264/8`, `hevc/8`, `av1/8`, `hevc/10`, `av1/10`, three times each. All fifteen
+logs identify VAAPI decode → NV12/P010 DMA-BUF input interop → Vulkan ASCII →
+NV12/P010 DMA-BUF output interop → VAAPI encode on Intel Arc.
+
+| Case | Runs 1, 2 and 3: identical whole-MP4 SHA-256 | Full decoded `framemd5` file SHA-256, identical across runs |
+| --- | --- | --- |
+| H.264 8-bit | `7c8a7572320b8c6c999143dfece4a76d487d6c9e7788206b7af52df9acd4e1cc` | `c5b5f8bcd31bdbdc5b40cdb3a4e075332e2359c46c4a35317a60de1e2d0a263c` |
+| HEVC Main8 | `294a1b63ac5b0e440dcf60c4c60f975594c6e944829478b69f09f981d268ff71` | `755bdcd256c58b748b95d2a5417461b5077656ec0d7265a1dfe1d78a8d6fa799` |
+| AV1 Main8 | `1531e29f52ae4e747251cf1889003dfd420303c523fb0ddc55cc9140e3bf2a4c` | `086c1821e563822576d872af8761f4282ae8c0e41972d1008870578fde5b4dc6` |
+| HEVC Main10 | `f213a9f75542421bb816550cd7a93796db98ae36296a00636f7273492740a142` | `3eeb03862bf1d3aa1762192bc393fddd25024f0f187ce4982323accfb8eef517` |
+| AV1 Main 10-bit | `b69c68525ac6ab2464e04b8fc1f123d887b45bba580377bafad99dc74cf62ad7` | `21ba0466e1805b28281675312619f1cd192a8e67fdb577024c7dadddcf7af933` |
+
+For each case, runs 2 and 3 were compared to run 1 with the exact-build
+regression comparator: **Tier 1A raw packets, Tier 1B coded semantics, Tier
+1C decoded pixels/PTS, Tier 2 structure and Tier 3 whole-file bytes all
+PASS** (ten comparisons). In particular the current `.103` H.264 SPS, PPS,
+SEI and VCL were raw-exact across runs. The separate retained `.102` versus
+`.103` H.264 pair was rerun without exact-build attestation: Tier 1A remains
+FAIL, Tier 1B/1C/Tier 2 PASS, with only the pinned SEI version difference.
+The normal structured-oracle tests (including the positive SEI case and SPS,
+PPS, VCL, unknown SEI, UUID, payload, timestamp, color and audio negatives)
+also passed. No exception was added for same-build H.264 bytes.
+
+Every output software-decoded without error to exactly 300 frames at
+1920×1080, PTS `0..299` at 1/50 s. FFprobe counted 300 packets and six seconds
+per file, with BT.709 primaries, transfer and matrix, limited range, and
+profiles `High` H.264, `Main` HEVC/AV1 8-bit, `Main 10` HEVC, and `Main`
+AV1 with `yuv420p10le`. The three selected decoded 10-bit frames (0, 150,
+299) retained nonzero low-two-bit values: HEVC 5,358,353/9,331,200 samples;
+AV1 5,396,166/9,331,200. The Intel 300-frame canonical P010 pre-encode
+reference parity test passed byte-exact; it counted 188,297,203 non-four-
+aligned pre-encode samples and FD `4 → 36 (max steady 36) → 4`. The targeted
+NV12/P010 black-and-white polarity test now confirms the legacy ramp is the
+exact reverse of the new one, monochrome black becomes darker, color-mode
+black remains black, and the new white region is brighter. This isolates the intentional
+pixel change; since the 8-bit input was also reconstructed, v1/v2 whole-video
+pixel equality is neither asserted nor meaningful.
+
+Additional real-device gates passed: NV12/P010 input descriptor and pixel
+smokes, NV12 full-ASCII two-slot interop, P010 output FreeType/CPU parity,
+one NV12/H.264 FreeType + AAC production run, one P010/HEVC Main10 FreeType
++ AAC production run, and one NV12/H.264 FreeType + **two AAC tracks** run.
+The native audio oracle confirmed compressed packet payload, timestamps,
+language, disposition, stream order and full AAC decode. The existing Intel
+AAC/Validation/cancellation opt-in test also passed. HEVC could not encode the
+64×64 dual-audio fixture (minimum width/height 128); H.264 was used for that
+fixture, as permitted by the two-track gate.
+
+Full 10-bit production stress converted and decode-probed **3000 frames**
+on the same GPU path; the output retained Main10/yuv420p10le/BT.709 limited
+and 3000 packets/frames. The separate in-process 3000-frame P010 output
+interop FD test measured **before 4, early 21, peak 22, after 4** and passed.
+The 300-frame full P010 parity test independently returned to baseline FD 4.
+Khronos Validation was enabled on NV12 and P010 interop/full-GPU runs,
+including the 3000-frame production stress: no Validation Error, VUID or
+synchronization error was observed. The Intel software/VAAPI semantic test
+reconfirmed early rejection for PQ, HLG, BT.2020 SDR and full-range; the CLI
+staging-preservation test stayed green.
+
+Final static gates passed: Release workspace build; normal and
+`asciiflow-cli/encode-characterization` workspace suites; strict all-target
+Clippy with and without that feature; formatting and diff checks; and Vulkan
+1.3 `spirv-val` on all 133 generated SPIR-V modules. The PQ CPU vectors,
+BT.2020 NCL, limited-P010 HDR, linear averaging/blending, FreeType reference,
+low-bit and NaN/Inf diagnostics are covered by the green workspace suite;
+no PQ math changed. The remaining boundary is intentional: production HDR
+is still rejected. v2 whole-file hashes are only exact-build/driver gates,
+not promises across FFmpeg, Intel driver or Mesa updates. Stage 5.3B-2
+Vulkan PQ implementation is now justified, but was **not started**.

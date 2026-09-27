@@ -74,6 +74,24 @@ Three independent runs, including a deletion and rebuild, yielded the exact
 input SHA-256 above. Future regeneration must compare against the checked-in
 entry in `SHA256SUMS`; no tool-version change silently replaces it.
 
+## Post-polarity v2 8-bit production input
+
+The Stage 5.3B-1 v2 8-bit input is generated on demand rather than checked in.
+The earlier retained 8-bit input's exact generator command was not preserved,
+so it remains historical. Run
+[`generate-8bit-production-baseline.sh`](generate-8bit-production-baseline.sh)
+with an output path; the script pins FFmpeg **8.1.3**, one-thread `libx264`,
+the complete `testsrc2` command, explicit 300 frames at 50 fps, 1920×1080,
+`yuv420p`, BT.709 primaries/transfer/matrix, limited range, and MP4 timescale.
+The generator SHA-256 is
+`7962394e54915e6db67c55018a4cfd27562d65f3c5bff81c4b6f2f3c876bbe3c`.
+Two independent invocations produced **19,672,925 bytes** and the identical
+SHA-256
+`6e5c214b813dca3e1db65629b1241cfb663166eb565cda1c48b5ee74ed0dce6b`.
+The full input/output identities and fixed conversion command are in the
+[v2 baseline manifest](../../baselines/media/post-polarity-v2.json). Because
+the file is generated on demand, this hash is the fixture's identity gate.
+
 Recheck the decoded active low bits without storing a 1.87 GB raw stream:
 
 ```bash

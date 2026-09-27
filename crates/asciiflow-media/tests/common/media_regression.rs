@@ -2,6 +2,7 @@
 //! FFmpeg reads container/packet facts; AsciiFlow's software decoder supplies
 //! tightly packed visible NV12/P010 frames for decoded-pixel SHA-256.
 
+use super::h264_bitstream::{avcc_length_size, compare_avcc_packets};
 use asciiflow_core::{FrameSource, PixelFormat};
 use asciiflow_media::Decoder;
 use ffmpeg_sys_next as ffi;
@@ -82,12 +83,20 @@ pub struct ComparisonPolicy {
     /// Only `format.tags.encoder=LavfM.m.p` and
     /// `stream.tags.encoder=LavcM.m.p`, with unchanged M and m.
     pub allow_ffmpeg_patch_metadata: bool,
+    /// Only the pinned H.264 VAAPI encoder-identifier SEI may vary by patch.
+    pub allow_h264_encoder_patch_sei: bool,
+    /// Opt in only after independently attesting the exact build identity.
+    pub require_raw_packet_identity: bool,
+    pub require_whole_file_identity: bool,
 }
 
 impl Default for ComparisonPolicy {
     fn default() -> Self {
         Self {
             allow_ffmpeg_patch_metadata: true,
+            allow_h264_encoder_patch_sei: true,
+            require_raw_packet_identity: false,
+            require_whole_file_identity: false,
         }
     }
 }
@@ -95,27 +104,55 @@ impl Default for ComparisonPolicy {
 #[derive(Debug, Default)]
 pub struct MediaRegressionResult {
     pub media_differences: Vec<String>,
+    pub raw_packet_differences: Vec<String>,
+    pub decoded_differences: Vec<String>,
     pub structure_differences: Vec<String>,
     pub ordering_differences: Vec<String>,
     pub approved_volatile_differences: Vec<String>,
+    pub approved_coded_metadata_differences: Vec<String>,
+    approved_coded_byte_pairs: Vec<(Vec<u8>, Vec<u8>)>,
     pub whole_file_equal: bool,
+    require_raw_packet_identity: bool,
+    require_whole_file_identity: bool,
 }
 
 impl MediaRegressionResult {
     pub fn media_semantics_equal(&self) -> bool {
+        self.coded_semantics_equal() && self.decoded_identity_equal()
+    }
+    pub fn raw_packet_identity_equal(&self) -> bool {
+        self.raw_packet_differences.is_empty()
+    }
+    pub fn coded_semantics_equal(&self) -> bool {
         self.media_differences.is_empty()
+    }
+    pub fn decoded_identity_equal(&self) -> bool {
+        self.decoded_differences.is_empty()
     }
     pub fn container_structure_equal(&self) -> bool {
         self.structure_differences.is_empty() && self.ordering_differences.is_empty()
     }
     pub fn passes(&self) -> bool {
-        self.media_semantics_equal() && self.container_structure_equal()
+        self.media_semantics_equal()
+            && self.container_structure_equal()
+            && (!self.require_raw_packet_identity || self.raw_packet_identity_equal())
+            && (!self.require_whole_file_identity || self.whole_file_equal)
     }
     pub fn report(&self) -> String {
         let mut out = format!(
-            "Media regression {}\nTier 1 semantic: {}\nTier 2 structure: {}\nWhole-file SHA-256 bytes (toolchain identity not attested here): {}\n",
+            "Media regression {}\nTier 1A raw packet identity: {}\nTier 1B coded semantic identity: {}\nTier 1C decoded identity: {}\nTier 2 structure: {}\nTier 3 whole-file SHA-256 bytes (build identity not attested here): {}\n",
             if self.passes() { "PASS" } else { "FAILED" },
-            if self.media_semantics_equal() {
+            if self.raw_packet_identity_equal() {
+                "PASS"
+            } else {
+                "FAIL"
+            },
+            if self.coded_semantics_equal() {
+                "PASS"
+            } else {
+                "FAIL"
+            },
+            if self.decoded_identity_equal() {
                 "PASS"
             } else {
                 "FAIL"
@@ -132,12 +169,18 @@ impl MediaRegressionResult {
             }
         );
         for (heading, entries) in [
-            ("Media differences", &self.media_differences),
+            ("Raw packet differences", &self.raw_packet_differences),
+            ("Coded semantic differences", &self.media_differences),
+            ("Decoded differences", &self.decoded_differences),
             ("Structural differences", &self.structure_differences),
             ("Container ordering differences", &self.ordering_differences),
             (
                 "Approved volatile differences",
                 &self.approved_volatile_differences,
+            ),
+            (
+                "Approved coded-metadata differences",
+                &self.approved_coded_metadata_differences,
             ),
         ] {
             for entry in entries {
@@ -463,28 +506,33 @@ fn mask_approved_version_tags(
     reference: &MediaSnapshot,
     candidate: &MediaSnapshot,
     policy: ComparisonPolicy,
+    approved_coded_byte_pairs: &[(Vec<u8>, Vec<u8>)],
 ) -> Option<(Vec<u8>, Vec<u8>)> {
     let mut a = reference.file_bytes.clone();
     let mut b = candidate.file_bytes.clone();
-    if !policy.allow_ffmpeg_patch_metadata {
-        return Some((a, b));
-    }
     let mut values = Vec::new();
-    if let (Some(x), Some(y)) = (
-        reference.format_tags.get("encoder"),
-        candidate.format_tags.get("encoder"),
-    ) {
-        if same_ffmpeg_family_patch(x, y, "Lavf") {
-            values.push((x.as_bytes(), y.as_bytes()));
+    if policy.allow_ffmpeg_patch_metadata {
+        if let (Some(x), Some(y)) = (
+            reference.format_tags.get("encoder"),
+            candidate.format_tags.get("encoder"),
+        ) {
+            if same_ffmpeg_family_patch(x, y, "Lavf") {
+                values.push((x.as_bytes(), y.as_bytes()));
+            }
         }
-    }
-    for (x, y) in reference.streams.iter().zip(&candidate.streams) {
-        if let (Some(before), Some(after)) = (x.tags.get("encoder"), y.tags.get("encoder")) {
-            if same_ffmpeg_family_patch(before, after, "Lavc") {
-                values.push((before.as_bytes(), after.as_bytes()));
+        for (x, y) in reference.streams.iter().zip(&candidate.streams) {
+            if let (Some(before), Some(after)) = (x.tags.get("encoder"), y.tags.get("encoder")) {
+                if same_ffmpeg_family_patch(before, after, "Lavc") {
+                    values.push((before.as_bytes(), after.as_bytes()));
+                }
             }
         }
     }
+    values.extend(
+        approved_coded_byte_pairs
+            .iter()
+            .map(|(before, after)| (before.as_slice(), after.as_slice())),
+    );
     for (before, after) in values {
         if a.len() < before.len() || b.len() < after.len() {
             return None;
@@ -517,6 +565,8 @@ pub fn compare(
 ) -> MediaRegressionResult {
     let mut result = MediaRegressionResult {
         whole_file_equal: reference.whole_file_sha256 == candidate.whole_file_sha256,
+        require_raw_packet_identity: policy.require_raw_packet_identity,
+        require_whole_file_identity: policy.require_whole_file_identity,
         ..MediaRegressionResult::default()
     };
     macro_rules! media {
@@ -661,11 +711,51 @@ pub fn compare(
                 y.payload.len()
             );
             if x.payload != y.payload {
-                result.media_differences.push(format!(
+                let raw_difference = format!(
                     "{scope} payload mismatch: expected sha256 {}, actual sha256 {}",
                     hex(&sha256(&x.payload).unwrap()),
                     hex(&sha256(&y.payload).unwrap())
-                ));
+                );
+                result.raw_packet_differences.push(raw_difference.clone());
+                let h264 = reference
+                    .streams
+                    .get(stream)
+                    .zip(candidate.streams.get(stream))
+                    .is_some_and(|(before, after)| {
+                        before.codec == ffi::AVCodecID::AV_CODEC_ID_H264 as i32
+                            && after.codec == before.codec
+                            && before.extradata == after.extradata
+                    });
+                let approval = if h264 && policy.allow_h264_encoder_patch_sei {
+                    reference.streams.get(stream).and_then(|facts| {
+                        avcc_length_size(&facts.extradata).ok().map(|length_size| {
+                            compare_avcc_packets(&x.payload, &y.payload, length_size)
+                        })
+                    })
+                } else {
+                    None
+                };
+                match approval {
+                    Some(Ok(changes)) => {
+                        for change in changes {
+                            result.approved_coded_metadata_differences.push(format!(
+                                "{scope} NAL {} SEI {} user_data_unregistered UUID {}: {} -> {} (encoder patch version)",
+                                change.nal_index,
+                                change.sei_index,
+                                hex(&change.uuid),
+                                change.reference_text,
+                                change.candidate_text
+                            ));
+                            result
+                                .approved_coded_byte_pairs
+                                .push((change.reference_token, change.candidate_token));
+                        }
+                    }
+                    Some(Err(reason)) => result.media_differences.push(format!(
+                        "{raw_difference}; H.264 semantic comparison: {reason}"
+                    )),
+                    None => result.media_differences.push(raw_difference),
+                }
             }
             if x.side_data != y.side_data {
                 result
@@ -688,7 +778,7 @@ pub fn compare(
         );
         media!(format!("frame {index} pixel format"), a.format, b.format);
         if a.visible_sha256 != b.visible_sha256 {
-            result.media_differences.push(format!(
+            result.decoded_differences.push(format!(
                 "frame {index} visible pixel SHA-256: {} -> {}",
                 hex(&a.visible_sha256),
                 hex(&b.visible_sha256)
@@ -704,12 +794,17 @@ pub fn compare(
         && result.media_semantics_equal()
         && result.container_structure_equal()
     {
-        let only_approved_bytes =
-            mask_approved_version_tags(reference, candidate, policy).is_some_and(|(a, b)| a == b);
+        let only_approved_bytes = mask_approved_version_tags(
+            reference,
+            candidate,
+            policy,
+            &result.approved_coded_byte_pairs,
+        )
+        .is_some_and(|(a, b)| a == b);
         if !only_approved_bytes {
             result
                 .structure_differences
-                .push("whole-file bytes differ outside approved version tag values".into());
+                .push("whole-file bytes differ outside approved version tag values or encoder SEI patch token".into());
         }
     }
     result
