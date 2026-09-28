@@ -108,6 +108,19 @@ pub struct ColorSpace {
     pub chroma_location: ChromaLocation,
 }
 
+impl ColorSpace {
+    /// Canonical left-sited, limited BT.2020 non-constant-luminance/PQ signal.
+    pub const fn pq_bt2020() -> Self {
+        Self {
+            matrix: ColorMatrix::Bt2020,
+            range: ColorRange::Limited,
+            primaries: ColorPrimaries::Bt2020,
+            transfer: TransferCharacteristic::Pq,
+            chroma_location: ChromaLocation::Left,
+        }
+    }
+}
+
 impl Default for ColorSpace {
     fn default() -> Self {
         Self {

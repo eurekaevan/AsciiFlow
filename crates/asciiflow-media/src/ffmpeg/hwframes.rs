@@ -217,16 +217,11 @@ impl VaapiEncoderFrames {
         let native = unsafe { &mut *hardware.as_mut_ptr() };
         native.pts = pts;
         native.color_range = ffi::AVColorRange::AVCOL_RANGE_MPEG;
-        native.colorspace = ffi::AVColorSpace::AVCOL_SPC_BT709;
-        native.color_primaries = ffi::AVColorPrimaries::AVCOL_PRI_BT709;
-        native.color_trc = ffi::AVColorTransferCharacteristic::AVCOL_TRC_BT709;
-        #[cfg(feature = "hdr-pq-qualification")]
-        if self.desc.color_space.transfer == asciiflow_core::TransferCharacteristic::Pq {
-            super::decoder::validate_pq_qualification_color(self.desc.color_space)?;
-            native.colorspace = ffi::AVColorSpace::AVCOL_SPC_BT2020_NCL;
-            native.color_primaries = ffi::AVColorPrimaries::AVCOL_PRI_BT2020;
-            native.color_trc = ffi::AVColorTransferCharacteristic::AVCOL_TRC_SMPTE2084;
-        }
+        let (matrix, primaries, transfer) =
+            super::encoder::output_native_color(self.desc.color_space);
+        native.colorspace = matrix;
+        native.color_primaries = primaries;
+        native.color_trc = transfer;
         native.chroma_location = ffi::AVChromaLocation::AVCHROMA_LOC_LEFT;
         Ok(VaapiEncoderFrame {
             hardware,

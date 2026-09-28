@@ -398,6 +398,76 @@ real device-loss or hung-fence tests. Historical cache module counts (such as
 with `spirv-val --target-env vulkan1.3`, recording count/profile and capabilities.
 Normal and measurement-feature workspace tests/clippy must both remain green.
 
+## PQ production closure (Stage 5.3B-3)
+
+The integration implementation is documented in
+[stage5.3b3-hdr-production.md](stage5.3b3-hdr-production.md); its status is the
+sealing authority, not a capability inferred from P010 or codec identity.
+The independent SDR [baseline v2](../tests/baselines/media/post-polarity-v2.json)
+remains unchanged. The new [PQ production v1](../tests/baselines/media/pq-production-v1.json)
+records actual input/tool identities, strict three-run coded/decoded/whole-file
+oracles and explicit conversion configuration. It does not replace SDR or
+historical evidence.
+
+The retained canonical HEVC/AV1 PQ inputs both decode exactly to raw-source
+SHA-256 `7278abe3ec0b44ac62e1a5ae090df81206a4e9fb82379053885c622f37c3a48f`.
+Input SHA-256 values are respectively
+`72eadd220051231f85814e7161379f64adf9e472ec7cb33f1564b30b59f2152a` and
+`526ddba68a3a4a9c8878a5f93f8a75e556324e99e1b57f30e67d4883c922a71e`.
+Three independent generations matched; complete generator/version/per-frame
+identities are retained with the fixtures. Actual decoded low-two-bit nonzero
+samples total 585270960 / 933120000. Source byte identity, encoded reproducibility,
+and emitted metadata are separate checks, not interchangeable evidence.
+
+```bash
+bash tests/fixtures/codecs/generate-pq-canonical.sh /tmp/pq-canonical-repeat
+python3 tests/fixtures/codecs/verify-pq-canonical.py /tmp/pq-canonical-repeat /tmp/pq-source-check.json
+bash tests/baselines/media/generate-pq-production-v1.sh tests/fixtures/codecs /tmp/pq-retained
+python3 tests/baselines/media/verify-pq-production.py /tmp/pq-retained /tmp/pq-output-check.json
+# A future regression must also match the established canonical baseline:
+python3 tests/baselines/media/verify-pq-production.py /tmp/pq-retained /tmp/pq-regression.json \
+  --input-directory tests/fixtures/codecs --check-baseline tests/baselines/media/pq-production-v1.json
+python3 tests/baselines/media/test-pq-production-oracle.py
+ASCIIFLOW_VULKAN_VALIDATION=1 cargo test --release -p asciiflow-cli \
+  --test pq_production -- --ignored --nocapture --test-threads=1
+ASCIIFLOW_VULKAN_VALIDATION=1 cargo test --release -p asciiflow-interop \
+  --features hdr-pq-qualification --test pq_hardware \
+  pq_canonical_300_frame_encoder_pool_preencode_oracle -- --ignored --nocapture --test-threads=1
+ASCIIFLOW_VULKAN_VALIDATION=1 cargo test --release -p asciiflow-interop \
+  --features hdr-pq-qualification --test pq_hardware \
+  pq_production_encode_3000_frame_fd_stress -- --ignored --nocapture --test-threads=1
+```
+
+Every future HDR retained artifact must preserve both generating scripts,
+generator/tool/native build identity, exact input and output commands, input
+SHA-256 and real decoded precision evidence. Record output hashes only after
+repeatability is measured; otherwise preserve a structured nondeterministic
+oracle and do not force an exact-file gate. Keep source/raw-input/frame hashes,
+packet identity, decoded pixel hashes and output color metadata distinct.
+Source mastering/CLL must be absent from ASCII output. Negative oracle controls
+must reject wrong primaries, missing PQ transfer, full range and static leaks.
+Use the exact same VAAPI surface for CPU/GPU **pre-encode** parity; lossy output
+must not be asserted byte-equal to the CPU renderer. Serialize real GPU/FD tests
+and dedicated measurements. The file-size failure test injects its limit only
+after actual packet writing, so Mesa initialization is not mistaken for mux
+failure. No existing SDR or historical H.264 comparator tolerance is widened.
+
+Stage 5.3B-3 is SEALED on its documented Intel iHD/ANV scope. Its
+[hardware record](../tests/baselines/media/pq-production-v1-hardware.json) and
+production manifest preserve all-300-frame pre-encode histograms, actual
+3000-frame encode/mux/decode FD results, driver/tool identity and dedicated
+three-run measurement summaries. The PQ oracle uses the same tier names as
+the Rust comparator: 1A raw packets, 1B coded semantics, 1C decoded pixels and
+timestamps, 2 structure, 3 exact-build file identity. `--baseline` establishes
+an explicitly reviewed replacement record; normal regressions use
+`--check-baseline` and never overwrite the golden file. Source generation must
+also match its retained identity; repeatability within a changed batch alone
+is not a regression PASS. The oracle checks both actual encoded input files'
+sizes and SHA-256, not merely an unchanged identity JSON; a negative control
+rejects changed input bytes behind a matching identity record.
+Native device loss and hung-fence recovery are not
+claimed by the simulated host fault checkpoints.
+
 ## AV1 Main 10-bit production encode (Stage 5.2C-3)
 
 Use an explicitly tagged BT.709 SDR, left-chroma, 128×96-or-larger P010 input

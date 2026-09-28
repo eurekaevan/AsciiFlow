@@ -1,13 +1,16 @@
 #![cfg(feature = "hdr-pq-qualification")]
 
-use asciiflow_core::{AsciiConfig, FrameSource, HostFrame, VideoFrame};
+use asciiflow_core::{
+    AsciiConfig, CancellationToken, ChromaSubsampling, ColorProcessing, ColorSpace, FrameDesc,
+    FrameSink, FrameSource, HostFrame, PixelFormat, Rational, VideoCodec, VideoFrame, VideoProfile,
+};
 use asciiflow_cpu::hdr::HdrPqReference;
 use asciiflow_font::GlyphAtlas;
 use asciiflow_interop::{DrmPrimeMapping, VaapiVulkanFullInteropProcessor};
 use asciiflow_media::{
-    DecodeMode, Decoder, VaapiDecodedFrame, VaapiDiagnosticP010Pool, VaapiOptions,
+    DecodeMode, Decoder, Encoder, VaapiDecodedFrame, VaapiDiagnosticP010Pool, VaapiOptions,
 };
-use asciiflow_vulkan::{DiagnosticOutputFault, VulkanPqQualification};
+use asciiflow_vulkan::{DiagnosticOutputFault, VulkanAsciiBackend, VulkanPqQualification};
 use ffmpeg_sys_next as ffi;
 use std::{
     collections::VecDeque,
@@ -518,5 +521,337 @@ fn pq_host_output_faults_preserve_cause_and_recover_fds() {
             assert_eq!(backend.validation_error_count(), 0);
         }
         assert_eq!(fd_count(), before, "{fault:?} leaked FDs");
+    }
+}
+
+const CANONICAL_INPUTS: [(&str, VideoCodec); 2] = [
+    ("hevc-main10-pq-canonical-v1.mp4", VideoCodec::Hevc),
+    ("av1-main10-pq-canonical-v1.mp4", VideoCodec::Av1),
+];
+
+fn canonical_input(name: &str) -> PathBuf {
+    std::env::var_os("ASCIIFLOW_PQ_CANONICAL_DIR")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| fixture(""))
+        .join(name)
+}
+
+fn canonical_config() -> AsciiConfig {
+    AsciiConfig {
+        grid_width: 80,
+        grid_height: None,
+        ..AsciiConfig::default()
+    }
+}
+
+struct TemporaryOutput(PathBuf);
+
+impl TemporaryOutput {
+    fn new(scope: &str, codec: &VideoCodec) -> Self {
+        Self(std::env::temp_dir().join(format!(
+            "asciiflow-pq-{scope}-{codec}-{}.mp4",
+            std::process::id()
+        )))
+    }
+}
+
+impl Drop for TemporaryOutput {
+    fn drop(&mut self) {
+        if let Err(error) = std::fs::remove_file(&self.0) {
+            assert_eq!(
+                error.kind(),
+                std::io::ErrorKind::NotFound,
+                "failed to remove scoped PQ output: {error}"
+            );
+        }
+    }
+}
+
+fn production_decoder(path: &Path, mode: DecodeMode) -> Decoder {
+    Decoder::open_with_pq_preserve(path, mode, VaapiOptions::default()).unwrap()
+}
+
+fn production_encoder(
+    path: &Path,
+    desc: FrameDesc,
+    rate: asciiflow_core::Rational,
+    codec: VideoCodec,
+) -> Encoder {
+    Encoder::create_with_hardware_frames_codec_and_audio(
+        path,
+        desc,
+        rate,
+        codec,
+        VaapiOptions::default(),
+        Vec::new(),
+        CancellationToken::new(),
+    )
+    .unwrap()
+}
+
+#[test]
+#[ignore = "requires canonical 1080p PQ inputs and Intel iHD/ANV; all 300 pre-encode frames against CPU f64 oracle"]
+fn pq_canonical_300_frame_encoder_pool_preencode_oracle() {
+    let cfg = canonical_config();
+    let atlas = GlyphAtlas::builtin(&cfg.font, &cfg.charset).unwrap();
+    let reference = HdrPqReference::new(&atlas, &cfg.charset).unwrap();
+    for (name, output_codec) in CANONICAL_INPUTS {
+        let before = fd_count();
+        let mut peak = before;
+        let mut differences = Differences::default();
+        {
+            let mut decoded = production_decoder(&canonical_input(name), DecodeMode::Vaapi);
+            let mut next = decoded.next_vaapi_frame().unwrap();
+            let input_desc = next.as_ref().unwrap().desc().clone();
+            assert_eq!((input_desc.width, input_desc.height), (1920, 1080));
+            let output_desc = FrameDesc::host_p010_le(
+                input_desc.width,
+                input_desc.height,
+                ColorSpace::pq_bt2020(),
+            )
+            .unwrap();
+            assert_eq!(input_desc, output_desc);
+            let temporary = TemporaryOutput::new("canonical-preencode", &output_codec);
+            let mut encoder = production_encoder(
+                &temporary.0,
+                output_desc,
+                decoded.info().frame_rate,
+                output_codec.clone(),
+            );
+            let frames = encoder.encoder_frames().unwrap();
+            let mut backend = VulkanPqQualification::new()
+                .unwrap()
+                .with_atlas(atlas.clone(), &cfg)
+                .unwrap();
+            assert_eq!(backend.device_info().vendor_id, 0x8086);
+            println!(
+                "{name} canonical pre-encode device: {:?}",
+                backend.device_info()
+            );
+            let (columns, rows) = cfg
+                .resolved_grid(input_desc.width, input_desc.height)
+                .unwrap();
+            let mut count = 0;
+            let mut glyph_differences = 0u64;
+            while let Some(frame) = next.take() {
+                let host = downloaded(&frame);
+                let cpu_cells = reference.map(&host, columns, rows).unwrap();
+                let expected = reference
+                    .render(&cpu_cells, input_desc.clone(), host.pts(), cfg.color)
+                    .unwrap()
+                    .0;
+                let input = DrmPrimeMapping::map_direct_read(frame).unwrap();
+                let output =
+                    DrmPrimeMapping::map_direct_write(frames.acquire(count).unwrap()).unwrap();
+                if count == 0 {
+                    println!(
+                        "{name} actual canonical input DRM descriptor: {:#?}",
+                        input.descriptor()
+                    );
+                    println!(
+                        "{name} actual {output_codec} encoder-owned output DRM descriptor: {:#?}",
+                        output.descriptor()
+                    );
+                }
+                let imported = backend
+                    .read_external_p010(
+                        &input_desc,
+                        input.pts(),
+                        &cfg,
+                        input.duplicate_external_p010_planes().unwrap(),
+                    )
+                    .unwrap();
+                assert_eq!(imported, host, "{name} canonical input bytes frame {count}");
+                backend
+                    .process_external_to_external(
+                        &input_desc,
+                        &cfg,
+                        input.duplicate_external_p010_planes().unwrap(),
+                        output.duplicate_external_p010_planes().unwrap(),
+                    )
+                    .unwrap();
+                let gpu_cells = backend.diagnostics().unwrap();
+                assert_eq!(gpu_cells.len(), cpu_cells.cells.len());
+                for (gpu, cpu) in gpu_cells.iter().zip(&cpu_cells.cells) {
+                    glyph_differences += u64::from(gpu.counts[0] != u32::from(cpu.glyph));
+                    assert_eq!(
+                        gpu.counts[0],
+                        u32::from(cpu.glyph),
+                        "{name} canonical glyph frame {count}"
+                    );
+                    assert_eq!(
+                        gpu.counts[2], 0,
+                        "{name} invalid PQ diagnostic frame {count}"
+                    );
+                }
+                differences.add(assert_codes(
+                    &output.into_source().download_p010().unwrap(),
+                    &expected,
+                    name,
+                ));
+                count += 1;
+                peak = peak.max(fd_count());
+                next = decoded.next_vaapi_frame().unwrap();
+            }
+            assert_eq!(count, 300);
+            assert_eq!(glyph_differences, 0);
+            assert_eq!(backend.validation_error_count(), 0);
+            encoder.finish().unwrap();
+            println!(
+                "{name} canonical pre-encode frames={count} glyph_differences={glyph_differences} validation_errors=0"
+            );
+        }
+        let after = fd_count();
+        differences.report(name, "canonical-encoder-owned-preencode", 300);
+        println!("{name} canonical pre-encode FD before={before} peak={peak} after={after}");
+        assert_eq!(after, before, "{name} canonical pre-encode leaked FDs");
+    }
+}
+
+fn assert_production_output(path: &Path, codec: &VideoCodec, frames: usize) {
+    let mut decoded = production_decoder(path, DecodeMode::Software);
+    assert_eq!(decoded.info().frame_rate, Rational::new(50, 1).unwrap());
+    let mut count = 0;
+    let mut previous_pts = None;
+    let mut pts_step = None;
+    while let Some(frame) = decoded.next_frame().unwrap() {
+        assert_eq!(frame.desc().format, PixelFormat::P010Le);
+        assert_eq!((frame.desc().width, frame.desc().height), (1920, 1080));
+        assert_eq!(frame.desc().color_space, ColorSpace::pq_bt2020());
+        let pts = frame.pts().expect("decoded production frame must have PTS");
+        if let Some(previous) = previous_pts {
+            let step = pts - previous;
+            assert!(step > 0, "production timestamps must advance");
+            assert_eq!(step, *pts_step.get_or_insert(step), "CFR timestamp gap");
+        } else {
+            assert_eq!(pts, 0, "production timeline must start at zero");
+        }
+        previous_pts = Some(pts);
+        let requirements = &decoded.info().requirements;
+        assert_eq!(&requirements.codec, codec);
+        assert_eq!(requirements.bit_depth, Some(10));
+        assert_eq!(requirements.chroma_subsampling, ChromaSubsampling::Yuv420);
+        assert_eq!(
+            requirements.profile,
+            Some(match codec {
+                VideoCodec::Hevc => VideoProfile::HevcMain10,
+                VideoCodec::Av1 => VideoProfile::Av1Main,
+                _ => unreachable!("production PQ stress only encodes HEVC or AV1"),
+            })
+        );
+        let color = requirements.color_semantics.unwrap();
+        assert_eq!(color.stream.space, ColorSpace::pq_bt2020());
+        assert_eq!(color.frame.space, ColorSpace::pq_bt2020());
+        assert_eq!(color.effective_static_metadata(), (None, None));
+        count += 1;
+    }
+    assert_eq!(
+        count, frames,
+        "{codec} production stress output frame count"
+    );
+    println!(
+        "{codec} production stress output fully decoded frames={count} 1920x1080/50fps CFR P010 BT.2020 NCL/PQ/limited/left; mastering/CLL absent"
+    );
+}
+
+#[test]
+#[ignore = "requires canonical 1080p PQ inputs and Intel iHD/ANV; 3000 production encode/mux frames per codec and full output decode"]
+fn pq_production_encode_3000_frame_fd_stress() {
+    let cfg = canonical_config();
+    let atlas = GlyphAtlas::builtin(&cfg.font, &cfg.charset).unwrap();
+    for (name, output_codec) in CANONICAL_INPUTS {
+        let before = fd_count();
+        let mut active = before;
+        let mut peak = before;
+        {
+            let temporary = TemporaryOutput::new("production-3000", &output_codec);
+            {
+                let mut decoded = production_decoder(&canonical_input(name), DecodeMode::Vaapi);
+                let mut next = decoded.next_vaapi_frame().unwrap();
+                let input_desc = next.as_ref().unwrap().desc().clone();
+                assert_eq!((input_desc.width, input_desc.height), (1920, 1080));
+                let output_desc = FrameDesc::host_p010_le(
+                    input_desc.width,
+                    input_desc.height,
+                    ColorSpace::pq_bt2020(),
+                )
+                .unwrap();
+                assert_eq!(input_desc, output_desc);
+                let mut encoder = production_encoder(
+                    &temporary.0,
+                    output_desc,
+                    decoded.info().frame_rate,
+                    output_codec.clone(),
+                );
+                let backend =
+                    VulkanAsciiBackend::new_for_color_processing(ColorProcessing::HdrPqPreserve)
+                        .unwrap()
+                        .with_atlas(atlas.clone(), &cfg)
+                        .unwrap();
+                assert_eq!(backend.device_info().vendor_id, 0x8086);
+                println!(
+                    "{name} production stress device: {:?}",
+                    backend.device_info()
+                );
+                let mut processor = VaapiVulkanFullInteropProcessor::new(
+                    backend,
+                    encoder.encoder_frames().unwrap(),
+                    input_desc,
+                    cfg.clone(),
+                )
+                .unwrap();
+                let mut submitted = 0;
+                let mut completed = 0;
+                while submitted < 3000 {
+                    let Some(frame) = next.take() else {
+                        // Complete every input surface before releasing its
+                        // decode context. Encoder output pool remains alive.
+                        while let Some(output) = processor.drain().unwrap() {
+                            assert_eq!(output.frame.pts(), completed);
+                            encoder.encode_hardware_frame(output.frame).unwrap();
+                            completed += 1;
+                        }
+                        decoded = production_decoder(&canonical_input(name), DecodeMode::Vaapi);
+                        next = decoded.next_vaapi_frame().unwrap();
+                        continue;
+                    };
+                    if let Some(output) = processor.submit(frame).unwrap() {
+                        assert_eq!(output.frame.pts(), completed);
+                        encoder.encode_hardware_frame(output.frame).unwrap();
+                        completed += 1;
+                    }
+                    submitted += 1;
+                    let current = fd_count();
+                    if submitted == 30 {
+                        active = current;
+                    }
+                    peak = peak.max(current);
+                    if submitted > 30 {
+                        assert!(
+                            current <= active + 12,
+                            "{name} production FD growth at {submitted}: {current} vs active {active}"
+                        );
+                    }
+                    next = decoded.next_vaapi_frame().unwrap();
+                }
+                while let Some(output) = processor.drain().unwrap() {
+                    assert_eq!(output.frame.pts(), completed);
+                    encoder.encode_hardware_frame(output.frame).unwrap();
+                    completed += 1;
+                }
+                assert_eq!(completed, 3000);
+                assert_eq!(processor.validation_error_count(), 0);
+                encoder.finish().unwrap();
+                println!(
+                    "{name} production stress submitted={submitted} encoded={completed} validation_errors=0"
+                );
+            }
+            assert_production_output(&temporary.0, &output_codec, 3000);
+        }
+        let after = fd_count();
+        println!(
+            "{name} production stress FD before={before} active={active} peak={peak} after={after}"
+        );
+        assert_eq!(after, before, "{name} production encode stress leaked FDs");
     }
 }

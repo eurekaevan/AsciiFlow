@@ -1,4 +1,4 @@
-//! Internal PQ qualification entry point, deliberately absent from CLI planning.
+//! PQ preserve validation and internal qualification observability.
 use asciiflow_core::{
     ChromaLocation, ColorMatrix, ColorPrimaries, ColorRange, Error, FrameDesc, PixelFormat, Result,
     TransferCharacteristic,
@@ -22,6 +22,8 @@ pub enum PqQualificationFault {
     DescriptorCreation,
     PipelineCreation,
     BeforeSubmit,
+    BeforeMapDispatch,
+    BeforeRenderDispatch,
     AfterCompletion,
 }
 

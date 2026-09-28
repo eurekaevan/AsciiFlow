@@ -33,7 +33,7 @@ pub use glyph::glyph_lookup_table;
 pub use metrics::{MetricStage, Metrics, MetricsSnapshot};
 pub use pipeline::{Pipeline, PipelineReport};
 pub use planner::{
-    CandidateRejection, CapabilitySnapshot, CapabilitySupport, ChromaSubsampling,
+    CandidateRejection, CapabilitySnapshot, CapabilitySupport, ChromaSubsampling, ColorProcessing,
     FormatOutputInteropCapabilities, FrameDomain, InputRequirements, InteropCapabilities,
     InteropRequest, MediaCapabilities, MediaImplementation, MediaRequest, OutputVideoRequirements,
     PipelinePlan, PipelinePlanner, PipelinePolicy, PixelPath, PlanNode, PlanStep, PlanningResult,

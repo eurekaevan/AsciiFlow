@@ -398,3 +398,24 @@ fn compare_pair_from_env() {
     println!("{}", result.report());
     assert!(result.passes(), "{}", result.report());
 }
+
+#[test]
+#[ignore = "set ASCIIFLOW_REGRESSION_REFERENCE/CANDIDATE to PQ retained artifacts"]
+fn compare_pq_pair_from_env() {
+    let reference = std::env::var_os("ASCIIFLOW_REGRESSION_REFERENCE").unwrap();
+    let candidate = std::env::var_os("ASCIIFLOW_REGRESSION_CANDIDATE").unwrap();
+    let reference = common::media_regression::inspect_pq(Path::new(&reference)).unwrap();
+    let candidate = common::media_regression::inspect_pq(Path::new(&candidate)).unwrap();
+    let result = compare(
+        &reference,
+        &candidate,
+        ComparisonPolicy {
+            allow_ffmpeg_patch_metadata: false,
+            allow_h264_encoder_patch_sei: false,
+            require_raw_packet_identity: true,
+            require_whole_file_identity: true,
+        },
+    );
+    println!("{}", result.report());
+    assert!(result.passes(), "{}", result.report());
+}

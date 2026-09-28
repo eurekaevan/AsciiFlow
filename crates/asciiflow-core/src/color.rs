@@ -515,6 +515,58 @@ mod tests {
     }
 
     #[test]
+    fn mid_stream_pq_static_metadata_change_is_rejected() {
+        let initial = ColorMetadataRaw {
+            space: ColorSpace::pq_bt2020(),
+            mastering_display: Some(MasteringDisplayMetadata {
+                display_primaries: None,
+                white_point: None,
+                min_luminance: Some(ColorRational {
+                    numerator: 1,
+                    denominator: 10000,
+                }),
+                max_luminance: Some(ColorRational {
+                    numerator: 1000,
+                    denominator: 1,
+                }),
+            }),
+            content_light: Some(ContentLightLevelMetadata {
+                max_cll: Some(1000),
+                max_fall: Some(400),
+            }),
+        };
+        let resolve = |raw| {
+            ResolvedColorSemantics::resolve(
+                ColorMetadataRaw::unspecified(),
+                raw,
+                ColorResolutionPolicy::StrictTenBit,
+            )
+            .unwrap()
+        };
+        let first = resolve(initial);
+        assert_eq!(first.ensure_stable(first), Ok(()));
+        for field in 0..4 {
+            let mut changed = initial;
+            match field {
+                0 => changed.content_light.as_mut().unwrap().max_cll = Some(1200),
+                1 => changed.content_light.as_mut().unwrap().max_fall = Some(500),
+                2 => changed.mastering_display = None,
+                _ => {
+                    changed.mastering_display.as_mut().unwrap().max_luminance =
+                        Some(ColorRational {
+                            numerator: 2000,
+                            denominator: 1,
+                        })
+                }
+            }
+            assert_eq!(
+                first.ensure_stable(resolve(changed)),
+                Err(ColorError::MidStreamColorMetadataChange)
+            );
+        }
+    }
+
+    #[test]
     fn partial_signals_do_not_default_in_strict_mode() {
         let raw = ColorMetadataRaw::unspecified();
         for field in 0..3 {

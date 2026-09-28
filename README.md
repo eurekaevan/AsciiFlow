@@ -9,7 +9,9 @@ remaining feature gaps are recorded in the [Rust follow-up inventory](docs/legac
 ## Current support
 
 - Input: H.264, HEVC Main and AV1 Main 8-bit 4:2:0, plus explicitly tagged
-  BT.709 limited-range SDR HEVC Main10 and AV1 Main 10-bit. FFmpeg may demux
+  BT.709 limited-range SDR HEVC Main10 and AV1 Main 10-bit. Qualified full
+  hardware pipelines also admit BT.2020/PQ/NCL limited-range, left-sited
+  HEVC Main10 and AV1 Main 10-bit for HDR-preserving ASCII processing. FFmpeg may demux
   other containers, but that does not imply every codec or color mode is
   qualified.
 - Output: MP4 with H.264 8-bit by default. HEVC Main and AV1 Main/Profile0
@@ -26,8 +28,16 @@ remaining feature gaps are recorded in the [Rust follow-up inventory](docs/legac
 - Safety: explicit hardware requests fail instead of silently falling back.
   Output is staged in the destination directory and committed only after a
   successful encode/mux; failure or cancellation preserves an existing file.
-  PQ/HLG HDR, BT.2020 SDR, full-range and unresolved color semantics are
-  rejected before output staging.
+  PQ production requires explicit HEVC/AV1 ten-bit output and qualified VAAPI
+  decode/encode plus both P010 Vulkan interop paths, with no HDR fallback.
+  HLG, BT.2020 SDR, full-range and unresolved color semantics are rejected
+  before output staging. No HDR→SDR tone mapping or gamut mapping is provided.
+
+PQ hardware qualification currently covers Intel Arc Meteor Lake with the
+specific iHD/ANV/toolchain in the [Stage 5.3B-3 report](docs/stage5.3b3-hdr-production.md),
+not universal HDR support. Source mastering-display and MaxCLL/MaxFALL are not
+propagated or recomputed because ASCII rendering changes the image; this is
+not HDR10 static/mastering qualification.
 
 See the [codec matrix](docs/codecs.md), [color contract](docs/color-semantics.md),
 [audio timeline and limitations](docs/audio.md), [font contract](docs/fonts.md),
@@ -63,6 +73,13 @@ cargo run --release --bin asciiflow -- input.mp4 output-gpu.mp4 \
 cargo run --release --bin asciiflow -- input-main10.mp4 output-main10.mp4 \
   --output-codec hevc --output-bit-depth 10 --encode vaapi \
   --hw-device /dev/dri/renderD128
+
+# Qualified BT.2020/PQ preservation; no CPU or software-media HDR fallback.
+cargo run --release --bin asciiflow -- input-pq.mp4 output-pq.mp4 \
+  --output-codec hevc --output-bit-depth 10 \
+  --decode vaapi --backend vulkan --vulkan-mapping gpu --encode vaapi \
+  --hw-device /dev/dri/renderD128 \
+  --vaapi-vulkan-input-interop on --vaapi-vulkan-output-interop on
 ```
 
 Use `--output-codec h264|hevc|av1`, `--output-bit-depth 8|10`,
@@ -93,11 +110,14 @@ The [architecture](docs/architecture.md) explains ownership and native
 boundaries. [Testing](docs/testing.md) distinguishes portable checks from
 opt-in Intel `/dev/dri` gates and records the current post-polarity media
 baseline. Historical stage reports and baseline revision numbers identify
-evidence, not separate application versions. The internal PQ CPU reference
-is qualified, but **production HDR is still unsupported**; see the
-[Stage 5.3B-1 report](docs/stage5.3b1-pq-cpu-reference.md). The independent
-internal Vulkan PQ qualification is documented in the
-[Stage 5.3B-2 report](docs/stage5.3b2-vulkan-pq.md); production HDR remains closed.
+evidence, not separate application versions. The permanent PQ CPU reference
+and internal Vulkan numeric qualification remain documented in
+[Stage 5.3B-1](docs/stage5.3b1-pq-cpu-reference.md) and
+[Stage 5.3B-2](docs/stage5.3b2-vulkan-pq.md). The
+[sealed Stage 5.3B-3 report](docs/stage5.3b3-hdr-production.md) establishes the
+qualified BT.2020/PQ HDR-preserving production path and reproducible retained
+baseline. CPU HDR reference remains non-production. No HLG, full-range HDR
+or HDR→SDR tone mapping is supported.
 
 The repository CI runs Rust format, strict Clippy, workspace tests, and Vulkan
 1.3 validation on generated SPIR-V. Hardware gates require an Intel host and

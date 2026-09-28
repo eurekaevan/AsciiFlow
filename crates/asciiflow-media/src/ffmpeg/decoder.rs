@@ -55,8 +55,7 @@ pub struct Decoder {
     format_locked: bool,
     stream_color: ColorMetadataRaw,
     first_color: Option<ResolvedColorSemantics>,
-    #[cfg(feature = "hdr-pq-qualification")]
-    pq_qualification: bool,
+    pq_preserve: bool,
     audio_streams: Vec<AudioInputStream>,
     selected_audio_streams: Vec<usize>,
     audio_sender: Option<AudioPacketSender>,
@@ -96,26 +95,7 @@ impl VaapiDecodedFrame {
 
 unsafe impl Send for VaapiDecodedFrame {}
 
-#[cfg(feature = "hdr-pq-qualification")]
-fn validate_pq_qualification_input(input: &InputRequirements) -> Result<PixelFormat> {
-    validate_pq_qualification_color(input.color_space)?;
-    if input.bit_depth != Some(10)
-        || input.chroma_subsampling != ChromaSubsampling::Yuv420
-        || !matches!(
-            (&input.codec, &input.profile),
-            (VideoCodec::Hevc, Some(VideoProfile::HevcMain10))
-                | (VideoCodec::Av1, Some(VideoProfile::Av1Main))
-        )
-    {
-        return Err(asciiflow_core::Error::UnsupportedFrame(
-            "PQ qualification requires HEVC Main10 or AV1 Main 10-bit 4:2:0".into(),
-        ));
-    }
-    FrameDesc::host_p010_le(input.width, input.height, input.color_space)?;
-    Ok(PixelFormat::P010Le)
-}
-
-#[cfg(feature = "hdr-pq-qualification")]
+#[cfg(all(feature = "hdr-pq-qualification", feature = "p010-output-diagnostic"))]
 pub(crate) fn validate_pq_qualification_color(color: ColorSpace) -> Result<()> {
     if color.primaries != ColorPrimaries::Bt2020
         || color.matrix != ColorMatrix::Bt2020
@@ -131,17 +111,26 @@ pub(crate) fn validate_pq_qualification_color(color: ColorSpace) -> Result<()> {
 }
 
 impl Decoder {
-    /// Internal qualification only. Normal decoder/planner entry points still
-    /// reject HDR. Metadata resolution, stability and layout checks remain live.
+    /// Decode for signal inspection or a planner-authorized PQ preserve path.
+    /// This admission does not qualify software decoding for HDR production.
+    pub fn open_with_pq_preserve(
+        path: impl AsRef<Path>,
+        mode: DecodeMode,
+        vaapi: VaapiOptions,
+    ) -> Result<Self> {
+        let mut decoder = Self::open_with(path, mode, vaapi)?;
+        decoder.pq_preserve = true;
+        Ok(decoder)
+    }
+    /// Internal qualification alias. Metadata resolution, stability and layout
+    /// checks are identical to the production signal-inspection entry point.
     #[cfg(feature = "hdr-pq-qualification")]
     pub fn open_pq_qualification(
         path: impl AsRef<Path>,
         mode: DecodeMode,
         vaapi: VaapiOptions,
     ) -> Result<Self> {
-        let mut decoder = Self::open_with(path, mode, vaapi)?;
-        decoder.pq_qualification = true;
-        Ok(decoder)
+        Self::open_with_pq_preserve(path, mode, vaapi)
     }
     pub fn open(path: impl AsRef<Path>) -> Result<Self> {
         Self::open_with(path, DecodeMode::Software, VaapiOptions::default())
@@ -353,8 +342,7 @@ impl Decoder {
             format_locked: false,
             stream_color,
             first_color: None,
-            #[cfg(feature = "hdr-pq-qualification")]
-            pq_qualification: false,
+            pq_preserve: false,
             audio_streams,
             selected_audio_streams: Vec::new(),
             audio_sender: None,
@@ -463,13 +451,10 @@ impl Decoder {
                 ResolvedColorSemantics::resolve(self.stream_color, frame_color, policy)?
             };
             self.info.requirements.color_semantics = Some(color);
-            #[cfg(feature = "hdr-pq-qualification")]
-            let qualified_pq = self.pq_qualification;
-            #[cfg(not(feature = "hdr-pq-qualification"))]
-            let qualified_pq = false;
+            let qualified_pq = self.pq_preserve;
             if let Err(reason) = color.support {
-                // Qualification exempts only the production PQ policy gate,
-                // never conflicting/unknown/malformed metadata.
+                // PQ admission bypasses only the SDR policy rejection, never
+                // conflicting, unknown or malformed metadata.
                 if !qualified_pq || reason != asciiflow_core::ColorSupportReason::UnsupportedHdrPq {
                     return Err(asciiflow_core::Error::UnsupportedColor {
                         reason,
@@ -481,14 +466,13 @@ impl Decoder {
             }
             actual.color_space = color.effective;
             actual.color_semantics = Some(color);
-            #[cfg(feature = "hdr-pq-qualification")]
-            let input_validation = if qualified_pq {
-                validate_pq_qualification_input(&actual)
+            let input_validation = if qualified_pq
+                && color.support == Err(asciiflow_core::ColorSupportReason::UnsupportedHdrPq)
+            {
+                actual.validate_pq_preserve_input()
             } else {
                 actual.validate_processing_input()
             };
-            #[cfg(not(feature = "hdr-pq-qualification"))]
-            let input_validation = actual.validate_processing_input();
             let working_format = input_validation.map_err(|e| {
                 asciiflow_core::Error::Media(format!(
                     "decoded {:?} profile {:?}, {:?}-bit {:?}, requested {:?}: {e}",
@@ -499,6 +483,9 @@ impl Decoder {
                     self.mode
                 ))
             })?;
+            if working_format == PixelFormat::P010Le {
+                validate_p010_geometry(native, &self.info.frame_desc)?;
+            }
             let scaler_matrix =
                 if color.provenance.matrix == asciiflow_core::ColorProvenance::LegacyDefault {
                     self.source_matrix
@@ -1068,12 +1055,7 @@ fn p010_from_native(
 ) -> Result<VideoFrame> {
     let width = desc.width as usize;
     let height = desc.height as usize;
-    if source.width != desc.width as i32 || source.height != desc.height as i32 {
-        return Err(asciiflow_core::Error::UnsupportedFrame(format!(
-            "10-bit frame geometry changed: {}x{}; expected {}x{}",
-            source.width, source.height, desc.width, desc.height
-        )));
-    }
+    validate_p010_geometry(source, desc)?;
     let mut storage = HostFrame::try_new_zeroed(desc)?;
     let (y, uv) = storage.planes_mut(desc);
     match source.format {
@@ -1116,6 +1098,16 @@ fn p010_from_native(
         }
     }
     VideoFrame::new_host(desc.clone(), pts, storage)
+}
+
+fn validate_p010_geometry(source: &ffi::AVFrame, desc: &FrameDesc) -> Result<()> {
+    if source.width != desc.width as i32 || source.height != desc.height as i32 {
+        return Err(asciiflow_core::Error::UnsupportedFrame(format!(
+            "10-bit frame geometry changed: {}x{}; expected {}x{}",
+            source.width, source.height, desc.width, desc.height
+        )));
+    }
+    Ok(())
 }
 
 fn native_row(source: &ffi::AVFrame, plane: usize, row: usize, row_bytes: usize) -> Result<&[u8]> {
@@ -1420,6 +1412,24 @@ impl Drop for ScalerGuard {
 #[cfg(test)]
 mod p010_tests {
     use super::*;
+
+    #[test]
+    fn p010_native_geometry_is_checked_before_host_or_vaapi_delivery() {
+        for color in [ColorSpace::default(), ColorSpace::pq_bt2020()] {
+            let desc = FrameDesc::host_p010_le(1920, 1080, color).unwrap();
+            let mut frame = Frame::new().unwrap();
+            let native = unsafe { &mut *frame.as_mut_ptr() };
+            native.width = 1920;
+            native.height = 1080;
+            validate_p010_geometry(native, &desc).unwrap();
+            for (width, height) in [(3840, 2160), (1280, 720), (1920, 1082), (0, 1080)] {
+                native.width = width;
+                native.height = height;
+                let error = validate_p010_geometry(native, &desc).unwrap_err();
+                assert!(error.to_string().contains("10-bit frame geometry changed"));
+            }
+        }
+    }
 
     #[test]
     #[ignore = "requires Intel VAAPI; reports codecpar/context color provenance"]

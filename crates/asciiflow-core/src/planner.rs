@@ -66,6 +66,8 @@ pub enum VulkanDeviceKind {
 pub struct ProcessingCapabilities {
     pub cpu: CapabilitySupport,
     pub vulkan: CapabilitySupport,
+    /// Actual PQ compute preparation/execution, not generic Vulkan availability.
+    pub vulkan_pq: CapabilitySupport,
     pub vulkan_auto_eligible: bool,
     pub vulkan_device_name: Option<String>,
     pub vulkan_device_kind: Option<VulkanDeviceKind>,
@@ -362,6 +364,10 @@ impl OutputVideoRequirements {
     }
 
     pub fn selected(codec: VideoCodec, bit_depth: u8, input: &InputRequirements) -> Result<Self> {
+        let color_processing = input.production_color_processing()?;
+        if color_processing == ColorProcessing::HdrPqPreserve && bit_depth != 10 {
+            return Err(Error::InvalidConfig("HDR PQ preservation requires explicit 10-bit HEVC or AV1 output; tone mapping and 10-to-8-bit conversion are not implemented".into()));
+        }
         if bit_depth == 8 {
             return Self::current_nv12(codec, input);
         }
@@ -386,9 +392,13 @@ impl OutputVideoRequirements {
             profile: Some(profile),
             bit_depth: 10,
             pixel_format: PixelFormat::P010Le,
-            color_space: ColorSpace {
-                range: input.color_space.range,
-                ..ColorSpace::default()
+            color_space: if color_processing == ColorProcessing::HdrPqPreserve {
+                ColorSpace::pq_bt2020()
+            } else {
+                ColorSpace {
+                    range: input.color_space.range,
+                    ..ColorSpace::default()
+                }
             },
             chroma_subsampling: ChromaSubsampling::Yuv420,
             width: input.width,
@@ -399,6 +409,55 @@ impl OutputVideoRequirements {
 }
 
 impl InputRequirements {
+    pub fn production_color_processing(&self) -> Result<ColorProcessing> {
+        if self
+            .color_semantics
+            .is_some_and(|c| c.dynamic_range == crate::DynamicRangeClass::HdrPq)
+        {
+            self.validate_pq_preserve_input()?;
+            Ok(ColorProcessing::HdrPqPreserve)
+        } else {
+            self.validate_processing_input()?;
+            Ok(ColorProcessing::Sdr)
+        }
+    }
+
+    /// Validate PQ signal identity only. This does not grant any processing,
+    /// decoder, encoder, or interop capability and cannot select a pipeline.
+    pub fn validate_pq_preserve_input(&self) -> Result<PixelFormat> {
+        let resolved = self.color_semantics.ok_or_else(|| {
+            Error::UnsupportedFrame(
+                "HDR PQ preservation requires resolved stream/frame color semantics".into(),
+            )
+        })?;
+        if resolved.dynamic_range != crate::DynamicRangeClass::HdrPq
+            || resolved.support != Err(crate::ColorSupportReason::UnsupportedHdrPq)
+            || resolved.effective != self.color_space
+            || self.color_space != ColorSpace::pq_bt2020()
+        {
+            return Err(Error::UnsupportedFrame("HDR PQ preservation requires explicitly resolved left-sited limited BT.2020 NCL/PQ; conflicting or unknown metadata is not accepted".into()));
+        }
+        if self.bit_depth != Some(10)
+            || self.chroma_subsampling != ChromaSubsampling::Yuv420
+            || !matches!(
+                (&self.codec, &self.profile),
+                (VideoCodec::Hevc, Some(VideoProfile::HevcMain10))
+                    | (VideoCodec::Av1, Some(VideoProfile::Av1Main))
+            )
+        {
+            return Err(Error::UnsupportedFrame(
+                "HDR PQ preservation requires HEVC Main10 or AV1 Main 10-bit 4:2:0 input".into(),
+            ));
+        }
+        if self.width > i32::MAX as u32 || self.height > i32::MAX as u32 {
+            return Err(Error::UnsupportedFrame(
+                "HDR dimensions exceed the media integer range".into(),
+            ));
+        }
+        crate::FrameDesc::host_p010_le(self.width, self.height, self.color_space)?;
+        Ok(PixelFormat::P010Le)
+    }
+
     fn supports_current_hardware_path(&self) -> bool {
         matches!(
             self.codec,
@@ -658,6 +717,7 @@ impl fmt::Display for PixelPath {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PipelinePlan {
     pub backend: ProcessingBackend,
+    pub color_processing: ColorProcessing,
     pub decode: MediaImplementation,
     pub encode: MediaImplementation,
     pub output: OutputVideoRequirements,
@@ -702,6 +762,14 @@ pub struct PlanningResult {
 
 pub struct PipelinePlanner;
 
+/// Signal classification is not production eligibility. A preserve plan still
+/// requires the fully probed hardware path; the CPU oracle is never a candidate.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ColorProcessing {
+    Sdr,
+    HdrPqPreserve,
+}
+
 #[derive(Clone, Copy)]
 struct Candidate {
     decode: MediaImplementation,
@@ -722,7 +790,11 @@ impl PipelinePlanner {
         policy: PipelinePolicy,
     ) -> Result<PlanningResult> {
         validate_policy(&policy)?;
-        let input_format = requirements.validate_processing_input()?;
+        let color_processing = requirements.production_color_processing()?;
+        let input_format = match color_processing {
+            ColorProcessing::Sdr => requirements.validate_processing_input()?,
+            ColorProcessing::HdrPqPreserve => requirements.validate_pq_preserve_input()?,
+        };
         let output = OutputVideoRequirements::selected(
             policy.output_codec.clone(),
             policy.output_bit_depth,
@@ -764,6 +836,7 @@ impl PipelinePlanner {
                                 requirements,
                                 &output,
                                 &policy,
+                                color_processing,
                             );
                             if reasons.is_empty() {
                                 accepted.push((candidate.preference_cost(), ordinal, candidate));
@@ -795,7 +868,7 @@ impl PipelinePlanner {
             }));
         };
         Ok(PlanningResult {
-            selected: selected.into_plan(cost, capabilities, output),
+            selected: selected.into_plan(cost, capabilities, output, color_processing),
             rejected,
         })
     }
@@ -872,8 +945,24 @@ impl Candidate {
         req: &InputRequirements,
         output: &OutputVideoRequirements,
         policy: &PipelinePolicy,
+        color_processing: ColorProcessing,
     ) -> Vec<String> {
         let mut reasons = Vec::new();
+        if color_processing == ColorProcessing::HdrPqPreserve {
+            if self.backend != ProcessingBackend::Vulkan
+                || self.decode != MediaImplementation::Hardware
+                || self.encode != MediaImplementation::Hardware
+                || !self.input_interop
+                || !self.output_interop
+            {
+                reasons.push("HDR PQ preservation requires Vulkan PQ processing, VAAPI decode/encode and both P010 interop paths; CPU, software decode and staged fallbacks are not qualified".into());
+            }
+            require(
+                &mut reasons,
+                "Vulkan PQ processing",
+                &caps.processing.vulkan_pq,
+            );
+        }
         if self.decode == MediaImplementation::Hardware
             || self.encode == MediaImplementation::Hardware
         {
@@ -1031,6 +1120,7 @@ impl Candidate {
         preference_cost: u16,
         caps: &CapabilitySnapshot,
         output: OutputVideoRequirements,
+        color_processing: ColorProcessing,
     ) -> PipelinePlan {
         let hardware_download = self.decode == MediaImplementation::Hardware && !self.input_interop;
         let hardware_upload = self.encode == MediaImplementation::Hardware && !self.output_interop;
@@ -1075,6 +1165,7 @@ impl Candidate {
         let steps = self.steps(output.pixel_format);
         PipelinePlan {
             backend: self.backend,
+            color_processing,
             decode: self.decode,
             encode: self.encode,
             output,
@@ -1267,6 +1358,7 @@ mod tests {
             processing: ProcessingCapabilities {
                 cpu: yes(),
                 vulkan: yes(),
+                vulkan_pq: yes(),
                 vulkan_auto_eligible: true,
                 vulkan_device_name: Some("synthetic integrated GPU".into()),
                 vulkan_device_kind: Some(VulkanDeviceKind::IntegratedGpu),
@@ -1300,6 +1392,218 @@ mod tests {
             frame_rate: Rational::new(50, 1).unwrap(),
             color_space: ColorSpace::default(),
             color_semantics: None,
+        }
+    }
+
+    fn pq_input(codec: VideoCodec) -> InputRequirements {
+        let mut input = h264();
+        input.profile = Some(match codec {
+            VideoCodec::Hevc => VideoProfile::HevcMain10,
+            VideoCodec::Av1 => VideoProfile::Av1Main,
+            _ => unreachable!("PQ test input codec"),
+        });
+        input.codec = codec;
+        input.bit_depth = Some(10);
+        input.pixel_format = Some("p010le".into());
+        input.color_space = ColorSpace::pq_bt2020();
+        let raw = crate::ColorMetadataRaw {
+            space: input.color_space,
+            ..crate::ColorMetadataRaw::unspecified()
+        };
+        input.color_semantics = Some(
+            crate::ResolvedColorSemantics::resolve(
+                raw,
+                raw,
+                crate::ColorResolutionPolicy::StrictTenBit,
+            )
+            .unwrap(),
+        );
+        input
+    }
+
+    fn pq_policy(codec: VideoCodec) -> PipelinePolicy {
+        PipelinePolicy {
+            output_codec: codec,
+            output_bit_depth: 10,
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn pq_auto_preserves_color_for_same_and_cross_codec_full_interop() {
+        for input_codec in [VideoCodec::Hevc, VideoCodec::Av1] {
+            let input = pq_input(input_codec);
+            for output_codec in [VideoCodec::Hevc, VideoCodec::Av1] {
+                let plan =
+                    PipelinePlanner::select(&full(), &input, pq_policy(output_codec.clone()))
+                        .unwrap()
+                        .selected;
+                assert_eq!(plan.color_processing, ColorProcessing::HdrPqPreserve);
+                assert_eq!(plan.backend, ProcessingBackend::Vulkan);
+                assert_eq!(plan.decode, MediaImplementation::Hardware);
+                assert_eq!(plan.encode, MediaImplementation::Hardware);
+                assert!(plan.hardware_input_interop && plan.hardware_output_interop);
+                assert!(!plan.hardware_download && !plan.hardware_upload);
+                assert_eq!(plan.output.codec, output_codec);
+                assert_eq!(plan.output.bit_depth, 10);
+                assert_eq!(plan.output.pixel_format, PixelFormat::P010Le);
+                assert_eq!(plan.output.color_space, input.color_space);
+                assert_eq!(
+                    plan.output.profile,
+                    Some(if output_codec == VideoCodec::Hevc {
+                        VideoProfile::HevcMain10
+                    } else {
+                        VideoProfile::Av1Main
+                    })
+                );
+                assert!(!plan.steps.iter().any(|step| matches!(
+                    step.node,
+                    PlanNode::CpuAscii
+                        | PlanNode::SoftwareDecode
+                        | PlanNode::SoftwareEncode
+                        | PlanNode::HardwareDownload
+                        | PlanNode::HardwareUpload
+                        | PlanNode::HostReadback
+                )));
+            }
+        }
+    }
+
+    #[test]
+    fn pq_rejects_eight_bit_cpu_software_and_disabled_interop_policies() {
+        for codec in [VideoCodec::Hevc, VideoCodec::Av1] {
+            let input = pq_input(codec.clone());
+            let policy = pq_policy(codec);
+            for forbidden in [
+                PipelinePolicy {
+                    output_bit_depth: 8,
+                    ..policy.clone()
+                },
+                PipelinePolicy {
+                    backend: ProcessingBackend::Cpu,
+                    ..policy.clone()
+                },
+                PipelinePolicy {
+                    decode: MediaRequest::Software,
+                    ..policy.clone()
+                },
+                PipelinePolicy {
+                    encode: MediaRequest::Software,
+                    ..policy.clone()
+                },
+                PipelinePolicy {
+                    input_interop: InteropRequest::Off,
+                    ..policy.clone()
+                },
+                PipelinePolicy {
+                    output_interop: InteropRequest::Off,
+                    ..policy.clone()
+                },
+                PipelinePolicy::default(),
+            ] {
+                assert!(
+                    PipelinePlanner::select(&full(), &input, forbidden.clone()).is_err(),
+                    "accepted forbidden PQ policy {forbidden:?}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn pq_auto_fails_when_required_facts_are_lost_without_staged_or_cpu_replan() {
+        for codec in [VideoCodec::Hevc, VideoCodec::Av1] {
+            let input = pq_input(codec.clone());
+            let policy = pq_policy(codec);
+            let output = PipelinePlanner::select(&full(), &input, policy.clone())
+                .unwrap()
+                .selected
+                .output;
+            let mut absent_compute = full();
+            absent_compute.processing.vulkan_pq =
+                CapabilitySupport::not_probed("actual PQ compute not qualified");
+            let mut failed_compute = full();
+            failed_compute.processing.vulkan_pq = no("PQ initialization");
+            let mut absent_input = full();
+            absent_input.interop.p010_input = no("PQ input import");
+            let mut absent_output = full();
+            absent_output
+                .interop
+                .set_output_for_requirements(&output, no("PQ output import"));
+            let mut absent_decode = full();
+            match input.codec {
+                VideoCodec::Hevc => absent_decode.media.hevc_main10_vaapi_decode = no("PQ decode"),
+                VideoCodec::Av1 => absent_decode.media.av1_10bit_vaapi_decode = no("PQ decode"),
+                _ => unreachable!(),
+            }
+            let mut absent_encode = full();
+            absent_encode
+                .media
+                .disable_encode_output(&output, "PQ encode initialization");
+            for capabilities in [
+                absent_compute,
+                failed_compute,
+                absent_input,
+                absent_output,
+                absent_decode,
+                absent_encode,
+            ] {
+                assert!(capabilities.processing.cpu.is_supported());
+                assert!(capabilities.media.software_decode.is_supported());
+                assert!(PipelinePlanner::select(&capabilities, &input, policy.clone()).is_err());
+                assert!(
+                    PipelinePlanner::select(&capabilities, &h264(), Default::default()).is_ok()
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn pq_rejects_hlg_full_range_unknown_and_conflicting_metadata() {
+        let valid = pq_input(VideoCodec::Hevc);
+        let mut hlg = valid.clone();
+        hlg.color_space.transfer = TransferCharacteristic::Hlg;
+        let mut full_range = valid.clone();
+        full_range.color_space.range = ColorRange::Full;
+        let mut unknown = valid.clone();
+        unknown.color_space.primaries = ColorPrimaries::Unspecified;
+        let mut conflict = valid.clone();
+        let stream = crate::ColorMetadataRaw {
+            space: ColorSpace::default(),
+            ..crate::ColorMetadataRaw::unspecified()
+        };
+        let frame = crate::ColorMetadataRaw {
+            space: conflict.color_space,
+            ..crate::ColorMetadataRaw::unspecified()
+        };
+        conflict.color_semantics = Some(
+            crate::ResolvedColorSemantics::resolve(
+                stream,
+                frame,
+                crate::ColorResolutionPolicy::StrictTenBit,
+            )
+            .unwrap(),
+        );
+        for input in [&mut hlg, &mut full_range, &mut unknown] {
+            let raw = crate::ColorMetadataRaw {
+                space: input.color_space,
+                ..crate::ColorMetadataRaw::unspecified()
+            };
+            input.color_semantics = Some(
+                crate::ResolvedColorSemantics::resolve(
+                    raw,
+                    raw,
+                    crate::ColorResolutionPolicy::StrictTenBit,
+                )
+                .unwrap(),
+            );
+        }
+        let mut unresolved = valid.clone();
+        unresolved.color_semantics = None;
+        for invalid in [hlg, full_range, unknown, conflict, unresolved] {
+            assert!(invalid.production_color_processing().is_err());
+            assert!(
+                PipelinePlanner::select(&full(), &invalid, pq_policy(VideoCodec::Hevc),).is_err()
+            );
         }
     }
 

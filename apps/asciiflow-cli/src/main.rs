@@ -6,8 +6,8 @@ use anyhow::{Context, Result, bail};
 use args::{Args, VulkanMappingArg};
 use asciiflow_core::{
     AsciiBackend, AsciiConfig, AudioPlan, CancellationToken, CapabilitySnapshot, CapabilitySupport,
-    FrameSource, MediaImplementation, Pipeline, PipelinePlan, PipelinePlanner, PipelinePolicy,
-    PipelineStage, PlanningResult, ProcessingBackend, SourceTimings,
+    FrameDesc, FrameSource, MediaImplementation, Pipeline, PipelinePlan, PipelinePlanner,
+    PipelinePolicy, PipelineStage, PlanningResult, ProcessingBackend, SourceTimings,
 };
 use asciiflow_cpu::{CpuAsciiBackend, Nv12Mapper};
 use asciiflow_interop::{
@@ -130,7 +130,12 @@ fn run(args: Args, cancellation: CancellationToken) -> Result<()> {
     if args.explain_plan {
         // Diagnostics may need to explain an input rejected by first-frame
         // color qualification, before the full capability probe can return.
-        let mut inspection = Decoder::open(&args.input).map_err(|error| {
+        let mut inspection = Decoder::open_with_pq_preserve(
+            &args.input,
+            DecodeMode::Software,
+            VaapiOptions::new(args.hw_device.clone()),
+        )
+        .map_err(|error| {
             asciiflow_core::Error::pipeline(PipelineStage::InputProbe, "open input media", error)
         })?;
         if let Err(error) = inspection.next_frame() {
@@ -768,7 +773,10 @@ fn initialize_with_replan<T>(
             decision: initial,
             replan: None,
         }),
-        Err(first) if first.capability.is_auto(&policy) => {
+        Err(first)
+            if first.capability.is_auto(&policy)
+                && initial_plan.color_processing == asciiflow_core::ColorProcessing::Sdr =>
+        {
             let first_failure = first.to_string();
             first.capability.mark_unsupported(
                 snapshot,
@@ -864,8 +872,14 @@ impl PipelineFactory {
             MediaImplementation::Software => DecodeMode::Software,
             MediaImplementation::Hardware => DecodeMode::Vaapi,
         };
-        let mut decoder = Decoder::open_with(&args.input, decode_mode, vaapi.clone())
-            .map_err(|error| InitializationFailure::new(decode_capability, error))?;
+        let decoder_result =
+            if plan.color_processing == asciiflow_core::ColorProcessing::HdrPqPreserve {
+                Decoder::open_with_pq_preserve(&args.input, decode_mode, vaapi.clone())
+            } else {
+                Decoder::open_with(&args.input, decode_mode, vaapi.clone())
+            };
+        let mut decoder =
+            decoder_result.map_err(|error| InitializationFailure::new(decode_capability, error))?;
         let audio_templates = decoder
             .audio_output_templates(audio_plan)
             .map_err(|error| InitializationFailure::new(InitCapability::Muxer, error))?;
@@ -873,7 +887,7 @@ impl PipelineFactory {
         let vulkan = if plan.backend == ProcessingBackend::Vulkan {
             hooks.checkpoint(InitializationPoint::VulkanProcessorCreate, plan)?;
             Some(
-                VulkanAsciiBackend::new()
+                VulkanAsciiBackend::new_for_color_processing(plan.color_processing)
                     .and_then(|backend| backend.with_atlas(atlas.clone(), config))
                     .and_then(|mut backend| {
                         backend.prepare(&info.frame_desc, config)?;
@@ -898,10 +912,23 @@ impl PipelineFactory {
         if plan.encode == MediaImplementation::Hardware {
             hooks.checkpoint(InitializationPoint::VaapiFramesPoolCreate, plan)?;
         }
+        let output_desc = match plan.output.pixel_format {
+            asciiflow_core::PixelFormat::Nv12 => FrameDesc::host_nv12(
+                plan.output.width,
+                plan.output.height,
+                plan.output.color_space,
+            ),
+            asciiflow_core::PixelFormat::P010Le => FrameDesc::host_p010_le(
+                plan.output.width,
+                plan.output.height,
+                plan.output.color_space,
+            ),
+        }
+        .map_err(|error| InitializationFailure::new(encode_capability, error))?;
         let encoder_result = if plan.hardware_output_interop {
             Encoder::create_with_hardware_frames_codec_and_audio(
                 temporary,
-                info.frame_desc.clone(),
+                output_desc,
                 info.frame_rate,
                 plan.output.codec.clone(),
                 vaapi.clone(),
@@ -911,7 +938,7 @@ impl PipelineFactory {
         } else {
             Encoder::create_with_codec_and_audio(
                 temporary,
-                info.frame_desc.clone(),
+                output_desc,
                 info.frame_rate,
                 OutputEncoding {
                     codec: plan.output.codec.clone(),
@@ -1504,6 +1531,7 @@ mod stage40_tests {
             processing: ProcessingCapabilities {
                 cpu: supported(),
                 vulkan: supported(),
+                vulkan_pq: supported(),
                 vulkan_auto_eligible: true,
                 vulkan_device_name: Some("synthetic GPU".into()),
                 vulkan_device_kind: Some(VulkanDeviceKind::IntegratedGpu),
@@ -1672,6 +1700,69 @@ mod stage40_tests {
             let first = injector.checkpoint(point, &plan).unwrap_err();
             assert!(first.to_string().contains(point.operation()));
             assert!(injector.checkpoint(point, &plan).is_ok());
+        }
+    }
+
+    #[test]
+    fn pq_initialization_failure_is_terminal_even_with_auto_policy() {
+        let mut req = requirements();
+        req.codec = VideoCodec::Hevc;
+        req.profile = Some(asciiflow_core::VideoProfile::HevcMain10);
+        req.bit_depth = Some(10);
+        req.pixel_format = Some("yuv420p10le".into());
+        req.color_space = ColorSpace::pq_bt2020();
+        let raw = asciiflow_core::ColorMetadataRaw {
+            space: req.color_space,
+            ..asciiflow_core::ColorMetadataRaw::unspecified()
+        };
+        req.color_semantics = Some(
+            asciiflow_core::ResolvedColorSemantics::resolve(
+                raw,
+                raw,
+                asciiflow_core::ColorResolutionPolicy::StrictTenBit,
+            )
+            .unwrap(),
+        );
+        for codec in [VideoCodec::Hevc, VideoCodec::Av1] {
+            for point in [
+                InitializationPoint::DecoderCreate,
+                InitializationPoint::VaapiFramesPoolCreate,
+                InitializationPoint::InputDrmPrimeMap,
+                InitializationPoint::InputDmaBufImport,
+                InitializationPoint::VulkanProcessorCreate,
+                InitializationPoint::OutputVaapiFrameAcquire,
+                InitializationPoint::OutputDrmPrimeMap,
+                InitializationPoint::OutputDmaBufImport,
+                InitializationPoint::EncoderCreate,
+                InitializationPoint::MuxerCreate,
+            ] {
+                let policy = PipelinePolicy {
+                    output_codec: codec.clone(),
+                    output_bit_depth: 10,
+                    ..Default::default()
+                };
+                let mut caps = full_capabilities();
+                let initial = PipelinePlanner::select(&caps, &req, policy.clone()).unwrap();
+                let mut attempts = 0;
+                let mut injector = InitializationFaultInjector::new(point);
+                let result = initialize_with_replan::<()>(
+                    &mut caps,
+                    &req,
+                    policy,
+                    initial,
+                    |plan| {
+                        attempts += 1;
+                        injector.checkpoint(point, plan)
+                    },
+                    || panic!("PQ must not reset staging for an automatic replan"),
+                );
+                let error = match result {
+                    Err(error) => error,
+                    Ok(_) => panic!("PQ failure must be terminal"),
+                };
+                assert_eq!(attempts, 1);
+                assert!(error.to_string().contains(point.operation()), "{error}");
+            }
         }
     }
 

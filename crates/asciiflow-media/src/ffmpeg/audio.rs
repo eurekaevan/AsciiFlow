@@ -171,6 +171,8 @@ pub(crate) enum MuxMessage {
     FailAudioAfter(u64),
     #[cfg(test)]
     FailVideoAfter(u64),
+    #[cfg(test)]
+    FailTrailer,
     Packet {
         packet: Packet,
         input_index: usize,

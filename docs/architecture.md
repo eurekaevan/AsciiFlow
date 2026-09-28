@@ -4,11 +4,12 @@ This is the canonical architecture for the Rust application. The former C#
 implementation has left the active tree; its distinct user-facing features
 are tracked in [legacy-feature-parity.md](legacy-feature-parity.md), not treated
 as a second execution path. Stage 5.3B-1 is sealed on the qualified Intel
-hardware; production HDR remains rejected. Stage 5.3B-2 adds an independent
-internal Vulkan PQ qualification path, not production HDR integration.
+hardware. Stage 5.3B-2 adds the independent internal Vulkan PQ qualification;
+Stage 5.3B-3 integrates the strictly planned HDR-preserve path. Its
+[hardware closure status](stage5.3b3-hdr-production.md) is the release authority.
 
-This document describes the sole Rust implementation through the Stage 5.3B-2
-internal PQ CPU/GPU qualification on the Stage 5.2C-3 P010
+This document describes the sole Rust implementation through the Stage 5.3B-3
+PQ production integration on the Stage 5.2C-3 P010
 processing foundation: a permanent CPU reference backend, a Vulkan 1.3 compute
 backend, optional Linux VAAPI media, and qualified Intel DMA-BUF bridges in both
 pixel directions. Stage 3A
@@ -40,17 +41,32 @@ The qualification decoder bypasses only `UnsupportedHdrPq`, never conflicting
 or unknown metadata, and still enforces codec/depth/layout/siting stability.
 Diagnostic VAAPI surfaces retain PQ descriptor tags but are not HDR encoders.
 
+Stage B-3 separates the SDR assessment from `HdrPqPreserve` eligibility. Actual
+PQ compute, decoded-stream and encoder-owned P010 import probes are required;
+the planner must select Vulkan + VAAPI decode/encode + both interop directions.
+CPU, software decode/encode and staged HDR paths are not qualified. Default
+eight-bit output fails for PQ; explicit HEVC/AV1 ten-bit output is mandatory.
+The factory constructs the encoder's canonical output descriptor from the
+plan, sets native BT.2020/PQ/NCL/limited fields before codec opening and on
+every frame, and removes source mastering/CLL side data. HDR initialization
+failure does not replan, even under `auto`; runtime failures remain terminal.
+Native P010 geometry and effective color/static metadata changes fail rather
+than crop, relabel or fall back. No SDR shader or CPU f64 oracle math changed.
+
 ```text
 internal qualification only:
 limited BT.2020/PQ P010 -> BT.2020 NCL -> per-channel PQ EOTF
   -> absolute linear RGB -> linear cell average / R8 coverage blend
   -> inverse PQ -> BT.2020 NCL -> limited P010
-production: HDR PQ/HLG remain Unsupported before target mutation
+production preserve: VAAPI P010 -> Vulkan PQ -> encoder-owned P010 -> VAAPI Main10
+production unsupported: HLG, wide-gamut SDR, full/unknown/conflicting color,
+                       software/staged HDR, implicit HDR/SDR or depth conversion
 ```
 
 See [HDR PQ pixel semantics](hdr-pq-semantics.md) and the
 [Stage 5.3B-1 report](stage5.3b1-pq-cpu-reference.md) and
 [Stage 5.3B-2 hardware report](stage5.3b2-vulkan-pq.md).
+Current production closure: [Stage 5.3B-3](stage5.3b3-hdr-production.md).
 
 ```text
 codec parameters / decoded AVFrame metadata
@@ -486,12 +502,12 @@ that distinction explicit.
   `av1_vaapi`; 10-bit requires `--output-codec hevc|av1 --output-bit-depth 10`
   and qualified VAAPI hardware. Software output for those codecs is unsupported. Explicit
   hardware requests never fall back.
-- `auto` prefers full interop, then qualified staged hardware encode, then
+- For SDR, `auto` prefers full interop, then qualified staged hardware encode, then
   software media/Vulkan, and finally CPU processing. It does not choose VAAPI
   decode plus `hwdownload` solely because a VAAPI device exists.
 - Qualified VAAPI paths support NV12/8-bit or P010/10-bit 4:2:0 as selected.
   Stage 3A accepts the observed R8+GR88 or R16+GR32 iHD export with a known,
-  importable modifier. HDR, 4:4:4, multi-object, unknown-modifier, and
+  importable modifier. Unqualified HDR, 4:4:4, multi-object, unknown-modifier, and
   incompatible layer topologies are rejected rather than silently reduced.
 - Compatible compressed audio streams can be copied into MP4. One mux worker
   owns the output `AVFormatContext` and accepts both encoded video packets and

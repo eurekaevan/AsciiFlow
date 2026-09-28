@@ -893,6 +893,14 @@ fn pq_injected_faults_release_resources_and_allow_fresh_retry() {
             PipelineStage::ProcessingRuntime,
         ),
         (
+            PqQualificationFault::BeforeMapDispatch,
+            PipelineStage::ProcessingRuntime,
+        ),
+        (
+            PqQualificationFault::BeforeRenderDispatch,
+            PipelineStage::ProcessingRuntime,
+        ),
+        (
             PqQualificationFault::AfterCompletion,
             PipelineStage::ProcessingRuntime,
         ),

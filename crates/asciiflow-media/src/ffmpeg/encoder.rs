@@ -10,8 +10,8 @@ use super::{
 };
 use asciiflow_core::{
     CancellationToken, CapabilitySupport, ChromaLocation, ColorMatrix, ColorPrimaries, ColorRange,
-    EncodeDiagnostics, Error, FrameDesc, FrameSink, HostFrame, PipelineStage, PixelFormat,
-    Rational, Result, SinkTimings, TransferCharacteristic, VideoCodec, VideoFrame,
+    ColorSpace, EncodeDiagnostics, Error, FrameDesc, FrameSink, HostFrame, PipelineStage,
+    PixelFormat, Rational, Result, SinkTimings, TransferCharacteristic, VideoCodec, VideoFrame,
 };
 use crossbeam_channel::{Receiver, SendTimeoutError, Sender, bounded};
 use std::{
@@ -25,6 +25,11 @@ use std::{
 
 const MUX_CHANNEL_CAPACITY: usize = 64;
 const MUX_POLL: Duration = Duration::from_millis(20);
+
+#[cfg(test)]
+thread_local! {
+    static INJECT_MUX_HEADER_FAILURE: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
 
 pub struct Encoder {
     codec: NonNull<ffi::AVCodecContext>,
@@ -170,9 +175,10 @@ fn probe_vaapi_encoder_internal(
             den: frame_rate.denominator,
         };
         (*codec.as_ptr()).color_range = output_color_range(&desc);
-        (*codec.as_ptr()).colorspace = ffi::AVColorSpace::AVCOL_SPC_BT709;
-        (*codec.as_ptr()).color_primaries = ffi::AVColorPrimaries::AVCOL_PRI_BT709;
-        (*codec.as_ptr()).color_trc = ffi::AVColorTransferCharacteristic::AVCOL_TRC_BT709;
+        let (matrix, primaries, transfer) = output_native_color(desc.color_space);
+        (*codec.as_ptr()).colorspace = matrix;
+        (*codec.as_ptr()).color_primaries = primaries;
+        (*codec.as_ptr()).color_trc = transfer;
         (*codec.as_ptr()).chroma_sample_location = ffi::AVChromaLocation::AVCHROMA_LOC_LEFT;
         if output_codec == VideoCodec::Hevc {
             (*codec.as_ptr()).profile = hevc_profile(desc.format);
@@ -525,9 +531,10 @@ impl Encoder {
                 den: frame_rate.denominator,
             };
             (*codec.as_ptr()).color_range = output_color_range(&desc);
-            (*codec.as_ptr()).colorspace = ffi::AVColorSpace::AVCOL_SPC_BT709;
-            (*codec.as_ptr()).color_primaries = ffi::AVColorPrimaries::AVCOL_PRI_BT709;
-            (*codec.as_ptr()).color_trc = ffi::AVColorTransferCharacteristic::AVCOL_TRC_BT709;
+            let (matrix, primaries, transfer) = output_native_color(desc.color_space);
+            (*codec.as_ptr()).colorspace = matrix;
+            (*codec.as_ptr()).color_primaries = primaries;
+            (*codec.as_ptr()).color_trc = transfer;
             (*codec.as_ptr()).chroma_sample_location = ffi::AVChromaLocation::AVCHROMA_LOC_LEFT;
             if output_codec == VideoCodec::Hevc {
                 (*codec.as_ptr()).profile = hevc_profile(desc.format);
@@ -671,6 +678,14 @@ impl Encoder {
             .map_err(|error| {
                 Error::pipeline(PipelineStage::MuxInitialization, "open MP4 output", error)
             })?;
+        }
+        #[cfg(test)]
+        if INJECT_MUX_HEADER_FAILURE.replace(false) {
+            return Err(Error::pipeline_message(
+                PipelineStage::MuxInitialization,
+                "write MP4 container header",
+                "injected MP4 header failure",
+            ));
         }
         check(
             unsafe { ffi::avformat_write_header(format.as_ptr(), ptr::null_mut()) },
@@ -973,10 +988,21 @@ impl Encoder {
         unsafe {
             let native = &mut *frame;
             native.color_range = ffi::AVColorRange::AVCOL_RANGE_MPEG;
-            native.colorspace = ffi::AVColorSpace::AVCOL_SPC_BT709;
-            native.color_primaries = ffi::AVColorPrimaries::AVCOL_PRI_BT709;
-            native.color_trc = ffi::AVColorTransferCharacteristic::AVCOL_TRC_BT709;
+            let (matrix, primaries, transfer) = output_native_color(self.desc.color_space);
+            native.colorspace = matrix;
+            native.color_primaries = primaries;
+            native.color_trc = transfer;
             native.chroma_location = ffi::AVChromaLocation::AVCHROMA_LOC_LEFT;
+            // ASCII changes pixels. Source luminance statistics are not valid
+            // for the output and must never become encoder SEI/metadata OBUs.
+            ffi::av_frame_remove_side_data(
+                frame,
+                ffi::AVFrameSideDataType::AV_FRAME_DATA_MASTERING_DISPLAY_METADATA,
+            );
+            ffi::av_frame_remove_side_data(
+                frame,
+                ffi::AVFrameSideDataType::AV_FRAME_DATA_CONTENT_LIGHT_LEVEL,
+            );
         }
         let encode_started = Instant::now();
         #[cfg(test)]
@@ -1037,6 +1063,12 @@ impl Encoder {
 
 fn require_supported_output(codec: &VideoCodec, desc: &FrameDesc, mode: EncodeMode) -> Result<()> {
     desc.validate_layout()?;
+    if desc.color_space.transfer == TransferCharacteristic::Pq && desc.format != PixelFormat::P010Le
+    {
+        return Err(Error::UnsupportedFrame(
+            "PQ output requires P010LE 10-bit; 8-bit HDR output is not implemented".into(),
+        ));
+    }
     if desc.color_space.range != ColorRange::Limited {
         return Err(Error::UnsupportedFrame(
             "ASCII output currently emits limited-range code values; full/unspecified range cannot be tagged safely".into(),
@@ -1050,6 +1082,7 @@ fn require_supported_output(codec: &VideoCodec, desc: &FrameDesc, mode: EncodeMo
         ));
     }
     if desc.format == PixelFormat::P010Le
+        && desc.color_space != ColorSpace::pq_bt2020()
         && (desc.color_space.matrix != ColorMatrix::Bt709
             || desc.color_space.primaries != ColorPrimaries::Bt709
             || desc.color_space.transfer != TransferCharacteristic::Bt709
@@ -1057,10 +1090,32 @@ fn require_supported_output(codec: &VideoCodec, desc: &FrameDesc, mode: EncodeMo
             || desc.color_space.range != ColorRange::Limited)
     {
         return Err(Error::UnsupportedFrame(
-            "10-bit output requires explicitly tagged BT.709 SDR color".into(),
+            "10-bit output requires explicitly tagged BT.709 SDR or limited left-sited BT.2020 NCL/PQ".into(),
         ));
     }
     Ok(())
+}
+
+pub(crate) fn output_native_color(
+    color: ColorSpace,
+) -> (
+    ffi::AVColorSpace,
+    ffi::AVColorPrimaries,
+    ffi::AVColorTransferCharacteristic,
+) {
+    if color == ColorSpace::pq_bt2020() {
+        (
+            ffi::AVColorSpace::AVCOL_SPC_BT2020_NCL,
+            ffi::AVColorPrimaries::AVCOL_PRI_BT2020,
+            ffi::AVColorTransferCharacteristic::AVCOL_TRC_SMPTE2084,
+        )
+    } else {
+        (
+            ffi::AVColorSpace::AVCOL_SPC_BT709,
+            ffi::AVColorPrimaries::AVCOL_PRI_BT709,
+            ffi::AVColorTransferCharacteristic::AVCOL_TRC_BT709,
+        )
+    }
 }
 
 fn output_color_range(desc: &FrameDesc) -> ffi::AVColorRange {
@@ -1227,6 +1282,8 @@ fn run_mux_worker(
     let mut fail_audio_after: Option<u64> = None;
     #[cfg(test)]
     let mut fail_video_after: Option<u64> = None;
+    #[cfg(test)]
+    let mut fail_trailer = false;
     loop {
         if stop.is_cancelled() || cancellation.is_cancelled() {
             return Err(Error::Cancelled);
@@ -1247,6 +1304,8 @@ fn run_mux_worker(
             MuxMessage::FailAudioAfter(count) => fail_audio_after = Some(count),
             #[cfg(test)]
             MuxMessage::FailVideoAfter(count) => fail_video_after = Some(count),
+            #[cfg(test)]
+            MuxMessage::FailTrailer => fail_trailer = true,
             MuxMessage::Packet {
                 mut packet,
                 input_index,
@@ -1385,6 +1444,14 @@ fn run_mux_worker(
                         PipelineStage::Finalization,
                         "finish mux producers",
                         "audio producer must finish before the video sink",
+                    ));
+                }
+                #[cfg(test)]
+                if fail_trailer {
+                    return Err(Error::pipeline_message(
+                        PipelineStage::Finalization,
+                        "write MP4 container trailer",
+                        "injected MP4 trailer failure",
                     ));
                 }
                 #[cfg(feature = "encode-characterization")]
@@ -1556,6 +1623,112 @@ mod audio_regression_tests {
     impl Drop for OutputPath {
         fn drop(&mut self) {
             let _ = std::fs::remove_file(&self.0);
+        }
+    }
+
+    #[test]
+    fn canonical_pq_output_requires_ten_bit_hevc_or_av1_vaapi() {
+        let desc = FrameDesc::host_p010_le(128, 96, ColorSpace::pq_bt2020()).unwrap();
+        for codec in [VideoCodec::Hevc, VideoCodec::Av1] {
+            require_supported_output(&codec, &desc, EncodeMode::Vaapi).unwrap();
+            assert!(require_supported_output(&codec, &desc, EncodeMode::Software).is_err());
+        }
+        assert!(require_supported_output(&VideoCodec::H264, &desc, EncodeMode::Vaapi).is_err());
+        assert!(
+            require_supported_output(&VideoCodec::Other("vp9".into()), &desc, EncodeMode::Vaapi)
+                .is_err()
+        );
+        assert_eq!(hevc_profile(desc.format), ffi::FF_PROFILE_HEVC_MAIN_10);
+
+        let eight_bit = FrameDesc::host_nv12(128, 96, ColorSpace::pq_bt2020()).unwrap();
+        for codec in [VideoCodec::H264, VideoCodec::Hevc, VideoCodec::Av1] {
+            assert!(
+                require_supported_output(&codec, &eight_bit, EncodeMode::Vaapi).is_err(),
+                "{codec} admitted 8-bit PQ"
+            );
+        }
+    }
+
+    #[test]
+    fn pq_output_rejects_noncanonical_color_dimensions() {
+        let pq = ColorSpace::pq_bt2020();
+        let variants = [
+            ColorSpace {
+                primaries: ColorPrimaries::Bt709,
+                ..pq
+            },
+            ColorSpace {
+                primaries: ColorPrimaries::Unspecified,
+                ..pq
+            },
+            ColorSpace {
+                matrix: ColorMatrix::Bt2020Constant,
+                ..pq
+            },
+            ColorSpace {
+                matrix: ColorMatrix::Bt709,
+                ..pq
+            },
+            ColorSpace {
+                transfer: TransferCharacteristic::Hlg,
+                ..pq
+            },
+            ColorSpace {
+                transfer: TransferCharacteristic::Bt709,
+                ..pq
+            },
+            ColorSpace {
+                range: ColorRange::Full,
+                ..pq
+            },
+            ColorSpace {
+                range: ColorRange::Unspecified,
+                ..pq
+            },
+            ColorSpace {
+                chroma_location: ChromaLocation::Center,
+                ..pq
+            },
+            ColorSpace {
+                chroma_location: ChromaLocation::Unspecified,
+                ..pq
+            },
+        ];
+        for color in variants {
+            let desc = FrameDesc::host_p010_le(128, 96, color).unwrap();
+            for codec in [VideoCodec::Hevc, VideoCodec::Av1] {
+                assert!(
+                    require_supported_output(&codec, &desc, EncodeMode::Vaapi).is_err(),
+                    "{codec} admitted {color:?}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn output_native_color_distinguishes_canonical_pq_from_existing_sdr() {
+        assert_eq!(
+            output_native_color(ColorSpace::pq_bt2020()),
+            (
+                ffi::AVColorSpace::AVCOL_SPC_BT2020_NCL,
+                ffi::AVColorPrimaries::AVCOL_PRI_BT2020,
+                ffi::AVColorTransferCharacteristic::AVCOL_TRC_SMPTE2084,
+            )
+        );
+        assert_eq!(
+            output_native_color(ColorSpace::default()),
+            (
+                ffi::AVColorSpace::AVCOL_SPC_BT709,
+                ffi::AVColorPrimaries::AVCOL_PRI_BT709,
+                ffi::AVColorTransferCharacteristic::AVCOL_TRC_BT709,
+            )
+        );
+        for color in [ColorSpace::pq_bt2020(), ColorSpace::default()] {
+            let desc = FrameDesc::host_p010_le(128, 96, color).unwrap();
+            assert_eq!(
+                output_color_range(&desc),
+                ffi::AVColorRange::AVCOL_RANGE_MPEG
+            );
         }
     }
 
@@ -1791,7 +1964,19 @@ mod audio_regression_tests {
     }
 
     fn assert_ten_bit_send_receive_and_drain_failures(codec: VideoCodec) {
-        let desc = FrameDesc::host_p010_le(128, 128, ColorSpace::default()).unwrap();
+        assert_ten_bit_color_send_receive_and_drain_failures(codec, ColorSpace::default());
+    }
+
+    #[test]
+    #[ignore = "requires Intel VAAPI; PQ HEVC/AV1 native encoder send, receive and drain faults"]
+    fn pq_encoder_send_receive_and_drain_failures_preserve_cause() {
+        for codec in [VideoCodec::Hevc, VideoCodec::Av1] {
+            assert_ten_bit_color_send_receive_and_drain_failures(codec, ColorSpace::pq_bt2020());
+        }
+    }
+
+    fn assert_ten_bit_color_send_receive_and_drain_failures(codec: VideoCodec, color: ColorSpace) {
+        let desc = FrameDesc::host_p010_le(128, 128, color).unwrap();
         for failure in ["send", "receive", "drain"] {
             let path = std::env::temp_dir().join(format!(
                 "asciiflow-{codec}-10bit-injected-{failure}-{}.mp4",
@@ -1840,6 +2025,94 @@ mod audio_regression_tests {
             assert!(error.to_string().contains(&codec.to_string()), "{error}");
             drop(encoder);
             std::fs::remove_file(path).unwrap();
+        }
+    }
+
+    #[test]
+    #[ignore = "requires Intel VAAPI; PQ HEVC/AV1 MP4 header, early/midstream packet and trailer fault cleanup"]
+    fn pq_mux_header_packet_and_trailer_failures_preserve_cause_and_fds() {
+        let fd_count = || std::fs::read_dir("/proc/self/fd").unwrap().count();
+        for codec in [VideoCodec::Hevc, VideoCodec::Av1] {
+            let desc = FrameDesc::host_p010_le(128, 128, ColorSpace::pq_bt2020()).unwrap();
+            let fps = Rational::new(30, 1).unwrap();
+            let create = |path: &Path| {
+                Encoder::create_with_codec_and_audio(
+                    path,
+                    desc.clone(),
+                    fps,
+                    OutputEncoding {
+                        codec: codec.clone(),
+                        mode: EncodeMode::Vaapi,
+                    },
+                    VaapiOptions::default(),
+                    Vec::new(),
+                    CancellationToken::new(),
+                )
+            };
+            let path = std::env::temp_dir().join(format!(
+                "asciiflow-pq-mux-fault-{codec}-{}.mp4",
+                std::process::id()
+            ));
+            // Warm driver/loader caches before exact lifecycle observations.
+            {
+                let mut warm = create(&path).unwrap();
+                warm.finish().unwrap();
+            }
+            std::fs::remove_file(&path).unwrap();
+            let baseline = fd_count();
+            INJECT_MUX_HEADER_FAILURE.set(true);
+            let header = match create(&path) {
+                Err(error) => error,
+                Ok(_) => panic!("injected header failure produced an encoder"),
+            };
+            assert_eq!(header.stage(), Some(PipelineStage::MuxInitialization));
+            assert!(header.to_string().contains("injected MP4 header failure"));
+            std::fs::remove_file(&path).unwrap();
+            assert_eq!(fd_count(), baseline, "{codec} header fault FD leak");
+            for (label, message) in [
+                ("early packet", MuxMessage::FailVideoAfter(0)),
+                ("midstream packet", MuxMessage::FailVideoAfter(2)),
+                ("trailer", MuxMessage::FailTrailer),
+            ] {
+                {
+                    let mut encoder = create(&path).unwrap();
+                    encoder.send_mux_message(message).unwrap();
+                    let mut failure = None;
+                    for pts in 0..6 {
+                        let mut host = HostFrame::new_zeroed(&desc);
+                        let (y, uv) = host.planes_mut(&desc);
+                        for sample in y.chunks_exact_mut(2) {
+                            sample.copy_from_slice(&(64u16 << 6).to_le_bytes());
+                        }
+                        for sample in uv.chunks_exact_mut(2) {
+                            sample.copy_from_slice(&(512u16 << 6).to_le_bytes());
+                        }
+                        let frame = VideoFrame::new_host(desc.clone(), Some(pts), host).unwrap();
+                        if let Err(error) = encoder.encode(frame) {
+                            failure = Some(error);
+                            break;
+                        }
+                    }
+                    let error = failure.unwrap_or_else(|| encoder.finish().unwrap_err());
+                    let stage = if label == "trailer" {
+                        PipelineStage::Finalization
+                    } else {
+                        PipelineStage::MuxRuntime
+                    };
+                    assert_eq!(error.stage(), Some(stage), "{codec} {label}: {error}");
+                    assert!(
+                        error.to_string().contains(if label == "trailer" {
+                            "injected MP4 trailer failure"
+                        } else {
+                            "injected video mux failure"
+                        }),
+                        "{error}"
+                    );
+                    println!("{codec} PQ {label}: {error}");
+                }
+                std::fs::remove_file(&path).unwrap();
+                assert_eq!(fd_count(), baseline, "{codec} {label} FD leak");
+            }
         }
     }
 

@@ -84,7 +84,7 @@ fn new_codec_ten_bit_failures_do_not_touch_existing_output() {
 }
 
 #[test]
-fn ten_bit_hdr_failure_preserves_existing_output() {
+fn pq_requires_explicit_ten_bit_output_before_staging() {
     let ws = Workspace::new();
     std::fs::write(ws.output(), b"existing").unwrap();
     let input = fixture("single.mp4")
@@ -92,51 +92,65 @@ fn ten_bit_hdr_failure_preserves_existing_output() {
         .unwrap()
         .parent()
         .unwrap()
-        .join("codecs/hevc-main10-pq-reject.mp4");
+        .join("codecs/hevc-main10-pq-qualified.mp4");
     let result = Process::start(&mut command(&input, &ws.output(), "none")).finish();
     assert!(!result.status.success());
     let error = String::from_utf8_lossy(&result.stderr);
-    assert!(error.contains("HDR PQ input detected"), "{error}");
+    assert!(
+        error.contains("HDR PQ preservation requires explicit 10-bit HEVC or AV1 output"),
+        "{error}"
+    );
     assert_eq!(std::fs::read(ws.output()).unwrap(), b"existing");
     ws.assert_no_staging();
 }
 
 #[test]
-fn explicit_main10_hdr_failure_preserves_existing_output() {
+fn explicit_main10_pq_rejects_cpu_and_software_decode_before_staging() {
     let input = fixture("single.mp4")
         .parent()
         .unwrap()
         .parent()
         .unwrap()
-        .join("codecs/hevc-main10-pq-reject.mp4");
+        .join("codecs/hevc-main10-pq-qualified.mp4");
     for codec in ["hevc", "av1"] {
-        let ws = Workspace::new();
-        std::fs::write(ws.output(), b"existing").unwrap();
-        let mut cmd = std::process::Command::new(env!("CARGO_BIN_EXE_asciiflow"));
-        cmd.arg(&input).arg(ws.output()).args([
-            "--output-codec",
-            codec,
-            "--output-bit-depth",
-            "10",
-            "--audio",
-            "none",
-            "--no-progress",
-        ]);
-        cmd.stdout(std::process::Stdio::piped())
-            .stderr(std::process::Stdio::piped());
-        let result = Process::start(&mut cmd).finish();
-        assert!(!result.status.success(), "{codec}");
-        let error = String::from_utf8_lossy(&result.stderr);
-        assert!(error.contains("HDR PQ input detected"), "{codec}: {error}");
-        assert_eq!(std::fs::read(ws.output()).unwrap(), b"existing");
-        ws.assert_no_staging();
+        for forbidden in [["--backend", "cpu"], ["--decode", "software"]] {
+            let ws = Workspace::new();
+            std::fs::write(ws.output(), b"existing").unwrap();
+            let mut cmd = std::process::Command::new(env!("CARGO_BIN_EXE_asciiflow"));
+            cmd.arg(&input)
+                .arg(ws.output())
+                .args([
+                    "--output-codec",
+                    codec,
+                    "--output-bit-depth",
+                    "10",
+                    "--audio",
+                    "none",
+                    "--no-progress",
+                ])
+                .args(forbidden);
+            cmd.stdout(std::process::Stdio::piped())
+                .stderr(std::process::Stdio::piped());
+            let result = Process::start(&mut cmd).finish();
+            assert!(!result.status.success(), "{codec} {forbidden:?}");
+            let error = String::from_utf8_lossy(&result.stderr);
+            assert!(
+                error.contains("HDR PQ preservation requires Vulkan PQ processing, VAAPI decode/encode and both P010 interop paths"),
+                "{codec} {forbidden:?}: {error}"
+            );
+            assert_eq!(std::fs::read(ws.output()).unwrap(), b"existing");
+            ws.assert_no_staging();
+        }
     }
 }
 
 #[test]
 fn unsupported_color_semantics_fail_before_output_staging() {
     for (name, expected) in [
-        ("av1-main10-pq.mp4", "HDR PQ input detected"),
+        (
+            "av1-main10-pq.mp4",
+            "HDR PQ preservation requires explicitly resolved left-sited limited BT.2020 NCL/PQ",
+        ),
         ("hevc-main10-hlg.mp4", "HDR HLG input detected"),
         (
             "hevc-main10-bt2020-sdr.mp4",

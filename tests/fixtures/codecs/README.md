@@ -158,3 +158,23 @@ ffprobe -v error -select_streams v:0 -read_intervals '%+#1' \
   -show_frames -of json \
   tests/fixtures/codecs/hevc-main10-pq-static-metadata.mp4
 ```
+
+## Canonical PQ production input v1
+
+The retained full-resolution inputs are `hevc-main10-pq-canonical-v1.mp4`
+(2666232 bytes, SHA-256 `72eadd220051231f85814e7161379f64adf9e472ec7cb33f1564b30b59f2152a`)
+and `av1-main10-pq-canonical-v1.mp4`
+(9236504 bytes, SHA-256 `526ddba68a3a4a9c8878a5f93f8a75e556324e99e1b57f30e67d4883c922a71e`).
+Both are 1920×1080, 300 frames, 50 fps, ten-bit 4:2:0, BT.2020/PQ/NCL,
+limited, left chroma. Three independent generations produced identical encoded
+files and identity JSON. Both codecs fully decode byte-exact to the same
+1,866,240,000-byte raw source, SHA-256
+`7278abe3ec0b44ac62e1a5ae090df81206a4e9fb82379053885c622f37c3a48f`.
+
+Actual decoded nonzero low-two-bit samples are 585270960 / 933120000
+(62.721939%); Y=513990960, U=32400000, V=38880000. This is every-sample
+decoded evidence, not an assumption from the source recipe. See
+[pq-canonical-v1.md](pq-canonical-v1.md), the retained identity/version files,
+and [Stage 5.3B-3](../../../docs/stage5.3b3-hdr-production.md) for exact commands,
+tool identity and output closure gates. Existing SDR and negative PQ fixtures
+remain unchanged.

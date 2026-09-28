@@ -1,6 +1,6 @@
 use asciiflow_core::{
-    AsciiConfig, AudioPlan, CapabilitySnapshot, CapabilitySupport, FrameSource,
-    InteropCapabilities, MediaCapabilities, PipelinePlan, PipelineStage, PixelFormat,
+    AsciiBackend, AsciiConfig, AudioPlan, CapabilitySnapshot, CapabilitySupport, Error,
+    FrameSource, InteropCapabilities, MediaCapabilities, PipelinePlan, PipelineStage, PixelFormat,
     ProcessingCapabilities, VideoCodec,
 };
 use asciiflow_interop::DrmPrimeMapping;
@@ -125,20 +125,20 @@ pub fn probe(
         ..config.clone()
     };
     let config = &diagnostic_config;
-    let mut software = Decoder::open(input).map_err(|error| {
-        asciiflow_core::Error::pipeline(PipelineStage::InputProbe, "open input media", error)
-    })?;
+    let software = Decoder::open_with_pq_preserve(input, DecodeMode::Software, vaapi.clone());
+    let mut software = software
+        .map_err(|error| Error::pipeline(PipelineStage::InputProbe, "open input media", error))?;
     let software_frame = software
         .next_frame()
         .map_err(|error| {
-            asciiflow_core::Error::pipeline(
+            Error::pipeline(
                 PipelineStage::InputProbe,
                 "decode input qualification frame",
                 error,
             )
         })?
         .ok_or_else(|| {
-            asciiflow_core::Error::pipeline_message(
+            Error::pipeline_message(
                 PipelineStage::InputProbe,
                 "decode input qualification frame",
                 "input contains no decodable video frame",
@@ -157,14 +157,24 @@ pub fn probe(
         Err(error) => CapabilitySupport::unsupported(error.to_string()),
     };
 
-    let backend_probe = VulkanAsciiBackend::new();
+    let color_processing = media_info.requirements.production_color_processing()?;
+    let backend_probe = VulkanAsciiBackend::new_for_color_processing(color_processing);
     let (processing, mut backend) = match backend_probe {
-        Ok(value) => {
+        Ok(mut value) => {
             let info = value.device_info().clone();
+            let vulkan_pq = if color_processing == asciiflow_core::ColorProcessing::HdrPqPreserve {
+                match value.process(software_frame.clone(), config) {
+                    Ok(_) => CapabilitySupport::supported(),
+                    Err(error) => CapabilitySupport::unsupported(error.to_string()),
+                }
+            } else {
+                CapabilitySupport::not_probed("input is SDR; PQ compute was not exercised")
+            };
             (
                 ProcessingCapabilities {
                     cpu: CapabilitySupport::supported(),
                     vulkan: CapabilitySupport::supported(),
+                    vulkan_pq,
                     vulkan_auto_eligible: info.auto_eligible(),
                     vulkan_device_name: Some(info.name.clone()),
                     vulkan_device_kind: Some(info.planner_device_kind()),
@@ -182,6 +192,7 @@ pub fn probe(
                 ProcessingCapabilities {
                     cpu: CapabilitySupport::supported(),
                     vulkan: CapabilitySupport::unsupported(reason.clone()),
+                    vulkan_pq: CapabilitySupport::unsupported(reason.clone()),
                     vulkan_auto_eligible: false,
                     vulkan_device_name: None,
                     vulkan_device_kind: None,
@@ -223,7 +234,7 @@ pub fn probe(
         && selected_decode_supported
     {
         let stream_decode = {
-            match Decoder::open_with(input, DecodeMode::Vaapi, vaapi.clone()) {
+            match Decoder::open_with_pq_preserve(input, DecodeMode::Vaapi, vaapi.clone()) {
                 Ok(mut decoder) => match decoder.next_vaapi_frame() {
                     Ok(Some(frame)) => {
                         input_interop = match DrmPrimeMapping::map_direct_read(frame) {
@@ -534,7 +545,10 @@ pub fn print(
             color.effective.range, color.provenance.range
         );
         println!("  dynamic range: {:?}", color.dynamic_range);
-        println!("  processing support: {:?}", color.support);
+        println!(
+            "  SDR policy assessment: {:?} (not production path eligibility)",
+            color.support
+        );
         println!(
             "  mastering display metadata: {}",
             color
@@ -552,14 +566,24 @@ pub fn print(
                 .is_some()
         );
     }
-    println!("Color processing (software policy, not hardware capability):");
+    println!("Color processing policy (eligibility also requires the probed plan):");
     println!("  BT.709 limited-range SDR: Supported");
     println!("  BT.601/170M limited-range SDR: Software decode normalization only");
-    println!("  PQ / HLG HDR: Detected, unsupported");
+    println!(
+        "  PQ preservation: qualified Vulkan + VAAPI decode/encode + both P010 interop paths only"
+    );
+    print_fact(
+        "Vulkan PQ execution on this input",
+        &snapshot.processing.vulkan_pq,
+    );
+    println!("  tone mapping: None; HLG: unsupported; source mastering/CLL: not propagated");
     println!("  BT.2020 / P3 wide-gamut SDR: Detected, unsupported");
     println!("  full-range SDR: Not qualified for current ASCII output code values");
     println!("Video decode:");
-    print_fact("software decode", &snapshot.media.software_decode);
+    print_fact(
+        "software decode (PQ: signal inspection only, not a production path)",
+        &snapshot.media.software_decode,
+    );
     print_fact("VAAPI device", &snapshot.media.vaapi_device);
     print_fact("VAAPI H.264 decode", &snapshot.media.h264_vaapi_decode);
     print_fact(
@@ -677,7 +701,10 @@ pub fn print(
     }
     println!("  selected for passthrough: {}", audio.selected.len());
     println!("Vulkan:");
-    print_fact("CPU processing", &snapshot.processing.cpu);
+    print_fact(
+        "CPU processing (SDR only; PQ reference is not production)",
+        &snapshot.processing.cpu,
+    );
     print_fact("processing", &snapshot.processing.vulkan);
     if let Some(name) = &snapshot.processing.vulkan_device_name {
         println!("  device: {name}");
@@ -723,6 +750,14 @@ pub fn print_rejected_color(requirements: &asciiflow_core::InputRequirements) {
 
 pub fn print_plan(plan: &PipelinePlan) {
     println!("Selected pipeline:\n  {plan}");
+    println!("Color processing: {:?}", plan.color_processing);
+    if plan.color_processing == asciiflow_core::ColorProcessing::HdrPqPreserve {
+        println!("HDR mode: PQ -> PQ preserve; tone mapping: None");
+        println!("HDR path: VAAPI P010 decode -> Vulkan PQ -> encoder-owned P010 VAAPI encode");
+        println!(
+            "HDR metadata policy: canonical BT.2020/PQ/NCL limited; source mastering display / MaxCLL / MaxFALL not propagated or recomputed (not HDR10 mastering qualification)"
+        );
+    }
     let profile = match plan.output.profile.as_ref() {
         Some(asciiflow_core::VideoProfile::Av1Main) => "Profile0 (Main)".into(),
         Some(value) => format!("{value:?}"),
@@ -810,6 +845,7 @@ mod tests {
             processing: ProcessingCapabilities {
                 cpu: supported(),
                 vulkan: supported(),
+                vulkan_pq: supported(),
                 vulkan_auto_eligible: true,
                 vulkan_device_name: Some("synthetic GPU".into()),
                 vulkan_device_kind: Some(VulkanDeviceKind::IntegratedGpu),

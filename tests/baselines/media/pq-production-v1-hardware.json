@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "stage": "5.3B-3",
+  "scope": "Observed on Intel Arc Meteor Lake; not a universal GPU support claim",
+  "device": {
+    "render_node": "/dev/dri/renderD128",
+    "vendor_id": "0x8086",
+    "device_id": "0x7d55",
+    "vulkan_api": "1.4.354",
+    "queue_family": 0,
+    "timestamp_valid_bits": 36,
+    "timestamp_period_ns": 52.083332,
+    "p010_storage_supported": true,
+    "frame_slots": 2,
+    "drm_object_size": 6389760,
+    "drm_modifier_decimal": 72057594037927945,
+    "plane_pitch": 3840,
+    "plane_offsets": [0, 4177920]
+  },
+  "native_packages_x86_64": {
+    "ffmpeg": "8.1.3-1.fc44",
+    "ffmpeg-libs": "8.1.3-1.fc44",
+    "x265-libs": "4.1-4.fc44",
+    "libaom": "3.13.3-1.fc44",
+    "intel-media-driver": "26.1.5-1.fc44",
+    "libva": "2.23.0-3.fc44",
+    "mesa-vulkan-drivers": "26.2.3-1.fc44"
+  },
+  "rustc": "1.97.1 (8bab26f4f68e0e26f0bb7960be334d5b520ea452), LLVM 22.1.6",
+  "preencode_cpu_gpu_oracle": {
+    "frames_per_input_codec": 300,
+    "input_codecs": ["HEVC Main10", "AV1 Main 10-bit"],
+    "boundary": "same VAAPI-decoded surface; CPU f64 versus Vulkan with encoder-owned P010 output",
+    "config": "width=80, standard ramp, builtin-8x8, color=true",
+    "glyph_differences_per_input": 0,
+    "histograms_per_input": {
+      "Y": {"delta0": 622022067, "delta1": 57933, "delta_gt1": 0, "max": 1},
+      "Cb": {"delta0": 153765000, "delta1": 1755000, "delta_gt1": 0, "max": 1},
+      "Cr": {"delta0": 150750000, "delta1": 4770000, "delta_gt1": 0, "max": 1}
+    },
+    "fd_before_peak_after_per_input": [4, 22, 4],
+    "validation_errors": 0
+  },
+  "production_stress": {
+    "output_codecs": ["HEVC Main10", "AV1 Main 10-bit"],
+    "submitted_encoded_decoded_frames_per_codec": [3000, 3000, 3000],
+    "decoded_geometry_fps": "1920x1080/50fps",
+    "timestamps": "zero-origin, strictly advancing constant-step CFR",
+    "color": "BT.2020/PQ/BT.2020 NCL/limited/left",
+    "mastering_display_maxcll_maxfall": "absent in output",
+    "fd_before_active_peak_after_per_codec": [4, 25, 30, 4],
+    "validation_errors_per_codec": 0
+  },
+  "hardware_cli_tests_passed": [
+    "all four codec pairs with auto policies select the qualified full hardware path",
+    "same and cross-codec full 300-frame conversion",
+    "single and dual AAC auto/copy payload, language, disposition and timestamps",
+    "audio none and FreeType for both output codecs",
+    "real legal mastering/CLL source and absence in both outputs",
+    "SIGINT exit 130, existing destination retained, staging cleaned, fresh followup",
+    "file write failure injected after packet progress, safe destination and staging cleanup"
+  ],
+  "evidence_log_sha256": {
+    "canonical_preencode": "02c8a8753bf7ca229159755c37ae41f2300b686420a16ed69099943c51c90bbb",
+    "production_stress": "3ac6e82ff4f6e9e325bc81795950f45bf3f5ac226fa47b24c6d67267724daa44",
+    "hardware_cli_six_tests": "8800be1084b5ba618bd86ae1399967a00985860864a98b9fb1f617e882d75acf",
+    "native_faults": "9742d5c5bc31da071a763996e7655f93a35615f2eff07e37b6ee0a9c1252c610",
+    "map_render_faults": "d793c2041ebaa26d310dc897ad56da488f36cc2bde7cb1b252e270c9e1f0a8cf",
+    "output_interop_faults": "791b60d9fdff840ac1c0c07b17b92bd2d2795a917173734303c3a889a92416b9",
+    "shader_gates": "68d82ccff319e414633f42f87a6ef8afd8c4f0181b92934ab8a89a5c551346a5"
+  },
+  "fault_coverage": {
+    "pq_compute": "seven host-side init/map/render/submit/completion checkpoints; FD restoration and fresh retry",
+    "interop": "reused real diagnostic P010 creation/import/queue/fence failure cleanup coverage",
+    "native_encode": "both PQ encoders send/receive/drain errors",
+    "mux": "header, first and midstream video packet, trailer errors",
+    "midstream_metadata": "unit contract: SDR-to-PQ and PQ static mastering/CLL changes fail; not a hardware changing-bitstream claim",
+    "limitations": "simulated host checkpoints, not real device loss or hung-fence recovery"
+  },
+  "measurement": {
+    "feature": "asciiflow-cli/encode-characterization",
+    "binary_sha256": "36ce85c56846009cbf2fac2bd09a8dbfc91856b5788407c67d6f49b071c2e52c",
+    "runs_per_codec": 3,
+    "validation": "disabled during dedicated performance runs",
+    "concurrent_generator_oracle_gpu_workloads": "none",
+    "boundaries": "process wall includes initialization; CLI throughput covers pipeline; GPU timestamps and overlapping CPU walls are not additive",
+    "comparison": "no B-2 compute-only speedup or video-engine saturation inference"
+  }
+}

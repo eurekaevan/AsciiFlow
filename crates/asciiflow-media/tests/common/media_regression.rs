@@ -209,6 +209,16 @@ impl Drop for Packet {
 }
 
 pub fn inspect(path: &Path) -> Check<MediaSnapshot> {
+    inspect_with_color_policy(path, false)
+}
+
+/// Explicit PQ inspection for retained production artifacts. SDR comparison
+/// policy and its narrowly approved volatile fields are unchanged.
+pub fn inspect_pq(path: &Path) -> Check<MediaSnapshot> {
+    inspect_with_color_policy(path, true)
+}
+
+fn inspect_with_color_policy(path: &Path, pq: bool) -> Check<MediaSnapshot> {
     let bytes = std::fs::read(path).map_err(|e| format!("{}: {e}", path.display()))?;
     let whole_file_sha256 = sha256(&bytes)?;
     let native = CString::new(path.as_os_str().as_encoded_bytes())
@@ -328,7 +338,16 @@ pub fn inspect(path: &Path) -> Check<MediaSnapshot> {
     drop(packet);
     drop(format);
 
-    let mut decoder = Decoder::open(path).map_err(|e| format!("software decode: {e}"))?;
+    let mut decoder = if pq {
+        Decoder::open_with_pq_preserve(
+            path,
+            asciiflow_media::DecodeMode::Software,
+            Default::default(),
+        )
+    } else {
+        Decoder::open(path)
+    }
+    .map_err(|e| format!("software decode: {e}"))?;
     let mut frames = Vec::new();
     while let Some(frame) = decoder
         .next_frame()

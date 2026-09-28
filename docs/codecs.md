@@ -28,7 +28,9 @@ frames must actually be VAAPI with a hardware frames context. Internal software
 decode qualification now accepts HEVC Main10 and AV1 Main 10-bit 4:2:0 with
 explicit BT.709 SDR tags and yields P010LE; the production CLI accepts those
 inputs only when HEVC Main10 or AV1 10-bit output is explicitly selected. Unsupported chroma,
-PQ/HLG and BT.2020 fail rather than convert silently. Intel P010 VAAPI/DRM
+HLG and BT.2020 SDR fail rather than convert silently. Canonical PQ has a
+separate full-hardware preserve plan under [Stage B-3 closure](stage5.3b3-hdr-production.md),
+never software production decode or implicit SDR conversion. Intel P010 VAAPI/DRM
 interop is qualified internally on the observed Intel Arc host; see
 [Stage 5.2B](stage5.2b-p010-decode-validation.md).
 
@@ -48,7 +50,7 @@ arbitrary stream's surface can be imported. The actual DRM descriptor, modifier
 and Vulkan external-memory check remain authoritative. Logical sw_format only
 validates depth/chroma and never substitutes for the descriptor.
 
-Input interop and initialization replan are scoped by codec/stream. Auto still
+For SDR, input interop and initialization replan are scoped by codec/stream. Auto still
 prefers software decode when input interop is unavailable, rather than automatic
 VAAPI hwdownload. At most one initialization replan is allowed; runtime errors
 remain terminal. Output replan facts are codec/profile/format-scoped: failure to
@@ -88,21 +90,28 @@ AV1 Profile0/Main 10-bit P010 VAAPI output is qualified in
 [Stage 5.2C-3](stage5.2c3-av1-10bit-encode.md). Both 10-bit outputs require
 explicit `--output-bit-depth 10` and qualified VAAPI hardware; their codecs
 remain independent of the 10-bit HEVC/AV1 input codec. There is no software
-HEVC/AV1 encoder, HDR/tone mapping, 4:2:2/4:4:4 output,
+HEVC/AV1 encoder, tone mapping, 4:2:2/4:4:4 output,
 quality/preset/bitrate UI, AV1 tuning, or new GPU vendor/platform support.
 
 ## Color processing is separate from codec capability
 
-The currently qualified pixel contract is **BT.709 limited-range SDR** for
+The SDR pixel contract is **BT.709 limited-range SDR** for
 both NV12 and P010. Stage 5.3A classifies PQ and HLG by transfer function,
-independent of codec or bit depth, but rejects them before output staging.
+independent of codec or bit depth. The SDR assessment rejects them; Stage B-3
+separately admits resolved BT.2020 NCL/PQ/limited/left P010 only for an actually
+probed Vulkan PQ + VAAPI decode/encode + both P010 DMA-BUF path, with explicit
+HEVC/AV1 ten-bit output. Its hardware sealing status is in the B-3 report.
+CPU, software decode/encode, staging, eight-bit output and unavailable facts
+fail, even under `auto`; no HDR initialization fallback is permitted.
 BT.2020 with an SDR transfer remains SDR, not HDR; wide-gamut SDR is rejected
-because BT.2020/P3 pixel math is not implemented. Unknown and conflicting
+because SDR-transfer BT.2020/P3 pixel math is not implemented. Unknown and conflicting
 metadata also fail closed on the strict 10-bit path. Missing 8-bit fields keep
 the documented legacy BT.709/limited default. Full-range SDR is detected but
 currently rejected: the ASCII renderer emits limited-range code values.
 Static mastering/CLL data is parsed but neither creates HDR classification nor
-enables HDR output. Details and the open hardware-validation gates are in
+enables HDR output by itself. Source mastering-display/CLL is never propagated
+or recomputed for ASCII output; PQ preserve is not HDR10 mastering validation.
+Details and the hardware-validation gates are in
 [color-semantics.md](color-semantics.md) and
 [Stage 5.3A report](stage5.3a-color-metadata.md).
 Legacy 8-bit BT.601/170M limited-range SDR can still enter through software
