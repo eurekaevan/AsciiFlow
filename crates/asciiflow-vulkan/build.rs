@@ -121,4 +121,35 @@ fn main() {
         artifact.as_binary_u8(),
     )
     .expect("failed to write P010 render SPIR-V");
+
+    // Independent qualification shaders: include resolution is deliberately
+    // confined here so the existing SDR compilation options stay unchanged.
+    let shared = root.join("pq_common.glsl");
+    println!("cargo:rerun-if-changed={}", shared.display());
+    let mut pq_options = options.clone();
+    pq_options.set_include_callback(|name, _, _, _| {
+        if name != "pq_common.glsl" {
+            return Err(format!("unexpected PQ shader include: {name}"));
+        }
+        Ok(shaderc::ResolvedInclude {
+            resolved_name: shared.to_string_lossy().into_owned(),
+            content: fs::read_to_string(&shared).map_err(|e| e.to_string())?,
+        })
+    });
+    for name in ["ascii_map_pq", "ascii_render_pq"] {
+        let path = root.join(format!("{name}.comp"));
+        println!("cargo:rerun-if-changed={}", path.display());
+        let source = fs::read_to_string(&path).expect("failed to read PQ shader");
+        let artifact = compiler
+            .compile_into_spirv(
+                &source,
+                ShaderKind::Compute,
+                &path.to_string_lossy(),
+                "main",
+                Some(&pq_options),
+            )
+            .unwrap_or_else(|e| panic!("failed to compile {}: {e}", path.display()));
+        fs::write(output.join(format!("{name}.spv")), artifact.as_binary_u8())
+            .expect("failed to write PQ SPIR-V");
+    }
 }

@@ -1,0 +1,89 @@
+#version 460
+#extension GL_EXT_shader_16bit_storage : require
+#extension GL_EXT_shader_explicit_arithmetic_types_int16 : require
+#extension GL_GOOGLE_include_directive : require
+#include "pq_common.glsl"
+
+layout(local_size_x = 32) in;
+layout(set = 0, binding = 0, std430) readonly buffer InputP010 { uint16_t input_p010[]; };
+layout(set = 0, binding = 1, std430) writeonly buffer Cells { HdrCell cells[]; };
+layout(set = 0, binding = 2, std430) readonly buffer GlyphLut { uint glyph_for_y[256]; };
+
+layout(push_constant) uniform Params {
+    uint width;
+    uint height;
+    uint grid_width;
+    uint grid_height;
+    uint atlas_width;
+    uint atlas_height;
+    uint color;
+    uint glyph_count;
+    uint neutral_chroma;
+} params;
+
+shared vec3 linear_sum[32];
+shared uvec2 diagnostic_sum[32];
+
+void main() {
+    uint lane = gl_LocalInvocationID.x;
+    uint cx = gl_WorkGroupID.x;
+    uint cy = gl_WorkGroupID.y;
+    uint x0 = cx * params.width / params.grid_width;
+    uint x1 = max((cx + 1u) * params.width / params.grid_width, x0 + 1u);
+    uint y0 = cy * params.height / params.grid_height;
+    uint y1 = max((cy + 1u) * params.height / params.grid_height, y0 + 1u);
+    uint cell_width = x1 - x0;
+    uint pixels = cell_width * (y1 - y0);
+    uint uv_base = params.width * params.height;
+    vec3 sum = vec3(0.0);
+    uint clamped = 0u;
+    uint invalid = 0u;
+    for (uint i = lane; i < pixels; i += 32u) {
+        uint x = x0 + i % cell_width;
+        uint y = y0 + i / cell_width;
+        uint uv = uv_base + (y / 2u) * params.width + (x & ~1u);
+        uvec3 words = uvec3(uint(input_p010[y * params.width + x]),
+            uint(input_p010[uv]), uint(input_p010[uv + 1u]));
+        uvec3 codes = words >> 6u;
+        if (any(notEqual(words & 63u, uvec3(0u))) || codes.x < 64u
+            || codes.x > 940u || any(lessThan(codes.yz, uvec2(64u)))
+            || any(greaterThan(codes.yz, uvec2(960u)))) {
+            invalid += 1u;
+            continue;
+        }
+        vec3 ycbcr = (vec3(codes) - vec3(64.0, 512.0, 512.0))
+            / vec3(876.0, 896.0, 896.0);
+        vec3 encoded = pq_from_ycbcr(ycbcr);
+        if (!pq_finite(encoded)) {
+            invalid += 1u;
+            continue;
+        }
+        clamped += pq_clamp_count(encoded, vec3(0.0), vec3(1.0));
+        vec3 linear = pq_eotf(clamp(encoded, vec3(0.0), vec3(1.0)));
+        if (!pq_finite(linear)) {
+            invalid += 1u;
+            continue;
+        }
+        sum += linear;
+    }
+    linear_sum[lane] = sum;
+    diagnostic_sum[lane] = uvec2(clamped, invalid);
+    barrier();
+    for (uint step = 16u; step > 0u; step >>= 1u) {
+        if (lane < step) {
+            linear_sum[lane] += linear_sum[lane + step];
+            diagnostic_sum[lane] += diagnostic_sum[lane + step];
+        }
+        barrier();
+    }
+    if (lane == 0u) {
+        // An invalid cell gets safe black output; the host must reject its counter.
+        vec3 foreground = diagnostic_sum[0].y == 0u
+            ? linear_sum[0] / float(pixels) : vec3(0.0);
+        float perceptual = pq_inverse_eotf(vec3(pq_luminance(foreground))).x;
+        uint index = uint(clamp(floor(16.0 + 219.0 * perceptual + 0.5), 0.0, 255.0));
+        uint cell_index = cy * params.grid_width + cx;
+        cells[cell_index].linear_and_perceptual = vec4(foreground, perceptual);
+        cells[cell_index].counts = uvec4(glyph_for_y[index], diagnostic_sum[0], 0u);
+    }
+}

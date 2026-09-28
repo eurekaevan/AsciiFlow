@@ -115,8 +115,22 @@ pub struct VaapiDiagnosticP010Pool {
 impl VaapiDiagnosticP010Pool {
     pub fn new(device_path: &Path, width: u32, height: u32) -> Result<Self> {
         let desc = FrameDesc::host_p010_le(width, height, ColorSpace::default())?;
+        Self::with_desc(device_path, desc)
+    }
+
+    #[cfg(feature = "hdr-pq-qualification")]
+    pub fn new_pq_qualification(device_path: &Path, desc: FrameDesc) -> Result<Self> {
+        desc.validate_layout()?;
+        super::decoder::validate_pq_qualification_color(desc.color_space)?;
+        if desc.format != PixelFormat::P010Le {
+            return Err(Error::UnsupportedFrame("PQ pool requires P010LE".into()));
+        }
+        Self::with_desc(device_path, desc)
+    }
+
+    fn with_desc(device_path: &Path, desc: FrameDesc) -> Result<Self> {
         let device = HardwareDevice::vaapi(Some(device_path))?;
-        let pool = HardwareFramesPool::vaapi_p010(&device, width, height)?;
+        let pool = HardwareFramesPool::vaapi_p010(&device, desc.width, desc.height)?;
         if !supports_format(
             pool.as_ptr(),
             ffi::AVHWFrameTransferDirection::AV_HWFRAME_TRANSFER_DIRECTION_TO,
@@ -206,6 +220,13 @@ impl VaapiEncoderFrames {
         native.colorspace = ffi::AVColorSpace::AVCOL_SPC_BT709;
         native.color_primaries = ffi::AVColorPrimaries::AVCOL_PRI_BT709;
         native.color_trc = ffi::AVColorTransferCharacteristic::AVCOL_TRC_BT709;
+        #[cfg(feature = "hdr-pq-qualification")]
+        if self.desc.color_space.transfer == asciiflow_core::TransferCharacteristic::Pq {
+            super::decoder::validate_pq_qualification_color(self.desc.color_space)?;
+            native.colorspace = ffi::AVColorSpace::AVCOL_SPC_BT2020_NCL;
+            native.color_primaries = ffi::AVColorPrimaries::AVCOL_PRI_BT2020;
+            native.color_trc = ffi::AVColorTransferCharacteristic::AVCOL_TRC_SMPTE2084;
+        }
         native.chroma_location = ffi::AVChromaLocation::AVCHROMA_LOC_LEFT;
         Ok(VaapiEncoderFrame {
             hardware,

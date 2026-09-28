@@ -4,11 +4,11 @@ This is the canonical architecture for the Rust application. The former C#
 implementation has left the active tree; its distinct user-facing features
 are tracked in [legacy-feature-parity.md](legacy-feature-parity.md), not treated
 as a second execution path. Stage 5.3B-1 is sealed on the qualified Intel
-hardware; production HDR remains rejected. Stage 5.3B-2 Vulkan PQ work is
-justified but has not begun.
+hardware; production HDR remains rejected. Stage 5.3B-2 adds an independent
+internal Vulkan PQ qualification path, not production HDR integration.
 
-This document describes the sole Rust implementation through the Stage 5.3B-1
-internal PQ CPU oracle on the Stage 5.2C-3 P010
+This document describes the sole Rust implementation through the Stage 5.3B-2
+internal PQ CPU/GPU qualification on the Stage 5.2C-3 P010
 processing foundation: a permanent CPU reference backend, a Vulkan 1.3 compute
 backend, optional Linux VAAPI media, and qualified Intel DMA-BUF bridges in both
 pixel directions. Stage 3A
@@ -32,7 +32,13 @@ Stage 5.3A adds portable raw and resolved color semantics without changing
 pixel processing or claiming HDR support. The Intel color-regression gate is
 recorded separately in its sealed hardware report. Stage 5.3B-1 adds an
 independent, internal-only BT.2020/PQ P010 CPU reference; it does not enable
-production HDR processing or change the SDR hot path.
+production HDR processing or change the SDR hot path. Stage 5.3B-2 exposes
+only a feature-gated qualification constructor. Independent f32 PQ shaders
+reuse the packed P010 device buffers, DMA-BUF transfers, and existing bounded
+one/two-slot ownership; the CPU oracle and SDR shaders remain unchanged.
+The qualification decoder bypasses only `UnsupportedHdrPq`, never conflicting
+or unknown metadata, and still enforces codec/depth/layout/siting stability.
+Diagnostic VAAPI surfaces retain PQ descriptor tags but are not HDR encoders.
 
 ```text
 internal qualification only:
@@ -43,7 +49,8 @@ production: HDR PQ/HLG remain Unsupported before target mutation
 ```
 
 See [HDR PQ pixel semantics](hdr-pq-semantics.md) and the
-[Stage 5.3B-1 report](stage5.3b1-pq-cpu-reference.md).
+[Stage 5.3B-1 report](stage5.3b1-pq-cpu-reference.md) and
+[Stage 5.3B-2 hardware report](stage5.3b2-vulkan-pq.md).
 
 ```text
 codec parameters / decoded AVFrame metadata

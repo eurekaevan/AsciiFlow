@@ -357,6 +357,47 @@ explicit depth policy, exact Main10 failure facts, staged auto replan, and
 strict interop requests. The report records bitstream, AAC, FreeType,
 cancellation, 1080p benchmark, Validation and `spirv-val` evidence.
 
+## Internal Vulkan PQ qualification (Stage 5.3B-2)
+
+This is not production HDR support. The separate `hdr-pq-qualification`
+feature exposes the independent f32 Vulkan implementation while the unchanged
+CPU f64 reference remains the oracle. See the
+[sealed hardware report](stage5.3b2-vulkan-pq.md) for exact architecture,
+numeric bounds, raw input identity, benchmarks and scoped limitations.
+
+```bash
+bash tests/fixtures/codecs/generate-pq-qualification.sh /tmp/pq-repeat
+ASCIIFLOW_VULKAN_VALIDATION=1 cargo test -p asciiflow-vulkan \
+  --features hdr-pq-qualification --test pq_qualification \
+  -- --ignored --nocapture --skip pq_1080p_300_frame_benchmark
+ASCIIFLOW_VULKAN_VALIDATION=1 cargo test -p asciiflow-interop \
+  --features hdr-pq-qualification --test pq_hardware \
+  -- --ignored --nocapture --test-threads=1
+ASCIIFLOW_VULKAN_VALIDATION=0 cargo test -p asciiflow-vulkan --release \
+  --features hdr-pq-qualification --test pq_qualification \
+  pq_1080p_300_frame_benchmark -- --ignored --nocapture
+```
+
+Use the recorded Intel node for DMA-BUF tests. Validation must explicitly be
+enabled: a zero counter with the layer disabled is not validation evidence.
+Serialize FD tests in-process; loader warmup precedes the exact baseline.
+Positive PQ inputs have legal codes and explicit left siting, unlike the
+preserved old rejection fixtures. Download the exact VAAPI surface for the CPU
+oracle; comparing independent software and VAAPI decodes would confuse decoder
+rounding with compute error. All glyphs must match; active Y/U/V deltas must
+be ≤1, and every delta >1 must fail. Intermediate gates are characterized and
+documented separately, not used to loosen the final gates.
+
+For future raw/generated benchmark inputs, preserve the generating function
+and source version/hash, exact config/command, raw-byte SHA-256 and byte size,
+in addition to the existing encoded-input/output regression policy. Keep
+measurement wall time, parity-check time, per-stage GPU timestamps and overlap
+semantics distinct. Simulated cleanup checkpoints must not be described as
+real device-loss or hung-fence tests. Historical cache module counts (such as
+133) are not a gate: enumerate and validate every currently generated SPIR-V
+with `spirv-val --target-env vulkan1.3`, recording count/profile and capabilities.
+Normal and measurement-feature workspace tests/clippy must both remain green.
+
 ## AV1 Main 10-bit production encode (Stage 5.2C-3)
 
 Use an explicitly tagged BT.709 SDR, left-chroma, 128×96-or-larger P010 input

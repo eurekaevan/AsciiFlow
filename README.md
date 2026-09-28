@@ -95,7 +95,9 @@ opt-in Intel `/dev/dri` gates and records the current post-polarity media
 baseline. Historical stage reports and baseline revision numbers identify
 evidence, not separate application versions. The internal PQ CPU reference
 is qualified, but **production HDR is still unsupported**; see the
-[Stage 5.3B-1 report](docs/stage5.3b1-pq-cpu-reference.md).
+[Stage 5.3B-1 report](docs/stage5.3b1-pq-cpu-reference.md). The independent
+internal Vulkan PQ qualification is documented in the
+[Stage 5.3B-2 report](docs/stage5.3b2-vulkan-pq.md); production HDR remains closed.
 
 The repository CI runs Rust format, strict Clippy, workspace tests, and Vulkan
 1.3 validation on generated SPIR-V. Hardware gates require an Intel host and

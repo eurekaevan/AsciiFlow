@@ -1,11 +1,39 @@
 # Video codec regression fixtures
 
+## Stage 5.3B-2 positive PQ inputs
+
+Run `bash tests/fixtures/codecs/generate-pq-qualification.sh [OUTPUT_DIRECTORY]`
+with fixed FFmpeg `8.1.3-1.fc44` (libavcodec 62.28.103, libavformat 62.12.103).
+The script specifies all geometry, frame, color, siting and codec parameters;
+its SHA-256 is `d4835911001482b9847d76c01adac34ed6c1e0adbf858fcf5d262a61bdfc41b6`.
+It uses no external media or randomness: Y=80+mod(7X+11Y+13N,841),
+Cb=128+mod(17X+5Y+7N,769), Cr=128+mod(3X+19Y+11N,769), directly in
+ten-bit planar samples. Codec primaries/transfer/matrix/range/siting are
+also explicitly written into the bitstreams. Both files were generated twice
+and their SHA-256 identities matched `SHA256SUMS` in both runs.
+
+| File | Bytes | Decoded identity |
+| --- | ---: | --- |
+| `hevc-main10-pq-qualified.mp4` | 317304 | Main 10, yuv420p10le, 128×96, 36 frames, 30/1 fps |
+| `av1-main10-pq-qualified.mp4` | 341359 | Main, yuv420p10le, 128×96, 36 frames, 30/1 fps |
+
+Both probe as `bt2020 / smpte2084 / bt2020nc / tv / left`. Real VAAPI
+downloaded active samples retain nonzero low-two-bit content: HEVC 497940,
+AV1 497932 out of 663552 samples over 36 frames. CPU/GPU comparisons use the
+same downloaded VAAPI bytes, not independently decoded codec approximations.
+These inputs are not production HDR support or mastered/calibrated imagery.
+The old rejection fixtures remain untouched: their unrestricted code values
+(and AV1's unspecified chroma siting) are unsuitable for positive pixel parity.
+
+## Existing fixtures
+
 All files are small, deterministic synthetic media; no third-party recordings
 are included. The Main 8 fixtures use FFmpeg `testsrc2` and `sine` and include
 mono 48 kHz AAC audio. The Stage 5.2B gradient fixtures use generated raw
 `yuv420p10le` planes and contain video only. The small codec fixtures are
 64×64, 30 fps, and 36 frames; the Stage 5.3A canonical production input
 below is the documented 1920×1080/300-frame exception.
+The Stage 5.3B-2 positive PQ fixtures are 128×96/30 fps/36 frames.
 
 | File | Contract |
 | --- | --- |
@@ -21,6 +49,8 @@ below is the documented 1920×1080/300-frame exception.
 | `hevc-main10-bt2020-sdr.mp4` | BT.2020 primaries/matrix with BT.709 SDR transfer; wide gamut alone is not HDR |
 | `hevc-main10-hlg.mp4` | BT.2020 / ARIB STD-B67 HLG transfer, without static HDR metadata |
 | `av1-main10-pq.mp4` | AV1 Main 10, BT.2020 / SMPTE ST 2084 PQ transfer |
+| `hevc-main10-pq-qualified.mp4` | Internal positive PQ parity fixture: legal codes, BT.2020 NCL/PQ/limited/left; HEVC Main 10 |
+| `av1-main10-pq-qualified.mp4` | Same internal positive contract; AV1 Main 10-bit |
 | `hevc-main10-unspecified.mp4` | Unspecified primaries, transfer and matrix; limited range remains explicitly signaled |
 | `hevc-main10-pq-bt709-conflict.mp4` | PQ transfer with BT.709 primaries/matrix for semantic conflict handling |
 | `hevc-main10-pq-static-metadata.mp4` | PQ with mastering-display SEI and MaxCLL 1000 / MaxFALL 400; compare with the PQ fixture without static metadata |

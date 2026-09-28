@@ -2,7 +2,11 @@ mod backend;
 mod buffer;
 mod context;
 mod external;
+mod pq;
 mod streaming;
+
+#[cfg(feature = "hdr-pq-qualification")]
+pub use pq::{GpuPqCell, PqQualificationFault, VulkanPqQualification};
 
 #[cfg(feature = "p010-output-diagnostic")]
 pub use backend::DiagnosticOutputFault;

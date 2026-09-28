@@ -3,7 +3,7 @@
 Stage 5.3B-1 is a CPU-only qualification oracle, **not production HDR support**.
 Production color resolution still rejects PQ, HLG, BT.2020 SDR, full-range and
 unknown/conflicting inputs before processing or output staging. There is no HDR
-CLI switch, Vulkan path, VAAPI HDR output, tone mapping, or gamut mapping.
+CLI switch, production Vulkan HDR path, VAAPI HDR encode, tone mapping, or gamut mapping.
 
 The only accepted oracle descriptor is host P010LE 4:2:0, limited range,
 BT.2020 primaries, BT.2020 non-constant-luminance matrix, PQ transfer, and
@@ -59,3 +59,32 @@ set for this reference path.
 
 Standards: [ITU-R BT.2100-3](https://www.itu.int/rec/R-REC-BT.2100-3-202502-I)
 and [ITU-R BT.2020](https://www.itu.int/rec/R-REC-BT.2020).
+
+## Internal Vulkan qualification (Stage 5.3B-2)
+
+The independent `hdr-pq-qualification` feature exposes `VulkanPqQualification`,
+not a CLI or planner mode. The CPU f64 oracle above remains authoritative and
+unchanged. Separate `ascii_map_pq.comp`, `ascii_render_pq.comp` and
+`pq_common.glsl` use f32 normalized linear RGB (1 = 10000 nits), with exactly
+the same per-channel PQ equations, legal-code policy, floor cell partitions,
+glyph LUT and linear-light R8 blending. They do not approximate PQ with a LUT,
+tone map, normalize exposure, or copy source mastering metadata.
+
+The map pass uses 32 lanes and a shared-memory tree reduction. A std430 cell
+is 32 bytes: normalized RGB plus perceptual scalar, then glyph/input clips/
+invalid samples/output clips. The render pass processes 2×2 blocks using a
+32×4 workgroup, averages unquantized encoded Cb/Cr once, and quantizes once
+before packing ten-bit codes into bits 15..6. Diagnostic atomics and cell
+readback have explicit compute/read-write and transfer/host barriers. Invalid
+padding, codes, or nonfinite arithmetic produce a terminal processing error
+before output is returned or copied to a VAAPI surface.
+
+The measured Intel qualification bounds are normalized RGB/luminance absolute
+error ≤4e-5, relative error ≤6e-5 for nonzero reference values, and inverse-PQ
+scalar absolute error ≤2e-5. Black uses the absolute bound because relative
+error is undefined. These bounds were fixed after characterization, with
+roughly twice the observed maximum as margin; they are not a universal GPU
+precision guarantee. Exact glyph equality and final per-plane error ≤1 active
+ten-bit code remain independent hard gates. See the
+[hardware report](stage5.3b2-vulkan-pq.md) for measured errors, fixtures,
+FD/failure evidence and performance. Production HDR remains rejected.

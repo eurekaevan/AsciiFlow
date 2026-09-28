@@ -8,6 +8,7 @@ build = "build.rs"
 
 [features]
 p010-output-diagnostic = []
+hdr-pq-qualification = []
 
 [dependencies]
 ash.workspace = true

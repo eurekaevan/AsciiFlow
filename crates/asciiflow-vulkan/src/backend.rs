@@ -56,6 +56,8 @@ const RENDER_LUT_32X4: &[u8] =
     include_bytes!(concat!(env!("OUT_DIR"), "/ascii_render_lut_32x4.spv"));
 const RENDER_P010_LUT_32X4: &[u8] =
     include_bytes!(concat!(env!("OUT_DIR"), "/ascii_render_p010_lut_32x4.spv"));
+const MAP_PQ: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/ascii_map_pq.spv"));
+const RENDER_PQ: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/ascii_render_pq.spv"));
 
 const QUERY_UPLOAD_BEGIN: u32 = 0;
 const QUERY_MAPPING_BEGIN: u32 = 2;
@@ -140,6 +142,7 @@ struct ResourceKey {
     grid_height: u32,
     font: String,
     charset: String,
+    pq_qualification: bool,
 }
 
 fn mapping_u32_is_safe(
@@ -170,6 +173,8 @@ fn max_sample_for(format: PixelFormat) -> u32 {
 }
 
 pub struct VulkanAsciiBackend {
+    pq_qualification: bool,
+    pub(crate) pq_fault: Option<crate::pq::PqQualificationFault>,
     supplied_atlas: Option<(GlyphAtlas, String, String)>,
     context: Arc<VulkanContext>,
     allocator: Option<Allocator>,
@@ -194,6 +199,35 @@ impl VulkanAsciiBackend {
         Self::from_context(Arc::new(VulkanContext::new()?))
     }
 
+    #[cfg(feature = "hdr-pq-qualification")]
+    pub(crate) fn new_pq_qualification() -> Result<Self> {
+        let mut backend = Self::new()?;
+        backend.pq_qualification = true;
+        Ok(backend)
+    }
+
+    #[cfg(feature = "hdr-pq-qualification")]
+    pub(crate) fn map_pq_cells(
+        &mut self,
+        input: &VideoFrame,
+        config: &AsciiConfig,
+    ) -> Result<Vec<crate::pq::GpuPqCell>> {
+        self.ensure_resources(input.desc(), config)?;
+        let resources = self.resources.as_mut().expect("resources initialized");
+        resources.upload_input(&self.context, input.host().as_slice())?;
+        resources.run_compute(&self.context, config.color, true, false, false)?;
+        resources.download_pq_cells(&self.context)
+    }
+
+    #[cfg(feature = "hdr-pq-qualification")]
+    pub(crate) fn pq_cells(&mut self) -> Result<Vec<crate::pq::GpuPqCell>> {
+        let resources = self
+            .resources
+            .as_mut()
+            .ok_or_else(|| Error::Vulkan("PQ resources not prepared".into()))?;
+        resources.download_pq_cells(&self.context)
+    }
+
     pub(crate) fn from_context(context: Arc<VulkanContext>) -> Result<Self> {
         tracing::info!(gpu=%context.info.name,vendor_id=format_args!("{:#06x}",context.info.vendor_id),device_id=format_args!("{:#06x}",context.info.device_id),api=%context.info.api_version_string(),driver=context.info.driver_version,"selected Vulkan compute device");
         let allocator = Allocator::new(&AllocatorCreateDesc {
@@ -206,6 +240,8 @@ impl VulkanAsciiBackend {
         })
         .map_err(|e| Error::Vulkan(format!("failed to create Vulkan memory allocator: {e}")))?;
         Ok(Self {
+            pq_qualification: false,
+            pq_fault: None,
             supplied_atlas: None,
             context,
             allocator: Some(allocator),
@@ -219,6 +255,7 @@ impl VulkanAsciiBackend {
     }
     pub fn try_fork(&self) -> Result<Self> {
         let mut fork = Self::from_context(self.context.clone())?;
+        fork.pq_qualification = self.pq_qualification;
         fork.supplied_atlas = self.supplied_atlas.clone();
         Ok(fork)
     }
@@ -313,6 +350,9 @@ impl VulkanAsciiBackend {
 
     fn ensure_resources(&mut self, desc: &FrameDesc, config: &AsciiConfig) -> Result<()> {
         desc.validate_layout()?;
+        if self.pq_qualification {
+            crate::pq::validate_pq_desc(desc)?;
+        }
         if desc.format == PixelFormat::P010Le && !self.context.info.p010_storage_supported {
             return Err(Error::Vulkan(format!(
                 "P010LE Vulkan processing requires storageBuffer16BitAccess on {}",
@@ -335,12 +375,16 @@ impl VulkanAsciiBackend {
             grid_height,
             font: config.font.clone(),
             charset: config.charset.clone(),
+            pq_qualification: self.pq_qualification,
         };
         if self
             .resources
             .as_ref()
             .is_some_and(|resources| resources.key == key)
         {
+            if let Some(fault) = self.pq_fault.take() {
+                self.resources.as_mut().expect("resources present").pq_fault = Some(fault);
+            }
             return Ok(());
         }
         if let Some(mut resources) = self.resources.take() {
@@ -364,12 +408,25 @@ impl VulkanAsciiBackend {
                 "atlas glyph count does not match the ramp".into(),
             ));
         }
+        let init_fault = match self.pq_fault {
+            Some(
+                crate::pq::PqQualificationFault::CellAllocation
+                | crate::pq::PqQualificationFault::DescriptorCreation
+                | crate::pq::PqQualificationFault::PipelineCreation,
+            ) => self.pq_fault.take(),
+            _ => None,
+        };
         self.resources = Some(Resources::new(
             &self.context,
             self.allocator.as_mut().expect("allocator missing"),
             key,
             atlas,
+            init_fault,
         )?);
+        self.resources
+            .as_mut()
+            .expect("resources initialized")
+            .pq_fault = self.pq_fault.take();
         Ok(())
     }
 
@@ -392,6 +449,11 @@ impl VulkanAsciiBackend {
         config: &AsciiConfig,
         cells: &[GpuAsciiCell],
     ) -> Result<BackendOutput> {
+        if self.pq_qualification {
+            return Err(Error::Vulkan(
+                "SDR mapped cells cannot enter the PQ renderer".into(),
+            ));
+        }
         let total_started = Instant::now();
         self.ensure_resources(desc, config)?;
         let resources = self.resources.as_mut().expect("resources initialized");
@@ -503,6 +565,7 @@ impl VulkanAsciiBackend {
             PipelineStage::ProcessingRuntime,
             "execute Vulkan ASCII compute",
         )?;
+        resources.check_pq_cells(&self.context)?;
         let download = at_stage(
             resources.download_output(&self.context, desc.byte_len()),
             PipelineStage::ProcessingRuntime,
@@ -709,6 +772,7 @@ impl VulkanAsciiBackend {
             PipelineStage::ProcessingRuntime,
             "execute Vulkan ASCII compute",
         )?;
+        resources.check_pq_cells(&self.context)?;
         let output = at_stage(
             resources.copy_output_to_external(&self.context, [&output_y, &output_uv]),
             PipelineStage::OutputInteropRuntime,
@@ -824,6 +888,7 @@ impl VulkanAsciiBackend {
             PipelineStage::ProcessingRuntime,
             "execute Vulkan ASCII compute",
         )?;
+        resources.check_pq_cells(&self.context)?;
         #[cfg(feature = "p010-output-diagnostic")]
         if output_fault == Some(DiagnosticOutputFault::QueueSubmit) {
             return Err(Error::pipeline(
@@ -994,6 +1059,7 @@ impl AsciiBackend for VulkanAsciiBackend {
         let resources = self.resources.as_mut().expect("resources initialized");
         let upload = resources.upload_input(&self.context, input.host().as_slice())?;
         let compute = resources.run_compute(&self.context, config.color, true, true, true)?;
+        resources.check_pq_cells(&self.context)?;
         let download = resources.download_output(&self.context, desc.byte_len())?;
         let frame = VideoFrame::new_host(
             desc.clone(),
@@ -1051,6 +1117,7 @@ impl Drop for VulkanAsciiBackend {
 }
 
 struct Resources {
+    pq_fault: Option<crate::pq::PqQualificationFault>,
     key: ResourceKey,
     atlas: GlyphAtlas,
     upload: Buffer,
@@ -1231,14 +1298,28 @@ impl Resources {
         allocator: &mut Allocator,
         key: ResourceKey,
         atlas: GlyphAtlas,
+        fault: Option<crate::pq::PqQualificationFault>,
     ) -> Result<Self> {
         let device = &context.device;
         let frame_bytes = u64::try_from(key.format.frame_byte_len(key.width, key.height)?)
             .map_err(|_| Error::Vulkan("frame resource size exceeds u64".into()))?;
-        let cell_bytes =
-            key.grid_width as u64 * key.grid_height as u64 * size_of::<GpuAsciiCell>() as u64;
+        let cell_bytes = key.grid_width as u64
+            * key.grid_height as u64
+            * if key.pq_qualification {
+                32
+            } else {
+                size_of::<GpuAsciiCell>() as u64
+            };
         let atlas_bytes = atlas.as_r8_slice().len() as u64;
         let pixel_count = key.width as u64 * key.height as u64;
+        if key.pq_qualification
+            && (key.width as u64 * key.grid_width as u64 > u32::MAX as u64
+                || key.height as u64 * key.grid_height as u64 > u32::MAX as u64)
+        {
+            return Err(Error::Vulkan(
+                "PQ cell boundary products exceed uint32".into(),
+            ));
+        }
         let coordinate_lut_bytes = (key.width as u64 + key.height as u64) * 8;
         let map_u32_safe = mapping_u32_is_safe(
             key.width,
@@ -1339,6 +1420,7 @@ impl Resources {
             "NV12 input",
             context.info.non_coherent_atom_size,
         )?;
+        crate::pq::checkpoint(fault, crate::pq::PqQualificationFault::CellAllocation)?;
         let cells_handle = pending_buffers.create(
             cell_bytes,
             vk::BufferUsageFlags::STORAGE_BUFFER
@@ -1396,6 +1478,7 @@ impl Resources {
             "coordinate LUT",
             context.info.non_coherent_atom_size,
         )?;
+        crate::pq::checkpoint(fault, crate::pq::PqQualificationFault::DescriptorCreation)?;
         let bindings: [vk::DescriptorSetLayoutBinding; 6] = std::array::from_fn(|binding| {
             vk::DescriptorSetLayoutBinding::default()
                 .binding(binding as u32)
@@ -1475,7 +1558,10 @@ impl Resources {
         }
         .map_err(vk_error("failed to create compute pipeline layout"))?;
         let pipeline_layout = pending_objects.pipeline_layout;
-        let (map_shader, map_variant, map_workgroup_size) = if key.format == PixelFormat::P010Le {
+        crate::pq::checkpoint(fault, crate::pq::PqQualificationFault::PipelineCreation)?;
+        let (map_shader, map_variant, map_workgroup_size) = if key.pq_qualification {
+            (MAP_PQ, "pq-f32-32", 32)
+        } else if key.format == PixelFormat::P010Le {
             if map_u32_safe {
                 (MAP_P010_U32_32, "p010-u32-32", 32)
             } else {
@@ -1511,7 +1597,9 @@ impl Resources {
         }
         pending_objects.map_pipeline = create_pipeline(device, pipeline_layout, map_shader)?;
         let map_pipeline = pending_objects.map_pipeline;
-        let (render_shader, render_local_size) = if key.format == PixelFormat::P010Le {
+        let (render_shader, render_local_size) = if key.pq_qualification {
+            (RENDER_PQ, (32, 4))
+        } else if key.format == PixelFormat::P010Le {
             (RENDER_P010_LUT_32X4, (32, 4))
         } else {
             match std::env::var("ASCIIFLOW_VULKAN_RENDER_VARIANT").as_deref() {
@@ -1597,6 +1685,7 @@ impl Resources {
         debug_assert!(buffers.next().is_none());
         pending_objects.disarm();
         let mut result = Self {
+            pq_fault: None,
             key,
             atlas,
             upload,
@@ -2094,6 +2183,8 @@ impl Resources {
         render: bool,
         prepare_host_readback: bool,
     ) -> Result<ComputeTimings> {
+        let fault = self.pq_fault.take();
+        crate::pq::checkpoint(fault, crate::pq::PqQualificationFault::BeforeSubmit)?;
         self.begin(context)?;
         let device = &context.device;
         let params = self.params(color);
@@ -2166,7 +2257,11 @@ impl Resources {
                         vk::AccessFlags2::TRANSFER_WRITE
                     })
                     .dst_stage_mask(vk::PipelineStageFlags2::COMPUTE_SHADER)
-                    .dst_access_mask(vk::AccessFlags2::SHADER_READ)
+                    .dst_access_mask(if self.key.pq_qualification {
+                        vk::AccessFlags2::SHADER_READ | vk::AccessFlags2::SHADER_WRITE
+                    } else {
+                        vk::AccessFlags2::SHADER_READ
+                    })
                     .buffer(self.cells.handle)
                     .offset(0)
                     .size(vk::WHOLE_SIZE)];
@@ -2214,6 +2309,7 @@ impl Resources {
             }
         }
         let submit = self.submit_wait(context)?;
+        crate::pq::checkpoint(fault, crate::pq::PqQualificationFault::AfterCompletion)?;
         Ok(ComputeTimings {
             gpu_mapping: if mapping {
                 self.timestamp_duration(context, QUERY_MAPPING_BEGIN)?
@@ -2370,9 +2466,48 @@ impl Resources {
         readback.read(&context.device, length)
     }
     fn download_cells(&mut self, context: &VulkanContext) -> Result<Vec<GpuAsciiCell>> {
+        if self.key.pq_qualification {
+            return Err(Error::Vulkan("HDR cells are not SDR cells".into()));
+        }
+        let data = self.download_cell_bytes(context)?;
+        Ok(bytemuck::cast_slice(&data).to_vec())
+    }
+
+    fn check_pq_cells(&mut self, context: &VulkanContext) -> Result<()> {
+        if !self.key.pq_qualification {
+            return Ok(());
+        }
+        self.download_pq_cells(context).map(|_| ())
+    }
+
+    fn download_pq_cells(&mut self, context: &VulkanContext) -> Result<Vec<crate::pq::GpuPqCell>> {
+        let data = self.download_cell_bytes(context)?;
+        // Byte allocations do not promise struct alignment.
+        let cells: Vec<crate::pq::GpuPqCell> = data
+            .chunks_exact(size_of::<crate::pq::GpuPqCell>())
+            .map(bytemuck::pod_read_unaligned)
+            .collect();
+        if cells
+            .iter()
+            .any(|c| c.counts[2] != 0 || c.linear_and_perceptual.iter().any(|x| !x.is_finite()))
+        {
+            return Err(Error::pipeline(
+                PipelineStage::ProcessingRuntime,
+                "validate PQ compute diagnostics",
+                Error::Vulkan("invalid PQ sample, padding, range or nonfinite arithmetic".into()),
+            ));
+        }
+        Ok(cells)
+    }
+
+    fn download_cell_bytes(&mut self, context: &VulkanContext) -> Result<Vec<u8>> {
         let bytes = self.key.grid_width as usize
             * self.key.grid_height as usize
-            * size_of::<GpuAsciiCell>();
+            * if self.key.pq_qualification {
+                32
+            } else {
+                size_of::<GpuAsciiCell>()
+            };
         self.begin(context)?;
         unsafe {
             let barrier = [vk::BufferMemoryBarrier2::default()
@@ -2397,10 +2532,21 @@ impl Resources {
                     size: bytes as u64,
                 }],
             );
+            let host_barrier = [vk::BufferMemoryBarrier2::default()
+                .src_stage_mask(vk::PipelineStageFlags2::COPY)
+                .src_access_mask(vk::AccessFlags2::TRANSFER_WRITE)
+                .dst_stage_mask(vk::PipelineStageFlags2::HOST)
+                .dst_access_mask(vk::AccessFlags2::HOST_READ)
+                .buffer(self.cell_readback.handle)
+                .offset(0)
+                .size(vk::WHOLE_SIZE)];
+            context.device.cmd_pipeline_barrier2(
+                self.command,
+                &vk::DependencyInfo::default().buffer_memory_barriers(&host_barrier),
+            );
         }
         self.submit_wait(context)?;
-        let data = self.cell_readback.read(&context.device, bytes)?;
-        Ok(bytemuck::cast_slice(&data).to_vec())
+        self.cell_readback.read(&context.device, bytes)
     }
     fn timestamp_duration(&self, context: &VulkanContext, first: u32) -> Result<Duration> {
         self.timestamp_span(context, first, first + 1)

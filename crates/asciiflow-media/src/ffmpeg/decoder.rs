@@ -55,6 +55,8 @@ pub struct Decoder {
     format_locked: bool,
     stream_color: ColorMetadataRaw,
     first_color: Option<ResolvedColorSemantics>,
+    #[cfg(feature = "hdr-pq-qualification")]
+    pq_qualification: bool,
     audio_streams: Vec<AudioInputStream>,
     selected_audio_streams: Vec<usize>,
     audio_sender: Option<AudioPacketSender>,
@@ -94,7 +96,53 @@ impl VaapiDecodedFrame {
 
 unsafe impl Send for VaapiDecodedFrame {}
 
+#[cfg(feature = "hdr-pq-qualification")]
+fn validate_pq_qualification_input(input: &InputRequirements) -> Result<PixelFormat> {
+    validate_pq_qualification_color(input.color_space)?;
+    if input.bit_depth != Some(10)
+        || input.chroma_subsampling != ChromaSubsampling::Yuv420
+        || !matches!(
+            (&input.codec, &input.profile),
+            (VideoCodec::Hevc, Some(VideoProfile::HevcMain10))
+                | (VideoCodec::Av1, Some(VideoProfile::Av1Main))
+        )
+    {
+        return Err(asciiflow_core::Error::UnsupportedFrame(
+            "PQ qualification requires HEVC Main10 or AV1 Main 10-bit 4:2:0".into(),
+        ));
+    }
+    FrameDesc::host_p010_le(input.width, input.height, input.color_space)?;
+    Ok(PixelFormat::P010Le)
+}
+
+#[cfg(feature = "hdr-pq-qualification")]
+pub(crate) fn validate_pq_qualification_color(color: ColorSpace) -> Result<()> {
+    if color.primaries != ColorPrimaries::Bt2020
+        || color.matrix != ColorMatrix::Bt2020
+        || color.transfer != TransferCharacteristic::Pq
+        || color.range != ColorRange::Limited
+        || color.chroma_location != ChromaLocation::Left
+    {
+        return Err(asciiflow_core::Error::UnsupportedFrame(
+            "PQ qualification requires left-sited limited BT.2020 NCL/PQ".into(),
+        ));
+    }
+    Ok(())
+}
+
 impl Decoder {
+    /// Internal qualification only. Normal decoder/planner entry points still
+    /// reject HDR. Metadata resolution, stability and layout checks remain live.
+    #[cfg(feature = "hdr-pq-qualification")]
+    pub fn open_pq_qualification(
+        path: impl AsRef<Path>,
+        mode: DecodeMode,
+        vaapi: VaapiOptions,
+    ) -> Result<Self> {
+        let mut decoder = Self::open_with(path, mode, vaapi)?;
+        decoder.pq_qualification = true;
+        Ok(decoder)
+    }
     pub fn open(path: impl AsRef<Path>) -> Result<Self> {
         Self::open_with(path, DecodeMode::Software, VaapiOptions::default())
     }
@@ -305,6 +353,8 @@ impl Decoder {
             format_locked: false,
             stream_color,
             first_color: None,
+            #[cfg(feature = "hdr-pq-qualification")]
+            pq_qualification: false,
             audio_streams,
             selected_audio_streams: Vec::new(),
             audio_sender: None,
@@ -413,17 +463,33 @@ impl Decoder {
                 ResolvedColorSemantics::resolve(self.stream_color, frame_color, policy)?
             };
             self.info.requirements.color_semantics = Some(color);
+            #[cfg(feature = "hdr-pq-qualification")]
+            let qualified_pq = self.pq_qualification;
+            #[cfg(not(feature = "hdr-pq-qualification"))]
+            let qualified_pq = false;
             if let Err(reason) = color.support {
-                return Err(asciiflow_core::Error::UnsupportedColor {
-                    reason,
-                    stream: color.stream.space,
-                    frame: color.frame.space,
-                    effective: color.effective,
-                });
+                // Qualification exempts only the production PQ policy gate,
+                // never conflicting/unknown/malformed metadata.
+                if !qualified_pq || reason != asciiflow_core::ColorSupportReason::UnsupportedHdrPq {
+                    return Err(asciiflow_core::Error::UnsupportedColor {
+                        reason,
+                        stream: color.stream.space,
+                        frame: color.frame.space,
+                        effective: color.effective,
+                    });
+                }
             }
             actual.color_space = color.effective;
             actual.color_semantics = Some(color);
-            let working_format = actual.validate_processing_input().map_err(|e| {
+            #[cfg(feature = "hdr-pq-qualification")]
+            let input_validation = if qualified_pq {
+                validate_pq_qualification_input(&actual)
+            } else {
+                actual.validate_processing_input()
+            };
+            #[cfg(not(feature = "hdr-pq-qualification"))]
+            let input_validation = actual.validate_processing_input();
+            let working_format = input_validation.map_err(|e| {
                 asciiflow_core::Error::Media(format!(
                     "decoded {:?} profile {:?}, {:?}-bit {:?}, requested {:?}: {e}",
                     actual.codec,
