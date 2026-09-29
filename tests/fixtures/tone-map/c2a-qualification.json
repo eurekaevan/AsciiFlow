@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "stage": "5.3C-2A",
+  "status": "SEALED",
+  "outcome": "C / F3",
+  "scope": "audit/docs only; Annex5 abandoned; no production behavior change",
+  "source_head": "4d95a7e2c6560e061510a6b27ee685c1db08ae0a",
+  "production_binary_sha256": "03aa608bfc537e5a31dde683154a8deb974fb166d0af043590c2307578e0e3d7",
+  "cargo_lock_sha256": "f8cf97f855fcbcb422ef1b74f2367a7ac40b612dcc41cc0a1d8a23f3e27746b8",
+  "c1_runs_1_2_3": [
+    "d0eb86dcc265fe7f675d87055f038d258176e331eb2aac412ba7358a6c8c1e6b",
+    "d0eb86dcc265fe7f675d87055f038d258176e331eb2aac412ba7358a6c8c1e6b",
+    "d0eb86dcc265fe7f675d87055f038d258176e331eb2aac412ba7358a6c8c1e6b"
+  ],
+  "c1_command": "bash scripts/qualify-tone-map-cpu.sh /tmp/asciiflow-c2a-c1-regression",
+  "sdr_command": "bash tests/baselines/media/generate-post-polarity-v2.sh /tmp/asciiflow-c2-input8.mp4 tests/fixtures/codecs/hevc-main10-canonical-v1.mp4 /tmp/asciiflow-c2a-sdr",
+  "sdr_baseline": "tests/baselines/media/post-polarity-v2.json",
+  "sdr_cases": [
+    {
+      "name": "h264-8",
+      "runs": 3,
+      "file_sha256": "7c8a7572320b8c6c999143dfece4a76d487d6c9e7788206b7af52df9acd4e1cc",
+      "decoded_framemd5_sha256": "c5b5f8bcd31bdbdc5b40cdb3a4e075332e2359c46c4a35317a60de1e2d0a263c",
+      "baseline_match": true
+    },
+    {
+      "name": "hevc-8",
+      "runs": 3,
+      "file_sha256": "294a1b63ac5b0e440dcf60c4c60f975594c6e944829478b69f09f981d268ff71",
+      "decoded_framemd5_sha256": "755bdcd256c58b748b95d2a5417461b5077656ec0d7265a1dfe1d78a8d6fa799",
+      "baseline_match": true
+    },
+    {
+      "name": "av1-8",
+      "runs": 3,
+      "file_sha256": "1531e29f52ae4e747251cf1889003dfd420303c523fb0ddc55cc9140e3bf2a4c",
+      "decoded_framemd5_sha256": "086c1821e563822576d872af8761f4282ae8c0e41972d1008870578fde5b4dc6",
+      "baseline_match": true
+    },
+    {
+      "name": "hevc-10",
+      "runs": 3,
+      "file_sha256": "f213a9f75542421bb816550cd7a93796db98ae36296a00636f7273492740a142",
+      "decoded_framemd5_sha256": "3eeb03862bf1d3aa1762192bc393fddd25024f0f187ce4982323accfb8eef517",
+      "baseline_match": true
+    },
+    {
+      "name": "av1-10",
+      "runs": 3,
+      "file_sha256": "b69c68525ac6ab2464e04b8fc1f123d887b45bba580377bafad99dc74cf62ad7",
+      "decoded_framemd5_sha256": "21ba0466e1805b28281675312619f1cd192a8e67fdb577024c7dadddcf7af933",
+      "baseline_match": true
+    }
+  ],
+  "sdr_decode_command": "ffmpeg -v error -nostdin -i <output> -map 0:v:0 -an -pix_fmt <baseline_pixel_format> -f framemd5 - | sha256sum",
+  "pq_command": "bash tests/baselines/media/generate-pq-production-v1.sh tests/fixtures/codecs /tmp/asciiflow-c2a-pq",
+  "pq_verification_command": "python3 tests/baselines/media/verify-pq-production.py /tmp/asciiflow-c2a-pq /tmp/asciiflow-c2a-pq-verification.json --input-directory tests/fixtures/codecs --check-baseline tests/baselines/media/pq-production-v1.json",
+  "pq_cases": [
+    {
+      "name": "hevc-10",
+      "runs": 3,
+      "file_sha256": "0e8de23d5d222ab0476ea816d27b18e37dc73bf1f824e79bedc1070c409ded63",
+      "tiers_1a_1b_1c_2_3_all_pass": true
+    },
+    {
+      "name": "av1-10",
+      "runs": 3,
+      "file_sha256": "41a8af52985a6be0121cfe7c4f4160a3ebdecd0acc908882774d2a0151185388",
+      "tiers_1a_1b_1c_2_3_all_pass": true
+    }
+  ],
+  "production_path": "Intel Arc Meteor Lake, /dev/dri/renderD128, VAAPI -> Vulkan DMA-BUF input/output -> VAAPI; existing fixed production script flags",
+  "static": {
+    "tests_default": {
+      "passed": 201,
+      "failed": 0,
+      "ignored": 79
+    },
+    "tests_encode_characterization": {
+      "passed": 201,
+      "failed": 0,
+      "ignored": 79
+    },
+    "clippy_default": "PASS",
+    "clippy_encode_characterization": "PASS",
+    "fmt": "PASS",
+    "diff_check": "PASS",
+    "audit_unit_tests": 8,
+    "spirv_paths": 317,
+    "spirv_target": "vulkan1.3",
+    "spirv_failed": 0
+  },
+  "reuse": {
+    "historical_h264": "C-2 same-production-source evidence only: raw1A FAIL (.102/.103), never upgraded to PASS",
+    "lifecycle_3000_frame": "previous hardware evidence reused; no fresh stress claim; ownership code unchanged"
+  },
+  "no_new_gamut_output_baseline": true
+}

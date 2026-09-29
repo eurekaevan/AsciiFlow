@@ -1,0 +1,262 @@
+{
+  "schema_version": 1,
+  "stage": "5.3C-2B",
+  "status": "SEALED",
+  "scope": "CPU f64 primary conversion + explicit target-volume reference only",
+  "production_hdr_to_sdr": "disabled",
+  "c3": "justified, not started",
+  "source_head": "4d95a7e2c6560e061510a6b27ee685c1db08ae0a",
+  "production_binary_sha256": "97e4a5fdc2f314cd79bc3840dcf93be3fc8c9109909516499088fb0a54d8a368",
+  "source_identity": "tests/fixtures/tone-map/c2b-identity.json",
+  "numerical_audit": "tests/fixtures/tone-map/c2b-target-volume-audit.json",
+  "c1_retained_sha256_runs_1_2_3": [
+    "d0eb86dcc265fe7f675d87055f038d258176e331eb2aac412ba7358a6c8c1e6b",
+    "d0eb86dcc265fe7f675d87055f038d258176e331eb2aac412ba7358a6c8c1e6b",
+    "d0eb86dcc265fe7f675d87055f038d258176e331eb2aac412ba7358a6c8c1e6b"
+  ],
+  "c2b_retained_sha256_runs_1_2_3": [
+    "a7e7ffe64d61269288c8e9b2e9b22a62f8c16fd2287083386bc8cefb9c3471af",
+    "a7e7ffe64d61269288c8e9b2e9b22a62f8c16fd2287083386bc8cefb9c3471af",
+    "a7e7ffe64d61269288c8e9b2e9b22a62f8c16fd2287083386bc8cefb9c3471af"
+  ],
+  "integration": {
+    "builtin": "PASS (color and monochrome)",
+    "freetype": "PASS (color and monochrome)",
+    "glyph_mismatch": 0,
+    "coverage_and_linear_hdr": "unchanged",
+    "c1_values_and_diagnostics": "unchanged, immutable consumption"
+  },
+  "commands": {
+    "c1": "bash scripts/qualify-tone-map-cpu.sh /tmp/asciiflow-c2b-c1-regression",
+    "c2b": "bash scripts/qualify-target-volume-cpu.sh /tmp/asciiflow-c2b-c1-regression/method-a-run1.bin /tmp/asciiflow-c2b-target-volume-closure",
+    "sdr": "bash tests/baselines/media/generate-post-polarity-v2.sh /tmp/asciiflow-c2-input8.mp4 tests/fixtures/codecs/hevc-main10-canonical-v1.mp4 /tmp/asciiflow-c2b-sdr",
+    "sdr_decode": "ffmpeg -v error -nostdin -i <output> -map 0:v:0 -an -pix_fmt <baseline_pixel_format> -f framemd5 -",
+    "pq": "bash tests/baselines/media/generate-pq-production-v1.sh tests/fixtures/codecs /tmp/asciiflow-c2b-pq",
+    "pq_oracle": "python3 tests/baselines/media/verify-pq-production.py /tmp/asciiflow-c2b-pq /tmp/asciiflow-c2b-pq-verification.json --input-directory tests/fixtures/codecs --check-baseline tests/baselines/media/pq-production-v1.json",
+    "historical_h264": "ASCIIFLOW_REGRESSION_REFERENCE=/home/eureka/Documents/AsciiFlow/target/stage51b-evidence/bench-h264-full-1.mp4 ASCIIFLOW_REGRESSION_CANDIDATE=/tmp/asciiflow-c1-h264-legacy.mp4 cargo test -p asciiflow-media --test media_regression compare_pair_from_env -- --ignored --nocapture",
+    "rejection": "target/release/asciiflow tests/fixtures/codecs/<case>.mp4 /tmp/asciiflow-c2b-rejection/<case>.mp4 --audio none --width 80 --max-frames 1 --no-progress"
+  },
+  "sdr_inputs": {
+    "input8_sha256": "6e5c214b813dca3e1db65629b1241cfb663166eb565cda1c48b5ee74ed0dce6b",
+    "input10_sha256": "df69c98ca6592b08c6bc34127b2bb5cf4125c759fd852b830e5426d5818fccda"
+  },
+  "sdr_baseline": "tests/baselines/media/post-polarity-v2.json",
+  "sdr_cases": [
+    {
+      "name": "h264-8",
+      "runs": 3,
+      "file_sha256": "7c8a7572320b8c6c999143dfece4a76d487d6c9e7788206b7af52df9acd4e1cc",
+      "decoded_framemd5_sha256": "c5b5f8bcd31bdbdc5b40cdb3a4e075332e2359c46c4a35317a60de1e2d0a263c",
+      "decoded_frames": 300,
+      "probe": {
+        "avg_frame_rate": "50/1",
+        "codec_name": "h264",
+        "color_primaries": "bt709",
+        "color_range": "tv",
+        "color_space": "bt709",
+        "color_transfer": "bt709",
+        "height": 1080,
+        "nb_frames": "300",
+        "pix_fmt": "yuv420p",
+        "profile": "High",
+        "width": 1920
+      },
+      "all_three_retained_checks_pass": true
+    },
+    {
+      "name": "hevc-8",
+      "runs": 3,
+      "file_sha256": "294a1b63ac5b0e440dcf60c4c60f975594c6e944829478b69f09f981d268ff71",
+      "decoded_framemd5_sha256": "755bdcd256c58b748b95d2a5417461b5077656ec0d7265a1dfe1d78a8d6fa799",
+      "decoded_frames": 300,
+      "probe": {
+        "avg_frame_rate": "50/1",
+        "codec_name": "hevc",
+        "color_primaries": "bt709",
+        "color_range": "tv",
+        "color_space": "bt709",
+        "color_transfer": "bt709",
+        "height": 1080,
+        "nb_frames": "300",
+        "pix_fmt": "yuv420p",
+        "profile": "Main",
+        "width": 1920
+      },
+      "all_three_retained_checks_pass": true
+    },
+    {
+      "name": "av1-8",
+      "runs": 3,
+      "file_sha256": "1531e29f52ae4e747251cf1889003dfd420303c523fb0ddc55cc9140e3bf2a4c",
+      "decoded_framemd5_sha256": "086c1821e563822576d872af8761f4282ae8c0e41972d1008870578fde5b4dc6",
+      "decoded_frames": 300,
+      "probe": {
+        "avg_frame_rate": "50/1",
+        "codec_name": "av1",
+        "color_primaries": "bt709",
+        "color_range": "tv",
+        "color_space": "bt709",
+        "color_transfer": "bt709",
+        "height": 1080,
+        "nb_frames": "300",
+        "pix_fmt": "yuv420p",
+        "profile": "Main",
+        "width": 1920
+      },
+      "all_three_retained_checks_pass": true
+    },
+    {
+      "name": "hevc-10",
+      "runs": 3,
+      "file_sha256": "f213a9f75542421bb816550cd7a93796db98ae36296a00636f7273492740a142",
+      "decoded_framemd5_sha256": "3eeb03862bf1d3aa1762192bc393fddd25024f0f187ce4982323accfb8eef517",
+      "decoded_frames": 300,
+      "probe": {
+        "avg_frame_rate": "50/1",
+        "codec_name": "hevc",
+        "color_primaries": "bt709",
+        "color_range": "tv",
+        "color_space": "bt709",
+        "color_transfer": "bt709",
+        "height": 1080,
+        "nb_frames": "300",
+        "pix_fmt": "yuv420p10le",
+        "profile": "Main 10",
+        "width": 1920
+      },
+      "all_three_retained_checks_pass": true
+    },
+    {
+      "name": "av1-10",
+      "runs": 3,
+      "file_sha256": "b69c68525ac6ab2464e04b8fc1f123d887b45bba580377bafad99dc74cf62ad7",
+      "decoded_framemd5_sha256": "21ba0466e1805b28281675312619f1cd192a8e67fdb577024c7dadddcf7af933",
+      "decoded_frames": 300,
+      "probe": {
+        "avg_frame_rate": "50/1",
+        "codec_name": "av1",
+        "color_primaries": "bt709",
+        "color_range": "tv",
+        "color_space": "bt709",
+        "color_transfer": "bt709",
+        "height": 1080,
+        "nb_frames": "300",
+        "pix_fmt": "yuv420p10le",
+        "profile": "Main",
+        "width": 1920
+      },
+      "all_three_retained_checks_pass": true
+    }
+  ],
+  "sdr_summary": {
+    "decoded_framemd5_passes": 15,
+    "failure_count": 0,
+    "metadata_passes": 15,
+    "outputs_checked": 15,
+    "whole_file_hash_passes": 15
+  },
+  "pq_baseline": "tests/baselines/media/pq-production-v1.json",
+  "pq_cases": [
+    {
+      "codec": "av1",
+      "sha256_runs_1_2_3": [
+        "41a8af52985a6be0121cfe7c4f4160a3ebdecd0acc908882774d2a0151185388",
+        "41a8af52985a6be0121cfe7c4f4160a3ebdecd0acc908882774d2a0151185388",
+        "41a8af52985a6be0121cfe7c4f4160a3ebdecd0acc908882774d2a0151185388"
+      ],
+      "frames_runs": [
+        300,
+        300,
+        300
+      ],
+      "tier1a": true,
+      "tier1b": true,
+      "tier1c": true,
+      "tier2": true,
+      "tier3": true
+    },
+    {
+      "codec": "hevc",
+      "sha256_runs_1_2_3": [
+        "0e8de23d5d222ab0476ea816d27b18e37dc73bf1f824e79bedc1070c409ded63",
+        "0e8de23d5d222ab0476ea816d27b18e37dc73bf1f824e79bedc1070c409ded63",
+        "0e8de23d5d222ab0476ea816d27b18e37dc73bf1f824e79bedc1070c409ded63"
+      ],
+      "frames_runs": [
+        300,
+        300,
+        300
+      ],
+      "tier1a": true,
+      "tier1b": true,
+      "tier1c": true,
+      "tier2": true,
+      "tier3": true
+    }
+  ],
+  "rejection_cases": [
+    {
+      "name": "hevc-main10-pq-reject",
+      "expected_policy_rejection": true,
+      "output_created": false
+    },
+    {
+      "name": "hevc-main10-hlg",
+      "expected_policy_rejection": true,
+      "output_created": false
+    },
+    {
+      "name": "hevc-main10-bt2020-sdr",
+      "expected_policy_rejection": true,
+      "output_created": false
+    },
+    {
+      "name": "hevc-main10-sdr-full",
+      "expected_policy_rejection": true,
+      "output_created": false
+    }
+  ],
+  "historical_h264": {
+    "tier1a": "FAIL (Lavc62.28.102 / Lavc62.28.103 SEI)",
+    "tier1b": "PASS",
+    "tier1c": "PASS",
+    "tier2": "PASS",
+    "whole_file": "DIFFERENT",
+    "exact_build_attested": false,
+    "raw_fail_preserved": true,
+    "fresh_oracle": true,
+    "artifact_pair": "preserved historical pair, not new current-production candidate"
+  },
+  "static": {
+    "release_workspace": "PASS",
+    "tests_default": {
+      "passed": 210,
+      "failed": 0,
+      "ignored": 79
+    },
+    "tests_encode_characterization": {
+      "passed": 210,
+      "failed": 0,
+      "ignored": 79
+    },
+    "clippy_default": "PASS",
+    "clippy_encode_characterization": "PASS",
+    "fmt": "PASS",
+    "diff_check": "PASS",
+    "audit_contract_tests": 10,
+    "spirv_paths": 317,
+    "spirv_target": "vulkan1.3",
+    "spirv_failed": 0
+  },
+  "artifact_safety": {
+    "binary_existing_source_alias_refused": true,
+    "wrapper_existing_log_alias_refused": true,
+    "c1_sha256_preserved": "d0eb86dcc265fe7f675d87055f038d258176e331eb2aac412ba7358a6c8c1e6b",
+    "fresh_directory_creation": "atomic mkdir; all pre-existing output directories rejected",
+    "binary_file_creation": "OpenOptions create_new; no truncation"
+  },
+  "reuse": {
+    "lifecycle_3000_frame": "Prior real hardware evidence reused; no fresh stress claim; validation/FD ownership/fault/audio production code unchanged"
+  },
+  "remaining_required_gates": []
+}

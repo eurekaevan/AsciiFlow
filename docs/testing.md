@@ -1,5 +1,100 @@
 # Regression testing
 
+## C-2B primary conversion and target-volume CPU reference
+
+[C-2B closure](stage5.3c2b-target-volume-cpu.md) is the replacement f64 CPU
+reference, not a repair/implementation of Annex5 and not production HDR→SDR.
+Keep transfer, separate XYZ colorimetry and target clipping distinct in tests.
+Every canonical C-1 pixel is processed, including negative/>1 excursions;
+no source preclip or selected-valid subset is allowed.
+
+```sh
+cargo test -p asciiflow-core --test sdr_target_volume
+cargo test -p asciiflow-core sdr_target_volume
+cargo test -p asciiflow-cpu target_volume
+python3 tests/fixtures/tone-map/test-c2b-audit.py
+python3 tests/fixtures/tone-map/generate-c2b-vectors.py > /tmp/c2b-vectors.json
+cmp /tmp/c2b-vectors.json tests/fixtures/tone-map/c2b-vectors.json
+python3 tests/fixtures/tone-map/generate-c2b-vectors.py --rust-table > /tmp/c2b-vectors.tsv
+cmp /tmp/c2b-vectors.tsv tests/fixtures/tone-map/c2b-vectors.tsv
+bash scripts/qualify-tone-map-cpu.sh /tmp/asciiflow-c2b-c1-regression
+bash scripts/qualify-target-volume-cpu.sh \
+  /tmp/asciiflow-c2b-c1-regression/method-a-run1.bin /tmp/asciiflow-c2b-target-volume
+cmp /tmp/asciiflow-c2b-target-volume/c2b-target-volume-audit.json \
+  tests/fixtures/tone-map/c2b-target-volume-audit.json
+```
+
+Use **fresh output directories**: qualification never truncates an existing
+output, including symlink/hardlink aliases of C-1. The wrapper checks the sealed
+C-1 identity, three output byte equality and retained `C2B-SHA256SUMS` before
+the full-frame audit. Preserve C-1's original identity/SHA256SUMS separately.
+Retain exact generator/wrapper commands and hashes, toolchain/libm identity,
+independent vector identity, input SHA, explicit-endian output field order and
+three output SHA or structured oracle. Byte portability across a new libm or
+compiler is not claimed: qualify numerical vectors before replacing an oracle.
+Boundedness, exact clip, idempotence, finite rejection, interior identity and
+strict preclip XYZ/Y error are gates. ΔY, u′v′, hue/chroma and sampled many-to-one
+collisions are **loss characterization**, not invented quality/visual gates.
+Continue all five retained SDR and both PQ production baselines (three runs),
+decode-back/metadata, default-eight-bit PQ/HLG/BT.2020-SDR/full-range rejection,
+both workspace/static modes and every actual SPIR-V Vulkan1.3 module. Historical
+H.264 raw1A remains FAIL; semantic1B/decoded1C/structure2 PASS is not byte PASS.
+
+## C-2A domain and standard clarification
+
+[C-2A](stage5.3c2a-domain-standard-clarification.md) is SEALED as OutcomeC/F3:
+Annex5 is abandoned as an executable reference; C-2B implements the distinct
+replacement primary conversion + target-volume policy above.
+No derived formula, selected-valid subset or clipped C-1 image is a gamut PASS.
+Preserve the original C-2 audit and C-1 baseline, including its source/Y failures.
+The D5+D6 next-reference policy is a project design using standard-allowed
+operations, not a repair or production fallback.
+
+```sh
+python3 tests/fixtures/tone-map/test-c2a-audit.py
+python3 tests/fixtures/tone-map/audit-c2a.py taxonomy \
+  /tmp/asciiflow-c2a-c1-regression/method-a-run1.bin > /tmp/c2a-taxonomy.json
+cmp /tmp/c2a-taxonomy.json tests/fixtures/tone-map/c2a-taxonomy.json
+python3 tests/fixtures/tone-map/audit-c2a.py formula > /tmp/c2a-formula.json
+cmp /tmp/c2a-formula.json tests/fixtures/tone-map/c2a-formula-audit.json
+```
+
+Generate the three sealed C-1 binaries with the wrapper below before these
+checks. Repeat taxonomy for runs2/3; all report bytes must match. The signed-power
+taxonomy is an explicitly labelled sensitivity experiment only; negative-Y
+classification under the unchanged C-1 contract remains unknown. General
+feasibility checks some legal target RGB at desired Y, not hue/chromaticity or
+an algorithm. Formula tests retain the printed contradiction and mark derived
+Bézier as NOT normative. Record primary-source availability and literal fields
+in the source ledger, with `null` for inaccessible equations; never fill them
+from a downstream report or third-party code. Continue normal and
+`asciiflow-media/encode-characterization` workspace/clippy modes, all actual
+SPIR-V, unchanged C-1/media/rejection gates. At C-2A no new output baseline
+existed; C-2B's separately named output must not replace the C-1 oracle.
+
+## Preserved C-2 blocked entry-domain audit
+
+[Original Annex5 C-2](stage5.3c2-gamut-map-cpu.md) is NOT SEALED / ABANDONED. Before coding the Annex5
+oracle, the mandatory C-1 source audit demonstrated empty target effective
+gamuts at Y>1 and an inconsistency in printed Eq5-4. Do not qualify a clamped
+or selected-valid subset as full C-1→C-2 integration.
+
+```sh
+bash scripts/qualify-tone-map-cpu.sh /tmp/asciiflow-c2-c1-regression
+python3 tests/fixtures/tone-map/audit-c2-domain.py \
+  /tmp/asciiflow-c2-c1-regression/method-a-run1.bin > /tmp/c2-domain-audit.json
+cmp /tmp/c2-domain-audit.json tests/fixtures/tone-map/c2-domain-audit.json
+```
+
+This successful audit command records NOT SEALED, not a gamut PASS. It validates
+the retained C-1 input digest/serialization and counts all RGB excursions;
+Decimal70 independently characterizes positive-only Y counterexamples. No
+negative transfer/preclamp/new tone curve/gamut mapping is run. Continue existing
+production/hash/rejection gates unchanged. The former BLOCKED pending C-2A
+decision is now resolved by method rejection/reselection, not an Annex5 PASS.
+No gamut vectors, containment, integration or C-2 mapped-output digest are
+claimed. No C-3 work is authorized by this result.
+
 ## Internal Method A CPU reference (Stage 5.3C-1)
 
 The [closure report](stage5.3c1-tone-map-cpu.md) and [semantics](tone-mapping.md)

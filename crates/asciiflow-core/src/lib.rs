@@ -11,6 +11,7 @@ mod metrics;
 mod pipeline;
 mod planner;
 mod qualification;
+pub mod sdr_target_volume;
 pub mod tone_map_bt2446;
 
 pub use audio::{AudioPlan, AudioPolicy, AudioStreamInfo, AudioStreamPlan, SkippedAudioStream};

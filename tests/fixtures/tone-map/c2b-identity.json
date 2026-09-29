@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "stage": "5.3C-2B",
+  "scope": "internal CPU f64 only; production HDR->SDR disabled",
+  "source_head": "4d95a7e2c6560e061510a6b27ee685c1db08ae0a",
+  "source_state": "uncommitted qualified additions; source file hashes are authoritative",
+  "environment": {
+    "rustc": "1.97.1 (8bab26f4f 2026-07-14)",
+    "llvm": "22.1.6",
+    "target": "x86_64-unknown-linux-gnu",
+    "glibc": "2.43-8.fc44",
+    "python": "3.14.7",
+    "decimal_precision": 70,
+    "decimal_rounding": "ROUND_HALF_EVEN",
+    "ffmpeg": "8.1.3-1.fc44 (regression oracle only; no FFmpeg in mathematical generator)",
+    "intel_media_driver": "26.1.5-1.fc44",
+    "mesa_vulkan_drivers": "26.2.3-1.fc44",
+    "spirv_tools": "2026.1-1.fc44"
+  },
+  "commands": {
+    "independent_json": "python3 tests/fixtures/tone-map/generate-c2b-vectors.py",
+    "independent_tsv": "python3 tests/fixtures/tone-map/generate-c2b-vectors.py --rust-table",
+    "c1": "bash scripts/qualify-tone-map-cpu.sh /tmp/asciiflow-c2b-c1-regression",
+    "c2b": "bash scripts/qualify-target-volume-cpu.sh /tmp/asciiflow-c2b-c1-regression/method-a-run1.bin /tmp/asciiflow-c2b-target-volume-closure",
+    "audit": "python3 tests/fixtures/tone-map/audit-c2b-target-volume.py /tmp/asciiflow-c2b-c1-regression/method-a-run1.bin /tmp/asciiflow-c2b-target-volume-closure"
+  },
+  "input": {
+    "filename": "method-a-run1.bin",
+    "width": 1920,
+    "height": 1080,
+    "pixels": 2073600,
+    "sha256": "d0eb86dcc265fe7f675d87055f038d258176e331eb2aac412ba7358a6c8c1e6b",
+    "byte_size": 116121621,
+    "domain": "sealed raw nonlinear SDR BT.2020 MethodA output; no preclip",
+    "source_generator_identity": "tests/fixtures/tone-map/identity.json"
+  },
+  "output": {
+    "filenames": [
+      "target-volume-run1.bin",
+      "target-volume-run2.bin",
+      "target-volume-run3.bin"
+    ],
+    "sha256_runs_1_2_3": [
+      "a7e7ffe64d61269288c8e9b2e9b22a62f8c16fd2287083386bc8cefb9c3471af",
+      "a7e7ffe64d61269288c8e9b2e9b22a62f8c16fd2287083386bc8cefb9c3471af",
+      "a7e7ffe64d61269288c8e9b2e9b22a62f8c16fd2287083386bc8cefb9c3471af"
+    ],
+    "byte_size": 199065622,
+    "magic": "AF-C2B-OUT-v1\\0",
+    "header": "u32 LE width, u32 LE height",
+    "pixel_fields": [
+      "source-linear R,G,B",
+      "unbounded BT.709 R,G,B",
+      "bounded BT.709 R,G,B",
+      "nonlinear BT.709 R,G,B"
+    ],
+    "serialization": "row-major IEEE754 f64 little-endian, no struct padding",
+    "normalization": "display-linear 1=100 cd/m2",
+    "portability": "byte identity qualified only on recorded compiler/libm; independent numerical oracle required on other versions"
+  },
+  "source_sha256": {
+    "crates/asciiflow-core/src/sdr_target_volume.rs": "ca92bb3d6d26113254788a0a09549e064ce3c37be0db7b7636f71ea6dcf836b5",
+    "crates/asciiflow-core/tests/sdr_target_volume.rs": "8dcc46c567d1acb1472604a191fa4e1c9781cb0b57e1b4c6abc18dcbf918b32f",
+    "crates/asciiflow-cpu/src/target_volume.rs": "04d9b13d14387fb0e6f1eb88b98af71f0608f6347a879901ed6f17977d03bb07",
+    "crates/asciiflow-cpu/examples/qualify_target_volume.rs": "8e68924865ade375d8b388e437276e79571ad11babee4994399867c9525eefcd",
+    "scripts/qualify-target-volume-cpu.sh": "da77bbb27e84571caf60ca4c9fed71e81bc17cc129cb4228ab65ccbd304a3c3e",
+    "tests/fixtures/tone-map/generate-c2b-vectors.py": "3e018d5072efb729413e3bd1820e0de1d811078c133b9620e78180ecdea4f860",
+    "tests/fixtures/tone-map/audit-c2b-target-volume.py": "ed787d841a333a54a26ee2ba016f46a22d9bee621f099e34db1f7dc08507b143",
+    "tests/fixtures/tone-map/c2b-vectors.json": "6fec90c3233204808b51d1485a380686a947b838ad1571caff84945794cbd20f",
+    "tests/fixtures/tone-map/c2b-vectors.tsv": "d2c44d731057b7897709102cda9b52cd33915b97a357f508640ec877b75d2af5",
+    "tests/fixtures/tone-map/test-c2b-audit.py": "ac257dd0b1d1078724b413a56e1f28e3d025217dd6ee57a3bb1dae2e6126cb4d",
+    "Cargo.lock": "f8cf97f855fcbcb422ef1b74f2367a7ac40b612dcc41cc0a1d8a23f3e27746b8",
+    "target/release/asciiflow": "97e4a5fdc2f314cd79bc3840dcf93be3fc8c9109909516499088fb0a54d8a368"
+  },
+  "performance": {
+    "scope": "single1080p frame conversion only; excludes serialization/audit; sanity not gate",
+    "ms_per_frame": [
+      191.239511,
+      198.505989,
+      198.585297
+    ],
+    "fps": [
+      5.229045,
+      5.037631,
+      5.035620
+    ]
+  }
+}

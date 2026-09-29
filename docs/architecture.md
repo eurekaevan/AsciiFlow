@@ -10,8 +10,15 @@ Stage 5.3B-3 integrates the strictly planned HDR-preserve path. Its
 
 Stage 5.3C-1 adds only a permanent f64 post-ASCII Method A reference;
 its [closure record](stage5.3c1-tone-map-cpu.md) does not enable production HDR→SDR.
+The historical [C-2 entry audit](stage5.3c2-gamut-map-cpu.md) remains NOT SEALED
+for its abandoned Annex5 implementation. [C-2A clarification](stage5.3c2a-domain-standard-clarification.md)
+is SEALED as an explicit method rejection: Annex5 has no defensible verified
+formula correction, and raw C-1 has source/Y excursions.
+[C-2B](stage5.3c2b-target-volume-cpu.md) qualifies the replacement CPU f64
+reference: §2 primary conversion + explicit target-volume limiting (D5+D6),
+not a strict-Y mapper or a production fallback. No production feature is enabled.
 
-This document describes the sole Rust implementation through the Stage 5.3C-1
+This document describes the sole Rust implementation through the Stage 5.3C-2B
 CPU reference, retaining Stage 5.3B-3 PQ production integration on the Stage 5.2C-3 P010
 processing foundation: a permanent CPU reference backend, a Vulkan 1.3 compute
 backend, optional Linux VAAPI media, and qualified Intel DMA-BUF bridges in both
@@ -78,6 +85,22 @@ back into glyph selection and has no metadata/temporal adaptation. No BT.709
 gamut conversion, codec tags, quantized frame, shader, planner or public CLI
 option is added. Input above 1000 nits rejects qualification; standard-produced
 negative/>1 output excursions remain visible for future gamut/output work.
+
+The previous planned Annex5 arrow is rejected by [C-2A](gamut-mapping.md).
+Conceptual C-2 now means **BT.2020→BT.709 SDR conversion**: C-2A is the
+domain/standard clarification; C-2B is primary conversion + target-volume CPU
+reference. `core::sdr_target_volume` separates raw C-1 nonlinear input,
+display-linear BT.2020, XYZ, unbounded/bounded BT.709 and nonlinear BT.709 types.
+It explicitly extends display power as sign(v)|v|^2.4 (zero maps to +0),
+uses precise D65-derived matrices, preserves unbounded results, then clips
+each target-linear component to [0,1], where 1=100 cd/m². The inverse power
+1/2.4 is a display signal representation, not BT.709's camera OETF.
+`cpu::target_volume` consumes C-1 immutably after the existing HDR ASCII renderer.
+No source preclip, CAT (same D65), Y restoration, quantization or encoder is
+added. Preclip XYZ/Y is colorimetrically preserved within f64 error; limiting
+may change Y/hue and is many-to-one. This is a measured project policy, not
+Annex5, optimality or luminance preservation. Production HDR→SDR remains closed;
+C-3 is justified by this qualification, but no Vulkan C-3 work has started.
 
 ```text
 codec parameters / decoded AVFrame metadata

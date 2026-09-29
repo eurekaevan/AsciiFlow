@@ -1,0 +1,139 @@
+{
+  "schema_version": 1,
+  "qualification_date": "2026-09-29",
+  "status_query_utc": "2026-09-29T02:05:27Z",
+  "formula_decision": "F3: no defensible corrected formula obtained; abandon Annex5 as executable project reference",
+  "official_correction_search_result": "No published ITU correction found as of qualification date.",
+  "formal_queries": [
+    "site:itu.int BT.2407 corrigendum",
+    "site:itu.int BT.2407 erratum",
+    "site:itu.int BT.2407 correction",
+    "site:itu.int BT.2407 equation 5-4"
+  ],
+  "original_source_queries": [
+    "Luminance-Preserving Colour Conversion PDF Schweiger Borer BBC",
+    "10.5594/JMI.2017.2660698 PDF BBC",
+    "10.5594/M001708 PDF",
+    "site:downloads.bbc.co.uk/rd/pubs Luminance-Preserving",
+    "Florian Schweiger gamut mapping pdf",
+    "Florian Schweiger HDR soft-clipping"
+  ],
+  "sources": [
+    {
+      "id": "itu-bt2407",
+      "classification": "current official ITU Report, not an official corrigendum",
+      "identity": "BT.2407-0 (10/2017), approved2017-10, In force (Main); sole revision listed",
+      "status_url": "https://www.itu.int/pub/r-rep-bt.2407",
+      "status_html_snapshot_sha256": "9d2bc2c606d973637c5727166a6f26d515b1a84933290ae69795e210d920aae2",
+      "publication_url": "https://www.itu.int/pub/R-REP-BT.2407-2017",
+      "pdf_url": "https://www.itu.int/dms_pub/itu-r/opb/rep/R-REP-BT.2407-2017-PDF-E.pdf",
+      "pdf_bytes": 4552615,
+      "pdf_sha256": "14d626eeb33524038066cead3e8aef54dea6b3b3f7dd4073b06fa1569b2fb676",
+      "formula_availability": "read and visually verified; printed p37 Eq5-4, p38 alpha/beta",
+      "literal_formula": {
+        "transcription": "symbol-preserving ASCII transcription of rendered formula; no inserted square",
+        "branches": [
+          {"condition": "1-beta < r <= 1+alpha", "expression": "r-alpha/(beta-alpha)^2*[beta-sqrt(beta^2+(alpha-beta)*(r+beta-1))]"},
+          {"condition": "r <= 1-beta", "expression": "r"},
+          {"condition": "r > 1+alpha", "expression": "1"}
+        ],
+        "fraction_numerator": "alpha",
+        "fraction_denominator": "(beta-alpha)^2",
+        "radicand": "beta^2+(alpha-beta)*(r+beta-1)",
+        "outer_sign": "r minus fraction times bracket",
+        "bracket": "beta minus square root",
+        "bracket_exponent": 1,
+        "alpha": "overline(w p2020)/overline(w p709)-1",
+        "beta": "0.2"
+      }
+    },
+    {
+      "id": "smpte-journal",
+      "classification": "original research; public publication identity only",
+      "identity": "Florian Schweiger, Tim Borer, Manish Pindoria; Luminance-Preserving Color Conversion; SMPTE Motion Imaging Journal126(3), pp45-49, April2017",
+      "doi": "10.5594/JMI.2017.2660698",
+      "url": "https://journal.smpte.org/periodicals/SMPTE%20Motion%20Imaging%20Journal/126/3/19/",
+      "access_result": "official PDF requires sign-in/membership; public original-author full text not obtained in bounded search",
+      "literal_formula": null,
+      "alpha": null,
+      "beta": null,
+      "pdf_sha256": null
+    },
+    {
+      "id": "smpte-conference",
+      "classification": "original research; public publication identity only",
+      "identity": "Same authors; Luminance-Preserving Colour Conversion; SMPTE2016 Annual Technical Conference and Exhibition; October2016",
+      "doi": "10.5594/M001708",
+      "url": "https://journal.smpte.org/conferences/SMPTE%202016%20Annual%20Technical%20Conference%20and%20Exhibition/15/",
+      "access_result": "official full text requires sign-in/membership; not obtained",
+      "literal_formula": null,
+      "alpha": null,
+      "beta": null,
+      "pdf_sha256": null
+    },
+    {
+      "id": "bbc-bibliography",
+      "classification": "original employer bibliographic evidence, NOT original formula text",
+      "identity": "International Standards and BBC R&D Publications on High Dynamic Range and Hybrid Log-Gamma, December2017, p2",
+      "pdf_url": "https://downloads.bbc.co.uk/rd/pubs/papers/HDR/BBC_HDRTV_List_of_Standards_and_Publications_v2.pdf",
+      "pdf_sha256": "07b2ee2945d418d930d0ded34a21e3ae4357d0f3b363f24d01b71bb7258002e0",
+      "evidence": "explicitly records conference paper republished in April2017 journal; no soft-clipping equation",
+      "literal_formula": null
+    },
+    {
+      "id": "wp6c151",
+      "classification": "working contribution; public catalog only; not a published correction",
+      "identity": "BBC, R15-WP6C-C-0151, dated2016-10-10, posted2016-10-11; proposed contribution towards BT.[2020TO709]",
+      "url": "https://www.itu.int/md/R15-WP6C-C-0151/en",
+      "html_snapshot_sha256": "84c40205952f1a22835bebaf701861b35dedacce0bf1b0f8040bcb3e846cae2b",
+      "access_result": "document explicitly restricted to TIES users; no text obtained",
+      "literal_formula": null,
+      "alpha": null,
+      "beta": null,
+      "document_sha256": null
+    },
+    {
+      "id": "itu-bt2446",
+      "classification": "official ITU Report fixed C-1 source",
+      "identity": "BT.2446-1 (03/2021), section4.1 Tables2-3 pp8-9; Table1 pp6-7; MethodC section6.1 pp18-19",
+      "pdf_url": "https://www.itu.int/dms_pub/itu-r/opb/rep/R-REP-BT.2446-1-2021-PDF-E.pdf",
+      "pdf_sha256": "c1571348423f1a7b3881b13ed12f877377654ea0d7bac870db38f004c9efb285",
+      "literal_formula": null,
+      "evidence": "C-1 matches literal MethodA; Table1 says colour volume management No; BT.2407 handoff sentence is in MethodC, not MethodA"
+    },
+    {
+      "id": "itu-bt2087",
+      "classification": "official ITU Recommendation referenced by BT.2407 N/L stages",
+      "identity": "BT.2087-0 (10/2015), Annex1 Case1 Note2, printed p3; 2016 editorial amendments noted",
+      "pdf_url": "https://www.itu.int/dms_pubrec/itu-r/rec/bt/R-REC-BT.2087-0-201510-I!!PDF-E.pdf",
+      "pdf_sha256": "19f870d9aa201c35e063e6b6eba43ee57878af8af7b12a02f4631fd1a955274a",
+      "literal_formula": null,
+      "evidence": "display power2.40; Note2 permits out-of-range values with appropriate negative sign treatment"
+    },
+    {
+      "id": "itu-bt2408",
+      "classification": "current official ITU operational guidance, NOT Annex5 correction",
+      "identity": "BT.2408-9 (03/2026), In force (Main); section5.3 p25; Annex7 A7.1 p77, A7.2 p79",
+      "status_url": "https://www.itu.int/pub/r-rep-bt.2408",
+      "pdf_url": "https://www.itu.int/dms_pub/itu-r/opb/rep/R-REP-BT.2408-9-2026-PDF-E.pdf",
+      "pdf_sha256": "1588dd95b1cd0723f435df2305a6ba12ce92e779054d2b98b7fdaa7d70adbc19",
+      "literal_formula": null,
+      "evidence": "sign-reflected transfer common but application-dependent; clipping negative to zero / positive to interface or display capability allowed after primary conversion"
+    }
+  ],
+  "lineage": {
+    "conference_to_journal": "confirmed by BBC employer bibliography",
+    "bbc_wp6c_contribution": "catalog confirms topic/source/date; text relationship to final Annex5 not inspected",
+    "original_formula_to_annex5": "method association supported, equation-level lineage NOT established",
+    "secondary_code_used_as_authority": false
+  },
+  "derived_candidate": {
+    "status": "derived candidate NOT normative, original-source corroboration unavailable",
+    "control_points": ["(1-beta,1-beta)", "(1,1)", "(1+alpha,1)"],
+    "parametric_r": "1-beta+2*beta*t+(alpha-beta)*t^2",
+    "parametric_f": "1-beta+2*beta*t-beta*t^2",
+    "closed_form_alpha_not_beta": "r-alpha/(alpha-beta)^2*[sqrt(beta^2+(alpha-beta)*(r+beta-1))-beta]^2",
+    "alpha_equals_beta": "t=(r-1+beta)/(2*beta); f=r-alpha*t^2",
+    "executable_project_reference": false
+  }
+}

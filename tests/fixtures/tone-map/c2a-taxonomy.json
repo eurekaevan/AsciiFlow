@@ -1,0 +1,192 @@
+{
+  "schema_version": 1,
+  "input_sha256": "d0eb86dcc265fe7f675d87055f038d258176e331eb2aac412ba7358a6c8c1e6b",
+  "total_pixels": 2073600,
+  "historical_audit_sha256": "bc6894bace5184c234fdf53c536f129d62b7293f826660d59e288d065528903f",
+  "preserved_historical_counts": {
+    "samples": 2073600,
+    "source_cube_excursion_samples": 802388,
+    "diagnostic_linear_y_above_one_samples": 194434
+  },
+  "source_y_coefficients": [
+    0.2627,
+    0.678,
+    0.0593
+  ],
+  "y_comparison_epsilon": 1e-12,
+  "source_excursion_test": "raw nonlinear RGB <0 or >1; also outside under monotone signed power",
+  "positive_only_taxonomy": {
+    "inside_source_effective_gamut": 1271212,
+    "class_a_outside_source_y_feasible": 478354,
+    "class_b_y_above_peak": 194434,
+    "negative_y_unclassified": 129600,
+    "y_below_zero": 0
+  },
+  "positive_only_percentages": {
+    "inside_source_effective_gamut": "61.30459104938271604938271605",
+    "class_a_outside_source_y_feasible": "23.06876929012345679012345679",
+    "class_b_y_above_peak": "9.376639660493827160493827160",
+    "negative_y_unclassified": "6.25",
+    "y_below_zero": "0"
+  },
+  "strict_partition": {
+    "strict_source_and_y_valid": 1271212,
+    "only_y_infeasible": 0,
+    "only_source_infeasible_known": 478354,
+    "both_source_and_y_infeasible": 194434,
+    "source_infeasible_y_unclassified": 129600
+  },
+  "strict_partition_percentages": {
+    "strict_source_and_y_valid": "61.30459104938271604938271605",
+    "only_y_infeasible": "0",
+    "only_source_infeasible_known": "23.06876929012345679012345679",
+    "both_source_and_y_infeasible": "9.376639660493827160493827160",
+    "source_infeasible_y_unclassified": "6.25"
+  },
+  "intersections": {
+    "negative_component": 129600,
+    "component_above_nominal": 802388,
+    "negative_and_above_nominal": 129600,
+    "source_excursion": 802388,
+    "source_and_y_above_peak_positive_only": 194434,
+    "negative_and_y_above_peak_signed_sensitivity": 0,
+    "negative_and_y_feasible_signed_sensitivity": 129600
+  },
+  "intersection_percentages": {
+    "negative_component": "6.25",
+    "component_above_nominal": "38.69540895061728395061728395",
+    "negative_and_above_nominal": "6.25",
+    "source_excursion": "38.69540895061728395061728395",
+    "source_and_y_above_peak_positive_only": "9.376639660493827160493827160",
+    "negative_and_y_above_peak_signed_sensitivity": "0",
+    "negative_and_y_feasible_signed_sensitivity": "6.25"
+  },
+  "signed_power_sensitivity": {
+    "inside_source_effective_gamut": 1271212,
+    "class_a_outside_source_y_feasible": 607954,
+    "class_b_y_above_peak": 194434,
+    "negative_y_unclassified": 0,
+    "y_below_zero": 0
+  },
+  "signed_power_percentages": {
+    "inside_source_effective_gamut": "61.30459104938271604938271605",
+    "class_a_outside_source_y_feasible": "29.31876929012345679012345679",
+    "class_b_y_above_peak": "9.376639660493827160493827160",
+    "negative_y_unclassified": "0",
+    "y_below_zero": "0"
+  },
+  "signed_power_status": "diagnostic only: sign(v)*abs(v)^2.4, BT.2408-9 section5.3; NOT adopted C-1/production contract",
+  "spatial_regions": {
+    "patch-black": {
+      "pixels": 64800,
+      "source_excursion": 0,
+      "negative_component": 0,
+      "y_above_peak_positive_only": 0
+    },
+    "patch-neutral-.0001": {
+      "pixels": 64800,
+      "source_excursion": 0,
+      "negative_component": 0,
+      "y_above_peak_positive_only": 0
+    },
+    "patch-neutral-100": {
+      "pixels": 64800,
+      "source_excursion": 0,
+      "negative_component": 0,
+      "y_above_peak_positive_only": 0
+    },
+    "patch-neutral-203": {
+      "pixels": 64800,
+      "source_excursion": 0,
+      "negative_component": 0,
+      "y_above_peak_positive_only": 0
+    },
+    "patch-neutral-400": {
+      "pixels": 64800,
+      "source_excursion": 0,
+      "negative_component": 0,
+      "y_above_peak_positive_only": 0
+    },
+    "patch-neutral-1000": {
+      "pixels": 64800,
+      "source_excursion": 0,
+      "negative_component": 0,
+      "y_above_peak_positive_only": 0
+    },
+    "patch-red": {
+      "pixels": 64800,
+      "source_excursion": 64800,
+      "negative_component": 64800,
+      "y_above_peak_positive_only": 0
+    },
+    "patch-green": {
+      "pixels": 64800,
+      "source_excursion": 64800,
+      "negative_component": 0,
+      "y_above_peak_positive_only": 64800
+    },
+    "patch-blue": {
+      "pixels": 64800,
+      "source_excursion": 64800,
+      "negative_component": 0,
+      "y_above_peak_positive_only": 0
+    },
+    "patch-cyan": {
+      "pixels": 64800,
+      "source_excursion": 64800,
+      "negative_component": 0,
+      "y_above_peak_positive_only": 64800
+    },
+    "patch-magenta": {
+      "pixels": 64800,
+      "source_excursion": 64800,
+      "negative_component": 64800,
+      "y_above_peak_positive_only": 0
+    },
+    "patch-yellow": {
+      "pixels": 64800,
+      "source_excursion": 64800,
+      "negative_component": 0,
+      "y_above_peak_positive_only": 64800
+    },
+    "patch-skin-203-120-80": {
+      "pixels": 64800,
+      "source_excursion": 0,
+      "negative_component": 0,
+      "y_above_peak_positive_only": 0
+    },
+    "patch-skin-400-200-100": {
+      "pixels": 64800,
+      "source_excursion": 0,
+      "negative_component": 0,
+      "y_above_peak_positive_only": 0
+    },
+    "patch-skin-100-70-50": {
+      "pixels": 64800,
+      "source_excursion": 0,
+      "negative_component": 0,
+      "y_above_peak_positive_only": 0
+    },
+    "patch-neutral-1": {
+      "pixels": 64800,
+      "source_excursion": 0,
+      "negative_component": 0,
+      "y_above_peak_positive_only": 0
+    },
+    "neutral-ramp": {
+      "pixels": 345600,
+      "source_excursion": 0,
+      "negative_component": 0,
+      "y_above_peak_positive_only": 0
+    },
+    "rgb-gradient": {
+      "pixels": 691200,
+      "source_excursion": 413588,
+      "negative_component": 0,
+      "y_above_peak_positive_only": 34
+    }
+  },
+  "preclamp_count": 0,
+  "changed_pixel_count": 0,
+  "mapper_run": false
+}

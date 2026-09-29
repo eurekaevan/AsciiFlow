@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "arithmetic": "Decimal-70",
+  "cases": [
+    {
+      "alpha": ".5",
+      "beta": ".2",
+      "lower_value": "0.8000000000000000000000000000000000000000000000000000000000000000000000",
+      "upper_left_value": "3.166666666666666666666666666666666666666666666666666666666666666666667",
+      "upper_right_value": "1",
+      "upper_value_jump": "-2.166666666666666666666666666666666666666666666666666666666666666666667",
+      "lower_right_derivative": "5.166666666666666666666666666666666666666666666666666666666666666666667",
+      "lower_left_derivative": "1",
+      "upper_right_derivative": "0",
+      "upper_left_derivative": "2.666666666666666666666666666666666666666666666666666666666666666666667",
+      "sampled_min": "0.8000000000000000000000000000000000000000000000000000000000000000000000",
+      "sampled_max": "3.166666666666666666666666666666666666666666666666666666666666666666667",
+      "sampled_rolloff_nondecreasing": true,
+      "sampled_rolloff_in_unit_range": false,
+      "derived_not_normative": {
+        "lower": [
+          "0.8",
+          "0.8"
+        ],
+        "upper": [
+          "1.5",
+          "1.0"
+        ],
+        "radial_nondecreasing": true,
+        "output_nondecreasing": true,
+        "in_unit_range": true
+      }
+    },
+    {
+      "alpha": ".1",
+      "beta": ".2",
+      "lower_value": "0.8",
+      "upper_left_value": "0.1",
+      "upper_right_value": "1",
+      "upper_value_jump": "0.9",
+      "lower_right_derivative": "-1.5",
+      "lower_left_derivative": "1",
+      "upper_right_derivative": "0",
+      "upper_left_derivative": "-4",
+      "sampled_min": "0.1",
+      "sampled_max": "0.8",
+      "sampled_rolloff_nondecreasing": false,
+      "sampled_rolloff_in_unit_range": true,
+      "derived_not_normative": {
+        "lower": [
+          "0.8",
+          "0.8"
+        ],
+        "upper": [
+          "1.1",
+          "1.0"
+        ],
+        "radial_nondecreasing": true,
+        "output_nondecreasing": true,
+        "in_unit_range": true
+      }
+    },
+    {
+      "alpha": ".2",
+      "beta": ".2",
+      "printed_status": "undefined: division by zero",
+      "derived_not_normative": {
+        "lower": [
+          "0.8",
+          "0.8"
+        ],
+        "upper": [
+          "1.2",
+          "1.0"
+        ],
+        "radial_nondecreasing": true,
+        "output_nondecreasing": true,
+        "in_unit_range": true
+      }
+    },
+    {
+      "alpha": "0",
+      "beta": ".2",
+      "lower_value": "0.8",
+      "upper_left_value": "1",
+      "upper_right_value": "1",
+      "upper_value_jump": "0",
+      "lower_right_derivative": "1",
+      "lower_left_derivative": "1",
+      "upper_right_derivative": "0",
+      "upper_left_derivative": "1",
+      "sampled_min": "0.8",
+      "sampled_max": "1.0",
+      "sampled_rolloff_nondecreasing": true,
+      "sampled_rolloff_in_unit_range": true,
+      "derived_not_normative": {
+        "lower": [
+          "0.8",
+          "0.8"
+        ],
+        "upper": [
+          "1.0",
+          "1.0"
+        ],
+        "radial_nondecreasing": true,
+        "output_nondecreasing": true,
+        "in_unit_range": true
+      }
+    }
+  ],
+  "original_author_corroboration_required": true,
+  "mapper_run": false,
+  "derivative": "1+alpha/(2*(alpha-beta)*sqrt(q)); q=beta^2+(alpha-beta)*(r+beta-1)",
+  "second_derivative": "-alpha/(4*q^(3/2))",
+  "derived_candidate_status": "independent quadratic Bezier diagnostic; NOT normative; not selected executable reference"
+}
