@@ -1,6 +1,7 @@
 pub mod hdr;
 mod mapper;
 mod renderer;
+pub mod tone_map;
 
 use asciiflow_core::{
     AsciiBackend, AsciiConfig, BackendOutput, BackendTimings, Error, Result, VideoFrame,

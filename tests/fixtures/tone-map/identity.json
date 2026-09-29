@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "name": "Canonical C-1 Method A linear fixture v1",
+  "established": "2026-09-29",
+  "source_head_before_changes": "47ef97ea3e29f2a11a87e7d701090250f29f13a2",
+  "source_has_uncommitted_c1_changes": true,
+  "scope": "Internal f64 CPU reference only; fixed BT.2020 display-light 1000-to-100 nits; not production HDR-to-SDR",
+  "environment": {
+    "rustc": "1.97.1 (8bab26f4f 2026-07-14)",
+    "target": "x86_64-unknown-linux-gnu",
+    "llvm": "22.1.6",
+    "native_libm_package": "glibc-2.43-8.fc44.x86_64",
+    "python": "3.14.7, Decimal precision 70",
+    "cargo_lock_sha256": "f8cf97f855fcbcb422ef1b74f2367a7ac40b612dcc41cc0a1d8a23f3e27746b8",
+    "byte_oracle_portability": "Only established on recorded native toolchain/libm; other environments require numerical-vector qualification"
+  },
+  "generator": {
+    "source": "crates/asciiflow-cpu/examples/qualify_tone_map.rs",
+    "sha256": "66dac62dc5393181153f9b04fb9be264eac422746060c9e98d0718c29d2d8b07",
+    "wrapper": "scripts/qualify-tone-map-cpu.sh",
+    "wrapper_sha256": "2c6d3c79d135a7fcbb51d43bfeb099d5bb5f1fb4a1d1ea4f4958e61dccc2fcf5",
+    "command": "bash scripts/qualify-tone-map-cpu.sh /tmp/asciiflow-c1-reference-final",
+    "underlying_command": "cargo run --release -p asciiflow-cpu --example qualify_tone_map -- /tmp/asciiflow-c1-reference-final",
+    "external_media": false,
+    "randomness": false,
+    "clock_used_for_pixel_generation": false
+  },
+  "reference_source_sha256": {
+    "crates/asciiflow-core/src/tone_map_bt2446.rs": "209208b850936869e6a8b73c960b2cf7be9d957ceb544eaca1bbe4fe88407107",
+    "crates/asciiflow-cpu/src/tone_map.rs": "8b687dddf9beedd79800ac717cb80c97871279026033e36a9a574c737b753e97",
+    "crates/asciiflow-cpu/src/hdr.rs": "fd04a418f41ea0f87edc40df2604dd2d1941a38bb5935f13a7d8aaaebc9bd288"
+  },
+  "independent_vectors": {
+    "source": "tests/fixtures/tone-map/generate-method-a-vectors.py",
+    "generator_sha256": "51f7393cf06737bfabb618d2bdbfac641822916a33d890360a13b7312a92faf4",
+    "command": "python3 tests/fixtures/tone-map/generate-method-a-vectors.py",
+    "json_sha256": "b6c87ae1aa42cf81fc0fa3af70e045456beca05e3a6a2ee2454c128af87944e5",
+    "meaning": "Independent Decimal evaluation of official formulas, not officially tabulated pixel vectors"
+  },
+  "input": {
+    "filename": "linear-bt2020-1000-v1.bin",
+    "width": 1920,
+    "height": 1080,
+    "frame_count": 1,
+    "components": "R/G/B absolute cd/m2, row-major IEEE-754 f64 little endian",
+    "primaries": "BT.2020",
+    "source_peak_nits": 1000,
+    "bytes": 49766420,
+    "sha256": "a6246d4e5e34c1c69c9cd629e35d82a0f1e8af387436044c82483511bd749f33"
+  },
+  "output": {
+    "components": "R/G/B, corrected Y/Cb/Cr, pre-correction mapped luma; IEEE-754 f64 little endian",
+    "bytes_per_run": 116121621,
+    "primaries": "BT.2020 intermediate, no codec tags",
+    "target_peak_nits": 100,
+    "sha256_runs_1_2_3": [
+      "d0eb86dcc265fe7f675d87055f038d258176e331eb2aac412ba7358a6c8c1e6b",
+      "d0eb86dcc265fe7f675d87055f038d258176e331eb2aac412ba7358a6c8c1e6b",
+      "d0eb86dcc265fe7f675d87055f038d258176e331eb2aac412ba7358a6c8c1e6b"
+    ]
+  },
+  "diagnostics_each_run": {
+    "input_min_nits": 0,
+    "input_max_nits": 1000,
+    "output_min_signal": -0.0321782182569939,
+    "output_max_signal": 1.5958468520638707,
+    "mapped_luma_min": 0,
+    "mapped_luma_max": 1,
+    "reference_luma_min_nits": 0,
+    "reference_luma_max_nits": 100,
+    "input_negative_components": 0,
+    "input_above_peak_components": 0,
+    "output_negative_components": 194400,
+    "output_above_one_components": 1056216,
+    "nan_components": 0,
+    "inf_components": 0,
+    "input_safety_clamps": 0,
+    "standard_required_clamps": 801032,
+    "standard_counter_meaning": "Table 3 negative Cr correction terms discarded by max; NOT output clipping",
+    "unexpected_clamps": 0
+  },
+  "performance_sanity": {
+    "ms_per_frame_runs_1_2_3": [282.858582, 290.197726, 291.687359],
+    "fps_runs_1_2_3": [3.535336, 3.445926, 3.428328],
+    "includes": "input validation, fixed f64 mapping, allocation and diagnostic collection",
+    "excludes": "source generation, serialization, hashing and compile time",
+    "hard_performance_gate": false
+  },
+  "regression": {
+    "normal_workspace_passed": 201,
+    "measurement_workspace_passed": 201,
+    "ignored_in_each_default_suite": 79,
+    "spirv_modules_vulkan_1_3_passed": 317,
+    "sdr_v2": "All five profiles, three production runs each: retained MP4 and decoded framemd5 digests unchanged",
+    "pq_v1": "Both profiles, three production runs each: retained tiers 1A/1B/1C/2/3 unchanged",
+    "historical_h264": "Raw packet FAIL; 1B/1C/2 PASS; whole file DIFFERENT under unchanged approved patch-version rule. Explicit legacy charset reproduced retained candidate SHA, not a current-default-output gate.",
+    "hardware": "Intel Arc Meteor Lake /dev/dri/renderD128; iHD 26.1.5-1.fc44.x86_64; Mesa ANV 26.2.3-1.fc44.x86_64; FFmpeg 8.1.3-1.fc44.x86_64"
+  }
+}

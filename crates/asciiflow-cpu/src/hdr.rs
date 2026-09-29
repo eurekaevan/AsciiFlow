@@ -1,4 +1,4 @@
-//! Internal-only PQ CPU oracle. Production decoding still rejects HDR before this path.
+//! Permanent f64 PQ CPU oracle, not a selectable production backend.
 
 use asciiflow_core::hdr_pq::{self, LinearRgb, P010Codes, PqRgb};
 use asciiflow_core::{
@@ -19,6 +19,31 @@ pub struct HdrCellGrid {
     pub height: u32,
     pub cells: Vec<HdrCell>,
     pub clamped_input_components: u64,
+}
+
+/// Post-glyph display-light BT.2020 image, before PQ encoding or chroma subsampling.
+/// The source descriptor is validated by the renderer; this is not a P010 buffer.
+#[derive(Clone, Debug, PartialEq)]
+pub struct HdrRenderedLinearFrame {
+    width: u32,
+    height: u32,
+    pixels: Vec<LinearRgb>,
+    coverage: Vec<u8>,
+}
+
+impl HdrRenderedLinearFrame {
+    pub fn width(&self) -> u32 {
+        self.width
+    }
+    pub fn height(&self) -> u32 {
+        self.height
+    }
+    pub fn pixels(&self) -> &[LinearRgb] {
+        &self.pixels
+    }
+    pub fn coverage(&self) -> &[u8] {
+        &self.coverage
+    }
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
@@ -143,19 +168,7 @@ impl<'a> HdrPqReference<'a> {
         pts: Option<i64>,
         color: bool,
     ) -> Result<(VideoFrame, HdrDiagnostics)> {
-        validate_desc(&desc)?;
-        if grid.width == 0
-            || grid.height == 0
-            || grid.width > desc.width
-            || grid.height > desc.height
-            || grid.cells.len() != grid.width as usize * grid.height as usize
-            || grid
-                .cells
-                .iter()
-                .any(|c| c.glyph as usize >= self.atlas.glyph_count())
-        {
-            return Err(Error::Cpu("invalid HDR cell grid".into()));
-        }
+        self.validate_grid(grid, &desc)?;
         let mut storage = HostFrame::try_new_zeroed(&desc)?;
         let (y_plane, uv_plane) = storage.planes_mut(&desc);
         let width = desc.width as usize;
@@ -174,17 +187,7 @@ impl<'a> HdrPqReference<'a> {
                     for dx in 0..2 {
                         let py = y + dy;
                         let px = x + dx;
-                        let cell = grid.cells[cell_at(py, height, grid.height as usize)
-                            * grid.width as usize
-                            + cell_at(px, width, grid.width as usize)];
-                        let foreground = if color {
-                            cell.foreground_nits
-                        } else {
-                            let l = cell.foreground_nits.luminance();
-                            LinearRgb { r: l, g: l, b: l }
-                        };
-                        let coverage = self.coverage(cell.glyph, px, py, width, height, grid);
-                        let linear = foreground.blend(LinearRgb::BLACK, coverage);
+                        let (linear, _) = self.rendered_pixel(grid, px, py, width, height, color);
                         for component in [linear.r, linear.g, linear.b] {
                             if !component.is_finite() {
                                 diag.nonfinite_components += 1;
@@ -220,6 +223,82 @@ impl<'a> HdrPqReference<'a> {
             }
         }
         Ok((VideoFrame::new_host(desc, pts, storage)?, diag))
+    }
+
+    /// Expose exactly the existing post-blend/pre-PQ boundary for internal
+    /// references. Glyph aggregation, LUT, coverage and blend are shared with
+    /// `render`, not copied into a tone-mapping renderer.
+    pub fn render_linear(
+        &self,
+        grid: &HdrCellGrid,
+        desc: &FrameDesc,
+        color: bool,
+    ) -> Result<HdrRenderedLinearFrame> {
+        self.validate_grid(grid, desc)?;
+        let width = desc.width as usize;
+        let height = desc.height as usize;
+        let count = width
+            .checked_mul(height)
+            .ok_or_else(|| Error::Cpu("HDR linear frame size overflow".into()))?;
+        let mut pixels = Vec::new();
+        let mut coverage = Vec::new();
+        pixels
+            .try_reserve_exact(count)
+            .map_err(|e| Error::Cpu(format!("allocate HDR linear frame: {e}")))?;
+        coverage
+            .try_reserve_exact(count)
+            .map_err(|e| Error::Cpu(format!("allocate HDR coverage: {e}")))?;
+        for py in 0..height {
+            for px in 0..width {
+                let (linear, alpha) = self.rendered_pixel(grid, px, py, width, height, color);
+                pixels.push(linear);
+                coverage.push(alpha);
+            }
+        }
+        Ok(HdrRenderedLinearFrame {
+            width: desc.width,
+            height: desc.height,
+            pixels,
+            coverage,
+        })
+    }
+
+    fn validate_grid(&self, grid: &HdrCellGrid, desc: &FrameDesc) -> Result<()> {
+        validate_desc(desc)?;
+        if grid.width == 0
+            || grid.height == 0
+            || grid.width > desc.width
+            || grid.height > desc.height
+            || grid.cells.len() != grid.width as usize * grid.height as usize
+            || grid
+                .cells
+                .iter()
+                .any(|c| c.glyph as usize >= self.atlas.glyph_count())
+        {
+            return Err(Error::Cpu("invalid HDR cell grid".into()));
+        }
+        Ok(())
+    }
+
+    fn rendered_pixel(
+        &self,
+        grid: &HdrCellGrid,
+        px: usize,
+        py: usize,
+        width: usize,
+        height: usize,
+        color: bool,
+    ) -> (LinearRgb, u8) {
+        let cell = grid.cells[cell_at(py, height, grid.height as usize) * grid.width as usize
+            + cell_at(px, width, grid.width as usize)];
+        let foreground = if color {
+            cell.foreground_nits
+        } else {
+            let l = cell.foreground_nits.luminance();
+            LinearRgb { r: l, g: l, b: l }
+        };
+        let coverage = self.coverage(cell.glyph, px, py, width, height, grid);
+        (foreground.blend(LinearRgb::BLACK, coverage), coverage)
     }
 
     fn coverage(

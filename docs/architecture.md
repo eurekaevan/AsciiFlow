@@ -8,8 +8,11 @@ hardware. Stage 5.3B-2 adds the independent internal Vulkan PQ qualification;
 Stage 5.3B-3 integrates the strictly planned HDR-preserve path. Its
 [hardware closure status](stage5.3b3-hdr-production.md) is the release authority.
 
-This document describes the sole Rust implementation through the Stage 5.3B-3
-PQ production integration on the Stage 5.2C-3 P010
+Stage 5.3C-1 adds only a permanent f64 post-ASCII Method A reference;
+its [closure record](stage5.3c1-tone-map-cpu.md) does not enable production HDR→SDR.
+
+This document describes the sole Rust implementation through the Stage 5.3C-1
+CPU reference, retaining Stage 5.3B-3 PQ production integration on the Stage 5.2C-3 P010
 processing foundation: a permanent CPU reference backend, a Vulkan 1.3 compute
 backend, optional Linux VAAPI media, and qualified Intel DMA-BUF bridges in both
 pixel directions. Stage 3A
@@ -67,6 +70,14 @@ See [HDR PQ pixel semantics](hdr-pq-semantics.md) and the
 [Stage 5.3B-1 report](stage5.3b1-pq-cpu-reference.md) and
 [Stage 5.3B-2 hardware report](stage5.3b2-vulkan-pq.md).
 Current production closure: [Stage 5.3B-3](stage5.3b3-hdr-production.md).
+
+The [C-1 tone mapper](tone-mapping.md) consumes the shared B-1 renderer's
+post-blend linear BT.2020 RGB in absolute nits, not re-encoded PQ. Its fixed
+1000→100 Method A result is a raw f64 SDR BT.2020 intermediate. It cannot feed
+back into glyph selection and has no metadata/temporal adaptation. No BT.709
+gamut conversion, codec tags, quantized frame, shader, planner or public CLI
+option is added. Input above 1000 nits rejects qualification; standard-produced
+negative/>1 output excursions remain visible for future gamut/output work.
 
 ```text
 codec parameters / decoded AVFrame metadata

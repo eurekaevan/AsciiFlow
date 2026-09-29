@@ -1,5 +1,34 @@
 # Regression testing
 
+## Internal Method A CPU reference (Stage 5.3C-1)
+
+The [closure report](stage5.3c1-tone-map-cpu.md) and [semantics](tone-mapping.md)
+define the fixed f64 1000→100-nit post-ASCII BT.2020 oracle, not a production
+HDR→SDR backend. The canonical architecture is `docs/architecture.md`, not the
+retired versioned filename.
+
+```sh
+cargo test -p asciiflow-core tone_map_bt2446
+cargo test -p asciiflow-cpu tone_map
+bash scripts/qualify-tone-map-cpu.sh /tmp/asciiflow-c1-reference
+python3 tests/fixtures/tone-map/generate-method-a-vectors.py > /tmp/method-a-vectors.json
+cmp /tmp/method-a-vectors.json tests/fixtures/tone-map/method-a-vectors.json
+```
+
+Retain generator/wrapper identity, exact command, source SHA-256, compiler/libm
+identity, output digest or structured oracle and diagnostics. The wrapper checks
+three explicit-endian f64 outputs against each other and retained SHA256SUMS.
+A new toolchain requires numerical-vector qualification before a new byte
+baseline; never silently refresh the oracle. Timing excludes source generation
+and serialization and has no hard target. No quantization is added.
+
+Builtin/FreeType integration must preserve B-1 glyphs, coverage and linear
+composition. Negative/nonfinite/>1000 input rejects qualification; raw Method A
+output excursions remain visible. Metadata and previous frames do not control
+the operator. Continue all five SDR v2 and both PQ production baselines, unchanged
+historical H.264 oracle/rejection policies, normal/measurement checks and all
+actual SPIR-V Vulkan 1.3 validation. CPU parity is not Intel DMA-BUF evidence.
+
 The default workspace suite covers portable planning, codec policy, failure
 semantics, media fixtures, fonts, and CPU processing. Real Intel VAAPI/Vulkan
 tests are opt-in because they require a qualified device, drivers, and sometimes
