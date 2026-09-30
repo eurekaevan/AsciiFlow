@@ -1,0 +1,10 @@
+#version 460
+#extension GL_GOOGLE_include_directive : require
+#define Y_OFFSET 64.0
+#define Y_SCALE 876.0
+#define C_OFFSET 512.0
+#define C_SCALE 896.0
+#define PACK_SHIFT << 6u
+#define PER_WORD 2u
+#define SAMPLE_BITS 16u
+#include "sdr_pack_common.glsl"

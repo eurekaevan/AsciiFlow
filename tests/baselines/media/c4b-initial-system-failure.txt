@@ -1,0 +1,44 @@
+Historical first system-test attempt; not PASS. The runtime correctly rejected
+the late source highlight. The test expected the wrong stage label; its
+64x64 fixture also did not qualify every encoder, and mutex poisoning prevented
+two later tests. The corrected 128x128 test includes a legal-first-ten-frame
+control and exact existing root stage; the successful rerun is separate.
+
+   Compiling asciiflow-cli v2.0.0-alpha.0 (/home/eureka/Documents/AsciiFlow/apps/asciiflow-cli)
+    Finished `release` profile [optimized] target(s) in 3.41s
+     Running tests/c4b_production.rs (target/release/deps/c4b_production-92ec9b9741e3e0f5)
+
+running 5 tests
+test c4b_auto_selection_builtin_freetype_color_mono_nv12_p010 ... ok
+test c4b_default_preserve_rejects_pq_h264_before_output_staging ... ok
+test c4b_late_source_highlight_fails_before_black_glyph_can_hide_it ... 
+thread 'c4b_late_source_highlight_fails_before_black_glyph_can_hide_it' (245876) panicked at apps/asciiflow-cli/tests/c4b_production.rs:442:9:
+[hevc_vaapi @ 0x55af2565d6c0] Hardware does not support encoding at size 64x64 (constraints: width 128-16384 height 128-12288).
+[av1_vaapi @ 0x55af2565d6c0] Hardware does not support encoding at size 64x64 (constraints: width 128-8192 height 96-8192).
+[hevc_vaapi @ 0x55af25998240] Hardware does not support encoding at size 64x64 (constraints: width 128-16384 height 128-12288).
+[av1_vaapi @ 0x55af25998240] Hardware does not support encoding at size 64x64 (constraints: width 128-8192 height 96-8192).
+[hevc_vaapi @ 0x55af25998240] Hardware does not support encoding at size 64x64 (constraints: width 128-16384 height 128-12288).
+[av1_vaapi @ 0x55af25998240] Hardware does not support encoding at size 64x64 (constraints: width 128-8192 height 96-8192).
+Error: pipeline output interop runtime: process output DMA-BUF failed: Vulkan backend failed: C-3 invalid GPU input/arithmetic diagnostics: [0, 0, 0, 0, 4096, 4096, 0, 0, 0]; HDR→SDR conversion supports the qualified 0–1000 cd/m² PQ domain. No implicit highlight clipping is performed
+
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+test c4b_sigint_nv12_p010_preserves_destination_and_releases_process_resources ... 
+thread 'c4b_sigint_nv12_p010_preserves_destination_and_releases_process_resources' (245919) panicked at apps/asciiflow-cli/tests/c4b_production.rs:460:40:
+called `Result::unwrap()` on an `Err` value: PoisonError { .. }
+FAILED
+test c4b_single_dual_aac_auto_copy_none_and_preserve_sdr ... 
+thread 'c4b_single_dual_aac_auto_copy_none_and_preserve_sdr' (245920) panicked at apps/asciiflow-cli/tests/c4b_production.rs:276:40:
+called `Result::unwrap()` on an `Err` value: PoisonError { .. }
+FAILED
+
+failures:
+
+failures:
+    c4b_late_source_highlight_fails_before_black_glyph_can_hide_it
+    c4b_sigint_nv12_p010_preserves_destination_and_releases_process_resources
+    c4b_single_dual_aac_auto_copy_none_and_preserve_sdr
+
+test result: FAILED. 2 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 32.65s
+
+error: test failed, to rerun pass `-p asciiflow-cli --test c4b_production`

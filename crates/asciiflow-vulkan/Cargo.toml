@@ -9,7 +9,8 @@ build = "build.rs"
 [features]
 p010-output-diagnostic = []
 hdr-pq-qualification = []
-hdr-to-sdr-qualification = ["hdr-pq-qualification"]
+hdr-to-sdr-production = ["hdr-pq-qualification"]
+hdr-to-sdr-qualification = ["hdr-to-sdr-production"]
 hdr-to-sdr-fp64-experiment = ["hdr-to-sdr-qualification"]
 
 [dependencies]

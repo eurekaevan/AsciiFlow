@@ -1,0 +1,105 @@
+   Compiling asciiflow-vulkan v2.0.0-alpha.0 (/home/eureka/Documents/AsciiFlow/crates/asciiflow-vulkan)
+   Compiling asciiflow-cpu v2.0.0-alpha.0 (/home/eureka/Documents/AsciiFlow/crates/asciiflow-cpu)
+   Compiling asciiflow-interop v2.0.0-alpha.0 (/home/eureka/Documents/AsciiFlow/crates/asciiflow-interop)
+    Finished `release` profile [optimized] target(s) in 6.80s
+     Running tests/c4a_sdr_output.rs (target/release/deps/c4a_sdr_output-ad746b408ce05211)
+
+running 2 tests
+test legal_pq_to_both_sdr_surfaces ... hevc-main10-pq-c3-legal-v1.mp4 freetype=false color=false Nv12 runtime descriptor: DrmPrimeFrameDesc { width: 1920, height: 1080, objects: [DrmObject { fd: 7, size: 3194880, format_modifier: 72057594037927945 }], layers: [DrmLayer { format: 538982482, planes: [DrmPlane { object_index: 0, offset: 0, pitch: 1920 }] }, DrmLayer { format: 943215175, planes: [DrmPlane { object_index: 0, offset: 2088960, pitch: 1920 }] }] }
+hevc-main10-pq-c3-legal-v1.mp4 color=false Nv12: 0 byte mismatches; pack=24.175373ms, copy=1.758519ms, wall=104.945219ms, bytes=3110412
+hevc-main10-pq-c3-legal-v1.mp4 freetype=false color=false P010Le runtime descriptor: DrmPrimeFrameDesc { width: 1920, height: 1080, objects: [DrmObject { fd: 7, size: 6389760, format_modifier: 72057594037927945 }], layers: [DrmLayer { format: 540422482, planes: [DrmPlane { object_index: 0, offset: 0, pitch: 3840 }] }, DrmLayer { format: 842224199, planes: [DrmPlane { object_index: 0, offset: 4177920, pitch: 3840 }] }] }
+hevc-main10-pq-c3-legal-v1.mp4 color=false P010Le: 0 byte mismatches; pack=38.288516ms, copy=2.185916ms, wall=112.978968ms, bytes=6220812
+hevc-main10-pq-c3-legal-v1.mp4 freetype=false color=true Nv12 runtime descriptor: DrmPrimeFrameDesc { width: 1920, height: 1080, objects: [DrmObject { fd: 7, size: 3194880, format_modifier: 72057594037927945 }], layers: [DrmLayer { format: 538982482, planes: [DrmPlane { object_index: 0, offset: 0, pitch: 1920 }] }, DrmLayer { format: 943215175, planes: [DrmPlane { object_index: 0, offset: 2088960, pitch: 1920 }] }] }
+hevc-main10-pq-c3-legal-v1.mp4 color=true Nv12: 0 byte mismatches; pack=23.071254ms, copy=1.735872ms, wall=52.249946ms, bytes=3110412
+hevc-main10-pq-c3-legal-v1.mp4 freetype=false color=true P010Le runtime descriptor: DrmPrimeFrameDesc { width: 1920, height: 1080, objects: [DrmObject { fd: 7, size: 6389760, format_modifier: 72057594037927945 }], layers: [DrmLayer { format: 540422482, planes: [DrmPlane { object_index: 0, offset: 0, pitch: 3840 }] }, DrmLayer { format: 842224199, planes: [DrmPlane { object_index: 0, offset: 4177920, pitch: 3840 }] }] }
+hevc-main10-pq-c3-legal-v1.mp4 color=true P010Le: 0 byte mismatches; pack=35.772555ms, copy=2.058683ms, wall=73.124687ms, bytes=6220812
+hevc-main10-pq-c3-legal-v1.mp4 freetype=true color=false Nv12 runtime descriptor: DrmPrimeFrameDesc { width: 1920, height: 1080, objects: [DrmObject { fd: 7, size: 3194880, format_modifier: 72057594037927945 }], layers: [DrmLayer { format: 538982482, planes: [DrmPlane { object_index: 0, offset: 0, pitch: 1920 }] }, DrmLayer { format: 943215175, planes: [DrmPlane { object_index: 0, offset: 2088960, pitch: 1920 }] }] }
+hevc-main10-pq-c3-legal-v1.mp4 color=false Nv12: 0 byte mismatches; pack=23.277851ms, copy=2.292153ms, wall=53.270304ms, bytes=3110412
+hevc-main10-pq-c3-legal-v1.mp4 freetype=true color=false P010Le runtime descriptor: DrmPrimeFrameDesc { width: 1920, height: 1080, objects: [DrmObject { fd: 7, size: 6389760, format_modifier: 72057594037927945 }], layers: [DrmLayer { format: 540422482, planes: [DrmPlane { object_index: 0, offset: 0, pitch: 3840 }] }, DrmLayer { format: 842224199, planes: [DrmPlane { object_index: 0, offset: 4177920, pitch: 3840 }] }] }
+hevc-main10-pq-c3-legal-v1.mp4 color=false P010Le: 0 byte mismatches; pack=35.198702ms, copy=1.762625ms, wall=68.483183ms, bytes=6220812
+hevc-main10-pq-c3-legal-v1.mp4 freetype=true color=true Nv12 runtime descriptor: DrmPrimeFrameDesc { width: 1920, height: 1080, objects: [DrmObject { fd: 7, size: 3194880, format_modifier: 72057594037927945 }], layers: [DrmLayer { format: 538982482, planes: [DrmPlane { object_index: 0, offset: 0, pitch: 1920 }] }, DrmLayer { format: 943215175, planes: [DrmPlane { object_index: 0, offset: 2088960, pitch: 1920 }] }] }
+hevc-main10-pq-c3-legal-v1.mp4 color=true Nv12: 0 byte mismatches; pack=23.050046ms, copy=1.401089ms, wall=51.807155ms, bytes=3110412
+hevc-main10-pq-c3-legal-v1.mp4 freetype=true color=true P010Le runtime descriptor: DrmPrimeFrameDesc { width: 1920, height: 1080, objects: [DrmObject { fd: 7, size: 6389760, format_modifier: 72057594037927945 }], layers: [DrmLayer { format: 540422482, planes: [DrmPlane { object_index: 0, offset: 0, pitch: 3840 }] }, DrmLayer { format: 842224199, planes: [DrmPlane { object_index: 0, offset: 4177920, pitch: 3840 }] }] }
+hevc-main10-pq-c3-legal-v1.mp4 color=true P010Le: 0 byte mismatches; pack=38.115188ms, copy=2.081999ms, wall=76.357618ms, bytes=6220812
+av1-main10-pq-c3-legal-v1.mp4 freetype=false color=false Nv12 runtime descriptor: DrmPrimeFrameDesc { width: 1920, height: 1080, objects: [DrmObject { fd: 7, size: 3194880, format_modifier: 72057594037927945 }], layers: [DrmLayer { format: 538982482, planes: [DrmPlane { object_index: 0, offset: 0, pitch: 1920 }] }, DrmLayer { format: 943215175, planes: [DrmPlane { object_index: 0, offset: 2088960, pitch: 1920 }] }] }
+av1-main10-pq-c3-legal-v1.mp4 color=false Nv12: 0 byte mismatches; pack=23.204858ms, copy=2.055989ms, wall=52.964409ms, bytes=3110412
+av1-main10-pq-c3-legal-v1.mp4 freetype=false color=false P010Le runtime descriptor: DrmPrimeFrameDesc { width: 1920, height: 1080, objects: [DrmObject { fd: 7, size: 6389760, format_modifier: 72057594037927945 }], layers: [DrmLayer { format: 540422482, planes: [DrmPlane { object_index: 0, offset: 0, pitch: 3840 }] }, DrmLayer { format: 842224199, planes: [DrmPlane { object_index: 0, offset: 4177920, pitch: 3840 }] }] }
+av1-main10-pq-c3-legal-v1.mp4 color=false P010Le: 0 byte mismatches; pack=35.496946ms, copy=2.16442ms, wall=73.448826ms, bytes=6220812
+av1-main10-pq-c3-legal-v1.mp4 freetype=false color=true Nv12 runtime descriptor: DrmPrimeFrameDesc { width: 1920, height: 1080, objects: [DrmObject { fd: 7, size: 3194880, format_modifier: 72057594037927945 }], layers: [DrmLayer { format: 538982482, planes: [DrmPlane { object_index: 0, offset: 0, pitch: 1920 }] }, DrmLayer { format: 943215175, planes: [DrmPlane { object_index: 0, offset: 2088960, pitch: 1920 }] }] }
+av1-main10-pq-c3-legal-v1.mp4 color=true Nv12: 0 byte mismatches; pack=23.060279ms, copy=1.540251ms, wall=51.413613ms, bytes=3110412
+av1-main10-pq-c3-legal-v1.mp4 freetype=false color=true P010Le runtime descriptor: DrmPrimeFrameDesc { width: 1920, height: 1080, objects: [DrmObject { fd: 7, size: 6389760, format_modifier: 72057594037927945 }], layers: [DrmLayer { format: 540422482, planes: [DrmPlane { object_index: 0, offset: 0, pitch: 3840 }] }, DrmLayer { format: 842224199, planes: [DrmPlane { object_index: 0, offset: 4177920, pitch: 3840 }] }] }
+av1-main10-pq-c3-legal-v1.mp4 color=true P010Le: 0 byte mismatches; pack=36.066802ms, copy=1.97731ms, wall=73.040026ms, bytes=6220812
+av1-main10-pq-c3-legal-v1.mp4 freetype=true color=false Nv12 runtime descriptor: DrmPrimeFrameDesc { width: 1920, height: 1080, objects: [DrmObject { fd: 7, size: 3194880, format_modifier: 72057594037927945 }], layers: [DrmLayer { format: 538982482, planes: [DrmPlane { object_index: 0, offset: 0, pitch: 1920 }] }, DrmLayer { format: 943215175, planes: [DrmPlane { object_index: 0, offset: 2088960, pitch: 1920 }] }] }
+av1-main10-pq-c3-legal-v1.mp4 color=false Nv12: 0 byte mismatches; pack=23.314846ms, copy=1.434913ms, wall=52.198463ms, bytes=3110412
+av1-main10-pq-c3-legal-v1.mp4 freetype=true color=false P010Le runtime descriptor: DrmPrimeFrameDesc { width: 1920, height: 1080, objects: [DrmObject { fd: 7, size: 6389760, format_modifier: 72057594037927945 }], layers: [DrmLayer { format: 540422482, planes: [DrmPlane { object_index: 0, offset: 0, pitch: 3840 }] }, DrmLayer { format: 842224199, planes: [DrmPlane { object_index: 0, offset: 4177920, pitch: 3840 }] }] }
+av1-main10-pq-c3-legal-v1.mp4 color=false P010Le: 0 byte mismatches; pack=36.908592ms, copy=2.086505ms, wall=73.325314ms, bytes=6220812
+av1-main10-pq-c3-legal-v1.mp4 freetype=true color=true Nv12 runtime descriptor: DrmPrimeFrameDesc { width: 1920, height: 1080, objects: [DrmObject { fd: 7, size: 3194880, format_modifier: 72057594037927945 }], layers: [DrmLayer { format: 538982482, planes: [DrmPlane { object_index: 0, offset: 0, pitch: 1920 }] }, DrmLayer { format: 943215175, planes: [DrmPlane { object_index: 0, offset: 2088960, pitch: 1920 }] }] }
+av1-main10-pq-c3-legal-v1.mp4 color=true Nv12: 0 byte mismatches; pack=22.940124ms, copy=1.419185ms, wall=50.563506ms, bytes=3110412
+av1-main10-pq-c3-legal-v1.mp4 freetype=true color=true P010Le runtime descriptor: DrmPrimeFrameDesc { width: 1920, height: 1080, objects: [DrmObject { fd: 7, size: 6389760, format_modifier: 72057594037927945 }], layers: [DrmLayer { format: 540422482, planes: [DrmPlane { object_index: 0, offset: 0, pitch: 3840 }] }, DrmLayer { format: 842224199, planes: [DrmPlane { object_index: 0, offset: 4177920, pitch: 3840 }] }] }
+av1-main10-pq-c3-legal-v1.mp4 color=true P010Le: 0 byte mismatches; pack=35.285605ms, copy=1.959338ms, wall=71.042238ms, bytes=6220812
+ok
+test surface_fault_cleanup_and_retry ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.58s
+
+
+   Compiling asciiflow-interop v2.0.0-alpha.0 (/home/eureka/Documents/AsciiFlow/crates/asciiflow-interop)
+    Finished `release` profile [optimized] target(s) in 3.74s
+     Running tests/c4a_sdr_output.rs (target/release/deps/c4a_sdr_output-ad746b408ce05211)
+
+running 1 test
+test alternating_black_saturated_slots_do_not_contaminate ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 1.31s
+
+
+   Compiling asciiflow-vulkan v2.0.0-alpha.0 (/home/eureka/Documents/AsciiFlow/crates/asciiflow-vulkan)
+    Finished `release` profile [optimized] target(s) in 9.36s
+     Running unittests src/lib.rs (target/release/deps/asciiflow_vulkan-18216bdc8791681a)
+
+running 1 test
+test sdr_pack::tests::sdr_pack_exact_f64_parity_reuse_and_faults ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 15 filtered out; finished in 0.13s
+
+     Running tests/c3_arithmetic.rs (target/release/deps/c3_arithmetic-9e07cde4e6d51dd2)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s
+
+     Running tests/c3_precision.rs (target/release/deps/c3_precision-b4ad2d4201484c25)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/c3_qualification.rs (target/release/deps/c3_qualification-de80bf465b8d3415)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s
+
+     Running tests/c3_render.rs (target/release/deps/c3_render-ce6e32198ffe2114)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s
+
+     Running tests/c4a_canonical.rs (target/release/deps/c4a_canonical-adb6294da757d73c)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+
+     Running tests/c4a_quantization.rs (target/release/deps/c4a_quantization-da5c695082a67f99)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+
+     Running tests/pq_qualification.rs (target/release/deps/pq_qualification-9e65e21703f665a2)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 8 filtered out; finished in 0.00s

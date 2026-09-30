@@ -9,7 +9,8 @@ rust-version.workspace = true
 av1-encode-diagnostic = ["asciiflow-media/av1-encode-diagnostic"]
 p010-output-diagnostic = ["asciiflow-media/p010-output-diagnostic", "asciiflow-vulkan/p010-output-diagnostic"]
 hdr-pq-qualification = ["asciiflow-media/hdr-pq-qualification", "asciiflow-vulkan/hdr-pq-qualification", "p010-output-diagnostic"]
-hdr-to-sdr-qualification = ["hdr-pq-qualification", "asciiflow-vulkan/hdr-to-sdr-qualification"]
+hdr-to-sdr-qualification = ["hdr-pq-qualification", "hdr-to-sdr-production", "asciiflow-vulkan/hdr-to-sdr-qualification", "asciiflow-media/hdr-to-sdr-qualification"]
+hdr-to-sdr-production = ["asciiflow-vulkan/hdr-to-sdr-production"]
 
 [dependencies]
 asciiflow-core = { path = "../asciiflow-core" }

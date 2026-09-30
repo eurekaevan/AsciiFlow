@@ -1,0 +1,449 @@
+C4B observed successful static/build output; tests are summarized below.
+
+/tmp/asciiflow-c4b-release-frozen.txt
+   Compiling asciiflow-media v2.0.0-alpha.0 (/home/eureka/Documents/AsciiFlow/crates/asciiflow-media)
+   Compiling asciiflow-interop v2.0.0-alpha.0 (/home/eureka/Documents/AsciiFlow/crates/asciiflow-interop)
+   Compiling asciiflow-cli v2.0.0-alpha.0 (/home/eureka/Documents/AsciiFlow/apps/asciiflow-cli)
+    Finished `release` profile [optimized] target(s) in 10.54s
+
+/tmp/asciiflow-c4b-measurement-release.txt
+   Compiling asciiflow-media v2.0.0-alpha.0 (/home/eureka/Documents/AsciiFlow/crates/asciiflow-media)
+   Compiling asciiflow-interop v2.0.0-alpha.0 (/home/eureka/Documents/AsciiFlow/crates/asciiflow-interop)
+   Compiling asciiflow-cli v2.0.0-alpha.0 (/home/eureka/Documents/AsciiFlow/apps/asciiflow-cli)
+    Finished `release` profile [optimized] target(s) in 9.82s
+
+/tmp/asciiflow-c4b-release-restored.txt
+    Finished `release` profile [optimized] target(s) in 0.03s
+
+/tmp/asciiflow-c4b-clippy-post-fault.txt
+    Checking asciiflow-media v2.0.0-alpha.0 (/home/eureka/Documents/AsciiFlow/crates/asciiflow-media)
+    Checking asciiflow-interop v2.0.0-alpha.0 (/home/eureka/Documents/AsciiFlow/crates/asciiflow-interop)
+    Checking asciiflow-cli v2.0.0-alpha.0 (/home/eureka/Documents/AsciiFlow/apps/asciiflow-cli)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.71s
+
+/tmp/asciiflow-c4b-measurement-clippy-frozen.txt
+    Checking asciiflow-media v2.0.0-alpha.0 (/home/eureka/Documents/AsciiFlow/crates/asciiflow-media)
+    Checking asciiflow-interop v2.0.0-alpha.0 (/home/eureka/Documents/AsciiFlow/crates/asciiflow-interop)
+    Checking asciiflow-cli v2.0.0-alpha.0 (/home/eureka/Documents/AsciiFlow/apps/asciiflow-cli)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.05s
+
+/tmp/asciiflow-c4b-qualification-clippy-frozen.txt
+    Checking asciiflow-media v2.0.0-alpha.0 (/home/eureka/Documents/AsciiFlow/crates/asciiflow-media)
+    Checking asciiflow-interop v2.0.0-alpha.0 (/home/eureka/Documents/AsciiFlow/crates/asciiflow-interop)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.68s
+
+/tmp/asciiflow-c4b-workspace-frozen.txt
+test result: ok. 26 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 24 passed; 0 failed; 4 ignored; 0 measured; 0 filtered out; finished in 0.85s
+test result: ok. 0 passed; 0 failed; 7 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 5 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 7 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 92 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.03s
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+test result: ok. 30 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 27 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 1 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.10s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 16 passed; 0 failed; 15 ignored; 0 measured; 0 filtered out; finished in 0.02s
+test result: ok. 10 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 0.10s
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+test result: ok. 7 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test result: ok. 3 passed; 0 failed; 13 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 1 passed; 0 failed; 7 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+/tmp/asciiflow-c4b-measurement-frozen.txt
+test result: ok. 26 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 24 passed; 0 failed; 4 ignored; 0 measured; 0 filtered out; finished in 0.84s
+test result: ok. 0 passed; 0 failed; 7 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 5 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 7 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 92 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.03s
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+test result: ok. 30 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 27 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 1 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.11s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 16 passed; 0 failed; 15 ignored; 0 measured; 0 filtered out; finished in 0.02s
+test result: ok. 10 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 0.09s
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+test result: ok. 7 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test result: ok. 3 passed; 0 failed; 13 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 1 passed; 0 failed; 7 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+/tmp/asciiflow-c4b-vulkaninfo.txt
+WARNING: [Loader Message] Code 0 : terminator_CreateInstance: Received return code -9 from call to vkCreateInstance in ICD /usr/lib64/libvulkan_dzn.so. Skipping this driver.
+WARNING: [Loader Message] Code 0 : ICD for selected physical device does not export vkGetPhysicalDeviceDisplayPlanePropertiesKHR!
+WARNING: [Loader Message] Code 0 : ICD for selected physical device does not export vkGetPhysicalDeviceDisplayPropertiesKHR!
+==========
+VULKANINFO
+==========
+
+Vulkan Instance Version: 1.4.341
+
+
+Instance Extensions: count = 26
+-------------------------------
+VK_EXT_acquire_drm_display             : extension revision 1
+VK_EXT_acquire_xlib_display            : extension revision 1
+VK_EXT_debug_report                    : extension revision 10
+VK_EXT_debug_utils                     : extension revision 2
+VK_EXT_direct_mode_display             : extension revision 1
+VK_EXT_display_surface_counter         : extension revision 1
+VK_EXT_headless_surface                : extension revision 1
+VK_EXT_layer_settings                  : extension revision 2
+VK_EXT_surface_maintenance1            : extension revision 1
+VK_EXT_swapchain_colorspace            : extension revision 5
+VK_KHR_device_group_creation           : extension revision 1
+VK_KHR_display                         : extension revision 23
+VK_KHR_external_fence_capabilities     : extension revision 1
+VK_KHR_external_memory_capabilities    : extension revision 1
+VK_KHR_external_semaphore_capabilities : extension revision 1
+VK_KHR_get_display_properties2         : extension revision 1
+VK_KHR_get_physical_device_properties2 : extension revision 2
+VK_KHR_get_surface_capabilities2       : extension revision 1
+VK_KHR_portability_enumeration         : extension revision 1
+VK_KHR_surface                         : extension revision 25
+VK_KHR_surface_maintenance1            : extension revision 1
+VK_KHR_surface_protected_capabilities  : extension revision 1
+VK_KHR_wayland_surface                 : extension revision 6
+VK_KHR_xcb_surface                     : extension revision 6
+VK_KHR_xlib_surface                    : extension revision 6
+VK_LUNARG_direct_driver_loading        : extension revision 1
+
+Instance Layers: count = 7
+--------------------------
+VK_LAYER_KHRONOS_validation       Khronos Validation Layer                                     1.4.341  version 1
+VK_LAYER_MESA_anti_lag            Open-source implementation of the VK_AMD_anti_lag extension. 1.4.303  version 1
+VK_LAYER_MESA_device_select       Linux device selection layer                                 1.4.303  version 1
+VK_LAYER_VALVE_steam_fossilize_32 Steam Pipeline Caching Layer                                 1.3.207  version 1
+VK_LAYER_VALVE_steam_fossilize_64 Steam Pipeline Caching Layer                                 1.3.207  version 1
+VK_LAYER_VALVE_steam_overlay_32   Steam Overlay Layer                                          1.3.207  version 1
+VK_LAYER_VALVE_steam_overlay_64   Steam Overlay Layer                                          1.3.207  version 1
+
+Devices:
+========
+GPU0:
+	apiVersion         = 1.4.354
+	driverVersion      = 26.2.3
+	vendorID           = 0x8086
+	deviceID           = 0x7d55
+	deviceType         = PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU
+	deviceName         = Intel(R) Arc(tm) Graphics (MTL)
+	driverID           = DRIVER_ID_INTEL_OPEN_SOURCE_MESA
+	driverName         = Intel open-source Mesa driver
+	driverInfo         = Mesa 26.2.3
+	conformanceVersion = 1.4.0.0
+	deviceUUID         = 8680557d-0800-0000-0002-000000000000
+	driverUUID         = bcb86bfd-5818-185a-48f4-f8333adb806b
+GPU1:
+	apiVersion         = 1.4.354
+	driverVersion      = 26.2.3
+	vendorID           = 0x10005
+	deviceID           = 0x0000
+	deviceType         = PHYSICAL_DEVICE_TYPE_CPU
+	deviceName         = llvmpipe (LLVM 22.1.8, 256 bits)
+	driverID           = DRIVER_ID_MESA_LLVMPIPE
+	driverName         = llvmpipe
+	driverInfo         = Mesa 26.2.3 (LLVM 22.1.8)
+	conformanceVersion = 1.3.1.1
+	deviceUUID         = 6d657361-3236-2e32-2e33-000000000000
+	driverUUID         = 6c6c766d-7069-7065-5555-494400000000
+
+/tmp/asciiflow-c4b-vainfo.txt
+libva info: VA-API version 1.23.0
+libva info: Trying to open /usr/lib64/dri-nonfree/iHD_drv_video.so
+libva info: Found init function __vaDriverInit_1_23
+libva info: va_openDriver() returns 0
+Trying display: drm
+vainfo: VA-API version: 1.23 (libva 2.23.0)
+vainfo: Driver version: Intel iHD driver for Intel(R) Gen Graphics - 26.1.5 ()
+vainfo: Supported profile and entrypoints
+      VAProfileNone                   :	VAEntrypointVideoProc
+      VAProfileMPEG2Simple            :	VAEntrypointVLD
+      VAProfileMPEG2Main              :	VAEntrypointVLD
+      VAProfileH264Main               :	VAEntrypointVLD
+      VAProfileH264Main               :	VAEntrypointEncSlice
+      VAProfileH264High               :	VAEntrypointVLD
+      VAProfileH264High               :	VAEntrypointEncSlice
+      VAProfileJPEGBaseline           :	VAEntrypointVLD
+      VAProfileJPEGBaseline           :	VAEntrypointEncPicture
+      VAProfileH264ConstrainedBaseline:	VAEntrypointVLD
+      VAProfileH264ConstrainedBaseline:	VAEntrypointEncSlice
+      VAProfileVP8Version0_3          :	VAEntrypointVLD
+      VAProfileHEVCMain               :	VAEntrypointVLD
+      VAProfileHEVCMain               :	VAEntrypointEncSlice
+      VAProfileHEVCMain10             :	VAEntrypointVLD
+      VAProfileHEVCMain10             :	VAEntrypointEncSlice
+      VAProfileVP9Profile0            :	VAEntrypointVLD
+      VAProfileVP9Profile0            :	VAEntrypointEncSlice
+      VAProfileVP9Profile1            :	VAEntrypointVLD
+      VAProfileVP9Profile1            :	VAEntrypointEncSlice
+      VAProfileVP9Profile2            :	VAEntrypointVLD
+      VAProfileVP9Profile2            :	VAEntrypointEncSlice
+      VAProfileVP9Profile3            :	VAEntrypointVLD
+      VAProfileVP9Profile3            :	VAEntrypointEncSlice
+      VAProfileHEVCMain12             :	VAEntrypointVLD
+      VAProfileHEVCMain422_10         :	VAEntrypointVLD
+      VAProfileHEVCMain422_12         :	VAEntrypointVLD
+      VAProfileHEVCMain444            :	VAEntrypointVLD
+      VAProfileHEVCMain444            :	VAEntrypointEncSlice
+      VAProfileHEVCMain444_10         :	VAEntrypointVLD
+      VAProfileHEVCMain444_10         :	VAEntrypointEncSlice
+      VAProfileHEVCMain444_12         :	VAEntrypointVLD
+      VAProfileHEVCSccMain            :	VAEntrypointVLD
+      VAProfileHEVCSccMain            :	VAEntrypointEncSlice
+      VAProfileHEVCSccMain10          :	VAEntrypointVLD
+      VAProfileHEVCSccMain10          :	VAEntrypointEncSlice
+      VAProfileHEVCSccMain444         :	VAEntrypointVLD
+      VAProfileHEVCSccMain444         :	VAEntrypointEncSlice
+      VAProfileAV1Profile0            :	VAEntrypointVLD
+      VAProfileAV1Profile0            :	VAEntrypointEncSlice
+      VAProfileHEVCSccMain444_10      :	VAEntrypointVLD
+      VAProfileHEVCSccMain444_10      :	VAEntrypointEncSlice
+
+/tmp/asciiflow-c4b-explain-plan.txt
+Input:
+  codec/profile: Hevc / Some(HevcMain10)
+  format: yuv420p10le · 10-bit · Yuv420 · 1920x1080
+  frame rate: 50/1 · color: ColorSpace { matrix: Bt2020, range: Limited, primaries: Bt2020, transfer: Pq, chroma_location: Left }
+Color semantics:
+  primaries: Bt2020 (Frame)
+  transfer: Pq (Frame)
+  matrix: Bt2020 (Frame)
+  range: Limited (Frame)
+  dynamic range: HdrPq
+  SDR policy assessment: Err(UnsupportedHdrPq) (not production path eligibility)
+  mastering display metadata: false
+  content light metadata: false
+Color processing policy (eligibility also requires the probed plan):
+  BT.709 limited-range SDR: Supported
+  BT.601/170M limited-range SDR: Software decode normalization only
+  PQ preservation: qualified Vulkan + VAAPI decode/encode + both P010 interop paths only
+  Vulkan PQ execution on this input: supported
+  PQ HDR → BT.709 SDR (explicit request, qualified C pipeline and output interop): supported
+  HLG → SDR: unsupported; full-range HDR → SDR: unsupported
+  HDR→SDR: fixed BT.2446-1 1000→100 cd/m² mapping + BT.709 target-volume limiting; source HDR side data not propagated
+  BT.2020 / P3 wide-gamut SDR: Detected, unsupported
+  full-range SDR: Not qualified for current ASCII output code values
+Video decode:
+  software decode (PQ: signal inspection only, not a production path): supported
+  VAAPI device: supported
+  VAAPI H.264 decode: supported
+  VAAPI HEVC Main 8-bit decode: supported
+  VAAPI AV1 Main 8-bit decode: supported
+  VAAPI HEVC Main10 decode: supported
+  VAAPI AV1 Main 10-bit decode: supported
+  software H.264 decoder build: supported
+  software HEVC decoder build: supported
+  software AV1 decoder build: supported
+Video encode:
+  H.264 8-bit 4:2:0 software: supported
+  H.264 8-bit 4:2:0 VAAPI: supported
+  HEVC Main 8-bit 4:2:0 software: unsupported (not implemented)
+  HEVC Main 8-bit 4:2:0 VAAPI: supported
+  HEVC Main10 10-bit 4:2:0 VAAPI: supported
+  AV1 Profile0 8-bit 4:2:0 software: unsupported (not implemented)
+  AV1 Profile0 8-bit 4:2:0 VAAPI: supported
+  AV1 Profile0 10-bit 4:2:0 VAAPI: supported
+  VAAPI NV12 frames: supported
+  Host to VAAPI NV12 upload: not probed (VAAPI encode is unavailable)
+  VAAPI P010 frames: supported
+  Host to VAAPI P010 upload: supported
+Audio:
+  input streams: none
+  selected for passthrough: 0
+Vulkan:
+  CPU processing (SDR only; PQ reference is not production): supported
+  processing: supported
+  device: Intel(R) Arc(tm) Graphics (MTL)
+  auto eligible: true
+  compute queue: supported
+  storageBuffer8BitAccess: supported
+  shaderInt64: supported
+  Synchronization2: supported
+Interop:
+  VAAPI -> Vulkan (this stream): supported
+  Vulkan -> VAAPI H.264 output: supported
+  Vulkan -> VAAPI HEVC output: supported
+  Vulkan -> VAAPI AV1 output: supported
+  Vulkan -> VAAPI P010 output: supported
+  Vulkan -> VAAPI AV1 P010 output: supported
+Probe CPU wall: 819.434 ms
+
+Rejected candidates:
+  - VAAPI decode -> VAAPI/Vulkan input interop -> Vulkan ASCII -> Host readback -> VAAPI hardware upload -> VAAPI encode
+      HDR PQ→SDR requires Vulkan PQ processing, VAAPI decode/encode, P010 input interop and NV12/P010 output interop; CPU, software decode and staged fallbacks are not qualified
+      Host to VAAPI NV12 upload unavailable: VAAPI encode is unavailable
+  - VAAPI decode -> hardware download -> Vulkan ASCII -> Vulkan/VAAPI output interop -> VAAPI encode
+      HDR PQ→SDR requires Vulkan PQ processing, VAAPI decode/encode, P010 input interop and NV12/P010 output interop; CPU, software decode and staged fallbacks are not qualified
+  - VAAPI decode -> hardware download -> Vulkan ASCII -> Host readback -> VAAPI hardware upload -> VAAPI encode
+      HDR PQ→SDR requires Vulkan PQ processing, VAAPI decode/encode, P010 input interop and NV12/P010 output interop; CPU, software decode and staged fallbacks are not qualified
+      Host to VAAPI NV12 upload unavailable: VAAPI encode is unavailable
+  - VAAPI decode -> VAAPI/Vulkan input interop -> Vulkan ASCII -> Host readback -> software encode
+      HDR PQ→SDR requires Vulkan PQ processing, VAAPI decode/encode, P010 input interop and NV12/P010 output interop; CPU, software decode and staged fallbacks are not qualified
+  - VAAPI decode -> hardware download -> Vulkan ASCII -> Host readback -> software encode
+      HDR PQ→SDR requires Vulkan PQ processing, VAAPI decode/encode, P010 input interop and NV12/P010 output interop; CPU, software decode and staged fallbacks are not qualified
+  - software decode -> Vulkan ASCII -> Vulkan/VAAPI output interop -> VAAPI encode
+      HDR PQ→SDR requires Vulkan PQ processing, VAAPI decode/encode, P010 input interop and NV12/P010 output interop; CPU, software decode and staged fallbacks are not qualified
+  - software decode -> Vulkan ASCII -> Host readback -> VAAPI hardware upload -> VAAPI encode
+      HDR PQ→SDR requires Vulkan PQ processing, VAAPI decode/encode, P010 input interop and NV12/P010 output interop; CPU, software decode and staged fallbacks are not qualified
+      Host to VAAPI NV12 upload unavailable: VAAPI encode is unavailable
+  - software decode -> Vulkan ASCII -> Host readback -> software encode
+      HDR PQ→SDR requires Vulkan PQ processing, VAAPI decode/encode, P010 input interop and NV12/P010 output interop; CPU, software decode and staged fallbacks are not qualified
+  - VAAPI decode -> hardware download -> CPU ASCII -> VAAPI hardware upload -> VAAPI encode
+      HDR PQ→SDR requires Vulkan PQ processing, VAAPI decode/encode, P010 input interop and NV12/P010 output interop; CPU, software decode and staged fallbacks are not qualified
+      The HDR→SDR CPU path is a qualification/reference implementation, not a production backend
+      Host to VAAPI NV12 upload unavailable: VAAPI encode is unavailable
+  - VAAPI decode -> hardware download -> CPU ASCII -> software encode
+      HDR PQ→SDR requires Vulkan PQ processing, VAAPI decode/encode, P010 input interop and NV12/P010 output interop; CPU, software decode and staged fallbacks are not qualified
+      The HDR→SDR CPU path is a qualification/reference implementation, not a production backend
+  - software decode -> CPU ASCII -> VAAPI hardware upload -> VAAPI encode
+      HDR PQ→SDR requires Vulkan PQ processing, VAAPI decode/encode, P010 input interop and NV12/P010 output interop; CPU, software decode and staged fallbacks are not qualified
+      The HDR→SDR CPU path is a qualification/reference implementation, not a production backend
+      Host to VAAPI NV12 upload unavailable: VAAPI encode is unavailable
+  - software decode -> CPU ASCII -> software encode
+      HDR PQ→SDR requires Vulkan PQ processing, VAAPI decode/encode, P010 input interop and NV12/P010 output interop; CPU, software decode and staged fallbacks are not qualified
+      The HDR→SDR CPU path is a qualification/reference implementation, not a production backend
+
+Selected pipeline:
+  VAAPI decode
+  -> VAAPI/Vulkan input interop
+  -> Vulkan HDR-aware ASCII
+  -> BT.2446-1 Method A
+  -> BT.2020→BT.709 primary conversion + target-volume limiting
+  -> BT.709 limited SDR pack
+  -> Vulkan/VAAPI output interop
+  -> VAAPI H.264 encode
+Color processing: HdrPqToSdrBt709
+Dynamic range: input HDR PQ; output SDR; conversion explicit (--output-dynamic-range sdr)
+Processing: HDR-aware ASCII -> BT.2446-1 Method A -> BT.2020→BT.709 primary conversion -> target-volume limiting -> BT.709 limited SDR pack
+Input domain: 0–1000 cd/m²; no implicit highlight clipping. CPU and software media paths are not production-qualified.
+HDR metadata policy: source mastering/content-light/dynamic HDR side data is not propagated to SDR frames
+Output: H.264 encoder-selected · 8-bit Yuv420 · Nv12 · ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }
+Encoder backend: Hardware
+Pixel path: GPU-resident
+Reasons:
+  - Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)
+  - input interop avoids the expensive hardware download path
+  - output interop avoids Host readback and encoder hwupload
+  - explicit PQ HDR → BT.709 SDR request; sealed BT.2446-1 0–1000 cd/m² input domain, no implicit highlight clipping
+Audio plan: Auto
+  no audio streams will be copied
+Planning CPU wall: 0.021 ms
+
+/tmp/asciiflow-c4b-capabilities.txt
+Input:
+  codec/profile: Hevc / Some(HevcMain10)
+  format: yuv420p10le · 10-bit · Yuv420 · 1920x1080
+  frame rate: 50/1 · color: ColorSpace { matrix: Bt2020, range: Limited, primaries: Bt2020, transfer: Pq, chroma_location: Left }
+Color semantics:
+  primaries: Bt2020 (Frame)
+  transfer: Pq (Frame)
+  matrix: Bt2020 (Frame)
+  range: Limited (Frame)
+  dynamic range: HdrPq
+  SDR policy assessment: Err(UnsupportedHdrPq) (not production path eligibility)
+  mastering display metadata: false
+  content light metadata: false
+Color processing policy (eligibility also requires the probed plan):
+  BT.709 limited-range SDR: Supported
+  BT.601/170M limited-range SDR: Software decode normalization only
+  PQ preservation: qualified Vulkan + VAAPI decode/encode + both P010 interop paths only
+  Vulkan PQ execution on this input: supported
+  PQ HDR → BT.709 SDR (explicit request, qualified C pipeline and output interop): supported
+  HLG → SDR: unsupported; full-range HDR → SDR: unsupported
+  HDR→SDR: fixed BT.2446-1 1000→100 cd/m² mapping + BT.709 target-volume limiting; source HDR side data not propagated
+  BT.2020 / P3 wide-gamut SDR: Detected, unsupported
+  full-range SDR: Not qualified for current ASCII output code values
+Video decode:
+  software decode (PQ: signal inspection only, not a production path): supported
+  VAAPI device: supported
+  VAAPI H.264 decode: supported
+  VAAPI HEVC Main 8-bit decode: supported
+  VAAPI AV1 Main 8-bit decode: supported
+  VAAPI HEVC Main10 decode: supported
+  VAAPI AV1 Main 10-bit decode: supported
+  software H.264 decoder build: supported
+  software HEVC decoder build: supported
+  software AV1 decoder build: supported
+Video encode:
+  H.264 8-bit 4:2:0 software: supported
+  H.264 8-bit 4:2:0 VAAPI: supported
+  HEVC Main 8-bit 4:2:0 software: unsupported (not implemented)
+  HEVC Main 8-bit 4:2:0 VAAPI: supported
+  HEVC Main10 10-bit 4:2:0 VAAPI: supported
+  AV1 Profile0 8-bit 4:2:0 software: unsupported (not implemented)
+  AV1 Profile0 8-bit 4:2:0 VAAPI: supported
+  AV1 Profile0 10-bit 4:2:0 VAAPI: supported
+  VAAPI NV12 frames: supported
+  Host to VAAPI NV12 upload: not probed (VAAPI encode is unavailable)
+  VAAPI P010 frames: supported
+  Host to VAAPI P010 upload: supported
+Audio:
+  input streams: none
+  selected for passthrough: 0
+Vulkan:
+  CPU processing (SDR only; PQ reference is not production): supported
+  processing: supported
+  device: Intel(R) Arc(tm) Graphics (MTL)
+  auto eligible: true
+  compute queue: supported
+  storageBuffer8BitAccess: supported
+  shaderInt64: supported
+  Synchronization2: supported
+Interop:
+  VAAPI -> Vulkan (this stream): supported
+  Vulkan -> VAAPI H.264 output: supported
+  Vulkan -> VAAPI HEVC output: supported
+  Vulkan -> VAAPI AV1 output: supported
+  Vulkan -> VAAPI P010 output: supported
+  Vulkan -> VAAPI AV1 P010 output: supported
+Probe CPU wall: 867.454 ms

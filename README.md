@@ -11,7 +11,8 @@ remaining feature gaps are recorded in the [Rust follow-up inventory](docs/legac
 - Input: H.264, HEVC Main and AV1 Main 8-bit 4:2:0, plus explicitly tagged
   BT.709 limited-range SDR HEVC Main10 and AV1 Main 10-bit. Qualified full
   hardware pipelines also admit BT.2020/PQ/NCL limited-range, left-sited
-  HEVC Main10 and AV1 Main 10-bit for HDR-preserving ASCII processing. FFmpeg may demux
+  HEVC Main10 and AV1 Main 10-bit for HDR-preserving ASCII processing, or
+  explicitly requested, qualified HDR→SDR conversion. FFmpeg may demux
   other containers, but that does not imply every codec or color mode is
   qualified.
 - Output: MP4 with H.264 8-bit by default. HEVC Main and AV1 Main/Profile0
@@ -28,10 +29,14 @@ remaining feature gaps are recorded in the [Rust follow-up inventory](docs/legac
 - Safety: explicit hardware requests fail instead of silently falling back.
   Output is staged in the destination directory and committed only after a
   successful encode/mux; failure or cancellation preserves an existing file.
-  PQ production requires explicit HEVC/AV1 ten-bit output and qualified VAAPI
-  decode/encode plus both P010 Vulkan interop paths, with no HDR fallback.
+  The default `--output-dynamic-range preserve` requires HEVC/AV1 ten-bit output
+  for PQ. Explicit `sdr` admits H.264/HEVC/AV1 eight-bit or HEVC/AV1 ten-bit SDR,
+  using fixed 1000→100-nit Method A and BT.709 target-volume limiting. Both
+  hardware interop directions and VAAPI/Vulkan are mandatory; no HDR fallback.
+  Actual source pixels above 1000 nit reject before averaging or glyph coverage.
   HLG, BT.2020 SDR, full-range and unresolved color semantics are rejected
-  before output staging. No HDR→SDR tone mapping or gamut mapping is provided.
+  before output staging. Generalized tone mapping and perceptual gamut mapping
+  are not provided.
 
 PQ hardware qualification currently covers Intel Arc Meteor Lake with the
 specific iHD/ANV/toolchain in the [Stage 5.3B-3 report](docs/stage5.3b3-hdr-production.md),
@@ -82,6 +87,11 @@ cargo run --release --bin asciiflow -- input-pq.mp4 output-pq.mp4 \
   --vaapi-vulkan-input-interop on --vaapi-vulkan-output-interop on
 ```
 
+For qualified PQ content with actual pixels within 0–1000 nit, add
+`--output-dynamic-range sdr` to request BT.709 limited output explicitly.
+H.2648 is the default output; HEVC/AV1 allow either `--output-bit-depth 8` or `10`.
+Omitting this option never converts HDR to SDR automatically.
+
 Use `--output-codec h264|hevc|av1`, `--output-bit-depth 8|10`,
 `--backend auto|cpu|vulkan`, `--decode auto|software|vaapi`, and
 `--encode auto|software|vaapi` to constrain planning. Other common flags
@@ -116,8 +126,10 @@ and internal Vulkan numeric qualification remain documented in
 [Stage 5.3B-2](docs/stage5.3b2-vulkan-pq.md). The
 [sealed Stage 5.3B-3 report](docs/stage5.3b3-hdr-production.md) establishes the
 qualified BT.2020/PQ HDR-preserving production path and reproducible retained
-baseline. CPU HDR reference remains non-production. No HLG, full-range HDR
-or HDR→SDR tone mapping is supported.
+baseline. The [sealed Stage 5.3C-4B report](docs/stage5.3c4b-hdr-to-sdr-production.md)
+establishes explicit, fixed-policy PQ→SDR production; Stage 5.3C overall is sealed.
+CPU HDR reference remains non-production. HLG, full-range HDR and generalized
+above-1000-nit conversion remain unsupported.
 
 The repository CI runs Rust format, strict Clippy, workspace tests, and Vulkan
 1.3 validation on generated SPIR-V. Hardware gates require an Intel host and

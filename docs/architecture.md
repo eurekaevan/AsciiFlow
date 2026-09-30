@@ -27,10 +27,23 @@ common-scale/compensated f32 arithmetic; canonical and legal HEVC/AV1 full-frame
 parity pass. Old two-code UNORM16 failures remain historical diagnostics, not
 PASS. A new identity-preserved legal source replaces the unsuitable B-3 input
 for C3 qualification, without changing the B-3 production baseline.
-No HDR→SDR production planner, CLI or encoder path is enabled.
+That isolated stage does not itself enable a production planner or encoder.
 
-This document describes the sole Rust implementation through the Stage 5.3C-3
-qualification draft and sealed C-2B CPU reference, retaining Stage 5.3B-3 PQ
+[C-4A](stage5.3c4a-sdr-output-signal.md), **SEALED** on the qualified Intel hardware, adds only a
+qualification consumer: C-3 nonlinear BT.709 RGB → BT.709 NCL limited NV12/P010
+→ FFmpeg-owned encoder-style writable VAAPI surface. No native color metadata
+is assigned and no encoding occurs in that qualification stage.
+
+[C-4B](stage5.3c4b-hdr-to-sdr-production.md) is **SEALED** on the recorded Intel
+scope and completes Stage 5.3C. Explicit `--output-dynamic-range sdr` selects
+`HdrPqToSdrBt709`: actual VAAPI P010 input → resident Vulkan HDR ASCII/Method A/
+BT.709 limiting → sealed NV12/P010 pack → encoder-owned output interop → VAAPI
+SDR encode/mux. Default `preserve`, existing SDR processing and PQ preservation
+are unchanged. Per-source-pixel domain rejection precedes averaging/coverage;
+no full RGB/pixel host readback, software fallback or source HDR metadata clone.
+
+This document describes the sole Rust implementation through sealed Stage 5.3C-4B
+production integration and sealed C-2B CPU reference, retaining Stage 5.3B-3 PQ
 production integration on the Stage 5.2C-3 P010
 processing foundation: a permanent CPU reference backend, a Vulkan 1.3 compute
 backend, optional Linux VAAPI media, and qualified Intel DMA-BUF bridges in both
@@ -111,17 +124,18 @@ each target-linear component to [0,1], where 1=100 cd/m². The inverse power
 No source preclip, CAT (same D65), Y restoration, quantization or encoder is
 added. Preclip XYZ/Y is colorimetrically preserved within f64 error; limiting
 may change Y/hue and is many-to-one. This is a measured project policy, not
-Annex5, optimality or luminance preservation. Production HDR→SDR remains closed;
-C-3 now has the sealed isolated qualification above; it justifies C-4 but does
-not implement it. CPU references and PQ-preserve production remain unchanged.
+Annex5, optimality or luminance preservation. C-4B consumes the sealed C-3/C-4A
+GPU path without changing those algorithms. CPU references remain qualification
+only; PQ-preserve production remains unchanged.
 
 C3B's [precision contract review](numerical-qualification.md) separates
 reference-space error, full-scale RGB diagnostics and hypothetical limited
-8/10-bit BT.709 YUV codes. These projections do not implement C4 packing or
-select a production format. Optional `hdr-to-sdr-fp64-experiment` modules and
+8/10-bit BT.709 YUV codes. These projections are not C-4A's independent packed-code
+oracle and do not select a production format. Optional `hdr-to-sdr-fp64-experiment` modules and
 explicit experimental devices are qualification-only; ordinary contexts never
 request shaderFloat64. Neither those experiments nor the diagnostic output-code
-contract opens the production HDR→SDR planner.
+contract alone opens the production HDR→SDR planner; only C-4B qualifies the
+explicit hardware production integration.
 
 ```text
 codec parameters / decoded AVFrame metadata

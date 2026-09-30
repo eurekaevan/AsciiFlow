@@ -57,6 +57,8 @@ const RENDER_LUT_32X4: &[u8] =
 const RENDER_P010_LUT_32X4: &[u8] =
     include_bytes!(concat!(env!("OUT_DIR"), "/ascii_render_p010_lut_32x4.spv"));
 const MAP_PQ: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/ascii_map_pq.spv"));
+const MAP_PQ_SDR_DOMAIN: &[u8] =
+    include_bytes!(concat!(env!("OUT_DIR"), "/ascii_map_pq_sdr_domain.spv"));
 const RENDER_PQ: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/ascii_render_pq.spv"));
 
 const QUERY_UPLOAD_BEGIN: u32 = 0;
@@ -143,6 +145,7 @@ struct ResourceKey {
     font: String,
     charset: String,
     pq_preserve: bool,
+    pq_sdr_source_domain: bool,
 }
 
 fn mapping_u32_is_safe(
@@ -174,6 +177,7 @@ fn max_sample_for(format: PixelFormat) -> u32 {
 
 pub struct VulkanAsciiBackend {
     pq_preserve: bool,
+    pq_sdr_source_domain: bool,
     pub(crate) pq_fault: Option<crate::pq::PqQualificationFault>,
     supplied_atlas: Option<(GlyphAtlas, String, String)>,
     context: Arc<VulkanContext>,
@@ -195,7 +199,7 @@ pub enum DiagnosticOutputFault {
 }
 
 impl VulkanAsciiBackend {
-    #[cfg(feature = "hdr-to-sdr-qualification")]
+    #[cfg(feature = "hdr-to-sdr-production")]
     pub(crate) fn c3_map_buffer_bytes(&self) -> u64 {
         self.resources.as_ref().map_or(0, |r| {
             [
@@ -217,7 +221,7 @@ impl VulkanAsciiBackend {
 
     // Feature-only seam: C-3 owns separate float resources/pipelines while the
     // existing map and DMA-BUF copy remain the sole HDR input implementation.
-    #[cfg(feature = "hdr-to-sdr-qualification")]
+    #[cfg(feature = "hdr-to-sdr-production")]
     pub(crate) fn c3_bindings(
         &mut self,
         desc: &FrameDesc,
@@ -237,7 +241,7 @@ impl VulkanAsciiBackend {
         })
     }
 
-    #[cfg(feature = "hdr-to-sdr-qualification")]
+    #[cfg(feature = "hdr-to-sdr-production")]
     pub(crate) fn c3_map_host(
         &mut self,
         input: &VideoFrame,
@@ -252,7 +256,7 @@ impl VulkanAsciiBackend {
         )
     }
 
-    #[cfg(feature = "hdr-to-sdr-qualification")]
+    #[cfg(feature = "hdr-to-sdr-production")]
     pub(crate) fn c3_map_external(
         &mut self,
         desc: &FrameDesc,
@@ -286,7 +290,8 @@ impl VulkanAsciiBackend {
 
     pub fn new_for_color_processing(mode: asciiflow_core::ColorProcessing) -> Result<Self> {
         let mut backend = Self::new()?;
-        backend.pq_preserve = mode == asciiflow_core::ColorProcessing::HdrPqPreserve;
+        backend.pq_preserve = mode != asciiflow_core::ColorProcessing::Sdr;
+        backend.pq_sdr_source_domain = mode == asciiflow_core::ColorProcessing::HdrPqToSdrBt709;
         Ok(backend)
     }
 
@@ -336,6 +341,7 @@ impl VulkanAsciiBackend {
         .map_err(|e| Error::Vulkan(format!("failed to create Vulkan memory allocator: {e}")))?;
         Ok(Self {
             pq_preserve: false,
+            pq_sdr_source_domain: false,
             pq_fault: None,
             supplied_atlas: None,
             context,
@@ -348,9 +354,24 @@ impl VulkanAsciiBackend {
     pub(crate) fn shared_context(&self) -> Arc<VulkanContext> {
         self.context.clone()
     }
+    pub fn validates_hdr_to_sdr_source_domain(&self) -> bool {
+        self.pq_sdr_source_domain
+    }
+
+    /// Observe validation through teardown without retaining GPU resources.
+    #[cfg(feature = "hdr-to-sdr-production")]
+    pub fn validation_observer(&self) -> impl Fn() -> usize + use<> {
+        let counter = self.context.validation_counter();
+        move || {
+            counter
+                .as_ref()
+                .map_or(0, |value| value.load(std::sync::atomic::Ordering::Relaxed))
+        }
+    }
     pub fn try_fork(&self) -> Result<Self> {
         let mut fork = Self::from_context(self.context.clone())?;
         fork.pq_preserve = self.pq_preserve;
+        fork.pq_sdr_source_domain = self.pq_sdr_source_domain;
         fork.supplied_atlas = self.supplied_atlas.clone();
         Ok(fork)
     }
@@ -475,6 +496,7 @@ impl VulkanAsciiBackend {
             font: config.font.clone(),
             charset: config.charset.clone(),
             pq_preserve: self.pq_preserve,
+            pq_sdr_source_domain: self.pq_sdr_source_domain,
         };
         if self
             .resources
@@ -1663,7 +1685,9 @@ impl Resources {
         .map_err(vk_error("failed to create compute pipeline layout"))?;
         let pipeline_layout = pending_objects.pipeline_layout;
         crate::pq::checkpoint(fault, crate::pq::PqQualificationFault::PipelineCreation)?;
-        let (map_shader, map_variant, map_workgroup_size) = if key.pq_preserve {
+        let (map_shader, map_variant, map_workgroup_size) = if key.pq_sdr_source_domain {
+            (MAP_PQ_SDR_DOMAIN, "pq-sdr-domain-f32-32", 32)
+        } else if key.pq_preserve {
             (MAP_PQ, "pq-f32-32", 32)
         } else if key.format == PixelFormat::P010Le {
             if map_u32_safe {

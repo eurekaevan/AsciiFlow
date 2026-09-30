@@ -23,6 +23,12 @@ For canonical PQ it still records `UnsupportedHdrPq`. Stage B-3 separately
 validates the complete signal and selects `ColorProcessing::HdrPqPreserve`
 only with probed Vulkan PQ + VAAPI decode/encode + both P010 import facts.
 The [production closure report](stage5.3b3-hdr-production.md) records its status.
+The default request remains `preserve`. Explicit `sdr` may instead select
+`HdrPqToSdrBt709` under [C-4B's sealed hardware contract](stage5.3c4b-hdr-to-sdr-production.md):
+same strict PQ input signal, actual per-source-pixel 0–1000-nit domain check,
+VAAPI/Vulkan input/output interop and explicit BT.709 limited output metadata.
+This does not relabel PQ as SDR, broaden the SDR support assessment or authorize
+HLG/full/wide/unknown inputs. Ten-bit SDR output is still SDR.
 P010, ten-bit depth, static mastering metadata or a generic Vulkan device do
 not imply HDR eligibility. No CPU/software/staged HDR fallback is legal.
 
@@ -52,7 +58,7 @@ not direct VAAPI decode.
 | Missing required 10-bit fields or unknown transfer | Unknown | Rejected before staging |
 | BT.2020 primaries or matrix with BT.709 transfer | SDR, not HDR | Rejected: wide-gamut math not implemented |
 | Display P3 with SDR transfer | SDR, not HDR | Rejected: gamut not implemented |
-| PQ transfer | HDR PQ | SDR assessment rejects; canonical ten-bit BT.2020 NCL/limited/left may use the separately qualified full-hardware preserve plan |
+| PQ transfer | HDR PQ | SDR assessment rejects; canonical ten-bit BT.2020 NCL/limited/left may use qualified hardware preservation or explicit fixed-domain C-4B SDR conversion |
 | HLG transfer | HDR HLG | Rejected: HDR pixel processing not implemented |
 | Disagreeing explicit stream/frame fields | Conflicting | Rejected |
 | PQ/HLG with explicit BT.709 primaries and matrix | HDR class, contradictory metadata | Rejected as conflicting |
@@ -82,6 +88,7 @@ it does not recompute those statistics or claim HDR10 mastering qualification.
 
 Static metadata neither proves nor is required for HDR classification. PQ
 without mastering metadata is still HDR PQ; mastering/CLL data without a PQ
-or HLG transfer does not promote SDR to HDR. No dynamic HDR metadata, ICC,
-gamut conversion or tone mapping is implemented. The B-3 preserve path uses
-the independently qualified PQ pixel model, without changing this classifier.
+or HLG transfer does not promote SDR to HDR. Dynamic HDR metadata processing
+and ICC conversion remain unsupported. B-3 preservation and C-4B's explicit,
+fixed Method A/BT.709 limiting path use independently qualified pixel models
+without changing this classifier or accepting unspecified signal metadata.

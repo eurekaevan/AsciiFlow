@@ -1,0 +1,2058 @@
+{
+  "mismatch_counts": {
+    "NV12": 928,
+    "P010": 3739
+  },
+  "validation_errors": 0,
+  "captured": 128,
+  "samples": [
+    {
+      "format": "NV12",
+      "vector_index": 0,
+      "rgb_f32_bits": [
+        991272996,
+        991272996,
+        991272996
+      ],
+      "cpu_active_code": 16,
+      "gpu_active_code": 17,
+      "channel_position": "Y[0]",
+      "intended_channel": "Y",
+      "intended_half_code": 16.5,
+      "f64_prequantized_code": 16.49999992828816175,
+      "distance_from_half": 7.171183825E-8
+    },
+    {
+      "format": "NV12",
+      "vector_index": 0,
+      "rgb_f32_bits": [
+        991272996,
+        991272996,
+        991272996
+      ],
+      "cpu_active_code": 16,
+      "gpu_active_code": 17,
+      "channel_position": "Y[1]",
+      "intended_channel": "Y",
+      "intended_half_code": 16.5,
+      "f64_prequantized_code": 16.49999992828816175,
+      "distance_from_half": 7.171183825E-8
+    },
+    {
+      "format": "NV12",
+      "vector_index": 0,
+      "rgb_f32_bits": [
+        991272996,
+        991272996,
+        991272996
+      ],
+      "cpu_active_code": 16,
+      "gpu_active_code": 17,
+      "channel_position": "Y[2]",
+      "intended_channel": "Y",
+      "intended_half_code": 16.5,
+      "f64_prequantized_code": 16.49999992828816175,
+      "distance_from_half": 7.171183825E-8
+    },
+    {
+      "format": "NV12",
+      "vector_index": 0,
+      "rgb_f32_bits": [
+        991272996,
+        991272996,
+        991272996
+      ],
+      "cpu_active_code": 16,
+      "gpu_active_code": 17,
+      "channel_position": "Y[3]",
+      "intended_channel": "Y",
+      "intended_half_code": 16.5,
+      "f64_prequantized_code": 16.49999992828816175,
+      "distance_from_half": 7.171183825E-8
+    },
+    {
+      "format": "NV12",
+      "vector_index": 1,
+      "rgb_f32_bits": [
+        991272997,
+        991272997,
+        991272997
+      ],
+      "cpu_active_code": 16,
+      "gpu_active_code": 17,
+      "channel_position": "Y[0]",
+      "intended_channel": "Y",
+      "intended_half_code": 16.5,
+      "f64_prequantized_code": 16.49999997927807271,
+      "distance_from_half": 2.072192729E-8
+    },
+    {
+      "format": "NV12",
+      "vector_index": 1,
+      "rgb_f32_bits": [
+        991272997,
+        991272997,
+        991272997
+      ],
+      "cpu_active_code": 16,
+      "gpu_active_code": 17,
+      "channel_position": "Y[1]",
+      "intended_channel": "Y",
+      "intended_half_code": 16.5,
+      "f64_prequantized_code": 16.49999997927807271,
+      "distance_from_half": 2.072192729E-8
+    },
+    {
+      "format": "NV12",
+      "vector_index": 1,
+      "rgb_f32_bits": [
+        991272997,
+        991272997,
+        991272997
+      ],
+      "cpu_active_code": 16,
+      "gpu_active_code": 17,
+      "channel_position": "Y[2]",
+      "intended_channel": "Y",
+      "intended_half_code": 16.5,
+      "f64_prequantized_code": 16.49999997927807271,
+      "distance_from_half": 2.072192729E-8
+    },
+    {
+      "format": "NV12",
+      "vector_index": 1,
+      "rgb_f32_bits": [
+        991272997,
+        991272997,
+        991272997
+      ],
+      "cpu_active_code": 16,
+      "gpu_active_code": 17,
+      "channel_position": "Y[3]",
+      "intended_channel": "Y",
+      "intended_half_code": 16.5,
+      "f64_prequantized_code": 16.49999997927807271,
+      "distance_from_half": 2.072192729E-8
+    },
+    {
+      "format": "NV12",
+      "vector_index": 3,
+      "rgb_f32_bits": [
+        1004564535,
+        1004564535,
+        1004564535
+      ],
+      "cpu_active_code": 17,
+      "gpu_active_code": 18,
+      "channel_position": "Y[0]",
+      "intended_channel": "Y",
+      "intended_half_code": 17.5,
+      "f64_prequantized_code": 17.49999988684430718,
+      "distance_from_half": 1.1315569282E-7
+    },
+    {
+      "format": "NV12",
+      "vector_index": 3,
+      "rgb_f32_bits": [
+        1004564535,
+        1004564535,
+        1004564535
+      ],
+      "cpu_active_code": 17,
+      "gpu_active_code": 18,
+      "channel_position": "Y[1]",
+      "intended_channel": "Y",
+      "intended_half_code": 17.5,
+      "f64_prequantized_code": 17.49999988684430718,
+      "distance_from_half": 1.1315569282E-7
+    },
+    {
+      "format": "NV12",
+      "vector_index": 3,
+      "rgb_f32_bits": [
+        1004564535,
+        1004564535,
+        1004564535
+      ],
+      "cpu_active_code": 17,
+      "gpu_active_code": 18,
+      "channel_position": "Y[2]",
+      "intended_channel": "Y",
+      "intended_half_code": 17.5,
+      "f64_prequantized_code": 17.49999988684430718,
+      "distance_from_half": 1.1315569282E-7
+    },
+    {
+      "format": "NV12",
+      "vector_index": 3,
+      "rgb_f32_bits": [
+        1004564535,
+        1004564535,
+        1004564535
+      ],
+      "cpu_active_code": 17,
+      "gpu_active_code": 18,
+      "channel_position": "Y[3]",
+      "intended_channel": "Y",
+      "intended_half_code": 17.5,
+      "f64_prequantized_code": 17.49999988684430718,
+      "distance_from_half": 1.1315569282E-7
+    },
+    {
+      "format": "NV12",
+      "vector_index": 4,
+      "rgb_f32_bits": [
+        1004564536,
+        1004564536,
+        1004564536
+      ],
+      "cpu_active_code": 17,
+      "gpu_active_code": 18,
+      "channel_position": "Y[0]",
+      "intended_channel": "Y",
+      "intended_half_code": 17.5,
+      "f64_prequantized_code": 17.49999998882412910,
+      "distance_from_half": 1.117587090E-8
+    },
+    {
+      "format": "NV12",
+      "vector_index": 4,
+      "rgb_f32_bits": [
+        1004564536,
+        1004564536,
+        1004564536
+      ],
+      "cpu_active_code": 17,
+      "gpu_active_code": 18,
+      "channel_position": "Y[1]",
+      "intended_channel": "Y",
+      "intended_half_code": 17.5,
+      "f64_prequantized_code": 17.49999998882412910,
+      "distance_from_half": 1.117587090E-8
+    },
+    {
+      "format": "NV12",
+      "vector_index": 4,
+      "rgb_f32_bits": [
+        1004564536,
+        1004564536,
+        1004564536
+      ],
+      "cpu_active_code": 17,
+      "gpu_active_code": 18,
+      "channel_position": "Y[2]",
+      "intended_channel": "Y",
+      "intended_half_code": 17.5,
+      "f64_prequantized_code": 17.49999998882412910,
+      "distance_from_half": 1.117587090E-8
+    },
+    {
+      "format": "NV12",
+      "vector_index": 4,
+      "rgb_f32_bits": [
+        1004564536,
+        1004564536,
+        1004564536
+      ],
+      "cpu_active_code": 17,
+      "gpu_active_code": 18,
+      "channel_position": "Y[3]",
+      "intended_channel": "Y",
+      "intended_half_code": 17.5,
+      "f64_prequantized_code": 17.49999998882412910,
+      "distance_from_half": 1.117587090E-8
+    },
+    {
+      "format": "NV12",
+      "vector_index": 6,
+      "rgb_f32_bits": [
+        1010501678,
+        1010501678,
+        1010501678
+      ],
+      "cpu_active_code": 18,
+      "gpu_active_code": 19,
+      "channel_position": "Y[0]",
+      "intended_channel": "Y",
+      "intended_half_code": 18.5,
+      "f64_prequantized_code": 18.49999984540045261,
+      "distance_from_half": 1.5459954739E-7
+    },
+    {
+      "format": "NV12",
+      "vector_index": 6,
+      "rgb_f32_bits": [
+        1010501678,
+        1010501678,
+        1010501678
+      ],
+      "cpu_active_code": 18,
+      "gpu_active_code": 19,
+      "channel_position": "Y[1]",
+      "intended_channel": "Y",
+      "intended_half_code": 18.5,
+      "f64_prequantized_code": 18.49999984540045261,
+      "distance_from_half": 1.5459954739E-7
+    },
+    {
+      "format": "NV12",
+      "vector_index": 6,
+      "rgb_f32_bits": [
+        1010501678,
+        1010501678,
+        1010501678
+      ],
+      "cpu_active_code": 18,
+      "gpu_active_code": 19,
+      "channel_position": "Y[2]",
+      "intended_channel": "Y",
+      "intended_half_code": 18.5,
+      "f64_prequantized_code": 18.49999984540045261,
+      "distance_from_half": 1.5459954739E-7
+    },
+    {
+      "format": "NV12",
+      "vector_index": 6,
+      "rgb_f32_bits": [
+        1010501678,
+        1010501678,
+        1010501678
+      ],
+      "cpu_active_code": 18,
+      "gpu_active_code": 19,
+      "channel_position": "Y[3]",
+      "intended_channel": "Y",
+      "intended_half_code": 18.5,
+      "f64_prequantized_code": 18.49999984540045261,
+      "distance_from_half": 1.5459954739E-7
+    },
+    {
+      "format": "NV12",
+      "vector_index": 9,
+      "rgb_f32_bits": [
+        1015213088,
+        1015213088,
+        1015213088
+      ],
+      "cpu_active_code": 19,
+      "gpu_active_code": 20,
+      "channel_position": "Y[0]",
+      "intended_channel": "Y",
+      "intended_half_code": 19.5,
+      "f64_prequantized_code": 19.49999970197677612,
+      "distance_from_half": 2.9802322388E-7
+    },
+    {
+      "format": "NV12",
+      "vector_index": 9,
+      "rgb_f32_bits": [
+        1015213088,
+        1015213088,
+        1015213088
+      ],
+      "cpu_active_code": 19,
+      "gpu_active_code": 20,
+      "channel_position": "Y[1]",
+      "intended_channel": "Y",
+      "intended_half_code": 19.5,
+      "f64_prequantized_code": 19.49999970197677612,
+      "distance_from_half": 2.9802322388E-7
+    },
+    {
+      "format": "NV12",
+      "vector_index": 9,
+      "rgb_f32_bits": [
+        1015213088,
+        1015213088,
+        1015213088
+      ],
+      "cpu_active_code": 19,
+      "gpu_active_code": 20,
+      "channel_position": "Y[2]",
+      "intended_channel": "Y",
+      "intended_half_code": 19.5,
+      "f64_prequantized_code": 19.49999970197677612,
+      "distance_from_half": 2.9802322388E-7
+    },
+    {
+      "format": "NV12",
+      "vector_index": 9,
+      "rgb_f32_bits": [
+        1015213088,
+        1015213088,
+        1015213088
+      ],
+      "cpu_active_code": 19,
+      "gpu_active_code": 20,
+      "channel_position": "Y[3]",
+      "intended_channel": "Y",
+      "intended_half_code": 19.5,
+      "f64_prequantized_code": 19.49999970197677612,
+      "distance_from_half": 2.9802322388E-7
+    },
+    {
+      "format": "NV12",
+      "vector_index": 12,
+      "rgb_f32_bits": [
+        1017664553,
+        1017664553,
+        1017664553
+      ],
+      "cpu_active_code": 20,
+      "gpu_active_code": 21,
+      "channel_position": "Y[0]",
+      "intended_channel": "Y",
+      "intended_half_code": 20.5,
+      "f64_prequantized_code": 20.49999955855309963,
+      "distance_from_half": 4.4144690037E-7
+    },
+    {
+      "format": "NV12",
+      "vector_index": 12,
+      "rgb_f32_bits": [
+        1017664553,
+        1017664553,
+        1017664553
+      ],
+      "cpu_active_code": 20,
+      "gpu_active_code": 21,
+      "channel_position": "Y[1]",
+      "intended_channel": "Y",
+      "intended_half_code": 20.5,
+      "f64_prequantized_code": 20.49999955855309963,
+      "distance_from_half": 4.4144690037E-7
+    },
+    {
+      "format": "NV12",
+      "vector_index": 12,
+      "rgb_f32_bits": [
+        1017664553,
+        1017664553,
+        1017664553
+      ],
+      "cpu_active_code": 20,
+      "gpu_active_code": 21,
+      "channel_position": "Y[2]",
+      "intended_channel": "Y",
+      "intended_half_code": 20.5,
+      "f64_prequantized_code": 20.49999955855309963,
+      "distance_from_half": 4.4144690037E-7
+    },
+    {
+      "format": "NV12",
+      "vector_index": 12,
+      "rgb_f32_bits": [
+        1017664553,
+        1017664553,
+        1017664553
+      ],
+      "cpu_active_code": 20,
+      "gpu_active_code": 21,
+      "channel_position": "Y[3]",
+      "intended_channel": "Y",
+      "intended_half_code": 20.5,
+      "f64_prequantized_code": 20.49999955855309963,
+      "distance_from_half": 4.4144690037E-7
+    },
+    {
+      "format": "NV12",
+      "vector_index": 13,
+      "rgb_f32_bits": [
+        1017664554,
+        1017664554,
+        1017664554
+      ],
+      "cpu_active_code": 20,
+      "gpu_active_code": 21,
+      "channel_position": "Y[0]",
+      "intended_channel": "Y",
+      "intended_half_code": 20.5,
+      "f64_prequantized_code": 20.49999996647238731,
+      "distance_from_half": 3.352761269E-8
+    },
+    {
+      "format": "NV12",
+      "vector_index": 13,
+      "rgb_f32_bits": [
+        1017664554,
+        1017664554,
+        1017664554
+      ],
+      "cpu_active_code": 20,
+      "gpu_active_code": 21,
+      "channel_position": "Y[1]",
+      "intended_channel": "Y",
+      "intended_half_code": 20.5,
+      "f64_prequantized_code": 20.49999996647238731,
+      "distance_from_half": 3.352761269E-8
+    },
+    {
+      "format": "NV12",
+      "vector_index": 13,
+      "rgb_f32_bits": [
+        1017664554,
+        1017664554,
+        1017664554
+      ],
+      "cpu_active_code": 20,
+      "gpu_active_code": 21,
+      "channel_position": "Y[2]",
+      "intended_channel": "Y",
+      "intended_half_code": 20.5,
+      "f64_prequantized_code": 20.49999996647238731,
+      "distance_from_half": 3.352761269E-8
+    },
+    {
+      "format": "NV12",
+      "vector_index": 13,
+      "rgb_f32_bits": [
+        1017664554,
+        1017664554,
+        1017664554
+      ],
+      "cpu_active_code": 20,
+      "gpu_active_code": 21,
+      "channel_position": "Y[3]",
+      "intended_channel": "Y",
+      "intended_half_code": 20.5,
+      "f64_prequantized_code": 20.49999996647238731,
+      "distance_from_half": 3.352761269E-8
+    },
+    {
+      "format": "NV12",
+      "vector_index": 15,
+      "rgb_f32_bits": [
+        1020116018,
+        1020116018,
+        1020116018
+      ],
+      "cpu_active_code": 21,
+      "gpu_active_code": 22,
+      "channel_position": "Y[0]",
+      "intended_channel": "Y",
+      "intended_half_code": 21.5,
+      "f64_prequantized_code": 21.49999941512942314,
+      "distance_from_half": 5.8487057686E-7
+    },
+    {
+      "format": "NV12",
+      "vector_index": 15,
+      "rgb_f32_bits": [
+        1020116018,
+        1020116018,
+        1020116018
+      ],
+      "cpu_active_code": 21,
+      "gpu_active_code": 22,
+      "channel_position": "Y[1]",
+      "intended_channel": "Y",
+      "intended_half_code": 21.5,
+      "f64_prequantized_code": 21.49999941512942314,
+      "distance_from_half": 5.8487057686E-7
+    },
+    {
+      "format": "NV12",
+      "vector_index": 15,
+      "rgb_f32_bits": [
+        1020116018,
+        1020116018,
+        1020116018
+      ],
+      "cpu_active_code": 21,
+      "gpu_active_code": 22,
+      "channel_position": "Y[2]",
+      "intended_channel": "Y",
+      "intended_half_code": 21.5,
+      "f64_prequantized_code": 21.49999941512942314,
+      "distance_from_half": 5.8487057686E-7
+    },
+    {
+      "format": "NV12",
+      "vector_index": 15,
+      "rgb_f32_bits": [
+        1020116018,
+        1020116018,
+        1020116018
+      ],
+      "cpu_active_code": 21,
+      "gpu_active_code": 22,
+      "channel_position": "Y[3]",
+      "intended_channel": "Y",
+      "intended_half_code": 21.5,
+      "f64_prequantized_code": 21.49999941512942314,
+      "distance_from_half": 5.8487057686E-7
+    },
+    {
+      "format": "NV12",
+      "vector_index": 16,
+      "rgb_f32_bits": [
+        1020116019,
+        1020116019,
+        1020116019
+      ],
+      "cpu_active_code": 21,
+      "gpu_active_code": 22,
+      "channel_position": "Y[0]",
+      "intended_channel": "Y",
+      "intended_half_code": 21.5,
+      "f64_prequantized_code": 21.49999982304871082,
+      "distance_from_half": 1.7695128918E-7
+    },
+    {
+      "format": "NV12",
+      "vector_index": 16,
+      "rgb_f32_bits": [
+        1020116019,
+        1020116019,
+        1020116019
+      ],
+      "cpu_active_code": 21,
+      "gpu_active_code": 22,
+      "channel_position": "Y[1]",
+      "intended_channel": "Y",
+      "intended_half_code": 21.5,
+      "f64_prequantized_code": 21.49999982304871082,
+      "distance_from_half": 1.7695128918E-7
+    },
+    {
+      "format": "NV12",
+      "vector_index": 16,
+      "rgb_f32_bits": [
+        1020116019,
+        1020116019,
+        1020116019
+      ],
+      "cpu_active_code": 21,
+      "gpu_active_code": 22,
+      "channel_position": "Y[2]",
+      "intended_channel": "Y",
+      "intended_half_code": 21.5,
+      "f64_prequantized_code": 21.49999982304871082,
+      "distance_from_half": 1.7695128918E-7
+    },
+    {
+      "format": "NV12",
+      "vector_index": 16,
+      "rgb_f32_bits": [
+        1020116019,
+        1020116019,
+        1020116019
+      ],
+      "cpu_active_code": 21,
+      "gpu_active_code": 22,
+      "channel_position": "Y[3]",
+      "intended_channel": "Y",
+      "intended_half_code": 21.5,
+      "f64_prequantized_code": 21.49999982304871082,
+      "distance_from_half": 1.7695128918E-7
+    },
+    {
+      "format": "NV12",
+      "vector_index": 18,
+      "rgb_f32_bits": [
+        1022567484,
+        1022567484,
+        1022567484
+      ],
+      "cpu_active_code": 22,
+      "gpu_active_code": 23,
+      "channel_position": "Y[0]",
+      "intended_channel": "Y",
+      "intended_half_code": 22.5,
+      "f64_prequantized_code": 22.49999967962503433,
+      "distance_from_half": 3.2037496567E-7
+    },
+    {
+      "format": "NV12",
+      "vector_index": 18,
+      "rgb_f32_bits": [
+        1022567484,
+        1022567484,
+        1022567484
+      ],
+      "cpu_active_code": 22,
+      "gpu_active_code": 23,
+      "channel_position": "Y[1]",
+      "intended_channel": "Y",
+      "intended_half_code": 22.5,
+      "f64_prequantized_code": 22.49999967962503433,
+      "distance_from_half": 3.2037496567E-7
+    },
+    {
+      "format": "NV12",
+      "vector_index": 18,
+      "rgb_f32_bits": [
+        1022567484,
+        1022567484,
+        1022567484
+      ],
+      "cpu_active_code": 22,
+      "gpu_active_code": 23,
+      "channel_position": "Y[2]",
+      "intended_channel": "Y",
+      "intended_half_code": 22.5,
+      "f64_prequantized_code": 22.49999967962503433,
+      "distance_from_half": 3.2037496567E-7
+    },
+    {
+      "format": "NV12",
+      "vector_index": 18,
+      "rgb_f32_bits": [
+        1022567484,
+        1022567484,
+        1022567484
+      ],
+      "cpu_active_code": 22,
+      "gpu_active_code": 23,
+      "channel_position": "Y[3]",
+      "intended_channel": "Y",
+      "intended_half_code": 22.5,
+      "f64_prequantized_code": 22.49999967962503433,
+      "distance_from_half": 3.2037496567E-7
+    },
+    {
+      "format": "NV12",
+      "vector_index": 21,
+      "rgb_f32_bits": [
+        1024214562,
+        1024214562,
+        1024214562
+      ],
+      "cpu_active_code": 23,
+      "gpu_active_code": 24,
+      "channel_position": "Y[0]",
+      "intended_channel": "Y",
+      "intended_half_code": 23.5,
+      "f64_prequantized_code": 23.49999912828207016,
+      "distance_from_half": 8.7171792984E-7
+    },
+    {
+      "format": "NV12",
+      "vector_index": 21,
+      "rgb_f32_bits": [
+        1024214562,
+        1024214562,
+        1024214562
+      ],
+      "cpu_active_code": 23,
+      "gpu_active_code": 24,
+      "channel_position": "Y[1]",
+      "intended_channel": "Y",
+      "intended_half_code": 23.5,
+      "f64_prequantized_code": 23.49999912828207016,
+      "distance_from_half": 8.7171792984E-7
+    },
+    {
+      "format": "NV12",
+      "vector_index": 21,
+      "rgb_f32_bits": [
+        1024214562,
+        1024214562,
+        1024214562
+      ],
+      "cpu_active_code": 23,
+      "gpu_active_code": 24,
+      "channel_position": "Y[2]",
+      "intended_channel": "Y",
+      "intended_half_code": 23.5,
+      "f64_prequantized_code": 23.49999912828207016,
+      "distance_from_half": 8.7171792984E-7
+    },
+    {
+      "format": "NV12",
+      "vector_index": 21,
+      "rgb_f32_bits": [
+        1024214562,
+        1024214562,
+        1024214562
+      ],
+      "cpu_active_code": 23,
+      "gpu_active_code": 24,
+      "channel_position": "Y[3]",
+      "intended_channel": "Y",
+      "intended_half_code": 23.5,
+      "f64_prequantized_code": 23.49999912828207016,
+      "distance_from_half": 8.7171792984E-7
+    },
+    {
+      "format": "NV12",
+      "vector_index": 22,
+      "rgb_f32_bits": [
+        1024214563,
+        1024214563,
+        1024214563
+      ],
+      "cpu_active_code": 23,
+      "gpu_active_code": 24,
+      "channel_position": "Y[0]",
+      "intended_channel": "Y",
+      "intended_half_code": 23.5,
+      "f64_prequantized_code": 23.49999994412064552,
+      "distance_from_half": 5.587935448E-8
+    },
+    {
+      "format": "NV12",
+      "vector_index": 22,
+      "rgb_f32_bits": [
+        1024214563,
+        1024214563,
+        1024214563
+      ],
+      "cpu_active_code": 23,
+      "gpu_active_code": 24,
+      "channel_position": "Y[1]",
+      "intended_channel": "Y",
+      "intended_half_code": 23.5,
+      "f64_prequantized_code": 23.49999994412064552,
+      "distance_from_half": 5.587935448E-8
+    },
+    {
+      "format": "NV12",
+      "vector_index": 22,
+      "rgb_f32_bits": [
+        1024214563,
+        1024214563,
+        1024214563
+      ],
+      "cpu_active_code": 23,
+      "gpu_active_code": 24,
+      "channel_position": "Y[2]",
+      "intended_channel": "Y",
+      "intended_half_code": 23.5,
+      "f64_prequantized_code": 23.49999994412064552,
+      "distance_from_half": 5.587935448E-8
+    },
+    {
+      "format": "NV12",
+      "vector_index": 22,
+      "rgb_f32_bits": [
+        1024214563,
+        1024214563,
+        1024214563
+      ],
+      "cpu_active_code": 23,
+      "gpu_active_code": 24,
+      "channel_position": "Y[3]",
+      "intended_channel": "Y",
+      "intended_half_code": 23.5,
+      "f64_prequantized_code": 23.49999994412064552,
+      "distance_from_half": 5.587935448E-8
+    },
+    {
+      "format": "NV12",
+      "vector_index": 24,
+      "rgb_f32_bits": [
+        1025440295,
+        1025440295,
+        1025440295
+      ],
+      "cpu_active_code": 24,
+      "gpu_active_code": 25,
+      "channel_position": "Y[0]",
+      "intended_channel": "Y",
+      "intended_half_code": 24.5,
+      "f64_prequantized_code": 24.49999939277768135,
+      "distance_from_half": 6.0722231865E-7
+    },
+    {
+      "format": "NV12",
+      "vector_index": 24,
+      "rgb_f32_bits": [
+        1025440295,
+        1025440295,
+        1025440295
+      ],
+      "cpu_active_code": 24,
+      "gpu_active_code": 25,
+      "channel_position": "Y[1]",
+      "intended_channel": "Y",
+      "intended_half_code": 24.5,
+      "f64_prequantized_code": 24.49999939277768135,
+      "distance_from_half": 6.0722231865E-7
+    },
+    {
+      "format": "NV12",
+      "vector_index": 24,
+      "rgb_f32_bits": [
+        1025440295,
+        1025440295,
+        1025440295
+      ],
+      "cpu_active_code": 24,
+      "gpu_active_code": 25,
+      "channel_position": "Y[2]",
+      "intended_channel": "Y",
+      "intended_half_code": 24.5,
+      "f64_prequantized_code": 24.49999939277768135,
+      "distance_from_half": 6.0722231865E-7
+    },
+    {
+      "format": "NV12",
+      "vector_index": 24,
+      "rgb_f32_bits": [
+        1025440295,
+        1025440295,
+        1025440295
+      ],
+      "cpu_active_code": 24,
+      "gpu_active_code": 25,
+      "channel_position": "Y[3]",
+      "intended_channel": "Y",
+      "intended_half_code": 24.5,
+      "f64_prequantized_code": 24.49999939277768135,
+      "distance_from_half": 6.0722231865E-7
+    },
+    {
+      "format": "NV12",
+      "vector_index": 27,
+      "rgb_f32_bits": [
+        1026666027,
+        1026666027,
+        1026666027
+      ],
+      "cpu_active_code": 25,
+      "gpu_active_code": 26,
+      "channel_position": "Y[0]",
+      "intended_channel": "Y",
+      "intended_half_code": 25.5,
+      "f64_prequantized_code": 25.49999884143471718,
+      "distance_from_half": 0.00000115856528282
+    },
+    {
+      "format": "NV12",
+      "vector_index": 27,
+      "rgb_f32_bits": [
+        1026666027,
+        1026666027,
+        1026666027
+      ],
+      "cpu_active_code": 25,
+      "gpu_active_code": 26,
+      "channel_position": "Y[1]",
+      "intended_channel": "Y",
+      "intended_half_code": 25.5,
+      "f64_prequantized_code": 25.49999884143471718,
+      "distance_from_half": 0.00000115856528282
+    },
+    {
+      "format": "NV12",
+      "vector_index": 27,
+      "rgb_f32_bits": [
+        1026666027,
+        1026666027,
+        1026666027
+      ],
+      "cpu_active_code": 25,
+      "gpu_active_code": 26,
+      "channel_position": "Y[2]",
+      "intended_channel": "Y",
+      "intended_half_code": 25.5,
+      "f64_prequantized_code": 25.49999884143471718,
+      "distance_from_half": 0.00000115856528282
+    },
+    {
+      "format": "NV12",
+      "vector_index": 27,
+      "rgb_f32_bits": [
+        1026666027,
+        1026666027,
+        1026666027
+      ],
+      "cpu_active_code": 25,
+      "gpu_active_code": 26,
+      "channel_position": "Y[3]",
+      "intended_channel": "Y",
+      "intended_half_code": 25.5,
+      "f64_prequantized_code": 25.49999884143471718,
+      "distance_from_half": 0.00000115856528282
+    },
+    {
+      "format": "NV12",
+      "vector_index": 28,
+      "rgb_f32_bits": [
+        1026666028,
+        1026666028,
+        1026666028
+      ],
+      "cpu_active_code": 25,
+      "gpu_active_code": 26,
+      "channel_position": "Y[0]",
+      "intended_channel": "Y",
+      "intended_half_code": 25.5,
+      "f64_prequantized_code": 25.49999965727329254,
+      "distance_from_half": 3.4272670746E-7
+    },
+    {
+      "format": "NV12",
+      "vector_index": 28,
+      "rgb_f32_bits": [
+        1026666028,
+        1026666028,
+        1026666028
+      ],
+      "cpu_active_code": 25,
+      "gpu_active_code": 26,
+      "channel_position": "Y[1]",
+      "intended_channel": "Y",
+      "intended_half_code": 25.5,
+      "f64_prequantized_code": 25.49999965727329254,
+      "distance_from_half": 3.4272670746E-7
+    },
+    {
+      "format": "NV12",
+      "vector_index": 28,
+      "rgb_f32_bits": [
+        1026666028,
+        1026666028,
+        1026666028
+      ],
+      "cpu_active_code": 25,
+      "gpu_active_code": 26,
+      "channel_position": "Y[2]",
+      "intended_channel": "Y",
+      "intended_half_code": 25.5,
+      "f64_prequantized_code": 25.49999965727329254,
+      "distance_from_half": 3.4272670746E-7
+    },
+    {
+      "format": "NV12",
+      "vector_index": 28,
+      "rgb_f32_bits": [
+        1026666028,
+        1026666028,
+        1026666028
+      ],
+      "cpu_active_code": 25,
+      "gpu_active_code": 26,
+      "channel_position": "Y[3]",
+      "intended_channel": "Y",
+      "intended_half_code": 25.5,
+      "f64_prequantized_code": 25.49999965727329254,
+      "distance_from_half": 3.4272670746E-7
+    },
+    {
+      "format": "P010",
+      "vector_index": 0,
+      "rgb_f32_bits": [
+        974495780,
+        974495780,
+        974495780
+      ],
+      "cpu_active_code": 64,
+      "gpu_active_code": 65,
+      "channel_position": "Y[0]",
+      "intended_channel": "Y",
+      "intended_half_code": 64.5,
+      "f64_prequantized_code": 64.49999992828816175,
+      "distance_from_half": 7.171183825E-8
+    },
+    {
+      "format": "P010",
+      "vector_index": 0,
+      "rgb_f32_bits": [
+        974495780,
+        974495780,
+        974495780
+      ],
+      "cpu_active_code": 64,
+      "gpu_active_code": 65,
+      "channel_position": "Y[1]",
+      "intended_channel": "Y",
+      "intended_half_code": 64.5,
+      "f64_prequantized_code": 64.49999992828816175,
+      "distance_from_half": 7.171183825E-8
+    },
+    {
+      "format": "P010",
+      "vector_index": 0,
+      "rgb_f32_bits": [
+        974495780,
+        974495780,
+        974495780
+      ],
+      "cpu_active_code": 64,
+      "gpu_active_code": 65,
+      "channel_position": "Y[2]",
+      "intended_channel": "Y",
+      "intended_half_code": 64.5,
+      "f64_prequantized_code": 64.49999992828816175,
+      "distance_from_half": 7.171183825E-8
+    },
+    {
+      "format": "P010",
+      "vector_index": 0,
+      "rgb_f32_bits": [
+        974495780,
+        974495780,
+        974495780
+      ],
+      "cpu_active_code": 64,
+      "gpu_active_code": 65,
+      "channel_position": "Y[3]",
+      "intended_channel": "Y",
+      "intended_half_code": 64.5,
+      "f64_prequantized_code": 64.49999992828816175,
+      "distance_from_half": 7.171183825E-8
+    },
+    {
+      "format": "P010",
+      "vector_index": 1,
+      "rgb_f32_bits": [
+        974495781,
+        974495781,
+        974495781
+      ],
+      "cpu_active_code": 64,
+      "gpu_active_code": 65,
+      "channel_position": "Y[0]",
+      "intended_channel": "Y",
+      "intended_half_code": 64.5,
+      "f64_prequantized_code": 64.49999997927807271,
+      "distance_from_half": 2.072192729E-8
+    },
+    {
+      "format": "P010",
+      "vector_index": 1,
+      "rgb_f32_bits": [
+        974495781,
+        974495781,
+        974495781
+      ],
+      "cpu_active_code": 64,
+      "gpu_active_code": 65,
+      "channel_position": "Y[1]",
+      "intended_channel": "Y",
+      "intended_half_code": 64.5,
+      "f64_prequantized_code": 64.49999997927807271,
+      "distance_from_half": 2.072192729E-8
+    },
+    {
+      "format": "P010",
+      "vector_index": 1,
+      "rgb_f32_bits": [
+        974495781,
+        974495781,
+        974495781
+      ],
+      "cpu_active_code": 64,
+      "gpu_active_code": 65,
+      "channel_position": "Y[2]",
+      "intended_channel": "Y",
+      "intended_half_code": 64.5,
+      "f64_prequantized_code": 64.49999997927807271,
+      "distance_from_half": 2.072192729E-8
+    },
+    {
+      "format": "P010",
+      "vector_index": 1,
+      "rgb_f32_bits": [
+        974495781,
+        974495781,
+        974495781
+      ],
+      "cpu_active_code": 64,
+      "gpu_active_code": 65,
+      "channel_position": "Y[3]",
+      "intended_channel": "Y",
+      "intended_half_code": 64.5,
+      "f64_prequantized_code": 64.49999997927807271,
+      "distance_from_half": 2.072192729E-8
+    },
+    {
+      "format": "P010",
+      "vector_index": 3,
+      "rgb_f32_bits": [
+        987787319,
+        987787319,
+        987787319
+      ],
+      "cpu_active_code": 65,
+      "gpu_active_code": 66,
+      "channel_position": "Y[0]",
+      "intended_channel": "Y",
+      "intended_half_code": 65.5,
+      "f64_prequantized_code": 65.49999988684430718,
+      "distance_from_half": 1.1315569282E-7
+    },
+    {
+      "format": "P010",
+      "vector_index": 3,
+      "rgb_f32_bits": [
+        987787319,
+        987787319,
+        987787319
+      ],
+      "cpu_active_code": 65,
+      "gpu_active_code": 66,
+      "channel_position": "Y[1]",
+      "intended_channel": "Y",
+      "intended_half_code": 65.5,
+      "f64_prequantized_code": 65.49999988684430718,
+      "distance_from_half": 1.1315569282E-7
+    },
+    {
+      "format": "P010",
+      "vector_index": 3,
+      "rgb_f32_bits": [
+        987787319,
+        987787319,
+        987787319
+      ],
+      "cpu_active_code": 65,
+      "gpu_active_code": 66,
+      "channel_position": "Y[2]",
+      "intended_channel": "Y",
+      "intended_half_code": 65.5,
+      "f64_prequantized_code": 65.49999988684430718,
+      "distance_from_half": 1.1315569282E-7
+    },
+    {
+      "format": "P010",
+      "vector_index": 3,
+      "rgb_f32_bits": [
+        987787319,
+        987787319,
+        987787319
+      ],
+      "cpu_active_code": 65,
+      "gpu_active_code": 66,
+      "channel_position": "Y[3]",
+      "intended_channel": "Y",
+      "intended_half_code": 65.5,
+      "f64_prequantized_code": 65.49999988684430718,
+      "distance_from_half": 1.1315569282E-7
+    },
+    {
+      "format": "P010",
+      "vector_index": 4,
+      "rgb_f32_bits": [
+        987787320,
+        987787320,
+        987787320
+      ],
+      "cpu_active_code": 65,
+      "gpu_active_code": 66,
+      "channel_position": "Y[0]",
+      "intended_channel": "Y",
+      "intended_half_code": 65.5,
+      "f64_prequantized_code": 65.49999998882412910,
+      "distance_from_half": 1.117587090E-8
+    },
+    {
+      "format": "P010",
+      "vector_index": 4,
+      "rgb_f32_bits": [
+        987787320,
+        987787320,
+        987787320
+      ],
+      "cpu_active_code": 65,
+      "gpu_active_code": 66,
+      "channel_position": "Y[1]",
+      "intended_channel": "Y",
+      "intended_half_code": 65.5,
+      "f64_prequantized_code": 65.49999998882412910,
+      "distance_from_half": 1.117587090E-8
+    },
+    {
+      "format": "P010",
+      "vector_index": 4,
+      "rgb_f32_bits": [
+        987787320,
+        987787320,
+        987787320
+      ],
+      "cpu_active_code": 65,
+      "gpu_active_code": 66,
+      "channel_position": "Y[2]",
+      "intended_channel": "Y",
+      "intended_half_code": 65.5,
+      "f64_prequantized_code": 65.49999998882412910,
+      "distance_from_half": 1.117587090E-8
+    },
+    {
+      "format": "P010",
+      "vector_index": 4,
+      "rgb_f32_bits": [
+        987787320,
+        987787320,
+        987787320
+      ],
+      "cpu_active_code": 65,
+      "gpu_active_code": 66,
+      "channel_position": "Y[3]",
+      "intended_channel": "Y",
+      "intended_half_code": 65.5,
+      "f64_prequantized_code": 65.49999998882412910,
+      "distance_from_half": 1.117587090E-8
+    },
+    {
+      "format": "P010",
+      "vector_index": 6,
+      "rgb_f32_bits": [
+        993724462,
+        993724462,
+        993724462
+      ],
+      "cpu_active_code": 66,
+      "gpu_active_code": 67,
+      "channel_position": "Y[0]",
+      "intended_channel": "Y",
+      "intended_half_code": 66.5,
+      "f64_prequantized_code": 66.49999984540045261,
+      "distance_from_half": 1.5459954739E-7
+    },
+    {
+      "format": "P010",
+      "vector_index": 6,
+      "rgb_f32_bits": [
+        993724462,
+        993724462,
+        993724462
+      ],
+      "cpu_active_code": 66,
+      "gpu_active_code": 67,
+      "channel_position": "Y[1]",
+      "intended_channel": "Y",
+      "intended_half_code": 66.5,
+      "f64_prequantized_code": 66.49999984540045261,
+      "distance_from_half": 1.5459954739E-7
+    },
+    {
+      "format": "P010",
+      "vector_index": 6,
+      "rgb_f32_bits": [
+        993724462,
+        993724462,
+        993724462
+      ],
+      "cpu_active_code": 66,
+      "gpu_active_code": 67,
+      "channel_position": "Y[2]",
+      "intended_channel": "Y",
+      "intended_half_code": 66.5,
+      "f64_prequantized_code": 66.49999984540045261,
+      "distance_from_half": 1.5459954739E-7
+    },
+    {
+      "format": "P010",
+      "vector_index": 6,
+      "rgb_f32_bits": [
+        993724462,
+        993724462,
+        993724462
+      ],
+      "cpu_active_code": 66,
+      "gpu_active_code": 67,
+      "channel_position": "Y[3]",
+      "intended_channel": "Y",
+      "intended_half_code": 66.5,
+      "f64_prequantized_code": 66.49999984540045261,
+      "distance_from_half": 1.5459954739E-7
+    },
+    {
+      "format": "P010",
+      "vector_index": 9,
+      "rgb_f32_bits": [
+        998435872,
+        998435872,
+        998435872
+      ],
+      "cpu_active_code": 67,
+      "gpu_active_code": 68,
+      "channel_position": "Y[0]",
+      "intended_channel": "Y",
+      "intended_half_code": 67.5,
+      "f64_prequantized_code": 67.49999970197677612,
+      "distance_from_half": 2.9802322388E-7
+    },
+    {
+      "format": "P010",
+      "vector_index": 9,
+      "rgb_f32_bits": [
+        998435872,
+        998435872,
+        998435872
+      ],
+      "cpu_active_code": 67,
+      "gpu_active_code": 68,
+      "channel_position": "Y[1]",
+      "intended_channel": "Y",
+      "intended_half_code": 67.5,
+      "f64_prequantized_code": 67.49999970197677612,
+      "distance_from_half": 2.9802322388E-7
+    },
+    {
+      "format": "P010",
+      "vector_index": 9,
+      "rgb_f32_bits": [
+        998435872,
+        998435872,
+        998435872
+      ],
+      "cpu_active_code": 67,
+      "gpu_active_code": 68,
+      "channel_position": "Y[2]",
+      "intended_channel": "Y",
+      "intended_half_code": 67.5,
+      "f64_prequantized_code": 67.49999970197677612,
+      "distance_from_half": 2.9802322388E-7
+    },
+    {
+      "format": "P010",
+      "vector_index": 9,
+      "rgb_f32_bits": [
+        998435872,
+        998435872,
+        998435872
+      ],
+      "cpu_active_code": 67,
+      "gpu_active_code": 68,
+      "channel_position": "Y[3]",
+      "intended_channel": "Y",
+      "intended_half_code": 67.5,
+      "f64_prequantized_code": 67.49999970197677612,
+      "distance_from_half": 2.9802322388E-7
+    },
+    {
+      "format": "P010",
+      "vector_index": 12,
+      "rgb_f32_bits": [
+        1000887337,
+        1000887337,
+        1000887337
+      ],
+      "cpu_active_code": 68,
+      "gpu_active_code": 69,
+      "channel_position": "Y[0]",
+      "intended_channel": "Y",
+      "intended_half_code": 68.5,
+      "f64_prequantized_code": 68.49999955855309963,
+      "distance_from_half": 4.4144690037E-7
+    },
+    {
+      "format": "P010",
+      "vector_index": 12,
+      "rgb_f32_bits": [
+        1000887337,
+        1000887337,
+        1000887337
+      ],
+      "cpu_active_code": 68,
+      "gpu_active_code": 69,
+      "channel_position": "Y[1]",
+      "intended_channel": "Y",
+      "intended_half_code": 68.5,
+      "f64_prequantized_code": 68.49999955855309963,
+      "distance_from_half": 4.4144690037E-7
+    },
+    {
+      "format": "P010",
+      "vector_index": 12,
+      "rgb_f32_bits": [
+        1000887337,
+        1000887337,
+        1000887337
+      ],
+      "cpu_active_code": 68,
+      "gpu_active_code": 69,
+      "channel_position": "Y[2]",
+      "intended_channel": "Y",
+      "intended_half_code": 68.5,
+      "f64_prequantized_code": 68.49999955855309963,
+      "distance_from_half": 4.4144690037E-7
+    },
+    {
+      "format": "P010",
+      "vector_index": 12,
+      "rgb_f32_bits": [
+        1000887337,
+        1000887337,
+        1000887337
+      ],
+      "cpu_active_code": 68,
+      "gpu_active_code": 69,
+      "channel_position": "Y[3]",
+      "intended_channel": "Y",
+      "intended_half_code": 68.5,
+      "f64_prequantized_code": 68.49999955855309963,
+      "distance_from_half": 4.4144690037E-7
+    },
+    {
+      "format": "P010",
+      "vector_index": 13,
+      "rgb_f32_bits": [
+        1000887338,
+        1000887338,
+        1000887338
+      ],
+      "cpu_active_code": 68,
+      "gpu_active_code": 69,
+      "channel_position": "Y[0]",
+      "intended_channel": "Y",
+      "intended_half_code": 68.5,
+      "f64_prequantized_code": 68.49999996647238731,
+      "distance_from_half": 3.352761269E-8
+    },
+    {
+      "format": "P010",
+      "vector_index": 13,
+      "rgb_f32_bits": [
+        1000887338,
+        1000887338,
+        1000887338
+      ],
+      "cpu_active_code": 68,
+      "gpu_active_code": 69,
+      "channel_position": "Y[1]",
+      "intended_channel": "Y",
+      "intended_half_code": 68.5,
+      "f64_prequantized_code": 68.49999996647238731,
+      "distance_from_half": 3.352761269E-8
+    },
+    {
+      "format": "P010",
+      "vector_index": 13,
+      "rgb_f32_bits": [
+        1000887338,
+        1000887338,
+        1000887338
+      ],
+      "cpu_active_code": 68,
+      "gpu_active_code": 69,
+      "channel_position": "Y[2]",
+      "intended_channel": "Y",
+      "intended_half_code": 68.5,
+      "f64_prequantized_code": 68.49999996647238731,
+      "distance_from_half": 3.352761269E-8
+    },
+    {
+      "format": "P010",
+      "vector_index": 13,
+      "rgb_f32_bits": [
+        1000887338,
+        1000887338,
+        1000887338
+      ],
+      "cpu_active_code": 68,
+      "gpu_active_code": 69,
+      "channel_position": "Y[3]",
+      "intended_channel": "Y",
+      "intended_half_code": 68.5,
+      "f64_prequantized_code": 68.49999996647238731,
+      "distance_from_half": 3.352761269E-8
+    },
+    {
+      "format": "P010",
+      "vector_index": 15,
+      "rgb_f32_bits": [
+        1003338802,
+        1003338802,
+        1003338802
+      ],
+      "cpu_active_code": 69,
+      "gpu_active_code": 70,
+      "channel_position": "Y[0]",
+      "intended_channel": "Y",
+      "intended_half_code": 69.5,
+      "f64_prequantized_code": 69.49999941512942314,
+      "distance_from_half": 5.8487057686E-7
+    },
+    {
+      "format": "P010",
+      "vector_index": 15,
+      "rgb_f32_bits": [
+        1003338802,
+        1003338802,
+        1003338802
+      ],
+      "cpu_active_code": 69,
+      "gpu_active_code": 70,
+      "channel_position": "Y[1]",
+      "intended_channel": "Y",
+      "intended_half_code": 69.5,
+      "f64_prequantized_code": 69.49999941512942314,
+      "distance_from_half": 5.8487057686E-7
+    },
+    {
+      "format": "P010",
+      "vector_index": 15,
+      "rgb_f32_bits": [
+        1003338802,
+        1003338802,
+        1003338802
+      ],
+      "cpu_active_code": 69,
+      "gpu_active_code": 70,
+      "channel_position": "Y[2]",
+      "intended_channel": "Y",
+      "intended_half_code": 69.5,
+      "f64_prequantized_code": 69.49999941512942314,
+      "distance_from_half": 5.8487057686E-7
+    },
+    {
+      "format": "P010",
+      "vector_index": 15,
+      "rgb_f32_bits": [
+        1003338802,
+        1003338802,
+        1003338802
+      ],
+      "cpu_active_code": 69,
+      "gpu_active_code": 70,
+      "channel_position": "Y[3]",
+      "intended_channel": "Y",
+      "intended_half_code": 69.5,
+      "f64_prequantized_code": 69.49999941512942314,
+      "distance_from_half": 5.8487057686E-7
+    },
+    {
+      "format": "P010",
+      "vector_index": 16,
+      "rgb_f32_bits": [
+        1003338803,
+        1003338803,
+        1003338803
+      ],
+      "cpu_active_code": 69,
+      "gpu_active_code": 70,
+      "channel_position": "Y[0]",
+      "intended_channel": "Y",
+      "intended_half_code": 69.5,
+      "f64_prequantized_code": 69.49999982304871082,
+      "distance_from_half": 1.7695128918E-7
+    },
+    {
+      "format": "P010",
+      "vector_index": 16,
+      "rgb_f32_bits": [
+        1003338803,
+        1003338803,
+        1003338803
+      ],
+      "cpu_active_code": 69,
+      "gpu_active_code": 70,
+      "channel_position": "Y[1]",
+      "intended_channel": "Y",
+      "intended_half_code": 69.5,
+      "f64_prequantized_code": 69.49999982304871082,
+      "distance_from_half": 1.7695128918E-7
+    },
+    {
+      "format": "P010",
+      "vector_index": 16,
+      "rgb_f32_bits": [
+        1003338803,
+        1003338803,
+        1003338803
+      ],
+      "cpu_active_code": 69,
+      "gpu_active_code": 70,
+      "channel_position": "Y[2]",
+      "intended_channel": "Y",
+      "intended_half_code": 69.5,
+      "f64_prequantized_code": 69.49999982304871082,
+      "distance_from_half": 1.7695128918E-7
+    },
+    {
+      "format": "P010",
+      "vector_index": 16,
+      "rgb_f32_bits": [
+        1003338803,
+        1003338803,
+        1003338803
+      ],
+      "cpu_active_code": 69,
+      "gpu_active_code": 70,
+      "channel_position": "Y[3]",
+      "intended_channel": "Y",
+      "intended_half_code": 69.5,
+      "f64_prequantized_code": 69.49999982304871082,
+      "distance_from_half": 1.7695128918E-7
+    },
+    {
+      "format": "P010",
+      "vector_index": 18,
+      "rgb_f32_bits": [
+        1005790268,
+        1005790268,
+        1005790268
+      ],
+      "cpu_active_code": 70,
+      "gpu_active_code": 71,
+      "channel_position": "Y[0]",
+      "intended_channel": "Y",
+      "intended_half_code": 70.5,
+      "f64_prequantized_code": 70.49999967962503433,
+      "distance_from_half": 3.2037496567E-7
+    },
+    {
+      "format": "P010",
+      "vector_index": 18,
+      "rgb_f32_bits": [
+        1005790268,
+        1005790268,
+        1005790268
+      ],
+      "cpu_active_code": 70,
+      "gpu_active_code": 71,
+      "channel_position": "Y[1]",
+      "intended_channel": "Y",
+      "intended_half_code": 70.5,
+      "f64_prequantized_code": 70.49999967962503433,
+      "distance_from_half": 3.2037496567E-7
+    },
+    {
+      "format": "P010",
+      "vector_index": 18,
+      "rgb_f32_bits": [
+        1005790268,
+        1005790268,
+        1005790268
+      ],
+      "cpu_active_code": 70,
+      "gpu_active_code": 71,
+      "channel_position": "Y[2]",
+      "intended_channel": "Y",
+      "intended_half_code": 70.5,
+      "f64_prequantized_code": 70.49999967962503433,
+      "distance_from_half": 3.2037496567E-7
+    },
+    {
+      "format": "P010",
+      "vector_index": 18,
+      "rgb_f32_bits": [
+        1005790268,
+        1005790268,
+        1005790268
+      ],
+      "cpu_active_code": 70,
+      "gpu_active_code": 71,
+      "channel_position": "Y[3]",
+      "intended_channel": "Y",
+      "intended_half_code": 70.5,
+      "f64_prequantized_code": 70.49999967962503433,
+      "distance_from_half": 3.2037496567E-7
+    },
+    {
+      "format": "P010",
+      "vector_index": 21,
+      "rgb_f32_bits": [
+        1007437346,
+        1007437346,
+        1007437346
+      ],
+      "cpu_active_code": 71,
+      "gpu_active_code": 72,
+      "channel_position": "Y[0]",
+      "intended_channel": "Y",
+      "intended_half_code": 71.5,
+      "f64_prequantized_code": 71.49999912828207016,
+      "distance_from_half": 8.7171792984E-7
+    },
+    {
+      "format": "P010",
+      "vector_index": 21,
+      "rgb_f32_bits": [
+        1007437346,
+        1007437346,
+        1007437346
+      ],
+      "cpu_active_code": 71,
+      "gpu_active_code": 72,
+      "channel_position": "Y[1]",
+      "intended_channel": "Y",
+      "intended_half_code": 71.5,
+      "f64_prequantized_code": 71.49999912828207016,
+      "distance_from_half": 8.7171792984E-7
+    },
+    {
+      "format": "P010",
+      "vector_index": 21,
+      "rgb_f32_bits": [
+        1007437346,
+        1007437346,
+        1007437346
+      ],
+      "cpu_active_code": 71,
+      "gpu_active_code": 72,
+      "channel_position": "Y[2]",
+      "intended_channel": "Y",
+      "intended_half_code": 71.5,
+      "f64_prequantized_code": 71.49999912828207016,
+      "distance_from_half": 8.7171792984E-7
+    },
+    {
+      "format": "P010",
+      "vector_index": 21,
+      "rgb_f32_bits": [
+        1007437346,
+        1007437346,
+        1007437346
+      ],
+      "cpu_active_code": 71,
+      "gpu_active_code": 72,
+      "channel_position": "Y[3]",
+      "intended_channel": "Y",
+      "intended_half_code": 71.5,
+      "f64_prequantized_code": 71.49999912828207016,
+      "distance_from_half": 8.7171792984E-7
+    },
+    {
+      "format": "P010",
+      "vector_index": 22,
+      "rgb_f32_bits": [
+        1007437347,
+        1007437347,
+        1007437347
+      ],
+      "cpu_active_code": 71,
+      "gpu_active_code": 72,
+      "channel_position": "Y[0]",
+      "intended_channel": "Y",
+      "intended_half_code": 71.5,
+      "f64_prequantized_code": 71.49999994412064552,
+      "distance_from_half": 5.587935448E-8
+    },
+    {
+      "format": "P010",
+      "vector_index": 22,
+      "rgb_f32_bits": [
+        1007437347,
+        1007437347,
+        1007437347
+      ],
+      "cpu_active_code": 71,
+      "gpu_active_code": 72,
+      "channel_position": "Y[1]",
+      "intended_channel": "Y",
+      "intended_half_code": 71.5,
+      "f64_prequantized_code": 71.49999994412064552,
+      "distance_from_half": 5.587935448E-8
+    },
+    {
+      "format": "P010",
+      "vector_index": 22,
+      "rgb_f32_bits": [
+        1007437347,
+        1007437347,
+        1007437347
+      ],
+      "cpu_active_code": 71,
+      "gpu_active_code": 72,
+      "channel_position": "Y[2]",
+      "intended_channel": "Y",
+      "intended_half_code": 71.5,
+      "f64_prequantized_code": 71.49999994412064552,
+      "distance_from_half": 5.587935448E-8
+    },
+    {
+      "format": "P010",
+      "vector_index": 22,
+      "rgb_f32_bits": [
+        1007437347,
+        1007437347,
+        1007437347
+      ],
+      "cpu_active_code": 71,
+      "gpu_active_code": 72,
+      "channel_position": "Y[3]",
+      "intended_channel": "Y",
+      "intended_half_code": 71.5,
+      "f64_prequantized_code": 71.49999994412064552,
+      "distance_from_half": 5.587935448E-8
+    },
+    {
+      "format": "P010",
+      "vector_index": 24,
+      "rgb_f32_bits": [
+        1008663079,
+        1008663079,
+        1008663079
+      ],
+      "cpu_active_code": 72,
+      "gpu_active_code": 73,
+      "channel_position": "Y[0]",
+      "intended_channel": "Y",
+      "intended_half_code": 72.5,
+      "f64_prequantized_code": 72.49999939277768135,
+      "distance_from_half": 6.0722231865E-7
+    },
+    {
+      "format": "P010",
+      "vector_index": 24,
+      "rgb_f32_bits": [
+        1008663079,
+        1008663079,
+        1008663079
+      ],
+      "cpu_active_code": 72,
+      "gpu_active_code": 73,
+      "channel_position": "Y[1]",
+      "intended_channel": "Y",
+      "intended_half_code": 72.5,
+      "f64_prequantized_code": 72.49999939277768135,
+      "distance_from_half": 6.0722231865E-7
+    },
+    {
+      "format": "P010",
+      "vector_index": 24,
+      "rgb_f32_bits": [
+        1008663079,
+        1008663079,
+        1008663079
+      ],
+      "cpu_active_code": 72,
+      "gpu_active_code": 73,
+      "channel_position": "Y[2]",
+      "intended_channel": "Y",
+      "intended_half_code": 72.5,
+      "f64_prequantized_code": 72.49999939277768135,
+      "distance_from_half": 6.0722231865E-7
+    },
+    {
+      "format": "P010",
+      "vector_index": 24,
+      "rgb_f32_bits": [
+        1008663079,
+        1008663079,
+        1008663079
+      ],
+      "cpu_active_code": 72,
+      "gpu_active_code": 73,
+      "channel_position": "Y[3]",
+      "intended_channel": "Y",
+      "intended_half_code": 72.5,
+      "f64_prequantized_code": 72.49999939277768135,
+      "distance_from_half": 6.0722231865E-7
+    },
+    {
+      "format": "P010",
+      "vector_index": 27,
+      "rgb_f32_bits": [
+        1009888811,
+        1009888811,
+        1009888811
+      ],
+      "cpu_active_code": 73,
+      "gpu_active_code": 74,
+      "channel_position": "Y[0]",
+      "intended_channel": "Y",
+      "intended_half_code": 73.5,
+      "f64_prequantized_code": 73.49999884143471718,
+      "distance_from_half": 0.00000115856528282
+    },
+    {
+      "format": "P010",
+      "vector_index": 27,
+      "rgb_f32_bits": [
+        1009888811,
+        1009888811,
+        1009888811
+      ],
+      "cpu_active_code": 73,
+      "gpu_active_code": 74,
+      "channel_position": "Y[1]",
+      "intended_channel": "Y",
+      "intended_half_code": 73.5,
+      "f64_prequantized_code": 73.49999884143471718,
+      "distance_from_half": 0.00000115856528282
+    },
+    {
+      "format": "P010",
+      "vector_index": 27,
+      "rgb_f32_bits": [
+        1009888811,
+        1009888811,
+        1009888811
+      ],
+      "cpu_active_code": 73,
+      "gpu_active_code": 74,
+      "channel_position": "Y[2]",
+      "intended_channel": "Y",
+      "intended_half_code": 73.5,
+      "f64_prequantized_code": 73.49999884143471718,
+      "distance_from_half": 0.00000115856528282
+    },
+    {
+      "format": "P010",
+      "vector_index": 27,
+      "rgb_f32_bits": [
+        1009888811,
+        1009888811,
+        1009888811
+      ],
+      "cpu_active_code": 73,
+      "gpu_active_code": 74,
+      "channel_position": "Y[3]",
+      "intended_channel": "Y",
+      "intended_half_code": 73.5,
+      "f64_prequantized_code": 73.49999884143471718,
+      "distance_from_half": 0.00000115856528282
+    },
+    {
+      "format": "P010",
+      "vector_index": 28,
+      "rgb_f32_bits": [
+        1009888812,
+        1009888812,
+        1009888812
+      ],
+      "cpu_active_code": 73,
+      "gpu_active_code": 74,
+      "channel_position": "Y[0]",
+      "intended_channel": "Y",
+      "intended_half_code": 73.5,
+      "f64_prequantized_code": 73.49999965727329254,
+      "distance_from_half": 3.4272670746E-7
+    },
+    {
+      "format": "P010",
+      "vector_index": 28,
+      "rgb_f32_bits": [
+        1009888812,
+        1009888812,
+        1009888812
+      ],
+      "cpu_active_code": 73,
+      "gpu_active_code": 74,
+      "channel_position": "Y[1]",
+      "intended_channel": "Y",
+      "intended_half_code": 73.5,
+      "f64_prequantized_code": 73.49999965727329254,
+      "distance_from_half": 3.4272670746E-7
+    },
+    {
+      "format": "P010",
+      "vector_index": 28,
+      "rgb_f32_bits": [
+        1009888812,
+        1009888812,
+        1009888812
+      ],
+      "cpu_active_code": 73,
+      "gpu_active_code": 74,
+      "channel_position": "Y[2]",
+      "intended_channel": "Y",
+      "intended_half_code": 73.5,
+      "f64_prequantized_code": 73.49999965727329254,
+      "distance_from_half": 3.4272670746E-7
+    },
+    {
+      "format": "P010",
+      "vector_index": 28,
+      "rgb_f32_bits": [
+        1009888812,
+        1009888812,
+        1009888812
+      ],
+      "cpu_active_code": 73,
+      "gpu_active_code": 74,
+      "channel_position": "Y[3]",
+      "intended_channel": "Y",
+      "intended_half_code": 73.5,
+      "f64_prequantized_code": 73.49999965727329254,
+      "distance_from_half": 3.4272670746E-7
+    }
+  ]
+}

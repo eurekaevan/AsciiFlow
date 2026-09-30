@@ -1,15 +1,105 @@
 # Regression testing
 
+## C-4B HDR→SDR production closure
+
+[C-4B](stage5.3c4b-hdr-to-sdr-production.md) and Stage 5.3C overall are **SEALED**
+on the recorded Intel MTL/iHD/ANV scope. Explicit `--output-dynamic-range sdr`
+is production; `preserve` remains the default. The legal C3 fixture identities
+are pinned before conversion. Both inputs × five outputs × three runs pass
+all 300-frame packet, decoded-pixel, timing, depth/profile, container/elementary
+BT.709 limited/left and HDR-side-data-absence checks. Full framehash uses
+`-xerror`, so recoverable decode errors cannot masquerade as a clean decode.
+
+The [canonical baseline](../tests/baselines/media/hdr-to-sdr-production-v1.json)
+retains all five tiers and complete pre-run source/binary/kernel/package/input
+identity, including untracked runtime sources. This is build provenance plus
+observed execution, not proof that an arbitrary foreign executable was built
+from the inspected checkout. Baselines are established only through reviewed
+closure; normal regression never overwrites or silently drops a golden tier:
+
+```bash
+ASCIIFLOW_VULKAN_VALIDATION=1 bash tests/baselines/media/generate-hdr-to-sdr-production-v1.sh \
+  tests/fixtures/codecs /tmp/asciiflow-c4b-new-run
+python3 tests/baselines/media/verify-hdr-to-sdr-production.py verify \
+  /tmp/asciiflow-c4b-new-run /tmp/asciiflow-c4b-regression.json \
+  --input-directory tests/fixtures/codecs \
+  --check-baseline tests/baselines/media/hdr-to-sdr-production-v1.json
+```
+
+An established Tier3 gate requires its exact recorded build scope. A scope
+change fails explicitly and needs a reviewed replacement record; repeatability
+within a changed batch alone is not retained regression PASS. Preserve input
+generator/version/exact command/SHA, output command, output SHA or structured
+nondeterministic oracle, native tool/driver identity and source/binary identity
+for every future benchmark. Keep source identity, pre-encode parity, lossy
+decode-back, repeated-output evidence and historical failed gates distinct.
+
+Actual C4B system and two 3000-frame encode/decode/resource stresses are opt-in,
+not inferred from ignored entries in the workspace suite:
+
+```bash
+ASCIIFLOW_C4B_PRODUCTION=1 cargo test -p asciiflow-cli --release \
+  --test c4b_production -- --ignored --nocapture --test-threads=1
+ASCIIFLOW_VULKAN_VALIDATION=1 cargo test -p asciiflow-interop --release \
+  --features hdr-to-sdr-qualification --test c4b_initialization_faults \
+  -- --ignored --nocapture --test-threads=1
+ASCIIFLOW_C4B_STRESS=1 ASCIIFLOW_VULKAN_VALIDATION=1 \
+ASCIIFLOW_C4B_STRESS_DIR=/tmp/asciiflow-c4b-new-stress \
+  cargo test -p asciiflow-interop --release --features hdr-to-sdr-production \
+  --test c4b_production_stress -- --ignored --nocapture --test-threads=1
+cargo test -p asciiflow-media --release \
+  sdr_hardware_output_matrix_encode_and_mux_failures_preserve_roots \
+  -- --ignored --nocapture --test-threads=1
+```
+
+Serialize GPU/FD tests. Dedicated timing follows correctness, with no competing
+GPU or oracle jobs and Validation off. Build with
+`asciiflow-cli/encode-characterization`; use the checked-in
+`measure-hdr-to-sdr-production.sh` and `summarize-hdr-to-sdr-performance.py`.
+Whole-process wall FPS includes probing/setup/teardown; pipeline FPS does not.
+Current production GPU render timing aggregates linear rendering, Method A,
+limiting and packing; unavailable individual/import/wait zero fields are not
+zero-work claims. No comparison with cached-reference FPS implies a production
+percentage speedup. The 964-module all-cache Vulkan1.3 census replaces no old
+shader evidence; 740 remains the historical C4A cache count.
+
+## C-4A output-signal qualification
+
+[C-4A](stage5.3c4a-sdr-output-signal.md) is **SEALED** on the recorded Intel hardware. Its independent f64
+signal oracle uses BT.709 NCL, limited NV12/P010, half-up rounding and
+pre-quantization 2×2 nonlinear chroma averaging. Native color metadata and
+production legality remain untouched. Use the `hdr-to-sdr-qualification` feature
+for the downstream GPU/surface harness; no encoder or final-video baseline is
+part of this stage. Final results and historical failed experiments are retained separately
+in `tests/baselines/tone-map/stage53c4a.json`.
+
+```bash
+cargo test -p asciiflow-cpu sdr_output
+bash scripts/qualify-sdr-output-vulkan.sh /tmp/asciiflow-c4a-new-run
+```
+
+The runner needs a new directory and accessible real `/dev/dri`; it executes
+boundary/canonical/surface/fault/alternating/3000-frame-per-format qualification
+before isolated timing. It does not run retained production regression scripts
+or workspace/SPIR-V checks; those separate closure commands and source/evidence
+hashes are in the ledger. Final pack parity is byte-exact on identical C-3 f32
+inputs, not a relaxed end-to-end f64 threshold. C-4B now separately qualifies
+native output metadata and production integration. The C-4A report retains
+its historical stage-only 56-item closure ledger.
+
 ## C3B precision contract review
 
 Stage 5.3C-3 is **SEALED** under P2/N3 on the recorded Intel hardware. See the
 [45-item closure ledger](stage5.3c3-vulkan-hdr-to-sdr.md). Historical UNORM16
-failures remain failures; production HDR→SDR and C4 implementation stay closed.
+failures remain failures; that stage's isolated evidence is not itself
+production eligibility. C-4B is the downstream production authority.
 
 [Numerical qualification](numerical-qualification.md) audits the historical
 ≤2 UNORM16 threshold, adopts an independently derived N3 10-bit diagnostic
 budget, and records M0/M1/M2/M3 semantics. Historical failures remain preserved.
-No production format or C4 packing is implemented. Optional FP64 modules are
+C-3 does not select a production format; C-4A packing remains separately sealed
+as qualification only, with production format selection in C-4B.
+Optional FP64 modules are
 excluded from the ordinary generated set; normal devices never enable Float64.
 Every cached module, including experiments, requires Vulkan1.3 validation.
 
@@ -130,7 +220,7 @@ both codecs; it is separate from B-3. The test checks actual input SHA256 before
 decoding, and a changed-bytes negative control was rejected before qualification.
 Full legal-source CPU/GPU parity, both 3000-frame stresses, FD restoration,
 resource-growth checks and 1080p/300-frame performance were unqualified at C3A;
-the C3B evidence above closes them under N3. C4 is justified, not implemented or
+the C3B evidence above closes them under N3. C-4A qualification is sealed; C-4B is justified, not implemented or
 started; production integration is not authorized by this qualification alone.
 
 Every future qualification/benchmark must retain source generator/version,

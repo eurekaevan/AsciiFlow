@@ -68,6 +68,8 @@ pub struct ProcessingCapabilities {
     pub vulkan: CapabilitySupport,
     /// Actual PQ compute preparation/execution, not generic Vulkan availability.
     pub vulkan_pq: CapabilitySupport,
+    /// Executed sealed C pipeline and SDR pack, separate from PQ preservation.
+    pub vulkan_hdr_to_sdr: CapabilitySupport,
     pub vulkan_auto_eligible: bool,
     pub vulkan_device_name: Option<String>,
     pub vulkan_device_kind: Option<VulkanDeviceKind>,
@@ -364,9 +366,18 @@ impl OutputVideoRequirements {
     }
 
     pub fn selected(codec: VideoCodec, bit_depth: u8, input: &InputRequirements) -> Result<Self> {
-        let color_processing = input.production_color_processing()?;
+        Self::selected_for_dynamic_range(codec, bit_depth, input, OutputDynamicRange::Preserve)
+    }
+
+    pub fn selected_for_dynamic_range(
+        codec: VideoCodec,
+        bit_depth: u8,
+        input: &InputRequirements,
+        request: OutputDynamicRange,
+    ) -> Result<Self> {
+        let color_processing = input.color_processing_for(request)?;
         if color_processing == ColorProcessing::HdrPqPreserve && bit_depth != 10 {
-            return Err(Error::InvalidConfig("HDR PQ preservation requires explicit 10-bit HEVC or AV1 output; tone mapping and 10-to-8-bit conversion are not implemented".into()));
+            return Err(Error::InvalidConfig("HDR PQ preservation requires explicit 10-bit HEVC or AV1 output. H.264 8-bit cannot preserve the PQ HDR input; use an HDR-capable 10-bit output codec, or explicitly request --output-dynamic-range sdr".into()));
         }
         if bit_depth == 8 {
             return Self::current_nv12(codec, input);
@@ -409,6 +420,16 @@ impl OutputVideoRequirements {
 }
 
 impl InputRequirements {
+    pub fn color_processing_for(&self, request: OutputDynamicRange) -> Result<ColorProcessing> {
+        let source = self.production_color_processing()?;
+        Ok(match (source, request) {
+            (ColorProcessing::HdrPqPreserve, OutputDynamicRange::Sdr) => {
+                ColorProcessing::HdrPqToSdrBt709
+            }
+            _ => source,
+        })
+    }
+
     pub fn production_color_processing(&self) -> Result<ColorProcessing> {
         if self
             .color_semantics
@@ -615,6 +636,7 @@ pub struct PipelinePolicy {
     pub output_interop: InteropRequest,
     pub output_codec: VideoCodec,
     pub output_bit_depth: u8,
+    pub output_dynamic_range: OutputDynamicRange,
 }
 
 impl Default for PipelinePolicy {
@@ -627,6 +649,7 @@ impl Default for PipelinePolicy {
             output_interop: InteropRequest::Auto,
             output_codec: VideoCodec::H264,
             output_bit_depth: 8,
+            output_dynamic_range: OutputDynamicRange::Preserve,
         }
     }
 }
@@ -655,6 +678,9 @@ pub enum FrameDomain {
     HostP010,
     HardwareP010,
     VulkanP010Buffer,
+    VulkanLinearHdrRgb,
+    VulkanNonlinearBt2020Rgb,
+    VulkanNonlinearBt709Rgb,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -665,6 +691,10 @@ pub enum PlanNode {
     InputHardwareInterop,
     CpuAscii,
     VulkanAscii,
+    VulkanHdrAscii,
+    Bt2446MethodA,
+    Bt709TargetVolumeLimit,
+    SdrSignalPack,
     HostReadback,
     HardwareUpload,
     OutputHardwareInterop,
@@ -681,6 +711,12 @@ impl fmt::Display for PlanNode {
             Self::InputHardwareInterop => "VAAPI/Vulkan input interop",
             Self::CpuAscii => "CPU ASCII",
             Self::VulkanAscii => "Vulkan ASCII",
+            Self::VulkanHdrAscii => "Vulkan HDR-aware ASCII",
+            Self::Bt2446MethodA => "BT.2446-1 Method A",
+            Self::Bt709TargetVolumeLimit => {
+                "BT.2020→BT.709 primary conversion + target-volume limiting"
+            }
+            Self::SdrSignalPack => "BT.709 limited SDR pack",
             Self::HostReadback => "Host readback",
             Self::HardwareUpload => "VAAPI hardware upload",
             Self::OutputHardwareInterop => "Vulkan/VAAPI output interop",
@@ -768,6 +804,15 @@ pub struct PipelinePlanner;
 pub enum ColorProcessing {
     Sdr,
     HdrPqPreserve,
+    HdrPqToSdrBt709,
+}
+
+/// User intent, never inferred from a codec or bit depth.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum OutputDynamicRange {
+    #[default]
+    Preserve,
+    Sdr,
 }
 
 #[derive(Clone, Copy)]
@@ -790,17 +835,22 @@ impl PipelinePlanner {
         policy: PipelinePolicy,
     ) -> Result<PlanningResult> {
         validate_policy(&policy)?;
-        let color_processing = requirements.production_color_processing()?;
+        let color_processing = requirements.color_processing_for(policy.output_dynamic_range)?;
         let input_format = match color_processing {
             ColorProcessing::Sdr => requirements.validate_processing_input()?,
-            ColorProcessing::HdrPqPreserve => requirements.validate_pq_preserve_input()?,
+            ColorProcessing::HdrPqPreserve | ColorProcessing::HdrPqToSdrBt709 => {
+                requirements.validate_pq_preserve_input()?
+            }
         };
-        let output = OutputVideoRequirements::selected(
+        let output = OutputVideoRequirements::selected_for_dynamic_range(
             policy.output_codec.clone(),
             policy.output_bit_depth,
             requirements,
+            policy.output_dynamic_range,
         )?;
-        if input_format != output.pixel_format {
+        if input_format != output.pixel_format
+            && color_processing != ColorProcessing::HdrPqToSdrBt709
+        {
             return Err(Error::UnsupportedFrame(format!(
                 "{} input cannot be sent to {}-bit {} output without a conversion path",
                 requirements
@@ -948,20 +998,34 @@ impl Candidate {
         color_processing: ColorProcessing,
     ) -> Vec<String> {
         let mut reasons = Vec::new();
-        if color_processing == ColorProcessing::HdrPqPreserve {
+        if color_processing != ColorProcessing::Sdr {
             if self.backend != ProcessingBackend::Vulkan
                 || self.decode != MediaImplementation::Hardware
                 || self.encode != MediaImplementation::Hardware
                 || !self.input_interop
                 || !self.output_interop
             {
-                reasons.push("HDR PQ preservation requires Vulkan PQ processing, VAAPI decode/encode and both P010 interop paths; CPU, software decode and staged fallbacks are not qualified".into());
+                reasons.push(if color_processing == ColorProcessing::HdrPqToSdrBt709 {
+                    "HDR PQ→SDR requires Vulkan PQ processing, VAAPI decode/encode, P010 input interop and NV12/P010 output interop; CPU, software decode and staged fallbacks are not qualified".into()
+                } else {
+                    "HDR PQ preservation requires Vulkan PQ processing, VAAPI decode/encode and both P010 interop paths; CPU, software decode and staged fallbacks are not qualified".into()
+                });
             }
             require(
                 &mut reasons,
                 "Vulkan PQ processing",
                 &caps.processing.vulkan_pq,
             );
+            if color_processing == ColorProcessing::HdrPqToSdrBt709 {
+                require(
+                    &mut reasons,
+                    "Vulkan HDR→SDR BT.2446/BT.709/SDR pack",
+                    &caps.processing.vulkan_hdr_to_sdr,
+                );
+                if self.backend == ProcessingBackend::Cpu {
+                    reasons.push("The HDR→SDR CPU path is a qualification/reference implementation, not a production backend".into());
+                }
+            }
         }
         if self.decode == MediaImplementation::Hardware
             || self.encode == MediaImplementation::Hardware
@@ -1162,7 +1226,49 @@ impl Candidate {
         } else if self.encode == MediaImplementation::Hardware {
             reasons.push("VAAPI encode lowers CPU cost even when hwupload is required".into());
         }
-        let steps = self.steps(output.pixel_format);
+        let steps = if color_processing == ColorProcessing::HdrPqToSdrBt709 {
+            let (packed, hardware) = match output.pixel_format {
+                PixelFormat::Nv12 => (FrameDomain::VulkanNv12Buffer, FrameDomain::HardwareNv12),
+                PixelFormat::P010Le => (FrameDomain::VulkanP010Buffer, FrameDomain::HardwareP010),
+            };
+            reasons.push("explicit PQ HDR → BT.709 SDR request; sealed BT.2446-1 0–1000 cd/m² input domain, no implicit highlight clipping".into());
+            vec![
+                step(PlanNode::VaapiDecode, None, Some(FrameDomain::HardwareP010)),
+                step(
+                    PlanNode::InputHardwareInterop,
+                    Some(FrameDomain::HardwareP010),
+                    Some(FrameDomain::VulkanP010Buffer),
+                ),
+                step(
+                    PlanNode::VulkanHdrAscii,
+                    Some(FrameDomain::VulkanP010Buffer),
+                    Some(FrameDomain::VulkanLinearHdrRgb),
+                ),
+                step(
+                    PlanNode::Bt2446MethodA,
+                    Some(FrameDomain::VulkanLinearHdrRgb),
+                    Some(FrameDomain::VulkanNonlinearBt2020Rgb),
+                ),
+                step(
+                    PlanNode::Bt709TargetVolumeLimit,
+                    Some(FrameDomain::VulkanNonlinearBt2020Rgb),
+                    Some(FrameDomain::VulkanNonlinearBt709Rgb),
+                ),
+                step(
+                    PlanNode::SdrSignalPack,
+                    Some(FrameDomain::VulkanNonlinearBt709Rgb),
+                    Some(packed),
+                ),
+                step(
+                    PlanNode::OutputHardwareInterop,
+                    Some(packed),
+                    Some(hardware),
+                ),
+                step(PlanNode::VaapiEncode, Some(hardware), None),
+            ]
+        } else {
+            self.steps(output.pixel_format)
+        };
         PipelinePlan {
             backend: self.backend,
             color_processing,
@@ -1359,6 +1465,7 @@ mod tests {
                 cpu: yes(),
                 vulkan: yes(),
                 vulkan_pq: yes(),
+                vulkan_hdr_to_sdr: yes(),
                 vulkan_auto_eligible: true,
                 vulkan_device_name: Some("synthetic integrated GPU".into()),
                 vulkan_device_kind: Some(VulkanDeviceKind::IntegratedGpu),
@@ -1466,6 +1573,188 @@ mod tests {
                         | PlanNode::HostReadback
                 )));
             }
+        }
+    }
+
+    #[test]
+    fn explicit_sdr_conversion_supports_two_pq_inputs_and_five_output_targets() {
+        let targets = [
+            (VideoCodec::H264, 8, PixelFormat::Nv12),
+            (VideoCodec::Hevc, 8, PixelFormat::Nv12),
+            (VideoCodec::Av1, 8, PixelFormat::Nv12),
+            (VideoCodec::Hevc, 10, PixelFormat::P010Le),
+            (VideoCodec::Av1, 10, PixelFormat::P010Le),
+        ];
+
+        for input_codec in [VideoCodec::Hevc, VideoCodec::Av1] {
+            let input = pq_input(input_codec);
+            for (output_codec, output_bit_depth, output_format) in targets.clone() {
+                let policy = PipelinePolicy {
+                    output_codec,
+                    output_bit_depth,
+                    output_dynamic_range: OutputDynamicRange::Sdr,
+                    ..Default::default()
+                };
+                let plan = PipelinePlanner::select(&full(), &input, policy)
+                    .unwrap()
+                    .selected;
+
+                assert_eq!(plan.color_processing, ColorProcessing::HdrPqToSdrBt709);
+                assert_eq!(plan.backend, ProcessingBackend::Vulkan);
+                assert_eq!(plan.decode, MediaImplementation::Hardware);
+                assert_eq!(plan.encode, MediaImplementation::Hardware);
+                assert!(plan.hardware_input_interop && plan.hardware_output_interop);
+                assert_eq!(plan.pixel_path, PixelPath::GpuResident);
+                assert_eq!(input.pixel_format.as_deref(), Some("p010le"));
+                assert_eq!(plan.output.pixel_format, output_format);
+                assert_eq!(plan.output.bit_depth, output_bit_depth);
+                assert_eq!(plan.output.color_space, ColorSpace::default());
+                assert!(
+                    plan.steps
+                        .iter()
+                        .any(|step| step.node == PlanNode::Bt2446MethodA)
+                );
+                assert!(
+                    plan.steps
+                        .iter()
+                        .any(|step| step.node == PlanNode::SdrSignalPack)
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn preserve_remains_the_default_and_still_rejects_eight_bit_pq_output() {
+        let input = pq_input(VideoCodec::Hevc);
+        assert_eq!(
+            PipelinePolicy::default().output_dynamic_range,
+            OutputDynamicRange::Preserve
+        );
+        let plan = PipelinePlanner::select(&full(), &input, pq_policy(VideoCodec::Hevc))
+            .unwrap()
+            .selected;
+        assert_eq!(plan.color_processing, ColorProcessing::HdrPqPreserve);
+
+        let error = PipelinePlanner::select(
+            &full(),
+            &input,
+            PipelinePolicy {
+                output_bit_depth: 8,
+                ..pq_policy(VideoCodec::Hevc)
+            },
+        )
+        .unwrap_err();
+        assert!(
+            error
+                .to_string()
+                .contains("explicitly request --output-dynamic-range sdr")
+        );
+    }
+
+    #[test]
+    fn explicit_sdr_on_sdr_input_is_semantically_a_no_op() {
+        let default = PipelinePlanner::select(&full(), &h264(), PipelinePolicy::default())
+            .unwrap()
+            .selected;
+        let explicit_sdr = PipelinePlanner::select(
+            &full(),
+            &h264(),
+            PipelinePolicy {
+                output_dynamic_range: OutputDynamicRange::Sdr,
+                ..Default::default()
+            },
+        )
+        .unwrap()
+        .selected;
+
+        assert_eq!(explicit_sdr, default);
+        assert_eq!(explicit_sdr.color_processing, ColorProcessing::Sdr);
+    }
+
+    #[test]
+    fn explicit_sdr_conversion_requires_qualified_gpu_and_full_hardware_path() {
+        let input = pq_input(VideoCodec::Hevc);
+        let policy = PipelinePolicy {
+            output_dynamic_range: OutputDynamicRange::Sdr,
+            ..Default::default()
+        };
+
+        let mut missing_conversion = full();
+        missing_conversion.processing.vulkan_hdr_to_sdr =
+            CapabilitySupport::not_probed("C-3/C-4 output conversion not qualified");
+        let error =
+            PipelinePlanner::select(&missing_conversion, &input, policy.clone()).unwrap_err();
+        assert!(
+            error
+                .to_string()
+                .contains("C-3/C-4 output conversion not qualified")
+        );
+
+        for forbidden in [
+            PipelinePolicy {
+                backend: ProcessingBackend::Cpu,
+                ..policy.clone()
+            },
+            PipelinePolicy {
+                decode: MediaRequest::Software,
+                ..policy.clone()
+            },
+            PipelinePolicy {
+                encode: MediaRequest::Software,
+                ..policy.clone()
+            },
+            PipelinePolicy {
+                input_interop: InteropRequest::Off,
+                ..policy.clone()
+            },
+            PipelinePolicy {
+                output_interop: InteropRequest::Off,
+                ..policy.clone()
+            },
+        ] {
+            assert!(
+                PipelinePlanner::select(&full(), &input, forbidden.clone()).is_err(),
+                "accepted forbidden HDR-to-SDR policy {forbidden:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn explicit_sdr_does_not_bypass_unsupported_hdr_or_wide_gamut_metadata() {
+        let valid = pq_input(VideoCodec::Hevc);
+        let mut hlg = valid.clone();
+        hlg.color_space.transfer = TransferCharacteristic::Hlg;
+        let mut pq_full_range = valid.clone();
+        pq_full_range.color_space.range = ColorRange::Full;
+        let mut wide_gamut_sdr = h264();
+        wide_gamut_sdr.color_space.primaries = ColorPrimaries::Bt2020;
+        wide_gamut_sdr.color_space.matrix = ColorMatrix::Bt2020;
+
+        for input in [&mut hlg, &mut pq_full_range, &mut wide_gamut_sdr] {
+            let raw = crate::ColorMetadataRaw {
+                space: input.color_space,
+                ..crate::ColorMetadataRaw::unspecified()
+            };
+            input.color_semantics = Some(
+                crate::ResolvedColorSemantics::resolve(
+                    raw,
+                    raw,
+                    crate::ColorResolutionPolicy::StrictTenBit,
+                )
+                .unwrap(),
+            );
+        }
+
+        let request = PipelinePolicy {
+            output_dynamic_range: OutputDynamicRange::Sdr,
+            ..Default::default()
+        };
+        for input in [hlg, pq_full_range, wide_gamut_sdr] {
+            assert!(
+                PipelinePlanner::select(&full(), &input, request.clone()).is_err(),
+                "explicit SDR conversion bypassed unsupported metadata: {:?}",
+                input.color_semantics
+            );
         }
     }
 

@@ -1,0 +1,30 @@
+{
+  "tested_vector_counts": {
+    "NV12": 2293,
+    "P010": 6280
+  },
+  "tested_packed_sample_counts": {
+    "NV12": 13758,
+    "P010": 37680
+  },
+  "mismatch_counts": {
+    "NV12": 0,
+    "P010": 0
+  },
+  "rgb_diagnostics": {
+    "NV12": [
+      0,
+      0,
+      0
+    ],
+    "P010": [
+      0,
+      0,
+      0
+    ]
+  },
+  "p010_nonzero_padding": 0,
+  "validation_errors": 0,
+  "captured": 0,
+  "samples": []
+}

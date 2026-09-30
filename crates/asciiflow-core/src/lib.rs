@@ -37,9 +37,9 @@ pub use pipeline::{Pipeline, PipelineReport};
 pub use planner::{
     CandidateRejection, CapabilitySnapshot, CapabilitySupport, ChromaSubsampling, ColorProcessing,
     FormatOutputInteropCapabilities, FrameDomain, InputRequirements, InteropCapabilities,
-    InteropRequest, MediaCapabilities, MediaImplementation, MediaRequest, OutputVideoRequirements,
-    PipelinePlan, PipelinePlanner, PipelinePolicy, PixelPath, PlanNode, PlanStep, PlanningResult,
-    ProcessingCapabilities, VideoCodec, VideoProfile, VulkanDeviceKind,
+    InteropRequest, MediaCapabilities, MediaImplementation, MediaRequest, OutputDynamicRange,
+    OutputVideoRequirements, PipelinePlan, PipelinePlanner, PipelinePolicy, PixelPath, PlanNode,
+    PlanStep, PlanningResult, ProcessingCapabilities, VideoCodec, VideoProfile, VulkanDeviceKind,
 };
 pub use qualification::{
     InputProcessingCapabilities, InputProcessingDomain, InputProcessingPlan,

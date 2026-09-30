@@ -59,12 +59,25 @@ void main() {
             continue;
         }
         clamped += pq_clamp_count(encoded, vec3(0.0), vec3(1.0));
+#ifdef HDR_TO_SDR_SOURCE_DOMAIN
+        // Production-only rejection before cell averaging or glyph coverage.
+        // The preserve module has no such domain limit. Color math is unchanged.
+        if (any(lessThan(encoded, vec3(0.0))) || any(greaterThan(encoded, vec3(1.0)))) {
+            invalid += 1u;
+            continue;
+        }
+#endif
         vec3 linear = pq_eotf(clamp(encoded, vec3(0.0), vec3(1.0)));
         if (!pq_finite(linear)) {
             invalid += 1u;
             continue;
         }
         sum += linear;
+#ifdef HDR_TO_SDR_SOURCE_DOMAIN
+        if (any(greaterThan(linear, vec3(0.1)))) {
+            invalid += 1u;
+        }
+#endif
     }
     linear_sum[lane] = sum;
     diagnostic_sum[lane] = uvec2(clamped, invalid);

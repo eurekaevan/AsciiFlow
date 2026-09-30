@@ -113,6 +113,166 @@ pub(crate) fn inject_probe_failure(snapshot: &mut CapabilitySnapshot, point: Pro
     }
 }
 
+pub fn probe_for_request(
+    input: &Path,
+    vaapi: &VaapiOptions,
+    config: &AsciiConfig,
+    request: asciiflow_core::OutputDynamicRange,
+) -> asciiflow_core::Result<CapabilityProbe> {
+    let started = Instant::now();
+    let mut result = probe(input, vaapi, config)?;
+    if result
+        .media_info
+        .requirements
+        .color_processing_for(request)?
+        == asciiflow_core::ColorProcessing::HdrPqToSdrBt709
+    {
+        probe_hdr_to_sdr(input, vaapi, config, &mut result);
+    }
+    result.duration = started.elapsed();
+    Ok(result)
+}
+
+/// Qualify actual source decode, sealed C execution, target-specific encoder
+/// acceptance and writable output imports. No vendor inference or host pixels.
+fn probe_hdr_to_sdr(
+    input: &Path,
+    vaapi: &VaapiOptions,
+    config: &AsciiConfig,
+    result: &mut CapabilityProbe,
+) {
+    let config = AsciiConfig {
+        font: "builtin-8x8".into(),
+        ..config.clone()
+    };
+    let caps = &mut result.snapshot;
+    let mut any_conversion = false;
+    let mut failures = Vec::new();
+    for (codec, depth) in [
+        (VideoCodec::H264, 8),
+        (VideoCodec::Hevc, 8),
+        (VideoCodec::Av1, 8),
+        (VideoCodec::Hevc, 10),
+        (VideoCodec::Av1, 10),
+    ] {
+        let operation = (|| -> asciiflow_core::Result<()> {
+            // Decoder must outlive every surface held by the processor.
+            let mut decoder =
+                Decoder::open_with_pq_preserve(input, DecodeMode::Vaapi, vaapi.clone())?;
+            let frame = decoder
+                .next_vaapi_frame()?
+                .ok_or_else(|| Error::Media("no decoded HDR→SDR probe frame".into()))?;
+            let output = asciiflow_core::OutputVideoRequirements::selected_for_dynamic_range(
+                codec.clone(),
+                depth,
+                &result.media_info.requirements,
+                asciiflow_core::OutputDynamicRange::Sdr,
+            )?;
+            let desc = match output.pixel_format {
+                PixelFormat::Nv12 => asciiflow_core::FrameDesc::host_nv12(
+                    output.width,
+                    output.height,
+                    output.color_space,
+                )?,
+                PixelFormat::P010Le => asciiflow_core::FrameDesc::host_p010_le(
+                    output.width,
+                    output.height,
+                    output.color_space,
+                )?,
+            };
+            let encoder_probe = probe_vaapi_encoder_for(
+                codec.clone(),
+                desc,
+                result.media_info.frame_rate,
+                vaapi.clone(),
+            )?;
+            let backend = VulkanAsciiBackend::new_for_color_processing(
+                asciiflow_core::ColorProcessing::HdrPqToSdrBt709,
+            )?
+            .with_atlas(
+                asciiflow_font::GlyphAtlas::builtin("builtin-8x8", &config.charset)
+                    .map_err(|e| Error::InvalidConfig(e.to_string()))?,
+                &config,
+            )?;
+            let mut processor = asciiflow_interop::VaapiVulkanFullInteropProcessor::new_hdr_to_sdr(
+                backend,
+                encoder_probe.frames,
+                result.media_info.frame_desc.clone(),
+                config.clone(),
+                output.pixel_format,
+            )?;
+            if processor.submit(frame)?.is_some() {
+                return Err(Error::Vulkan(
+                    "HDR→SDR probe returned an unsubmitted frame".into(),
+                ));
+            }
+            let converted = processor
+                .drain()?
+                .ok_or_else(|| Error::Vulkan("HDR→SDR probe returned no output".into()))?;
+            if converted.frame.desc().color_space != asciiflow_core::ColorSpace::default()
+                || converted.frame.desc().format != output.pixel_format
+                || processor.validation_error_count() != 0
+            {
+                return Err(Error::Vulkan(
+                    "HDR→SDR probe output contract or Validation failure".into(),
+                ));
+            }
+            drop(converted);
+            drop(processor);
+            drop(decoder);
+            Ok(())
+        })();
+        let fact = match operation {
+            Ok(()) => {
+                any_conversion = true;
+                CapabilitySupport::supported()
+            }
+            Err(error) => {
+                failures.push(format!("{codec} {depth}-bit: {error}"));
+                CapabilitySupport::unsupported(error.to_string())
+            }
+        };
+        match (&codec, depth) {
+            (VideoCodec::H264, 8) => {
+                caps.media.h264_vaapi_encode = fact.clone();
+                caps.interop.output = fact.clone();
+            }
+            (VideoCodec::Hevc, 8) => {
+                caps.media.hevc_vaapi_encode = fact.clone();
+                caps.interop.hevc_output = fact.clone();
+            }
+            (VideoCodec::Av1, 8) => {
+                caps.media.av1_vaapi_encode = fact.clone();
+                caps.interop.av1_output = fact.clone();
+            }
+            (VideoCodec::Hevc, 10) => {
+                caps.media.hevc_main10_vaapi_encode = fact.clone();
+                caps.interop.p010_output = fact.clone();
+            }
+            (VideoCodec::Av1, 10) => {
+                caps.media.av1_10bit_vaapi_encode = fact.clone();
+                caps.interop.av1_p010_output = fact.clone();
+            }
+            _ => unreachable!("explicit conversion probe matrix"),
+        }
+        if fact.is_supported() {
+            if depth == 8 {
+                caps.media.nv12_hardware_frames = CapabilitySupport::supported();
+            } else {
+                caps.media.p010_hardware_frames = CapabilitySupport::supported();
+            }
+        }
+    }
+    caps.processing.vulkan_hdr_to_sdr = if any_conversion {
+        CapabilitySupport::supported()
+    } else {
+        CapabilitySupport::unsupported(format!(
+            "no actual HDR→SDR output path qualified: {}",
+            failures.join("; ")
+        ))
+    };
+}
+
 pub fn probe(
     input: &Path,
     vaapi: &VaapiOptions,
@@ -175,6 +335,9 @@ pub fn probe(
                     cpu: CapabilitySupport::supported(),
                     vulkan: CapabilitySupport::supported(),
                     vulkan_pq,
+                    vulkan_hdr_to_sdr: CapabilitySupport::not_probed(
+                        "explicit SDR conversion not requested",
+                    ),
                     vulkan_auto_eligible: info.auto_eligible(),
                     vulkan_device_name: Some(info.name.clone()),
                     vulkan_device_kind: Some(info.planner_device_kind()),
@@ -193,6 +356,7 @@ pub fn probe(
                     cpu: CapabilitySupport::supported(),
                     vulkan: CapabilitySupport::unsupported(reason.clone()),
                     vulkan_pq: CapabilitySupport::unsupported(reason.clone()),
+                    vulkan_hdr_to_sdr: CapabilitySupport::unsupported(reason.clone()),
                     vulkan_auto_eligible: false,
                     vulkan_device_name: None,
                     vulkan_device_kind: None,
@@ -576,7 +740,14 @@ pub fn print(
         "Vulkan PQ execution on this input",
         &snapshot.processing.vulkan_pq,
     );
-    println!("  tone mapping: None; HLG: unsupported; source mastering/CLL: not propagated");
+    print_fact(
+        "PQ HDR → BT.709 SDR (explicit request, qualified C pipeline and output interop)",
+        &snapshot.processing.vulkan_hdr_to_sdr,
+    );
+    println!("  HLG → SDR: unsupported; full-range HDR → SDR: unsupported");
+    println!(
+        "  HDR→SDR: fixed BT.2446-1 1000→100 cd/m² mapping + BT.709 target-volume limiting; source HDR side data not propagated"
+    );
     println!("  BT.2020 / P3 wide-gamut SDR: Detected, unsupported");
     println!("  full-range SDR: Not qualified for current ASCII output code values");
     println!("Video decode:");
@@ -758,6 +929,20 @@ pub fn print_plan(plan: &PipelinePlan) {
             "HDR metadata policy: canonical BT.2020/PQ/NCL limited; source mastering display / MaxCLL / MaxFALL not propagated or recomputed (not HDR10 mastering qualification)"
         );
     }
+    if plan.color_processing == asciiflow_core::ColorProcessing::HdrPqToSdrBt709 {
+        println!(
+            "Dynamic range: input HDR PQ; output SDR; conversion explicit (--output-dynamic-range sdr)"
+        );
+        println!(
+            "Processing: HDR-aware ASCII -> BT.2446-1 Method A -> BT.2020→BT.709 primary conversion -> target-volume limiting -> BT.709 limited SDR pack"
+        );
+        println!(
+            "Input domain: 0–1000 cd/m²; no implicit highlight clipping. CPU and software media paths are not production-qualified."
+        );
+        println!(
+            "HDR metadata policy: source mastering/content-light/dynamic HDR side data is not propagated to SDR frames"
+        );
+    }
     let profile = match plan.output.profile.as_ref() {
         Some(asciiflow_core::VideoProfile::Av1Main) => "Profile0 (Main)".into(),
         Some(value) => format!("{value:?}"),
@@ -846,6 +1031,7 @@ mod tests {
                 cpu: supported(),
                 vulkan: supported(),
                 vulkan_pq: supported(),
+                vulkan_hdr_to_sdr: supported(),
                 vulkan_auto_eligible: true,
                 vulkan_device_name: Some("synthetic GPU".into()),
                 vulkan_device_kind: Some(VulkanDeviceKind::IntegratedGpu),

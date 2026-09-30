@@ -152,6 +152,26 @@ fn main() {
         fs::write(output.join(format!("{name}.spv")), artifact.as_binary_u8())
             .expect("failed to write PQ SPIR-V");
     }
+    // Extra source-domain rejection for explicit HDR→SDR production only.
+    // Ordinary preserve compilation above and all sealed C color math stay unchanged.
+    let domain_path = root.join("ascii_map_pq.comp");
+    let domain_source = fs::read_to_string(&domain_path).expect("read PQ source-domain shader");
+    let mut domain_options = pq_options.clone();
+    domain_options.add_macro_definition("HDR_TO_SDR_SOURCE_DOMAIN", Some("1"));
+    let domain_artifact = compiler
+        .compile_into_spirv(
+            &domain_source,
+            ShaderKind::Compute,
+            &domain_path.to_string_lossy(),
+            "main",
+            Some(&domain_options),
+        )
+        .expect("compile HDR→SDR source-domain diagnostics");
+    fs::write(
+        output.join("ascii_map_pq_sdr_domain.spv"),
+        domain_artifact.as_binary_u8(),
+    )
+    .expect("write HDR→SDR source-domain diagnostics SPIR-V");
     // Separate C-3 qualification modules. Never alter the PQ-preserve options
     // or insert tone mapping into an existing production shader.
     let c3_shared = root.join("c3_common.glsl");
@@ -187,6 +207,34 @@ fn main() {
             .unwrap_or_else(|e| panic!("failed to compile {}: {e}", path.display()));
         fs::write(output.join(format!("{name}.spv")), artifact.as_binary_u8())
             .expect("failed to write C-3 SPIR-V");
+    }
+    let pack_shared = root.join("sdr_pack_common.glsl");
+    println!("cargo:rerun-if-changed={}", pack_shared.display());
+    let mut pack_options = options.clone();
+    pack_options.set_include_callback(|name, _, _, _| {
+        if name != "sdr_pack_common.glsl" {
+            return Err(format!("unexpected SDR pack include: {name}"));
+        }
+        Ok(shaderc::ResolvedInclude {
+            resolved_name: pack_shared.to_string_lossy().into_owned(),
+            content: fs::read_to_string(&pack_shared).map_err(|e| e.to_string())?,
+        })
+    });
+    for name in ["sdr_pack_nv12", "sdr_pack_p010"] {
+        let path = root.join(format!("{name}.comp"));
+        println!("cargo:rerun-if-changed={}", path.display());
+        let source = fs::read_to_string(&path).expect("failed to read SDR pack shader");
+        let artifact = compiler
+            .compile_into_spirv(
+                &source,
+                ShaderKind::Compute,
+                &path.to_string_lossy(),
+                "main",
+                Some(&pack_options),
+            )
+            .unwrap_or_else(|e| panic!("failed to compile {}: {e}", path.display()));
+        fs::write(output.join(format!("{name}.spv")), artifact.as_binary_u8())
+            .expect("failed to write SDR pack SPIR-V");
     }
     let experimental_output = output.join("bt2020_to_bt709_fp64_experiment.spv");
     if env::var_os("CARGO_FEATURE_HDR_TO_SDR_FP64_EXPERIMENT").is_some() {

@@ -1,17 +1,21 @@
-# Internal HDR→SDR reference
+# HDR→SDR reference and production policy
 
 C-1 implements ITU-R BT.2446-1 Method A, fixed 1000→100 cd/m², as a permanent
 f64 CPU qualification oracle. It is not a production backend, CLI feature,
 encoder, or universal policy for PQ content.
 
-The independent [C-3 Vulkan f32 draft](stage5.3c3-vulkan-hdr-to-sdr.md) is
-**NOT SEALED**: near-zero target-channel arithmetic fails the unchanged
-diagnostic UNORM16≤2 gate. Original B+C/C maxima 10/11 are retained; C3A's best
-tested candidates still reach 4/3, with 5/1 channels above 2. CPU f64 remains
-authoritative; neither oracle nor gate is relaxed. A separate reproducible
-legal-domain PQ fixture now passes complete software/VAAPI domain audits;
-B-3's original above-1000-nit fixture is unchanged and remains correctly rejected.
-Production HDR→SDR stays disabled.
+The independent [C-3 Vulkan reference](stage5.3c3-vulkan-hdr-to-sdr.md) is
+**SEALED** under P2/N3. Historical UNORM16≤2 failures remain failed diagnostics,
+not PASS. CPU f64 remains authoritative and the legal-domain fixture is separate
+from B-3's unchanged above-1000-nit rejection input. The downstream
+[C-4A output-signal qualification](stage5.3c4a-sdr-output-signal.md) is
+**SEALED** on the qualified Intel hardware. The downstream
+[C-4B production integration](stage5.3c4b-hdr-to-sdr-production.md) is **SEALED**:
+explicit `--output-dynamic-range sdr` uses these unchanged GPU passes plus the
+sealed NV12/P010 pack and VAAPI encoding. CPU remains reference-only; preserve
+is the default. Actual source samples above 1000 cd/m² reject before averaging
+or glyph coverage, rather than being inferred from mastering/CLL or clipped.
+No HLG/full-range/generalized tone mapping or numerical-policy change is implied.
 
 ## Authorities
 

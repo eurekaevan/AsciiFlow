@@ -90,7 +90,7 @@ AV1 Profile0/Main 10-bit P010 VAAPI output is qualified in
 [Stage 5.2C-3](stage5.2c3-av1-10bit-encode.md). Both 10-bit outputs require
 explicit `--output-bit-depth 10` and qualified VAAPI hardware; their codecs
 remain independent of the 10-bit HEVC/AV1 input codec. There is no software
-HEVC/AV1 encoder, tone mapping, 4:2:2/4:4:4 output,
+HEVC/AV1 encoder, generalized tone mapping, 4:2:2/4:4:4 output,
 quality/preset/bitrate UI, AV1 tuning, or new GPU vendor/platform support.
 
 ## Color processing is separate from codec capability
@@ -101,8 +101,8 @@ independent of codec or bit depth. The SDR assessment rejects them; Stage B-3
 separately admits resolved BT.2020 NCL/PQ/limited/left P010 only for an actually
 probed Vulkan PQ + VAAPI decode/encode + both P010 DMA-BUF path, with explicit
 HEVC/AV1 ten-bit output. Its hardware sealing status is in the B-3 report.
-CPU, software decode/encode, staging, eight-bit output and unavailable facts
-fail, even under `auto`; no HDR initialization fallback is permitted.
+For preservation, CPU, software decode/encode, staging, eight-bit output and
+unavailable facts fail, even under `auto`; no HDR initialization fallback is permitted.
 BT.2020 with an SDR transfer remains SDR, not HDR; wide-gamut SDR is rejected
 because SDR-transfer BT.2020/P3 pixel math is not implemented. Unknown and conflicting
 metadata also fail closed on the strict 10-bit path. Missing 8-bit fields keep
@@ -114,6 +114,17 @@ or recomputed for ASCII output; PQ preserve is not HDR10 mastering validation.
 Details and the hardware-validation gates are in
 [color-semantics.md](color-semantics.md) and
 [Stage 5.3A report](stage5.3a-color-metadata.md).
+
+[Stage 5.3C-4B](stage5.3c4b-hdr-to-sdr-production.md) is **SEALED** on the recorded
+Intel scope. Default dynamic-range policy is `preserve`; explicit `sdr` admits
+the same resolved PQ P010 input through actual VAAPI decode, Vulkan input
+interop, unchanged HDR ASCII/Method A/BT.709 limiter, sealed SDR pack, output
+interop and VAAPI encode. H.2648/HEVC8/AV18 use NV12; HEVC10/AV110 use P010 and
+remain BT.709 limited SDR, not HDR by virtue of depth. H.26410 rejects.
+The fixed domain is actual source 0–1000 nit, checked before averaging and glyph
+coverage; mastering metadata cannot authorize a higher peak. CPU/software/
+staged fallback, HLG, full range and unknown/wide SDR remain unsupported.
+Existing SDR with `sdr` is a no-op; omitting the flag never chooses tone mapping.
 Legacy 8-bit BT.601/170M limited-range SDR can still enter through software
 decode, where libswscale normalizes it to BT.709 NV12; VAAPI direct decode is
 not a legal candidate for that conversion.

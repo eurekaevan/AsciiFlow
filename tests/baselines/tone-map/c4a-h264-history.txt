@@ -1,0 +1,18 @@
+   Compiling asciiflow-media v2.0.0-alpha.0 (/home/eureka/Documents/AsciiFlow/crates/asciiflow-media)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.42s
+     Running tests/media_regression.rs (target/debug/deps/media_regression-301cc1e7eb1551b2)
+
+running 1 test
+test compare_pair_from_env ... Media regression PASS
+Tier 1A raw packet identity: FAIL
+Tier 1B coded semantic identity: PASS
+Tier 1C decoded identity: PASS
+Tier 2 structure: PASS
+Tier 3 whole-file SHA-256 bytes (build identity not attested here): DIFFERENT
+Raw packet differences: stream 0 packet 0 payload mismatch: expected sha256 ee5b429bda36bd1e8cebd3ba53ecca8af31b40e80e7ac02f908136153252a8fa, actual sha256 75cf3281630f143ec38d1bd0ef5feaf8202b687e7fd7658a32bb15a000f55b41
+Approved volatile differences: format.tags.encoder: Some("Lavf62.12.102") -> Some("Lavf62.12.103") (FFmpeg patch version)
+Approved coded-metadata differences: stream 0 packet 0 NAL 2 SEI 0 user_data_unregistered UUID 59948b2811ec45af967519d41feaa94d: Lavc62.28.102 / VAAPI 1.23.0 / Intel iHD driver for Intel(R) Gen Graphics - 26.1.5 () -> Lavc62.28.103 / VAAPI 1.23.0 / Intel iHD driver for Intel(R) Gen Graphics - 26.1.5 () (encoder patch version)
+
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 8 filtered out; finished in 7.12s

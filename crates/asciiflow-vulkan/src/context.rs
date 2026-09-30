@@ -347,7 +347,7 @@ impl VulkanContext {
             .map_or(0, |counter| counter.load(Ordering::Relaxed))
     }
 
-    #[cfg(feature = "hdr-to-sdr-qualification")]
+    #[cfg(feature = "hdr-to-sdr-production")]
     pub(crate) fn validation_counter(&self) -> Option<Arc<AtomicUsize>> {
         self.validation_errors.clone()
     }

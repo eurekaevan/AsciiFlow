@@ -1,0 +1,268 @@
+Stage 5.3C-4B current-round observed test output.
+Commands and scope are documented in stage5.3c4b-hdr-to-sdr-production.md.
+
+/tmp/asciiflow-c4b-system-final-20260930.txt
+   Compiling asciiflow-core v2.0.0-alpha.0 (/home/eureka/Documents/AsciiFlow/crates/asciiflow-core)
+   Compiling asciiflow-vulkan v2.0.0-alpha.0 (/home/eureka/Documents/AsciiFlow/crates/asciiflow-vulkan)
+   Compiling asciiflow-media v2.0.0-alpha.0 (/home/eureka/Documents/AsciiFlow/crates/asciiflow-media)
+   Compiling asciiflow-cpu v2.0.0-alpha.0 (/home/eureka/Documents/AsciiFlow/crates/asciiflow-cpu)
+   Compiling asciiflow-interop v2.0.0-alpha.0 (/home/eureka/Documents/AsciiFlow/crates/asciiflow-interop)
+   Compiling asciiflow-cli v2.0.0-alpha.0 (/home/eureka/Documents/AsciiFlow/apps/asciiflow-cli)
+    Finished `release` profile [optimized] target(s) in 10.54s
+     Running tests/c4b_production.rs (target/release/deps/c4b_production-92ec9b9741e3e0f5)
+
+running 5 tests
+test c4b_auto_selection_builtin_freetype_color_mono_nv12_p010 ... ok
+test c4b_default_preserve_rejects_pq_h264_before_output_staging ... ok
+test c4b_late_source_highlight_fails_before_black_glyph_can_hide_it ... ok
+test c4b_sigint_nv12_p010_preserves_destination_and_releases_process_resources ... C4B h264/8: 28 live FDs; SIGINT exit 130; reaped FD table absent
+C4B hevc/10: 28 live FDs; SIGINT exit 130; reaped FD table absent
+ok
+test c4b_single_dual_aac_auto_copy_none_and_preserve_sdr ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 208.48s
+
+
+/tmp/asciiflow-c4b-init-faults.txt
+   Compiling asciiflow-vulkan v2.0.0-alpha.0 (/home/eureka/Documents/AsciiFlow/crates/asciiflow-vulkan)
+   Compiling asciiflow-core v2.0.0-alpha.0 (/home/eureka/Documents/AsciiFlow/crates/asciiflow-core)
+   Compiling asciiflow-media v2.0.0-alpha.0 (/home/eureka/Documents/AsciiFlow/crates/asciiflow-media)
+   Compiling asciiflow-cpu v2.0.0-alpha.0 (/home/eureka/Documents/AsciiFlow/crates/asciiflow-cpu)
+   Compiling asciiflow-interop v2.0.0-alpha.0 (/home/eureka/Documents/AsciiFlow/crates/asciiflow-interop)
+    Finished `release` profile [optimized] target(s) in 7.40s
+     Running tests/c4b_initialization_faults.rs (target/release/deps/c4b_initialization_faults-b782cd85261076d2)
+
+running 1 test
+test c4b_both_slot_initialization_failures_release_resources_and_recover ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.55s
+
+
+/tmp/asciiflow-c4b-native-encoder-faults.txt
+   Compiling asciiflow-media v2.0.0-alpha.0 (/home/eureka/Documents/AsciiFlow/crates/asciiflow-media)
+    Finished `release` profile [optimized] target(s) in 7.02s
+     Running unittests src/lib.rs (target/release/deps/asciiflow_media-aa9029267b12f42a)
+
+running 1 test
+test ffmpeg::encoder::sdr_hardware_fault_tests::sdr_hardware_output_matrix_encode_and_mux_failures_preserve_roots ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 30 filtered out; finished in 0.42s
+
+     Running tests/codec_decode.rs (target/release/deps/codec_decode-176ff5b3dc24ef29)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 0.00s
+
+     Running tests/malformed_media.rs (target/release/deps/malformed_media-6b3a83eddd419a8f)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 5 filtered out; finished in 0.00s
+
+     Running tests/media_regression.rs (target/release/deps/media_regression-afab24b2238853ac)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 9 filtered out; finished in 0.00s
+
+
+/tmp/asciiflow-c4b-audio-mux-faults.txt
+    Finished `release` profile [optimized] target(s) in 0.02s
+     Running unittests src/lib.rs (target/release/deps/asciiflow_media-aa9029267b12f42a)
+
+running 2 tests
+test ffmpeg::encoder::audio_regression_tests::injected_av1_10bit_audio_mux_failure_preserves_root_cause ... ok
+test ffmpeg::encoder::audio_regression_tests::injected_main10_audio_mux_failure_preserves_root_cause ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 29 filtered out; finished in 0.14s
+
+     Running tests/codec_decode.rs (target/release/deps/codec_decode-176ff5b3dc24ef29)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 0.00s
+
+     Running tests/malformed_media.rs (target/release/deps/malformed_media-6b3a83eddd419a8f)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 5 filtered out; finished in 0.00s
+
+     Running tests/media_regression.rs (target/release/deps/media_regression-afab24b2238853ac)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 9 filtered out; finished in 0.00s
+
+
+/tmp/asciiflow-c4b-commit-fault.txt
+   Compiling asciiflow-cli v2.0.0-alpha.0 (/home/eureka/Documents/AsciiFlow/apps/asciiflow-cli)
+    Finished `release` profile [optimized] target(s) in 4.69s
+     Running tests/c4b_production.rs (target/release/deps/c4b_production-92ec9b9741e3e0f5)
+
+running 1 test
+test c4b_final_commit_failure_preserves_directory_destination_and_removes_staging ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 6 filtered out; finished in 2.59s
+
+
+/tmp/asciiflow-c4b-unqualified-policy-final.txt
+   Compiling asciiflow-cli v2.0.0-alpha.0 (/home/eureka/Documents/AsciiFlow/apps/asciiflow-cli)
+    Finished `release` profile [optimized] target(s) in 4.27s
+     Running tests/c4b_production.rs (target/release/deps/c4b_production-92ec9b9741e3e0f5)
+
+running 1 test
+test c4b_forced_unqualified_paths_and_h264_ten_bit_fail_before_staging ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 6 filtered out; finished in 3.35s
+
+
+/tmp/asciiflow-c4b-source-domain.txt
+   Compiling asciiflow-vulkan v2.0.0-alpha.0 (/home/eureka/Documents/AsciiFlow/crates/asciiflow-vulkan)
+    Finished `release` profile [optimized] target(s) in 5.86s
+     Running tests/c4b_source_domain.rs (target/release/deps/c4b_source_domain-29ec5b8a0b6ae6be)
+
+running 1 test
+test reject_diluted_source_highlight_before_average_and_black_glyph ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.12s
+
+
+/tmp/asciiflow-c4b-stress-20260930.txt
+   Compiling asciiflow-vulkan v2.0.0-alpha.0 (/home/eureka/Documents/AsciiFlow/crates/asciiflow-vulkan)
+   Compiling asciiflow-media v2.0.0-alpha.0 (/home/eureka/Documents/AsciiFlow/crates/asciiflow-media)
+   Compiling asciiflow-interop v2.0.0-alpha.0 (/home/eureka/Documents/AsciiFlow/crates/asciiflow-interop)
+    Finished `release` profile [optimized] target(s) in 7.22s
+     Running tests/c4b_production_stress.rs (target/release/deps/c4b_production_stress-445d838f44e2296b)
+
+running 1 test
+test c4b_full_production_3000_frame_stress ... hevc-pq-to-h264-nv12: frames=3000 FD before/peak/after=4/31/4 RSS KiB=42788/132980/104012 validation=0
+av1-pq-to-hevc10-p010: frames=3000 FD before/peak/after=4/31/4 RSS KiB=108800/178108/118540 validation=0
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 90.00s
+
+
+/tmp/asciiflow-c4b-sdr-gate.txt
+h264-8 run1 retained_SHA256_PASS 7c8a7572320b8c6c999143dfece4a76d487d6c9e7788206b7af52df9acd4e1cc
+h264-8 run2 retained_SHA256_PASS 7c8a7572320b8c6c999143dfece4a76d487d6c9e7788206b7af52df9acd4e1cc
+h264-8 run3 retained_SHA256_PASS 7c8a7572320b8c6c999143dfece4a76d487d6c9e7788206b7af52df9acd4e1cc
+hevc-8 run1 retained_SHA256_PASS 294a1b63ac5b0e440dcf60c4c60f975594c6e944829478b69f09f981d268ff71
+hevc-8 run2 retained_SHA256_PASS 294a1b63ac5b0e440dcf60c4c60f975594c6e944829478b69f09f981d268ff71
+hevc-8 run3 retained_SHA256_PASS 294a1b63ac5b0e440dcf60c4c60f975594c6e944829478b69f09f981d268ff71
+av1-8 run1 retained_SHA256_PASS 1531e29f52ae4e747251cf1889003dfd420303c523fb0ddc55cc9140e3bf2a4c
+av1-8 run2 retained_SHA256_PASS 1531e29f52ae4e747251cf1889003dfd420303c523fb0ddc55cc9140e3bf2a4c
+av1-8 run3 retained_SHA256_PASS 1531e29f52ae4e747251cf1889003dfd420303c523fb0ddc55cc9140e3bf2a4c
+hevc-10 run1 retained_SHA256_PASS f213a9f75542421bb816550cd7a93796db98ae36296a00636f7273492740a142
+hevc-10 run2 retained_SHA256_PASS f213a9f75542421bb816550cd7a93796db98ae36296a00636f7273492740a142
+hevc-10 run3 retained_SHA256_PASS f213a9f75542421bb816550cd7a93796db98ae36296a00636f7273492740a142
+av1-10 run1 retained_SHA256_PASS b69c68525ac6ab2464e04b8fc1f123d887b45bba580377bafad99dc74cf62ad7
+av1-10 run2 retained_SHA256_PASS b69c68525ac6ab2464e04b8fc1f123d887b45bba580377bafad99dc74cf62ad7
+av1-10 run3 retained_SHA256_PASS b69c68525ac6ab2464e04b8fc1f123d887b45bba580377bafad99dc74cf62ad7
+
+/tmp/asciiflow-c4b-pq-oracle.txt
+hevc ['0e8de23d5d222ab0476ea816d27b18e37dc73bf1f824e79bedc1070c409ded63', '0e8de23d5d222ab0476ea816d27b18e37dc73bf1f824e79bedc1070c409ded63', '0e8de23d5d222ab0476ea816d27b18e37dc73bf1f824e79bedc1070c409ded63'] tiers [True, True, True, True, True]
+av1 ['41a8af52985a6be0121cfe7c4f4160a3ebdecd0acc908882774d2a0151185388', '41a8af52985a6be0121cfe7c4f4160a3ebdecd0acc908882774d2a0151185388', '41a8af52985a6be0121cfe7c4f4160a3ebdecd0acc908882774d2a0151185388'] tiers [True, True, True, True, True]
+
+/tmp/asciiflow-c4b-h264-history-final.txt
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.02s
+     Running tests/media_regression.rs (target/debug/deps/media_regression-9d42bbf316ee7c48)
+
+running 1 test
+Media regression PASS
+Tier 1A raw packet identity: FAIL
+Tier 1B coded semantic identity: PASS
+Tier 1C decoded identity: PASS
+Tier 2 structure: PASS
+Tier 3 whole-file SHA-256 bytes (build identity not attested here): DIFFERENT
+Raw packet differences: stream 0 packet 0 payload mismatch: expected sha256 ee5b429bda36bd1e8cebd3ba53ecca8af31b40e80e7ac02f908136153252a8fa, actual sha256 75cf3281630f143ec38d1bd0ef5feaf8202b687e7fd7658a32bb15a000f55b41
+Approved volatile differences: format.tags.encoder: Some("Lavf62.12.102") -> Some("Lavf62.12.103") (FFmpeg patch version)
+Approved coded-metadata differences: stream 0 packet 0 NAL 2 SEI 0 user_data_unregistered UUID 59948b2811ec45af967519d41feaa94d: Lavc62.28.102 / VAAPI 1.23.0 / Intel iHD driver for Intel(R) Gen Graphics - 26.1.5 () -> Lavc62.28.103 / VAAPI 1.23.0 / Intel iHD driver for Intel(R) Gen Graphics - 26.1.5 () (encoder patch version)
+
+test compare_pair_from_env ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 8 filtered out; finished in 7.71s
+
+
+/tmp/asciiflow-c4b-reference-gpu.txt
+   Compiling asciiflow-vulkan v2.0.0-alpha.0 (/home/eureka/Documents/AsciiFlow/crates/asciiflow-vulkan)
+    Finished `release` profile [optimized] target(s) in 6.40s
+     Running tests/c3_qualification.rs (target/release/deps/c3_qualification-01805831b0ac75b5)
+
+running 1 test
+test canonical_f64_and_f32_input_oracles ... C3 device: DeviceInfo { name: "Intel(R) Arc(tm) Graphics (MTL)", vendor_id: 32902, device_id: 32085, device_type: INTEGRATED_GPU, api_version: 4211042, driver_version: 109060099, queue_family: 0, timestamp_valid_bits: 36, timestamp_period_ns: 52.083332, non_coherent_atom_size: 64, max_storage_buffer_range: 4294967295, max_compute_work_group_invocations: 1024, max_compute_work_group_size: [1024, 1024, 1024], dma_buf_interop: true, p010_storage_supported: true, memory_heaps: [MemoryHeapInfo { index: 0, size: 24774706176, flags: DEVICE_LOCAL }], memory_types: [MemoryTypeInfo { index: 0, heap_index: 0, property_flags: DEVICE_LOCAL | HOST_VISIBLE | HOST_COHERENT }, MemoryTypeInfo { index: 1, heap_index: 0, property_flags: DEVICE_LOCAL | HOST_VISIBLE | HOST_CACHED }, MemoryTypeInfo { index: 2, heap_index: 0, property_flags: DEVICE_LOCAL | PROTECTED }, MemoryTypeInfo { index: 3, heap_index: 0, property_flags: DEVICE_LOCAL | HOST_VISIBLE | HOST_COHERENT }, MemoryTypeInfo { index: 4, heap_index: 0, property_flags: DEVICE_LOCAL | HOST_VISIBLE | HOST_CACHED }] }
+B-original-f64: max UNORM16=0, >2 samples=0; {"channel":0,"p50":0.00000006023499665719356,"p95":0.00000030099121506310667,"p99":0.0000004356288356710536,"p999":0.0000005786745478353339,"max":0.0000009328426031629533,"worst_xy":[1641,723],"gpu":1.0733001,"cpu":1.0733010560573248,"unorm16":null},{"channel":1,"p50":0.00000007621533582025108,"p95":0.00000041404138828582404,"p99":0.00000046426066468985283,"p999":0.0000005974092320837343,"max":0.0000009268228464698325,"worst_xy":[51,1031],"gpu":1.1156034,"cpu":1.1156043737832957,"unorm16":null},{"channel":2,"p50":0.00000007087143172324062,"p95":0.00000031828854107907034,"p99":0.00000045113548674535764,"p999":0.000000607087505821724,"max":0.0000010481044203647372,"worst_xy":[514,842],"gpu":1.1352012,"cpu":1.1352001676395982,"unorm16":null}
+B-promoted-f32-input: max UNORM16=0, >2 samples=0; {"channel":0,"p50":0.00000006023499665719356,"p95":0.00000030126462668977894,"p99":0.00000043604620514337,"p999":0.0000005781125296255851,"max":0.0000009341215787550539,"worst_xy":[1631,722],"gpu":1.0718502,"cpu":1.0718492465043368,"unorm16":null},{"channel":1,"p50":0.00000007621533582025108,"p95":0.00000041404138828582404,"p99":0.0000004640614500450724,"p999":0.000000597383483347258,"max":0.0000009195005028495018,"worst_xy":[71,1042],"gpu":1.1138173,"cpu":1.1138182536756127,"unorm16":null},{"channel":2,"p50":0.00000007087143172324062,"p95":0.00000031828854107907034,"p99":0.00000044883693184338824,"p999":0.0000006062105223358927,"max":0.0000010592094517036799,"worst_xy":[514,842],"gpu":1.1352012,"cpu":1.1352001565345669,"unorm16":null}
+BC-pre-original-f64: max UNORM16=0, >2 samples=0; {"channel":0,"p50":0.00000017426401821563076,"p95":0.000000797756042891784,"p99":0.0000011753130415570467,"p999":0.0000018570280555518792,"max":0.000003380106832873153,"worst_xy":[1894,738],"gpu":1.9445593,"cpu":1.944562715815451,"unorm16":null},{"channel":1,"p50":0.00000015960064758679948,"p95":0.0000009981501579714447,"p99":0.0000014978743667626304,"p999":0.0000016168813466999055,"max":0.000002921548017731368,"worst_xy":[35,1054],"gpu":1.5119244,"cpu":1.5119273075724928,"unorm16":null},{"channel":2,"p50":0.00000012394068049648155,"p95":0.0000009523267139321945,"p99":0.0000019072663239860788,"p999":0.0000019072663239860788,"max":0.000003213193163986716,"worst_xy":[514,842],"gpu":1.4268366,"cpu":1.426833396647229,"unorm16":null}
+BC-pre-promoted-f32-input: max UNORM16=0, >2 samples=0; {"channel":0,"p50":0.0000001733203207621159,"p95":0.000000797756042891784,"p99":0.000001173330376635917,"p999":0.0000018581284548790933,"max":0.0000034183714499036455,"worst_xy":[1908,729],"gpu":1.7879866,"cpu":1.7879832177903543,"unorm16":null},{"channel":1,"p50":0.00000015993388258195296,"p95":0.0000009965031958492077,"p99":0.0000014978743667626304,"p999":0.000001617000809250868,"max":0.0000029085111135085384,"worst_xy":[35,1054],"gpu":1.5119244,"cpu":1.5119272945355886,"unorm16":null},{"channel":2,"p50":0.00000012457362980056175,"p95":0.0000009496199067093869,"p99":0.0000019072663239860788,"p999":0.0000019072663239860788,"max":0.000003251488798650115,"worst_xy":[514,842],"gpu":1.4268366,"cpu":1.4268333583515944,"unorm16":null}
+BC-final-original-f64: max UNORM16=4, >2 samples=5; {"channel":0,"p50":0.00000001747677225161226,"p95":0.0000002818548706651214,"p99":0.00000044587929981521057,"p999":0.0000008452106676770654,"max":0.00006482573253605711,"worst_xy":[472,942],"gpu":0.008842426,"cpu":0.008777600619666835,"unorm16":{"p50":0,"p95":0,"p99":0,"p999":1,"max":4}},{"channel":1,"p50":0.00000002716666558377767,"p95":0.0000002947271728892531,"p99":0.0000004335798474697228,"p999":0.0000005675361975931992,"max":0.0000008472676952253622,"worst_xy":[594,886],"gpu":0.9892102,"cpu":0.9892093411211292,"unorm16":{"p50":0,"p95":0,"p99":0,"p999":1,"max":1}},{"channel":2,"p50":0.0000000351214984872783,"p95":0.00000026993870594349545,"p99":0.00000041306741582758377,"p999":0.0000005589152902718553,"max":0.00002998157194242972,"worst_xy":[1064,1032],"gpu":0.003067069,"cpu":0.003097050560399752,"unorm16":{"p50":0,"p95":0,"p99":0,"p999":1,"max":2}}
+BC-final-promoted-f32-input: max UNORM16=4, >2 samples=4; {"channel":0,"p50":0.00000001727977061438679,"p95":0.0000002818457927600271,"p99":0.0000004452479898109374,"p999":0.0000008423593009232455,"max":0.00006733733691521165,"worst_xy":[472,942],"gpu":0.008842426,"cpu":0.00877508901528768,"unorm16":{"p50":0,"p95":0,"p99":0,"p999":1,"max":4}},{"channel":1,"p50":0.00000002716666558377767,"p95":0.0000002949045587730126,"p99":0.0000004332284202490655,"p999":0.0000005657038560924477,"max":0.0000008462915783713498,"worst_xy":[594,886],"gpu":0.9892102,"cpu":0.9892093420972461,"unorm16":{"p50":0,"p95":0,"p99":0,"p999":1,"max":1}},{"channel":2,"p50":0.0000000351214984872783,"p95":0.0000002697031843412745,"p99":0.00000041298537822864745,"p999":0.0000005617755741704755,"max":0.000028998112218661578,"worst_xy":[1064,1032],"gpu":0.003067069,"cpu":0.0030960671006759837,"unorm16":{"p50":0,"p95":0,"p99":0,"p999":1,"max":2}}
+C-final-original-f64: max UNORM16=3, >2 samples=1; {"channel":0,"p50":0.000000012176266162011729,"p95":0.00000009233737086056237,"p99":0.00000016258004698066486,"p999":0.0000005103742599377181,"max":0.000052968999512966776,"worst_xy":[565,1005],"gpu":0.007650066,"cpu":0.007597097167603198,"unorm16":{"p50":0,"p95":0,"p99":0,"p999":1,"max":3}},{"channel":1,"p50":0.000000016604250349661065,"p95":0.00000008501386161707813,"p99":0.00000012211282696128478,"p999":0.00000014734441122765674,"max":0.00000020080052964832618,"worst_xy":[1129,943],"gpu":0.9714143,"cpu":0.9714141268209303,"unorm16":{"p50":0,"p95":0,"p99":0,"p999":0,"max":1}},{"channel":2,"p50":0.000000016604250349661065,"p95":0.00000008067706769310234,"p99":0.00000011876279126799005,"p999":0.000000159958608580979,"max":0.0000063727670549882515,"worst_xy":[666,814],"gpu":0.010092532,"cpu":0.010098905029261066,"unorm16":{"p50":0,"p95":0,"p99":0,"p999":0,"max":1}}
+C-final-promoted-f32-input: max UNORM16=3, >2 samples=1; {"channel":0,"p50":0,"p95":0.00000007582432326458388,"p99":0.00000012260491932813977,"p999":0.0000003206580550252358,"max":0.00003539887219916951,"worst_xy":[472,942],"gpu":0.008784568,"cpu":0.008749169065055736,"unorm16":{"p50":0,"p95":0,"p99":0,"p999":0,"max":3}},{"channel":1,"p50":0,"p95":0.00000007574133076282408,"p99":0.00000011920928955078125,"p999":0.00000013339410165347232,"max":0.00000017663370444065407,"worst_xy":[1746,917],"gpu":0.9157675,"cpu":0.9157673142300956,"unorm16":{"p50":0,"p95":0,"p99":0,"p999":0,"max":1}},{"channel":2,"p50":0.0000000004656612873077393,"p95":0.00000006466935131843599,"p99":0.00000011920928955078125,"p999":0.00000014205696506619514,"max":0.000013168982977500646,"worst_xy":[1064,1032],"gpu":0.0030906817,"cpu":0.0031038507239916236,"unorm16":{"p50":0,"p95":0,"p99":0,"p999":0,"max":1}}
+C3 clip counts CPU=[1138470, 343484, 161835, 429811], GPU=[1138470, 343484, 161835, 429811], promoted-input mask mismatches=0; first=
+Historical UNORM16 gate PASS=false; selected C3B N3 PASS=true
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 5.79s
+
+   Compiling asciiflow-vulkan v2.0.0-alpha.0 (/home/eureka/Documents/AsciiFlow/crates/asciiflow-vulkan)
+    Finished `release` profile [optimized] target(s) in 3.44s
+     Running tests/c4a_quantization.rs (target/release/deps/c4a_quantization-1c47fb45cfe75422)
+
+running 1 test
+test sdr_pack_matches_f64_oracle_at_y_and_reachable_chroma_boundaries ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+   Compiling asciiflow-vulkan v2.0.0-alpha.0 (/home/eureka/Documents/AsciiFlow/crates/asciiflow-vulkan)
+    Finished `release` profile [optimized] target(s) in 3.37s
+     Running tests/c4a_canonical.rs (target/release/deps/c4a_canonical-d9f1462239be99df)
+
+running 1 test
+test unchanged_c3_canonical_signal_to_both_formats ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.16s
+
+   Compiling asciiflow-interop v2.0.0-alpha.0 (/home/eureka/Documents/AsciiFlow/crates/asciiflow-interop)
+    Finished `release` profile [optimized] target(s) in 4.21s
+     Running tests/c4a_sdr_output.rs (target/release/deps/c4a_sdr_output-a1ba802c0cd213d6)
+
+running 3 tests
+test alternating_black_saturated_slots_do_not_contaminate ... ok
+test legal_pq_to_both_sdr_surfaces ... hevc-main10-pq-c3-legal-v1.mp4 freetype=false color=false Nv12 runtime descriptor: DrmPrimeFrameDesc { width: 1920, height: 1080, objects: [DrmObject { fd: 7, size: 3194880, format_modifier: 72057594037927945 }], layers: [DrmLayer { format: 538982482, planes: [DrmPlane { object_index: 0, offset: 0, pitch: 1920 }] }, DrmLayer { format: 943215175, planes: [DrmPlane { object_index: 0, offset: 2088960, pitch: 1920 }] }] }
+hevc-main10-pq-c3-legal-v1.mp4 color=false Nv12: 0 byte mismatches; pack=28.612206ms, copy=1.513433ms, wall=60.653662ms, bytes=3110412
+hevc-main10-pq-c3-legal-v1.mp4 freetype=false color=false P010Le runtime descriptor: DrmPrimeFrameDesc { width: 1920, height: 1080, objects: [DrmObject { fd: 7, size: 6389760, format_modifier: 72057594037927945 }], layers: [DrmLayer { format: 540422482, planes: [DrmPlane { object_index: 0, offset: 0, pitch: 3840 }] }, DrmLayer { format: 842224199, planes: [DrmPlane { object_index: 0, offset: 4177920, pitch: 3840 }] }] }
+hevc-main10-pq-c3-legal-v1.mp4 color=false P010Le: 0 byte mismatches; pack=39.720064ms, copy=2.58549ms, wall=80.452249ms, bytes=6220812
+hevc-main10-pq-c3-legal-v1.mp4 freetype=false color=true Nv12 runtime descriptor: DrmPrimeFrameDesc { width: 1920, height: 1080, objects: [DrmObject { fd: 7, size: 3194880, format_modifier: 72057594037927945 }], layers: [DrmLayer { format: 538982482, planes: [DrmPlane { object_index: 0, offset: 0, pitch: 1920 }] }, DrmLayer { format: 943215175, planes: [DrmPlane { object_index: 0, offset: 2088960, pitch: 1920 }] }] }
+hevc-main10-pq-c3-legal-v1.mp4 color=true Nv12: 0 byte mismatches; pack=27.450725ms, copy=1.863278ms, wall=59.617264ms, bytes=3110412
+hevc-main10-pq-c3-legal-v1.mp4 freetype=false color=true P010Le runtime descriptor: DrmPrimeFrameDesc { width: 1920, height: 1080, objects: [DrmObject { fd: 7, size: 6389760, format_modifier: 72057594037927945 }], layers: [DrmLayer { format: 540422482, planes: [DrmPlane { object_index: 0, offset: 0, pitch: 3840 }] }, DrmLayer { format: 842224199, planes: [DrmPlane { object_index: 0, offset: 4177920, pitch: 3840 }] }] }
+hevc-main10-pq-c3-legal-v1.mp4 color=true P010Le: 0 byte mismatches; pack=43.854568ms, copy=2.861944ms, wall=84.758135ms, bytes=6220812
+hevc-main10-pq-c3-legal-v1.mp4 freetype=true color=false Nv12 runtime descriptor: DrmPrimeFrameDesc { width: 1920, height: 1080, objects: [DrmObject { fd: 7, size: 3194880, format_modifier: 72057594037927945 }], layers: [DrmLayer { format: 538982482, planes: [DrmPlane { object_index: 0, offset: 0, pitch: 1920 }] }, DrmLayer { format: 943215175, planes: [DrmPlane { object_index: 0, offset: 2088960, pitch: 1920 }] }] }
+hevc-main10-pq-c3-legal-v1.mp4 color=false Nv12: 0 byte mismatches; pack=27.7548ms, copy=2.019546ms, wall=55.815825ms, bytes=3110412
+hevc-main10-pq-c3-legal-v1.mp4 freetype=true color=false P010Le runtime descriptor: DrmPrimeFrameDesc { width: 1920, height: 1080, objects: [DrmObject { fd: 7, size: 6389760, format_modifier: 72057594037927945 }], layers: [DrmLayer { format: 540422482, planes: [DrmPlane { object_index: 0, offset: 0, pitch: 3840 }] }, DrmLayer { format: 842224199, planes: [DrmPlane { object_index: 0, offset: 4177920, pitch: 3840 }] }] }
+hevc-main10-pq-c3-legal-v1.mp4 color=false P010Le: 0 byte mismatches; pack=45.085023ms, copy=2.227728ms, wall=85.033568ms, bytes=6220812
+hevc-main10-pq-c3-legal-v1.mp4 freetype=true color=true Nv12 runtime descriptor: DrmPrimeFrameDesc { width: 1920, height: 1080, objects: [DrmObject { fd: 7, size: 3194880, format_modifier: 72057594037927945 }], layers: [DrmLayer { format: 538982482, planes: [DrmPlane { object_index: 0, offset: 0, pitch: 1920 }] }, DrmLayer { format: 943215175, planes: [DrmPlane { object_index: 0, offset: 2088960, pitch: 1920 }] }] }
+hevc-main10-pq-c3-legal-v1.mp4 color=true Nv12: 0 byte mismatches; pack=41.760085ms, copy=2.756569ms, wall=75.245968ms, bytes=3110412
+hevc-main10-pq-c3-legal-v1.mp4 freetype=true color=true P010Le runtime descriptor: DrmPrimeFrameDesc { width: 1920, height: 1080, objects: [DrmObject { fd: 7, size: 6389760, format_modifier: 72057594037927945 }], layers: [DrmLayer { format: 540422482, planes: [DrmPlane { object_index: 0, offset: 0, pitch: 3840 }] }, DrmLayer { format: 842224199, planes: [DrmPlane { object_index: 0, offset: 4177920, pitch: 3840 }] }] }
+hevc-main10-pq-c3-legal-v1.mp4 color=true P010Le: 0 byte mismatches; pack=71.013185ms, copy=3.168503ms, wall=120.731919ms, bytes=6220812
+av1-main10-pq-c3-legal-v1.mp4 freetype=false color=false Nv12 runtime descriptor: DrmPrimeFrameDesc { width: 1920, height: 1080, objects: [DrmObject { fd: 7, size: 3194880, format_modifier: 72057594037927945 }], layers: [DrmLayer { format: 538982482, planes: [DrmPlane { object_index: 0, offset: 0, pitch: 1920 }] }, DrmLayer { format: 943215175, planes: [DrmPlane { object_index: 0, offset: 2088960, pitch: 1920 }] }] }
+av1-main10-pq-c3-legal-v1.mp4 color=false Nv12: 0 byte mismatches; pack=29.374866ms, copy=3.12179ms, wall=63.944114ms, bytes=3110412
+av1-main10-pq-c3-legal-v1.mp4 freetype=false color=false P010Le runtime descriptor: DrmPrimeFrameDesc { width: 1920, height: 1080, objects: [DrmObject { fd: 7, size: 6389760, format_modifier: 72057594037927945 }], layers: [DrmLayer { format: 540422482, planes: [DrmPlane { object_index: 0, offset: 0, pitch: 3840 }] }, DrmLayer { format: 842224199, planes: [DrmPlane { object_index: 0, offset: 4177920, pitch: 3840 }] }] }
+av1-main10-pq-c3-legal-v1.mp4 color=false P010Le: 0 byte mismatches; pack=62.884679ms, copy=3.161114ms, wall=107.395788ms, bytes=6220812
+av1-main10-pq-c3-legal-v1.mp4 freetype=false color=true Nv12 runtime descriptor: DrmPrimeFrameDesc { width: 1920, height: 1080, objects: [DrmObject { fd: 7, size: 3194880, format_modifier: 72057594037927945 }], layers: [DrmLayer { format: 538982482, planes: [DrmPlane { object_index: 0, offset: 0, pitch: 1920 }] }, DrmLayer { format: 943215175, planes: [DrmPlane { object_index: 0, offset: 2088960, pitch: 1920 }] }] }
+av1-main10-pq-c3-legal-v1.mp4 color=true Nv12: 0 byte mismatches; pack=30.904658ms, copy=2.124076ms, wall=75.618702ms, bytes=3110412
+av1-main10-pq-c3-legal-v1.mp4 freetype=false color=true P010Le runtime descriptor: DrmPrimeFrameDesc { width: 1920, height: 1080, objects: [DrmObject { fd: 7, size: 6389760, format_modifier: 72057594037927945 }], layers: [DrmLayer { format: 540422482, planes: [DrmPlane { object_index: 0, offset: 0, pitch: 3840 }] }, DrmLayer { format: 842224199, planes: [DrmPlane { object_index: 0, offset: 4177920, pitch: 3840 }] }] }
+av1-main10-pq-c3-legal-v1.mp4 color=true P010Le: 0 byte mismatches; pack=82.679023ms, copy=2.465568ms, wall=123.203961ms, bytes=6220812
+av1-main10-pq-c3-legal-v1.mp4 freetype=true color=false Nv12 runtime descriptor: DrmPrimeFrameDesc { width: 1920, height: 1080, objects: [DrmObject { fd: 7, size: 3194880, format_modifier: 72057594037927945 }], layers: [DrmLayer { format: 538982482, planes: [DrmPlane { object_index: 0, offset: 0, pitch: 1920 }] }, DrmLayer { format: 943215175, planes: [DrmPlane { object_index: 0, offset: 2088960, pitch: 1920 }] }] }
+av1-main10-pq-c3-legal-v1.mp4 color=false Nv12: 0 byte mismatches; pack=28.738512ms, copy=2.039379ms, wall=60.819522ms, bytes=3110412
+av1-main10-pq-c3-legal-v1.mp4 freetype=true color=false P010Le runtime descriptor: DrmPrimeFrameDesc { width: 1920, height: 1080, objects: [DrmObject { fd: 7, size: 6389760, format_modifier: 72057594037927945 }], layers: [DrmLayer { format: 540422482, planes: [DrmPlane { object_index: 0, offset: 0, pitch: 3840 }] }, DrmLayer { format: 842224199, planes: [DrmPlane { object_index: 0, offset: 4177920, pitch: 3840 }] }] }
+av1-main10-pq-c3-legal-v1.mp4 color=false P010Le: 0 byte mismatches; pack=43.459244ms, copy=3.077676ms, wall=87.268136ms, bytes=6220812
+av1-main10-pq-c3-legal-v1.mp4 freetype=true color=true Nv12 runtime descriptor: DrmPrimeFrameDesc { width: 1920, height: 1080, objects: [DrmObject { fd: 7, size: 3194880, format_modifier: 72057594037927945 }], layers: [DrmLayer { format: 538982482, planes: [DrmPlane { object_index: 0, offset: 0, pitch: 1920 }] }, DrmLayer { format: 943215175, planes: [DrmPlane { object_index: 0, offset: 2088960, pitch: 1920 }] }] }
+av1-main10-pq-c3-legal-v1.mp4 color=true Nv12: 0 byte mismatches; pack=28.671247ms, copy=2.288735ms, wall=63.80249ms, bytes=3110412
+av1-main10-pq-c3-legal-v1.mp4 freetype=true color=true P010Le runtime descriptor: DrmPrimeFrameDesc { width: 1920, height: 1080, objects: [DrmObject { fd: 7, size: 6389760, format_modifier: 72057594037927945 }], layers: [DrmLayer { format: 540422482, planes: [DrmPlane { object_index: 0, offset: 0, pitch: 3840 }] }, DrmLayer { format: 842224199, planes: [DrmPlane { object_index: 0, offset: 4177920, pitch: 3840 }] }] }
+av1-main10-pq-c3-legal-v1.mp4 color=true P010Le: 0 byte mismatches; pack=44.697474ms, copy=2.83156ms, wall=88.728773ms, bytes=6220812
+ok
+test surface_fault_cleanup_and_retry ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.36s

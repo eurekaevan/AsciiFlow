@@ -1,8 +1,14 @@
 use super::{codec::ffmpeg_error, ffi, frame::Frame, hwdevice::HardwareDevice};
-#[cfg(feature = "p010-output-diagnostic")]
+#[cfg(any(
+    feature = "p010-output-diagnostic",
+    feature = "hdr-to-sdr-qualification"
+))]
 use asciiflow_core::ColorSpace;
 use asciiflow_core::{Error, FrameDesc, HostFrame, PixelFormat, Result, VideoFrame};
-#[cfg(feature = "p010-output-diagnostic")]
+#[cfg(any(
+    feature = "p010-output-diagnostic",
+    feature = "hdr-to-sdr-qualification"
+))]
 use std::path::Path;
 use std::{ptr, ptr::NonNull};
 
@@ -102,6 +108,72 @@ impl Drop for HardwareFramesPool {
 }
 
 unsafe impl Send for HardwareFramesPool {}
+
+/// Metadata-neutral, encoder-style surfaces for opt-in SDR pixel qualification.
+///
+/// This pool does not open an encoder or submit frames to one. Its descriptor
+/// describes the intended limited-range BT.709 pixels; acquisition leaves the
+/// native frame's color metadata and timestamp exactly as FFmpeg allocated them.
+#[cfg(feature = "hdr-to-sdr-qualification")]
+pub struct VaapiSdrQualificationPool {
+    _device: HardwareDevice,
+    pool: HardwareFramesPool,
+    desc: FrameDesc,
+}
+
+#[cfg(feature = "hdr-to-sdr-qualification")]
+impl VaapiSdrQualificationPool {
+    pub fn new(device_path: &Path, width: u32, height: u32, format: PixelFormat) -> Result<Self> {
+        let desc = sdr_qualification_desc(width, height, format)?;
+        let device = HardwareDevice::vaapi(Some(device_path))?;
+        let pool = HardwareFramesPool::vaapi(&device, width, height, av_pixel_format(format))?;
+        let native_format = av_pixel_format(format);
+        let upload = supports_format(
+            pool.as_ptr(),
+            ffi::AVHWFrameTransferDirection::AV_HWFRAME_TRANSFER_DIRECTION_TO,
+            native_format,
+        )?;
+        let download = supports_format(
+            pool.as_ptr(),
+            ffi::AVHWFrameTransferDirection::AV_HWFRAME_TRANSFER_DIRECTION_FROM,
+            native_format,
+        )?;
+        if !upload || !download {
+            return Err(Error::UnsupportedFrame(format!(
+                "SDR qualification VAAPI pool cannot upload and download {format:?}"
+            )));
+        }
+        Ok(Self {
+            _device: device,
+            pool,
+            desc,
+        })
+    }
+
+    pub fn acquire(&self) -> Result<VaapiEncoderFrame> {
+        let mut hardware = HardwareFrame::new()?;
+        hardware.allocate(&self.pool)?;
+        Ok(VaapiEncoderFrame {
+            hardware,
+            desc: self.desc.clone(),
+        })
+    }
+}
+
+#[cfg(feature = "hdr-to-sdr-qualification")]
+fn sdr_qualification_desc(width: u32, height: u32, format: PixelFormat) -> Result<FrameDesc> {
+    // FFmpeg stores dimensions and strides in signed 32-bit fields. P010's
+    // two-byte samples also require its packed row width to fit those fields.
+    if width > i32::MAX as u32 / format.bytes_per_sample() as u32 || height > i32::MAX as u32 {
+        return Err(Error::UnsupportedFrame(
+            "SDR qualification dimensions exceed FFmpeg's signed dimensions or stride".into(),
+        ));
+    }
+    match format {
+        PixelFormat::Nv12 => FrameDesc::host_nv12(width, height, ColorSpace::default()),
+        PixelFormat::P010Le => FrameDesc::host_p010_le(width, height, ColorSpace::default()),
+    }
+}
 
 /// Encoder-style P010 surfaces for opt-in output interop qualification only.
 /// This pool never creates or exposes an encoder context.
@@ -477,5 +549,45 @@ impl Drop for BufferGuard {
             let mut pointer = reference.as_ptr();
             unsafe { ffi::av_buffer_unref(&mut pointer) };
         }
+    }
+}
+
+#[cfg(all(test, feature = "hdr-to-sdr-qualification"))]
+mod sdr_qualification_tests {
+    use super::*;
+
+    #[test]
+    fn descriptors_are_limited_bt709_in_both_formats() {
+        for format in [PixelFormat::Nv12, PixelFormat::P010Le] {
+            let desc = sdr_qualification_desc(64, 32, format).unwrap();
+            assert_eq!(desc.format, format);
+            assert_eq!(desc.color_space, ColorSpace::default());
+            assert_eq!(desc.y_stride(), 64 * format.bytes_per_sample());
+        }
+    }
+
+    #[test]
+    fn invalid_geometry_fails_before_device_access() {
+        for format in [PixelFormat::Nv12, PixelFormat::P010Le] {
+            for (width, height) in [
+                (0, 2),
+                (2, 0),
+                (3, 2),
+                (2, 3),
+                (u32::MAX - 1, 2),
+                (2, u32::MAX - 1),
+            ] {
+                assert!(matches!(
+                    VaapiSdrQualificationPool::new(
+                        Path::new("/missing/vaapi-device"),
+                        width,
+                        height,
+                        format
+                    ),
+                    Err(Error::UnsupportedFrame(_))
+                ));
+            }
+        }
+        assert!(sdr_qualification_desc(1 << 30, 2, PixelFormat::P010Le).is_err());
     }
 }

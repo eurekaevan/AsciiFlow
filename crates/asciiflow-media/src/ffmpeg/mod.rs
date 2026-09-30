@@ -18,6 +18,8 @@ pub use encoder::{
 };
 #[cfg(feature = "p010-output-diagnostic")]
 pub use hwframes::VaapiDiagnosticP010Pool;
+#[cfg(feature = "hdr-to-sdr-qualification")]
+pub use hwframes::VaapiSdrQualificationPool;
 pub use hwframes::{VaapiEncoderFrame, VaapiEncoderFrames};
 pub use vaapi::{
     DecodeMode, EncodeMode, VaapiBuildCapabilities, VaapiOptions, probe_decoder_build,

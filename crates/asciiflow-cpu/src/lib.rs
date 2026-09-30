@@ -1,6 +1,7 @@
 pub mod hdr;
 mod mapper;
 mod renderer;
+pub mod sdr_output;
 pub mod target_volume;
 pub mod tone_map;
 

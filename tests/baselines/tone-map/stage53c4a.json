@@ -1,0 +1,450 @@
+{
+  "schema_version": 1,
+  "stage": "5.3C-4A",
+  "status": "SEALED",
+  "qualified_date": "2026-09-30",
+  "remaining_blockers": [],
+  "scope": "Qualification-only SDR output signal and FFmpeg/VAAPI encoder-style writable surfaces, no encoder opened or submitted. C4B not started. Production HDR-to-SDR remains rejected.",
+  "source": {
+    "base_head": "1e1c45cacfbcb981a9b0e8174a9692a254da853e",
+    "state": "uncommitted C4A implementation, source SHA256 binds the observed tree",
+    "sha256": {
+      "Cargo.lock": "f8cf97f855fcbcb422ef1b74f2367a7ac40b612dcc41cc0a1d8a23f3e27746b8",
+      "crates/asciiflow-cpu/src/sdr_output.rs": "11b50cd82fcdf590eb8b9e131974856f07c6c7d3c94b6e358fc0e48226d5c3ad",
+      "crates/asciiflow-vulkan/src/sdr_pack.rs": "a82ac1e5f28369d33ea6cc61c44a996b8f8c7bc04412259fa907d812580325e4",
+      "crates/asciiflow-vulkan/src/tone_map.rs": "d3478b1af2d9e4719f178d9973c5c6601177ed01cb8d47a2d20a82f0b63b7680",
+      "crates/asciiflow-vulkan/build.rs": "2054704d65c4c2b864daff6258925749a8b2b0596dc82be1678344c04d05aa1a",
+      "crates/asciiflow-media/src/ffmpeg/hwframes.rs": "0e50ac8278e9a528dd801c76c3dce12f8d809d7c6f307095869c56f8b11550b5",
+      "crates/asciiflow-interop/src/sdr_qualification.rs": "c71efcebf53e2ea06e42282e8392d917b1a7f4a2fbedae4c24c23520ff94749c",
+      "crates/asciiflow-interop/tests/c4a_sdr_output.rs": "5e537cd630fc5acc7a7a25b9bcb0430114e0b24e72eeb91189b5ea7e1e1df3f0",
+      "crates/asciiflow-interop/tests/c4a_stress.rs": "79ec88ed40b7a3f1aa2cd48c2e3d5b3b4ebd9d75ee90ff26d2ab348b04228fe6",
+      "crates/asciiflow-interop/tests/c4a_performance.rs": "61df4eebf2b70ed56e28ce7e790da8c6a8fb4dd1b7e0ec5295108f28d094fad7",
+      "crates/asciiflow-vulkan/tests/c4a_quantization.rs": "48454756a643d09f67aa3a8662e3cad93f36a4cc622f2abb8499749eb6fad425",
+      "crates/asciiflow-vulkan/tests/c4a_canonical.rs": "42f3dd1e06ab100c3da4b225c96eb1614431f2782741cfe4e37a432ac255a853",
+      "scripts/qualify-sdr-output-vulkan.sh": "1d6777009a041583a2d902e13171b689b9d6f17943c47b1bef0a2e4bd73893cc",
+      "shaders/src/sdr_pack_common.glsl": "17f9e8981184eb62bcd9c8656c3546e9433425b3edcc08f515b6812fde1cf578",
+      "shaders/src/sdr_pack_nv12.comp": "e44b3778deba185e27023a9d29288c1e75fa36543cf80f390f69dc4416e3832d",
+      "shaders/src/sdr_pack_p010.comp": "a0a458b14dc03ff7cc1382e15296fbcbb19462a683143b09cc24a36a1d94c4ab",
+      "shaders/src/ascii_render_hdr_linear.comp": "93403a81e6c62cf1c6d68cfe20cb5ed177c80cc4a24bad6f60a655606398329e",
+      "shaders/src/tone_map_bt2446.comp": "aa78f39f3c17d8d205c822e422dc6acac7a38fcee6863ad12839bb3bf63dc7da",
+      "shaders/src/bt2020_to_bt709_limit.comp": "51f6848acb87f48015e45b6ec56b232ff5d63fc814c7a972131e3cec87cd8ea7",
+      "shaders/src/c3_common.glsl": "e461c7452b4598d577d420dad0be6fa9c18ffcfd3a3aaee9abcb8319444c4bbd",
+      "tests/fixtures/codecs/c3-pq-legal-v1-identity.json": "557357f31a16b7f68f8c3a4407f02edba5f949c391f9630f5fff31f39ffa375a"
+    }
+  },
+  "hardware": {
+    "name": "Intel(R) Arc(tm) Graphics (MTL)",
+    "pci_vendor": "8086",
+    "pci_device": "7d55",
+    "vulkan_api": "1.4.354",
+    "anv_package": "mesa-vulkan-drivers-26.2.3-1.fc44.x86_64",
+    "vaapi_package": "intel-media-driver-26.1.5-1.fc44.x86_64",
+    "render_node": "/dev/dri/renderD128",
+    "scope": "observed qualification hardware, not a runtime vendor allowlist"
+  },
+  "tools": {
+    "ffmpeg_package": "ffmpeg-8.1.3-1.fc44.x86_64",
+    "ffmpeg_libraries": "ffmpeg-libs-8.1.3-1.fc44.x86_64",
+    "libavcodec": "62.28.103",
+    "build_configuration_evidence": "c4a-pq-regressions.json:ffmpeg_version",
+    "rustc": "1.97.1 (8bab26f4f 2026-07-14)",
+    "spirv_tools": "2026.1-1.fc44"
+  },
+  "input": {
+    "contract": "C3 P2/N3 unchanged finite bounded [0,1] nonlinear BT.709 RGB, no second OETF/limiter",
+    "canonical_c1_sha256": "a6246d4e5e34c1c69c9cd629e35d82a0f1e8af387436044c82483511bd749f33",
+    "canonical_generator": "scripts/qualify-tone-map-cpu.sh; identity checked inside harness",
+    "real_fixture_identity": "tests/fixtures/codecs/c3-pq-legal-v1-identity.json",
+    "hevc_sha256": "eb8d8c42cd99369b99031900e8861c08f611bfcc662b8d0eb741eb695a0c366a",
+    "av1_sha256": "7eb4fd7e7513fc181ad8489e13edbac10a88a8f3a7947d2f958d36a0ce08e7c4",
+    "size": [
+      1920,
+      1080
+    ],
+    "fps": 50,
+    "frames_per_fixture": 300,
+    "source_generator_version": "FFmpeg 8.1.3 pinned in legal fixture identity, existing inputs reused, not regenerated or replaced"
+  },
+  "signal": {
+    "matrix": "BT.709 NCL",
+    "kr": 0.2126,
+    "kg": 0.7152,
+    "kb": 0.0722,
+    "cpu": "independent f64 oracle; canceled neutral-preserving difference form",
+    "gpu": "precise two-limb f32; no FMA or Float64; same f32 inputs promoted to f64 oracle",
+    "rounding": "nearest, exact positive halves upward; no tolerance or epsilon",
+    "chroma": "unquantized nonlinear CbCr row-major 2x2 sum/4 before quantization",
+    "nv12": {
+      "y": [
+        16,
+        235
+      ],
+      "chroma": [
+        16,
+        240
+      ],
+      "neutral": 128,
+      "y_scale": 219,
+      "c_scale": 224
+    },
+    "p010": {
+      "y": [
+        64,
+        940
+      ],
+      "chroma": [
+        64,
+        960
+      ],
+      "neutral": 512,
+      "y_scale": 876,
+      "c_scale": 896,
+      "storage": "little endian code <<6, low six bits zero"
+    }
+  },
+  "evidence_sha256": {
+    "tests/baselines/tone-map/c4a-boundary-final.json": "b0447349893965a15f21a9069dbfa2540dc0855f4005116d9edc143b2c1dbdf5",
+    "tests/baselines/tone-map/c4a-boundary-initial-f32.json": "4d0dc6c230c4a2a1d5de594a461153bed210641cbccfe94ade8401bc637851ab",
+    "tests/baselines/tone-map/c4a-boundary-intermediate.json": "bb5538c5893d95cb3836713c29d16d9062b7b0c4043d1f0ceccae1b6a2839b37",
+    "tests/baselines/tone-map/c4a-c3-retained.json": "16dade2f2f1b5ebc9fc0ac08f489a5667cbbeef315b5dd143fc9bfe5bb712674",
+    "tests/baselines/tone-map/c4a-canonical.json": "84639377bb25c2d74837fea2408c2f4c2842bfdba1bcc919e5012239b76a080f",
+    "tests/baselines/tone-map/c4a-performance.json": "63e7427a6ec3baebe86e2085167e804f46b0eb0162a127bf58de673f90ac2f11",
+    "tests/baselines/tone-map/c4a-pq-regressions.json": "58641e42944f1e784e29692735ee2edee751b49ecdb2726cb1f890b799e2b326",
+    "tests/baselines/tone-map/c4a-sdr-regressions.json": "4cca581330ceaf1176eeb6b618dc9115295d4733cb7ee03b74c67e698ada35cf",
+    "tests/baselines/tone-map/c4a-stress.json": "363b568cd21fa262baeb47dd8304b9d7f1e75893fcc7fe41b107b7df4af7da21",
+    "tests/baselines/tone-map/c4a-surface-evidence.txt": "589044ff46ad208442c096fb635fb32c869e8ff3425b3d334182dbfd5520837e",
+    "tests/baselines/tone-map/c4a-h264-history.txt": "35df44745e676b77eddb44f853829392ee715e512a7ca0c73948c3574e176710"
+  },
+  "failed_history": {
+    "initial_f32": {
+      "status": "FAIL",
+      "nv12_codes": 928,
+      "p010_codes": 3739,
+      "evidence": "c4a-boundary-initial-f32.json",
+      "shader_sha256": {
+        "nv12": "37a071ebb6280f5eddcae1e194ed5cfb8047a0d8b73ffb63bdcadb4a026225f0",
+        "p010": "45fd50747512533fa323596b64b3a3f2ac384d6814dbbff7f928dda4dba6273f"
+      }
+    },
+    "intermediate": {
+      "status": "FAIL",
+      "device": "lavapipe",
+      "nv12_codes": 9,
+      "p010_codes": 30,
+      "evidence": "c4a-boundary-intermediate.json"
+    },
+    "cpu_oracle": {
+      "status": "failed literal analytic test before algebra correction, then passed",
+      "rgb": [
+        0.4765625,
+        0.5078125,
+        0.5078125
+      ],
+      "exact_cr": -0.015625,
+      "nv12_precode": 124.5,
+      "expected": 125,
+      "reason": "new oracle subtracted rounded Y, canceled algebra preserves tie; no existing sealed CPU reference changed"
+    },
+    "teardown": {
+      "status": "early device memory leak and crash, corrected",
+      "reason": "explicit final allocator release while context alive; all subsequent teardown qualification clean"
+    }
+  },
+  "gates": {
+    "boundary": {
+      "status": "PASS",
+      "nv12_vectors": 2293,
+      "p010_vectors": 6280,
+      "nv12_codes": 13758,
+      "p010_codes": 37680,
+      "mismatches": 0
+    },
+    "canonical": {
+      "status": "PASS",
+      "nv12_bytes": 3110400,
+      "p010_bytes": 6220800,
+      "mismatches": 0
+    },
+    "real_matrix": {
+      "status": "PASS",
+      "cases": 16,
+      "codecs": [
+        "hevc",
+        "av1"
+      ],
+      "formats": [
+        "nv12",
+        "p010"
+      ],
+      "fonts": [
+        "builtin",
+        "FreeType"
+      ],
+      "colors": [
+        true,
+        false
+      ],
+      "surface_download": "every case exact oracle",
+      "native_avframe_metadata_and_pts": "unchanged"
+    },
+    "alternating": {
+      "status": "PASS",
+      "rounds": 256,
+      "slots": 2,
+      "both_formats": true,
+      "rgb_and_diagnostics_exact": true
+    },
+    "stress": {
+      "status": "PASS",
+      "nv12_frames": 3000,
+      "p010_frames": 3000,
+      "oracle_frames_per_format": 300,
+      "surface_readback_frames_per_format": 3000,
+      "frame_hash_replays": "10 cycles, slot reassignment, zero differences",
+      "pts": "0..299000 step1000 per 300-frame cycle, fixture 50 fps",
+      "fd_before": 4,
+      "fd_sampled_peak": 22,
+      "fd_after": 4
+    },
+    "faults": {
+      "status": "PASS",
+      "formats": 2,
+      "points": [
+        "Pipeline",
+        "Buffer",
+        "Descriptor",
+        "Dispatch",
+        "AfterFence",
+        "Readback",
+        "ExternalImport",
+        "ExternalCopy",
+        "ExternalAfterFence"
+      ],
+      "retry": "warm-cache faults forced, fresh success after every injected fault; no fallback",
+      "unknown_completion": "reviewed abandonment/quarantine branch, no real device hang induced"
+    },
+    "validation": {
+      "status": "PASS",
+      "errors_through_teardown": 0
+    },
+    "production_rejection": {
+      "status": "PASS",
+      "test": "pq_requires_explicit_ten_bit_output_before_staging",
+      "destination_sentinel_preserved": true,
+      "no_staging": true
+    }
+  },
+  "performance": {
+    "evidence": "c4a-performance.json",
+    "warmups": 5,
+    "frames_per_mode": 300,
+    "slots": 1,
+    "validation": false,
+    "c3_only_fps": 7.73209969993316,
+    "c3_nv12_fps": 6.549047347780822,
+    "c3_p010_fps": 6.390666194460624,
+    "nv12_pack_gpu_mean_ms": 1.5650591366666675,
+    "p010_pack_gpu_mean_ms": 1.557236583333333,
+    "nv12_copy_gpu_mean_ms": 0.0966220167,
+    "p010_copy_gpu_mean_ms": 0.1790848633,
+    "scope": "decode excluded, C3/packed host readback included, surface download prechecked but excluded from timing; no encode"
+  },
+  "memory": {
+    "c3_bytes_per_slot": 75596984,
+    "nv12_pack_plus_diagnostics_bytes_per_slot": 3110412,
+    "p010_pack_plus_diagnostics_bytes_per_slot": 6220812,
+    "both_formats_two_slot_extra_bytes": 18662448,
+    "rss_nv12_plateau_kib": 195472,
+    "rss_p010_plateau_kib": 196884,
+    "scope": "explicit buffer sizes, sampled FD and process RSS; not exhaustive driver allocation instrumentation"
+  },
+  "retained": {
+    "sdr": {
+      "status": "PASS",
+      "runs": 15,
+      "evidence": "c4a-sdr-regressions.json",
+      "baseline": "tests/baselines/media/post-polarity-v2.json",
+      "inputs": {
+        "eight_bit": {
+          "generator": "tests/fixtures/codecs/generate-8bit-production-baseline.sh",
+          "generator_sha256": "7962394e54915e6db67c55018a4cfd27562d65f3c5bff81c4b6f2f3c876bbe3c",
+          "generator_invocation": "tests/fixtures/codecs/generate-8bit-production-baseline.sh /tmp/asciiflow-stage53b1-v2-input8-run1.mp4",
+          "sha256": "6e5c214b813dca3e1db65629b1241cfb663166eb565cda1c48b5ee74ed0dce6b",
+          "generation_run_sha256": [
+            "6e5c214b813dca3e1db65629b1241cfb663166eb565cda1c48b5ee74ed0dce6b",
+            "6e5c214b813dca3e1db65629b1241cfb663166eb565cda1c48b5ee74ed0dce6b"
+          ],
+          "bytes": 19672925,
+          "format": "H.264 Constrained Baseline, 1920x1080, yuv420p, 50 fps, 300 frames, BT.709 limited"
+        },
+        "ten_bit": {
+          "path": "tests/fixtures/codecs/hevc-main10-canonical-v1.mp4",
+          "generator": "tests/fixtures/codecs/generate-10bit-baseline.sh",
+          "generator_sha256": "8162c4764b27810d9cd35107be9d534b1e619fb29abda5cb0ffcabea45f5f026",
+          "sha256": "df69c98ca6592b08c6bc34127b2bb5cf4125c759fd852b830e5426d5818fccda",
+          "format": "HEVC Main 10, 1920x1080, yuv420p10le, 50 fps, 300 frames, BT.709 limited",
+          "input_nonzero_low_two_bit_samples": 700261022,
+          "input_sample_count": 933120000
+        }
+      },
+      "cli": {
+        "script": "tests/baselines/media/generate-post-polarity-v2.sh",
+        "script_sha256": "284728fd7b53328c3ae89065484ba399f770c328aad5712fd0ea36cd261f4f7e",
+        "invocation": "tests/baselines/media/generate-post-polarity-v2.sh /tmp/asciiflow-stage53b1-v2-input8-run1.mp4 tests/fixtures/codecs/hevc-main10-canonical-v1.mp4 /tmp/asciiflow-stage53b1-post-polarity-v2",
+        "common_arguments": [
+          "--width",
+          "80",
+          "--charset",
+          "standard",
+          "--font",
+          "builtin-8x8",
+          "--color",
+          "true",
+          "--audio",
+          "none",
+          "--max-frames",
+          "300",
+          "--decode",
+          "vaapi",
+          "--backend",
+          "vulkan",
+          "--vulkan-mapping",
+          "gpu",
+          "--encode",
+          "vaapi",
+          "--hw-device",
+          "/dev/dri/renderD128",
+          "--vaapi-vulkan-input-interop",
+          "on",
+          "--vaapi-vulkan-output-interop",
+          "on",
+          "--no-progress"
+        ],
+        "per_case_arguments": [
+          "--output-codec",
+          "<codec>",
+          "--output-bit-depth",
+          "<8|10>"
+        ],
+        "path": "VAAPI decode -> NV12/P010 DMA-BUF input interop -> Vulkan ASCII -> NV12/P010 DMA-BUF output interop -> VAAPI encode"
+      },
+      "all_file_hashes_identical": true,
+      "decode_pts_metadata": "prior baseline evidence reused on identical bytes, not freshly probed"
+    },
+    "pq": {
+      "status": "PASS",
+      "runs": 6,
+      "evidence": "c4a-pq-regressions.json",
+      "baseline": "tests/baselines/media/pq-production-v1.json",
+      "full_verifier_tiers": [
+        "1A",
+        "1B",
+        "1C",
+        "2",
+        "3"
+      ]
+    },
+    "c1": {
+      "runs": 3,
+      "all_sha256": "d0eb86dcc265fe7f675d87055f038d258176e331eb2aac412ba7358a6c8c1e6b"
+    },
+    "c2b": {
+      "runs": 3,
+      "all_sha256": "a7e7ffe64d61269288c8e9b2e9b22a62f8c16fd2287083386bc8cefb9c3471af"
+    },
+    "c3": {
+      "status": "PASS under sealed P2/N3",
+      "evidence": "c4a-c3-retained.json",
+      "historical_unorm16": "not promoted to PASS"
+    },
+    "historical_h264": {
+      "scope": "same preserved reference/candidate compared again, not fresh encode",
+      "raw_packet_1A": "FAIL",
+      "coded_1B": "PASS",
+      "decoded_1C": "PASS",
+      "structure_2": "PASS",
+      "whole_file": "DIFFERENT",
+      "build_identity": "unattested by comparator",
+      "difference": "encoder version SEI .102/.103",
+      "evidence": "c4a-h264-history.txt"
+    }
+  },
+  "spirv": {
+    "status": "PASS",
+    "cached_files": 740,
+    "prior_cached_files": 709,
+    "target_env": "vulkan1.3",
+    "current_ordinary_out_dir_modules": 24,
+    "new_modules": 2,
+    "nv12_sha256": "5eafaec3994328b20a45404dcaea1177560955feb8a251eeae8aa93bd9abc771",
+    "p010_sha256": "a96afb67dcd1e0947398b0f36d267679b2bc78ecde6cbb0d16b32d0e600ef715",
+    "c3_selected_unchanged_sha256": "41705e180f1938a3bf1bed415674f1a9fe6e15f0a11fe0271fbec5870a7edba4",
+    "new_module_capabilities": [
+      "Shader"
+    ],
+    "float_widths": [
+      32
+    ],
+    "fma": false,
+    "scope": "cache count is workspace-history dependent, not a generated module count per build"
+  },
+  "static": {
+    "release_build": "PASS",
+    "workspace_default": {
+      "passed": 216,
+      "failed": 0,
+      "ignored": 79
+    },
+    "workspace_measurement": {
+      "passed": 222,
+      "failed": 0,
+      "ignored": 121
+    },
+    "clippy_default": "PASS",
+    "clippy_measurement": "PASS",
+    "fmt": "PASS",
+    "shell_syntax": "PASS",
+    "diff_check": "PASS",
+    "hardware_ignored_tests": "run separately on actual Intel as recorded, not inferred from workspace tests"
+  },
+  "commands": {
+    "runner_for_future": "bash scripts/qualify-sdr-output-vulkan.sh /tmp/asciiflow-c4a-new-run",
+    "runner_scope": "Component commands run individually during this closure; wrapper itself syntax checked, not claimed executed end-to-end",
+    "c1": "bash scripts/qualify-tone-map-cpu.sh /tmp/asciiflow-c4a-c1-regression-20260930",
+    "c2b": "bash scripts/qualify-target-volume-cpu.sh /tmp/asciiflow-c4a-c1-regression-20260930/method-a-run1.bin /tmp/asciiflow-c4a-c2b-regression-20260930",
+    "boundary": "ASCIIFLOW_VULKAN_VALIDATION=1 C4A_BOUNDARY_REPORT=/tmp/asciiflow-c4a-boundary-final-20260930.json cargo test -p asciiflow-vulkan --release --features hdr-to-sdr-qualification --test c4a_quantization -- --ignored --nocapture --test-threads=1",
+    "canonical": "ASCIIFLOW_VULKAN_VALIDATION=1 C1_INPUT=/tmp/asciiflow-c4a-c1-regression-20260930/linear-bt2020-1000-v1.bin C4A_CANONICAL_REPORT=/tmp/asciiflow-c4a-canonical-final-20260930.json cargo test -p asciiflow-vulkan --release --features hdr-to-sdr-qualification --test c4a_canonical -- --ignored --nocapture --test-threads=1",
+    "surfaces": "ASCIIFLOW_VULKAN_VALIDATION=1 cargo test -p asciiflow-interop --release --features hdr-to-sdr-qualification --test c4a_sdr_output -- --ignored --nocapture --test-threads=1",
+    "stress": "ASCIIFLOW_VULKAN_VALIDATION=1 C4A_STRESS_REPORT=/tmp/asciiflow-c4a-stress-final-20260930.json cargo test -p asciiflow-interop --release --features hdr-to-sdr-qualification --test c4a_stress -- --ignored --nocapture --test-threads=1",
+    "performance": "ASCIIFLOW_VULKAN_VALIDATION=0 C4A_PERFORMANCE_REPORT=/tmp/asciiflow-c4a-performance-final-20260930.json cargo test -p asciiflow-interop --release --features hdr-to-sdr-qualification --test c4a_performance -- --ignored --nocapture --test-threads=1",
+    "sdr": "bash tests/baselines/media/generate-post-polarity-v2.sh /tmp/asciiflow-c3b-input8.mp4 tests/fixtures/codecs/hevc-main10-canonical-v1.mp4 /tmp/asciiflow-c4a-sdr-regressions-20260930",
+    "pq": "bash tests/baselines/media/generate-pq-production-v1.sh tests/fixtures/codecs /tmp/asciiflow-c4a-pq-regressions-20260930",
+    "pq_verify": "python3 tests/baselines/media/verify-pq-production.py /tmp/asciiflow-c4a-pq-regressions-20260930 /tmp/asciiflow-c4a-pq-verify-20260930.json --input-directory tests/fixtures/codecs --check-baseline tests/baselines/media/pq-production-v1.json",
+    "c3_canonical": "ASCIIFLOW_VULKAN_VALIDATION=1 C1_INPUT=/tmp/asciiflow-c4a-c1-regression-20260930/linear-bt2020-1000-v1.bin C1_OUTPUT=/tmp/asciiflow-c4a-c1-regression-20260930/method-a-run1.bin C3_REPORT=/tmp/asciiflow-c4a-c3-retained-final-20260930.json cargo test -p asciiflow-vulkan --release --features hdr-to-sdr-qualification --test c3_qualification canonical_f64_and_f32_input_oracles -- --ignored --nocapture --test-threads=1",
+    "c3_render": "ASCIIFLOW_VULKAN_VALIDATION=1 cargo test -p asciiflow-interop --release --features hdr-to-sdr-qualification --test c3_render -- --ignored --nocapture --test-threads=1",
+    "alternating": "ASCIIFLOW_VULKAN_VALIDATION=1 cargo test -p asciiflow-interop --release --features hdr-to-sdr-qualification --test c4a_sdr_output alternating_black_saturated_slots_do_not_contaminate -- --ignored --nocapture --test-threads=1",
+    "packer_fault_unit": "ASCIIFLOW_VULKAN_VALIDATION=1 cargo test -p asciiflow-vulkan --release --features hdr-to-sdr-qualification sdr_pack_exact_f64_parity_reuse_and_faults -- --ignored --nocapture --test-threads=1",
+    "historical_h264": "ASCIIFLOW_REGRESSION_REFERENCE=/home/eureka/Documents/AsciiFlow/target/stage51b-evidence/bench-h264-full-1.mp4 ASCIIFLOW_REGRESSION_CANDIDATE=/tmp/asciiflow-c3b-h264-legacy.mp4 cargo test -p asciiflow-media --features encode-characterization --test media_regression compare_pair_from_env -- --ignored --nocapture --test-threads=1",
+    "production_rejection": "cargo test -p asciiflow-cli --test audio_regression pq_requires_explicit_ten_bit_output_before_staging -- --nocapture",
+    "static": [
+      "cargo build --release --workspace",
+      "cargo test --workspace",
+      "cargo test --workspace --features asciiflow-interop/hdr-to-sdr-qualification",
+      "cargo clippy --workspace --all-targets -- -D warnings",
+      "cargo clippy --workspace --all-targets --features asciiflow-interop/hdr-to-sdr-qualification -- -D warnings",
+      "cargo fmt --all -- --check",
+      "bash -n scripts/qualify-sdr-output-vulkan.sh",
+      "git diff --check",
+      "find target -name '*.spv' -type f -print0 | xargs -0 -n 1 spirv-val --target-env vulkan1.3"
+    ]
+  },
+  "limitations": [
+    "Finite vector/canonical/real hardware code-exact qualification, not proof of universal f64 emulation for arbitrary triples.",
+    "No new HDR-to-SDR encoded artifact or BT.709 metadata signaling. Encoder-style surfaces are permitted by stage scope; actual encoder acceptance deferred to C4B.",
+    "Dual C3 slots are in flight; downstream pack/copy synchronous on shared queue, no throughput/concurrent-kernel claim.",
+    "Actual device hang not induced; unknown completion abandonment/quarantine is code-reviewed.",
+    "FD peaks sampled, explicit buffers and RSS are not exhaustive driver allocation traces.",
+    "Historical H264 raw packet difference and C3 old UNORM16 failures remain failed evidence, not current gates."
+  ],
+  "next_stage": "Stage 5.3C-4B HDR→SDR production planner/encode integration is justified. Not started."
+}

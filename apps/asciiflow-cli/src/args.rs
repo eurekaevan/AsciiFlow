@@ -1,5 +1,6 @@
 use asciiflow_core::{
-    AudioPolicy, InteropRequest, MediaRequest, ProcessingBackend, STANDARD_CHARSET, VideoCodec,
+    AudioPolicy, InteropRequest, MediaRequest, OutputDynamicRange, ProcessingBackend,
+    STANDARD_CHARSET, VideoCodec,
 };
 use clap::{Parser, ValueEnum};
 use std::path::PathBuf;
@@ -57,6 +58,22 @@ impl From<OutputBitDepthArg> for u8 {
         match value {
             OutputBitDepthArg::Eight => 8,
             OutputBitDepthArg::Ten => 10,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, ValueEnum)]
+pub enum OutputDynamicRangeArg {
+    #[default]
+    Preserve,
+    Sdr,
+}
+
+impl From<OutputDynamicRangeArg> for OutputDynamicRange {
+    fn from(value: OutputDynamicRangeArg) -> Self {
+        match value {
+            OutputDynamicRangeArg::Preserve => Self::Preserve,
+            OutputDynamicRangeArg::Sdr => Self::Sdr,
         }
     }
 }
@@ -135,6 +152,13 @@ pub struct Args {
     pub output_codec: OutputCodecArg,
     #[arg(long, value_enum, default_value = "8")]
     pub output_bit_depth: OutputBitDepthArg,
+    #[arg(
+        long,
+        value_enum,
+        default_value = "preserve",
+        help = "Output dynamic range: preserve the input signal or convert HDR PQ to SDR"
+    )]
+    pub output_dynamic_range: OutputDynamicRangeArg,
     #[arg(long, value_enum, default_value = "auto")]
     pub audio: AudioArg,
     #[arg(long)]
@@ -199,6 +223,14 @@ mod tests {
         let default = Args::try_parse_from(["asciiflow", "input.mp4", "output.mp4"]).unwrap();
         assert_eq!(default.output_codec, OutputCodecArg::H264);
         assert_eq!(default.output_bit_depth, OutputBitDepthArg::Eight);
+        assert_eq!(
+            default.output_dynamic_range,
+            OutputDynamicRangeArg::Preserve
+        );
+        assert_eq!(
+            OutputDynamicRange::from(default.output_dynamic_range),
+            OutputDynamicRange::Preserve
+        );
         assert_eq!(default.encode, MediaArg::Auto);
 
         let hevc = Args::try_parse_from([
@@ -260,6 +292,51 @@ mod tests {
                 "output.mp4",
                 "--output-bit-depth",
                 "12",
+            ])
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn output_dynamic_range_accepts_preserve_and_sdr_and_rejects_other_values() {
+        let preserve = Args::try_parse_from([
+            "asciiflow",
+            "input.mp4",
+            "output.mp4",
+            "--output-dynamic-range",
+            "preserve",
+        ])
+        .unwrap();
+        assert_eq!(
+            preserve.output_dynamic_range,
+            OutputDynamicRangeArg::Preserve
+        );
+        assert_eq!(
+            OutputDynamicRange::from(preserve.output_dynamic_range),
+            OutputDynamicRange::Preserve
+        );
+
+        let sdr = Args::try_parse_from([
+            "asciiflow",
+            "input.mp4",
+            "output.mp4",
+            "--output-dynamic-range",
+            "sdr",
+        ])
+        .unwrap();
+        assert_eq!(sdr.output_dynamic_range, OutputDynamicRangeArg::Sdr);
+        assert_eq!(
+            OutputDynamicRange::from(sdr.output_dynamic_range),
+            OutputDynamicRange::Sdr
+        );
+
+        assert!(
+            Args::try_parse_from([
+                "asciiflow",
+                "input.mp4",
+                "output.mp4",
+                "--output-dynamic-range",
+                "auto",
             ])
             .is_err()
         );

@@ -1,5 +1,5 @@
-//! Separate internal Vulkan f32 HDR -> SDR qualification. Never an AsciiBackend,
-//! codec frame or production planner mode. CPU f64 references remain authoritative.
+//! Sealed Vulkan f32 HDR -> SDR color pipeline and optional qualification captures.
+//! Production completion reads only hard-domain diagnostics, never RGB pixels.
 use crate::buffer::Buffer;
 use crate::context::{VulkanContext, vk_error};
 use crate::{DeviceInfo, ExternalPlaneImage, GpuPqCell, VulkanAsciiBackend};
@@ -24,7 +24,7 @@ const SHADERS: [&[u8]; 3] = [
 
 // Qualification arithmetic selected by the C3B review: shared inverse-NCL
 // cancellation in B and compensated difference-form matrix evaluation in C.
-// Explicit experiments retain their own selectors; production is unaffected.
+// Explicit experiments retain their own selectors; production uses this sealed mode.
 const QUALIFICATION_MODE: u32 = 256 | 6;
 
 pub(crate) struct MapBindings {
@@ -121,14 +121,18 @@ pub enum C3MatrixExperiment {
 
 /// One slot, one private ping-pong pair. `submit_*`/`complete` permit two real
 /// in-flight slots via `try_fork`, sharing only the device/serialized queue.
-pub struct VulkanHdrToSdrQualification {
+pub struct VulkanHdrToSdrPipeline {
+    // Consumer descriptors must disappear before their borrowed producer buffers
+    // and backend context, including automatic field destruction.
+    sdr_packers: Vec<crate::sdr_pack::SdrPackResources>,
     resources: Option<Resources>,
     backend: VulkanAsciiBackend,
     key: Option<(FrameDesc, AsciiConfig, bool)>,
     fault: Option<C3Fault>,
     last_diagnostics: [u32; 9],
+    sdr_ready: bool,
 }
-impl VulkanHdrToSdrQualification {
+impl VulkanHdrToSdrPipeline {
     /// Explicit experimental device, never used by normal qualification/production.
     #[cfg(feature = "hdr-to-sdr-fp64-experiment")]
     pub fn new_fp64_experiment() -> Result<Self> {
@@ -141,16 +145,26 @@ impl VulkanHdrToSdrQualification {
             key: None,
             fault: None,
             last_diagnostics: [0; 9],
+            sdr_packers: Vec::new(),
+            sdr_ready: false,
         })
     }
     pub fn new() -> Result<Self> {
-        Ok(Self {
+        Ok(Self::from_backend(
+            VulkanAsciiBackend::new_pq_qualification()?,
+        ))
+    }
+    /// Retain the already-selected device and atlas; no independent GPU selection.
+    pub fn from_backend(backend: VulkanAsciiBackend) -> Self {
+        Self {
             resources: None,
-            backend: VulkanAsciiBackend::new_pq_qualification()?,
+            backend,
             key: None,
             fault: None,
             last_diagnostics: [0; 9],
-        })
+            sdr_packers: Vec::new(),
+            sdr_ready: false,
+        }
     }
     pub fn with_atlas(mut self, atlas: GlyphAtlas, config: &AsciiConfig) -> Result<Self> {
         if self.resources.is_some() {
@@ -171,10 +185,16 @@ impl VulkanHdrToSdrQualification {
             key: None,
             fault: None,
             last_diagnostics: [0; 9],
+            sdr_packers: Vec::new(),
+            sdr_ready: false,
         })
     }
     pub fn device_info(&self) -> &DeviceInfo {
         self.backend.device_info()
+    }
+    /// Unknown GPU completion forbids releasing/recycling borrowed surfaces.
+    pub fn is_device_abandoned(&self) -> bool {
+        self.backend.shared_context().is_abandoned()
     }
     pub fn validation_error_count(&self) -> usize {
         self.backend.validation_error_count()
@@ -229,6 +249,8 @@ impl VulkanHdrToSdrQualification {
         }
         // Borrowed map/atlas buffer handles must never outlive their owner.
         // Destroy C-3 descriptors before prepare can replace B-2 resources.
+        self.sdr_ready = false;
+        self.sdr_packers.clear();
         self.resources.take();
         self.key = None;
         let bindings = self.backend.c3_bindings(desc, config)?;
@@ -266,6 +288,7 @@ impl VulkanHdrToSdrQualification {
         capture: bool,
     ) -> Result<()> {
         let start = Instant::now();
+        self.sdr_ready = false;
         self.prepare(input.desc(), config, capture)?;
         let map = self.backend.c3_map_host(input, config)?;
         let r = self.resources.as_mut().expect("prepared");
@@ -298,6 +321,7 @@ impl VulkanHdrToSdrQualification {
         capture: bool,
     ) -> Result<()> {
         let start = Instant::now();
+        self.sdr_ready = false;
         self.prepare(desc, config, capture)?;
         let map = self.backend.c3_map_external(desc, config, planes)?;
         let r = self.resources.as_mut().expect("prepared");
@@ -308,6 +332,7 @@ impl VulkanHdrToSdrQualification {
         Ok(())
     }
     pub fn submit_staged(&mut self) -> Result<()> {
+        self.sdr_ready = false;
         let r = self
             .resources
             .as_mut()
@@ -372,6 +397,7 @@ impl VulkanHdrToSdrQualification {
         first: usize,
         mode: u32,
     ) -> Result<C3Output> {
+        self.sdr_ready = false;
         let desc = FrameDesc::host_p010_le(width, height, ColorSpace::pq_bt2020())?;
         if pixels.len() != width as usize * height as usize {
             return Err(Error::Vulkan("C-3 vector dimensions mismatch".into()));
@@ -409,7 +435,128 @@ impl VulkanHdrToSdrQualification {
             256 | (16 + variant),
         )
     }
+    /// Consume the completed C-3 signal on-device, never uploading its host
+    /// readback. Synchronous packing/copy retains the producer and surface
+    /// imports through fence completion. No production backend calls this.
+    /// Callers passing external planes must retain their owning surface until
+    /// return; on device abandonment they must quarantine it, never recycle it.
+    pub fn pack_completed_sdr(
+        &mut self,
+        format: crate::SdrPackFormat,
+        planes: Option<[ExternalPlaneImage; 2]>,
+        fault: Option<crate::SdrPackFault>,
+    ) -> Result<crate::SdrPackOutput> {
+        self.pack_completed_sdr_impl(format, planes, fault, true)
+    }
+
+    /// Production consumes resident RGB and copies resident packed codes into
+    /// imported output surfaces. Only the diagnostic counters reach the host.
+    pub fn pack_completed_sdr_resident(
+        &mut self,
+        format: crate::SdrPackFormat,
+        planes: [ExternalPlaneImage; 2],
+    ) -> Result<crate::SdrPackOutput> {
+        self.pack_completed_sdr_impl(format, Some(planes), None, false)
+    }
+
+    pub fn prepare_sdr_output(&mut self, format: crate::SdrPackFormat) -> Result<()> {
+        self.prepare_sdr_output_impl(format, None)
+    }
+
+    #[cfg(feature = "hdr-to-sdr-qualification")]
+    pub fn prepare_sdr_output_with_fault(
+        &mut self,
+        format: crate::SdrPackFormat,
+        fault: crate::SdrPackFault,
+    ) -> Result<()> {
+        self.prepare_sdr_output_impl(format, Some(fault))
+    }
+
+    fn prepare_sdr_output_impl(
+        &mut self,
+        format: crate::SdrPackFormat,
+        fault: Option<crate::SdrPackFault>,
+    ) -> Result<()> {
+        let r = self.resources.as_ref().ok_or_else(|| {
+            Error::Vulkan("HDR→SDR color pipeline must be prepared before output pack".into())
+        })?;
+        if !self
+            .sdr_packers
+            .iter()
+            .any(|p| p.matches(r.push.width, r.push.height, format))
+        {
+            self.sdr_packers
+                .push(crate::sdr_pack::SdrPackResources::new(
+                    &r.context,
+                    r.push.width,
+                    r.push.height,
+                    format,
+                    fault,
+                )?);
+        }
+        Ok(())
+    }
+
+    fn pack_completed_sdr_impl(
+        &mut self,
+        format: crate::SdrPackFormat,
+        planes: Option<[ExternalPlaneImage; 2]>,
+        fault: Option<crate::SdrPackFault>,
+        readback: bool,
+    ) -> Result<crate::SdrPackOutput> {
+        if !self.sdr_ready {
+            return Err(Error::Vulkan(
+                "C-4A requires a successfully completed C-3 frame".into(),
+            ));
+        }
+        let r = self.resources.as_ref().expect("completed resources");
+        if matches!(
+            fault,
+            Some(
+                crate::SdrPackFault::Pipeline
+                    | crate::SdrPackFault::Buffer
+                    | crate::SdrPackFault::Descriptor
+            )
+        ) {
+            self.sdr_packers
+                .retain(|p| !p.matches(r.push.width, r.push.height, format));
+        }
+        let index = match self
+            .sdr_packers
+            .iter()
+            .position(|p| p.matches(r.push.width, r.push.height, format))
+        {
+            Some(index) => index,
+            None => {
+                let packer = crate::sdr_pack::SdrPackResources::new(
+                    &r.context,
+                    r.push.width,
+                    r.push.height,
+                    format,
+                    fault,
+                )?;
+                self.sdr_packers.push(packer);
+                self.sdr_packers.len() - 1
+            }
+        };
+        self.sdr_packers[index].process_completed_with_readback(
+            r.buffers[0].handle,
+            fault,
+            planes,
+            readback,
+        )
+    }
+
     pub fn complete(&mut self) -> Result<C3Output> {
+        self.complete_impl(true)
+    }
+
+    pub fn complete_resident(&mut self) -> Result<C3Output> {
+        self.complete_impl(false)
+    }
+
+    fn complete_impl(&mut self, readback: bool) -> Result<C3Output> {
+        self.sdr_ready = false;
         let r = self
             .resources
             .as_mut()
@@ -422,12 +569,16 @@ impl VulkanHdrToSdrQualification {
         checkpoint(r.completion_fault.take(), C3Fault::AfterFence)?;
         if self.last_diagnostics[..5].iter().any(|v| *v != 0) {
             return Err(Error::Vulkan(format!(
-                "C-3 invalid GPU input/arithmetic diagnostics: {:?}",
+                "C-3 invalid GPU input/arithmetic diagnostics: {:?}; HDR→SDR conversion supports the qualified 0–1000 cd/m² PQ domain. No implicit highlight clipping is performed",
                 self.last_diagnostics
             )));
         }
         checkpoint(r.readback_fault.take(), C3Fault::DiagnosticReadback)?;
-        let final_rgb = read_pod::<[f32; 3]>(&r.buffers[0], &r.context.device, r.pixels)?;
+        let final_rgb = if readback {
+            read_pod::<[f32; 3]>(&r.buffers[0], &r.context.device, r.pixels)?
+        } else {
+            Vec::new()
+        };
         let mut output = C3Output {
             width: r.push.width,
             height: r.push.height,
@@ -451,7 +602,7 @@ impl VulkanHdrToSdrQualification {
                 ..Default::default()
             },
         };
-        if r.push.capture != 0 {
+        if readback && r.push.capture != 0 {
             if r.first <= 1 {
                 output.linear_hdr = Some(read_pod::<[f32; 3]>(
                     &r.buffers[4],
@@ -482,11 +633,12 @@ impl VulkanHdrToSdrQualification {
                 output.coverage = Some(observations.iter().map(|v| v[7] as u8).collect());
             }
         }
-        if r.mapped {
+        if readback && r.mapped {
             output.cells = self.backend.pq_cells()?;
         }
         output.timings.readback = read_start.elapsed();
         output.timings.backend_wall = r.start.elapsed();
+        self.sdr_ready = true;
         Ok(output)
     }
 }

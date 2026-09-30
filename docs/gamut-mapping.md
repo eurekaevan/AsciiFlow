@@ -1,15 +1,22 @@
 # BT.2020→BT.709 SDR conversion reference
 
-Current executable reference: [Stage 5.3C-2B](stage5.3c2b-target-volume-cpu.md),
-CPU f64 only. C-2A selected D5+D6; C-2B implements two **separate** operations:
+Permanent f64 reference: [Stage 5.3C-2B](stage5.3c2b-target-volume-cpu.md).
+C-2A selected D5+D6; C-2B implements two **separate** operations:
 standards-derived colorimetric primary conversion and explicit project
-target-capability limiting. This is not Annex5 or production HDR→SDR.
+target-capability limiting. This is not Annex5 or a CPU production fallback.
 
-[C-3](stage5.3c3-vulkan-hdr-to-sdr.md) now has an isolated Vulkan f32 draft,
-**NOT SEALED**. Canonical clip counts and promoted-input masks are exact, but
-small pre-limit errors near zero fail the strict final diagnostic code gate.
+[C-3](stage5.3c3-vulkan-hdr-to-sdr.md) is an isolated Vulkan f32 reference,
+**SEALED** under P2/N3; historical two-code UNORM16 failures are preserved.
 This does not qualify gamut quality, change the CPU oracle, repair Annex5 or
-enable production HDR→SDR.
+enable production by itself. Downstream [C-4A signal packing](stage5.3c4a-sdr-output-signal.md)
+is qualification-only and **SEALED** on the qualified Intel hardware; it consumes the final bounded signal
+without another gamut/target limiting pass.
+
+[C-4B](stage5.3c4b-hdr-to-sdr-production.md) is **SEALED** and consumes this
+unchanged GPU policy for explicitly requested PQ→SDR production. It does not
+qualify perceptual gamut quality, repair Annex5 or restore clipped luminance.
+The fixed source domain is checked per pixel before HDR cell averaging;
+generalized above-1000-nit, HLG and full-range conversion remain unsupported.
 
 ```text
 immutable raw C-1 nonlinear BT.2020

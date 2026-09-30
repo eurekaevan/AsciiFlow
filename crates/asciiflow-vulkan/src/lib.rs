@@ -3,11 +3,17 @@ mod buffer;
 mod context;
 mod external;
 mod pq;
+#[cfg(feature = "hdr-to-sdr-production")]
+mod sdr_pack;
 mod streaming;
-#[cfg(feature = "hdr-to-sdr-qualification")]
+#[cfg(feature = "hdr-to-sdr-production")]
+pub use sdr_pack::{SdrPackFault, SdrPackFormat, SdrPackOutput, VulkanSdrPackQualification};
+#[cfg(feature = "hdr-to-sdr-production")]
 mod tone_map;
-#[cfg(feature = "hdr-to-sdr-qualification")]
-pub use tone_map::{C3Fault, C3MatrixExperiment, C3Output, C3Timings, VulkanHdrToSdrQualification};
+#[cfg(feature = "hdr-to-sdr-production")]
+pub use tone_map::{C3Fault, C3MatrixExperiment, C3Output, C3Timings, VulkanHdrToSdrPipeline};
+#[cfg(feature = "hdr-to-sdr-production")]
+pub type VulkanHdrToSdrQualification = VulkanHdrToSdrPipeline;
 
 #[cfg(feature = "hdr-pq-qualification")]
 pub use pq::{GpuPqCell, PqQualificationFault, VulkanPqQualification};

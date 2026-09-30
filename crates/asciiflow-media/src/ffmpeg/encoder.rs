@@ -1603,6 +1603,170 @@ impl Drop for CodecGuard {
 }
 
 #[cfg(test)]
+mod sdr_hardware_fault_tests {
+    use super::*;
+    use asciiflow_core::{ColorSpace, HostFrame};
+
+    fn fd_count() -> usize {
+        std::fs::read_dir("/proc/self/fd").unwrap().count()
+    }
+
+    fn legal_black(desc: &FrameDesc, pts: i64) -> VideoFrame {
+        let mut host = HostFrame::new_zeroed(desc);
+        let (y, uv) = host.planes_mut(desc);
+        match desc.format {
+            PixelFormat::Nv12 => {
+                y.fill(16);
+                uv.fill(128);
+            }
+            PixelFormat::P010Le => {
+                for sample in y.chunks_exact_mut(2) {
+                    sample.copy_from_slice(&(64u16 << 6).to_le_bytes());
+                }
+                for sample in uv.chunks_exact_mut(2) {
+                    sample.copy_from_slice(&(512u16 << 6).to_le_bytes());
+                }
+            }
+        }
+        VideoFrame::new_host(desc.clone(), Some(pts), host).unwrap()
+    }
+
+    fn assert_root(error: &Error, stage: PipelineStage, reason: &str) {
+        assert_eq!(error.stage(), Some(stage), "{error}");
+        assert!(error.to_string().ends_with(reason), "wrong root: {error}");
+    }
+
+    #[test]
+    #[ignore = "actual Intel VAAPI; all five SDR targets, native encode and MP4 failure cleanup; run serially"]
+    fn sdr_hardware_output_matrix_encode_and_mux_failures_preserve_roots() {
+        for (codec, depth) in [
+            (VideoCodec::H264, 8),
+            (VideoCodec::Hevc, 8),
+            (VideoCodec::Av1, 8),
+            (VideoCodec::Hevc, 10),
+            (VideoCodec::Av1, 10),
+        ] {
+            let desc = if depth == 8 {
+                FrameDesc::host_nv12(128, 128, ColorSpace::default())
+            } else {
+                FrameDesc::host_p010_le(128, 128, ColorSpace::default())
+            }
+            .unwrap();
+            let path = std::env::temp_dir().join(format!(
+                "asciiflow-sdr-native-fault-{codec}-{depth}-{}.mp4",
+                std::process::id()
+            ));
+            let create = || {
+                Encoder::create_with_codec_and_audio(
+                    &path,
+                    desc.clone(),
+                    Rational::new(30, 1).unwrap(),
+                    OutputEncoding {
+                        codec: codec.clone(),
+                        mode: EncodeMode::Vaapi,
+                    },
+                    VaapiOptions::new(Some("/dev/dri/renderD128".into())),
+                    Vec::new(),
+                    CancellationToken::new(),
+                )
+            };
+            // Exercise real native upload/encode before observing lazy driver FDs.
+            {
+                let mut warm = create().unwrap();
+                warm.encode(legal_black(&desc, 0)).unwrap();
+                warm.finish().unwrap();
+            }
+            std::fs::remove_file(&path).unwrap();
+            let baseline = fd_count();
+            for failure in ["send", "receive", "drain"] {
+                {
+                    let mut encoder = create().unwrap();
+                    let error = match failure {
+                        "send" => {
+                            encoder.inject_send_failure = true;
+                            encoder.encode(legal_black(&desc, 0)).unwrap_err()
+                        }
+                        "receive" => {
+                            encoder.inject_receive_failure = true;
+                            encoder.encode(legal_black(&desc, 0)).unwrap_err()
+                        }
+                        "drain" => {
+                            encoder.encode(legal_black(&desc, 0)).unwrap();
+                            encoder.inject_receive_failure = true;
+                            encoder.finish().unwrap_err()
+                        }
+                        _ => unreachable!(),
+                    };
+                    let reason = format!(
+                        "injected {codec} {} failure",
+                        if failure == "send" {
+                            "send_frame"
+                        } else {
+                            "receive_packet"
+                        }
+                    );
+                    assert_root(&error, PipelineStage::EncodeRuntime, &reason);
+                }
+                std::fs::remove_file(&path).unwrap();
+                assert_eq!(
+                    fd_count(),
+                    baseline,
+                    "{codec} {depth}-bit {failure} FD leak"
+                );
+            }
+            INJECT_MUX_HEADER_FAILURE.set(true);
+            let header = match create() {
+                Err(error) => error,
+                Ok(_) => panic!("{codec} {depth}-bit accepted injected header fault"),
+            };
+            assert_root(
+                &header,
+                PipelineStage::MuxInitialization,
+                "injected MP4 header failure",
+            );
+            std::fs::remove_file(&path).unwrap();
+            assert_eq!(fd_count(), baseline, "{codec} {depth}-bit header FD leak");
+            for (label, message, stage, reason) in [
+                (
+                    "early packet",
+                    MuxMessage::FailVideoAfter(0),
+                    PipelineStage::MuxRuntime,
+                    "injected video mux failure",
+                ),
+                (
+                    "midstream packet",
+                    MuxMessage::FailVideoAfter(2),
+                    PipelineStage::MuxRuntime,
+                    "injected video mux failure",
+                ),
+                (
+                    "trailer",
+                    MuxMessage::FailTrailer,
+                    PipelineStage::Finalization,
+                    "injected MP4 trailer failure",
+                ),
+            ] {
+                {
+                    let mut encoder = create().unwrap();
+                    encoder.send_mux_message(message).unwrap();
+                    let mut failure = None;
+                    for pts in 0..8 {
+                        if let Err(error) = encoder.encode(legal_black(&desc, pts)) {
+                            failure = Some(error);
+                            break;
+                        }
+                    }
+                    let error = failure.unwrap_or_else(|| encoder.finish().unwrap_err());
+                    assert_root(&error, stage, reason);
+                }
+                std::fs::remove_file(&path).unwrap();
+                assert_eq!(fd_count(), baseline, "{codec} {depth}-bit {label} FD leak");
+            }
+        }
+    }
+}
+
+#[cfg(test)]
 mod audio_regression_tests {
     use super::*;
     use crate::Decoder;

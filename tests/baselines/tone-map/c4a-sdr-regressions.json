@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "scope": "Fresh current-source encodes, three runs per case; whole-file identity against post-polarity-v2. Prior full decode/PTS/metadata evidence reused because bytes are identical, not newly probed.",
+  "invocation": "bash tests/baselines/media/generate-post-polarity-v2.sh /tmp/asciiflow-c3b-input8.mp4 tests/fixtures/codecs/hevc-main10-canonical-v1.mp4 /tmp/asciiflow-c4a-sdr-regressions-20260930",
+  "runs": [
+    {
+      "file": "av1-10-run1.mp4",
+      "sha256": "b69c68525ac6ab2464e04b8fc1f123d887b45bba580377bafad99dc74cf62ad7"
+    },
+    {
+      "file": "av1-10-run2.mp4",
+      "sha256": "b69c68525ac6ab2464e04b8fc1f123d887b45bba580377bafad99dc74cf62ad7"
+    },
+    {
+      "file": "av1-10-run3.mp4",
+      "sha256": "b69c68525ac6ab2464e04b8fc1f123d887b45bba580377bafad99dc74cf62ad7"
+    },
+    {
+      "file": "av1-8-run1.mp4",
+      "sha256": "1531e29f52ae4e747251cf1889003dfd420303c523fb0ddc55cc9140e3bf2a4c"
+    },
+    {
+      "file": "av1-8-run2.mp4",
+      "sha256": "1531e29f52ae4e747251cf1889003dfd420303c523fb0ddc55cc9140e3bf2a4c"
+    },
+    {
+      "file": "av1-8-run3.mp4",
+      "sha256": "1531e29f52ae4e747251cf1889003dfd420303c523fb0ddc55cc9140e3bf2a4c"
+    },
+    {
+      "file": "h264-8-run1.mp4",
+      "sha256": "7c8a7572320b8c6c999143dfece4a76d487d6c9e7788206b7af52df9acd4e1cc"
+    },
+    {
+      "file": "h264-8-run2.mp4",
+      "sha256": "7c8a7572320b8c6c999143dfece4a76d487d6c9e7788206b7af52df9acd4e1cc"
+    },
+    {
+      "file": "h264-8-run3.mp4",
+      "sha256": "7c8a7572320b8c6c999143dfece4a76d487d6c9e7788206b7af52df9acd4e1cc"
+    },
+    {
+      "file": "hevc-10-run1.mp4",
+      "sha256": "f213a9f75542421bb816550cd7a93796db98ae36296a00636f7273492740a142"
+    },
+    {
+      "file": "hevc-10-run2.mp4",
+      "sha256": "f213a9f75542421bb816550cd7a93796db98ae36296a00636f7273492740a142"
+    },
+    {
+      "file": "hevc-10-run3.mp4",
+      "sha256": "f213a9f75542421bb816550cd7a93796db98ae36296a00636f7273492740a142"
+    },
+    {
+      "file": "hevc-8-run1.mp4",
+      "sha256": "294a1b63ac5b0e440dcf60c4c60f975594c6e944829478b69f09f981d268ff71"
+    },
+    {
+      "file": "hevc-8-run2.mp4",
+      "sha256": "294a1b63ac5b0e440dcf60c4c60f975594c6e944829478b69f09f981d268ff71"
+    },
+    {
+      "file": "hevc-8-run3.mp4",
+      "sha256": "294a1b63ac5b0e440dcf60c4c60f975594c6e944829478b69f09f981d268ff71"
+    }
+  ]
+}

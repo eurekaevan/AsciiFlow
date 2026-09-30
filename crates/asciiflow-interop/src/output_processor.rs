@@ -14,6 +14,88 @@ use std::{
 const SLOT_COUNT: usize = 2;
 const WORKER_TIMEOUT: Duration = Duration::from_secs(6);
 
+enum WorkerBackend {
+    Standard(Box<VulkanAsciiBackend>),
+    #[cfg(feature = "hdr-to-sdr-production")]
+    HdrToSdr(Box<asciiflow_vulkan::VulkanHdrToSdrPipeline>),
+}
+
+impl WorkerBackend {
+    fn prepare(&mut self, desc: &FrameDesc, config: &AsciiConfig) -> Result<()> {
+        match self {
+            Self::Standard(backend) => backend.prepare(desc, config),
+            #[cfg(feature = "hdr-to-sdr-production")]
+            Self::HdrToSdr(backend) => backend.prepare(desc, config, false),
+        }
+    }
+
+    fn validation_error_count(&self) -> usize {
+        match self {
+            Self::Standard(backend) => backend.validation_error_count(),
+            #[cfg(feature = "hdr-to-sdr-production")]
+            Self::HdrToSdr(backend) => backend.validation_error_count(),
+        }
+    }
+
+    fn completion_unknown(&self) -> bool {
+        match self {
+            Self::Standard(_) => false,
+            #[cfg(feature = "hdr-to-sdr-production")]
+            Self::HdrToSdr(backend) => backend.is_device_abandoned(),
+        }
+    }
+
+    fn process_external_to_external(
+        &mut self,
+        desc: &FrameDesc,
+        config: &AsciiConfig,
+        input: [asciiflow_vulkan::ExternalPlaneImage; 2],
+        output: [asciiflow_vulkan::ExternalPlaneImage; 2],
+        output_format: asciiflow_core::PixelFormat,
+    ) -> Result<BackendTimings> {
+        match self {
+            Self::Standard(backend) => {
+                backend.process_external_to_external(desc, config, input, output)
+            }
+            #[cfg(feature = "hdr-to-sdr-production")]
+            Self::HdrToSdr(backend) => {
+                backend.submit_external(desc, None, config, input, false)?;
+                let color = backend.complete_resident()?;
+                let format = match output_format {
+                    asciiflow_core::PixelFormat::Nv12 => asciiflow_vulkan::SdrPackFormat::Nv12,
+                    asciiflow_core::PixelFormat::P010Le => asciiflow_vulkan::SdrPackFormat::P010,
+                };
+                let packed = backend.pack_completed_sdr_resident(format, output)?;
+                Ok(BackendTimings {
+                    gpu_mapping: color.timings.hdr_map,
+                    gpu_render: color.timings.linear_render
+                        + color.timings.method_a
+                        + color.timings.target_limit
+                        + packed.gpu_pack,
+                    gpu_external_output_copy: packed.gpu_copy,
+                    ..Default::default()
+                })
+            }
+        }
+    }
+
+    fn process_host_to_external(
+        &mut self,
+        input: VideoFrame,
+        config: &AsciiConfig,
+        output: [asciiflow_vulkan::ExternalPlaneImage; 2],
+    ) -> Result<BackendTimings> {
+        match self {
+            Self::Standard(backend) => backend.process_host_to_external(input, config, output),
+            #[cfg(feature = "hdr-to-sdr-production")]
+            Self::HdrToSdr(_) => Err(Error::UnsupportedFrame(
+                "HDR→SDR production requires VAAPI P010 input interop; host input is not qualified"
+                    .into(),
+            )),
+        }
+    }
+}
+
 pub struct HardwareBackendOutput {
     pub frame: VaapiEncoderFrame,
     pub timings: BackendTimings,
@@ -48,11 +130,7 @@ struct WorkerSlot {
 }
 
 impl WorkerSlot {
-    fn spawn(
-        mut backend: VulkanAsciiBackend,
-        desc: FrameDesc,
-        config: AsciiConfig,
-    ) -> Result<Self> {
+    fn spawn(mut backend: WorkerBackend, desc: FrameDesc, config: AsciiConfig) -> Result<Self> {
         backend.prepare(&desc, &config)?;
         let (job_tx, job_rx) = mpsc::channel();
         let (result_tx, result_rx) = mpsc::channel();
@@ -67,6 +145,7 @@ impl WorkerSlot {
                         output,
                     } => {
                         let output = (|| {
+                            let output_format = output.desc().format;
                             let output_mapping = DrmPrimeMapping::map_direct_write(output)
                                 .map_err(|error| {
                                     Error::pipeline(
@@ -77,7 +156,7 @@ impl WorkerSlot {
                                 })?;
                             let output_map_wall = output_mapping.map_wall();
                             let output_planes = output_mapping
-                                .duplicate_external_planes_for(desc.format)
+                                .duplicate_external_planes_for(output_format)
                                 .map_err(|error| {
                                     Error::pipeline(
                                         PipelineStage::OutputInteropRuntime,
@@ -105,12 +184,21 @@ impl WorkerSlot {
                                                 error,
                                             )
                                         })?;
-                                    let mut timings = backend.process_external_to_external(
+                                    let result = backend.process_external_to_external(
                                         &desc,
                                         &config,
                                         input_planes,
                                         output_planes,
-                                    )?;
+                                        output_format,
+                                    );
+                                    if result.is_err() && backend.completion_unknown() {
+                                        // Keep both actual VAAPI owners, not only imported FDs,
+                                        // alive when GPU completion cannot authorize pool reuse.
+                                        std::mem::forget(input_mapping);
+                                        std::mem::forget(output_mapping);
+                                        return Err(result.expect_err("failed GPU completion"));
+                                    }
+                                    let mut timings = result?;
                                     timings.drm_prime_map = input_map_wall;
                                     drop(input_mapping);
                                     timings
@@ -175,6 +263,112 @@ pub struct VaapiVulkanFullInteropProcessor {
 }
 
 impl VaapiVulkanFullInteropProcessor {
+    #[cfg(feature = "hdr-to-sdr-production")]
+    pub fn new_hdr_to_sdr(
+        backend: VulkanAsciiBackend,
+        frames: VaapiEncoderFrames,
+        desc: FrameDesc,
+        config: AsciiConfig,
+        output_format: asciiflow_core::PixelFormat,
+    ) -> Result<Self> {
+        Self::new_hdr_to_sdr_impl(backend, frames, desc, config, output_format, None)
+    }
+
+    /// Qualification-only failure seam. Slot 1 proves rollback after slot 0
+    /// has already acquired its complete GPU resource set.
+    #[cfg(feature = "hdr-to-sdr-qualification")]
+    pub fn new_hdr_to_sdr_with_fault(
+        backend: VulkanAsciiBackend,
+        frames: VaapiEncoderFrames,
+        desc: FrameDesc,
+        config: AsciiConfig,
+        output_format: asciiflow_core::PixelFormat,
+        fault: (
+            usize,
+            Option<asciiflow_vulkan::C3Fault>,
+            Option<asciiflow_vulkan::SdrPackFault>,
+        ),
+    ) -> Result<Self> {
+        Self::new_hdr_to_sdr_impl(backend, frames, desc, config, output_format, Some(fault))
+    }
+
+    #[cfg(feature = "hdr-to-sdr-production")]
+    fn new_hdr_to_sdr_impl(
+        backend: VulkanAsciiBackend,
+        frames: VaapiEncoderFrames,
+        desc: FrameDesc,
+        config: AsciiConfig,
+        output_format: asciiflow_core::PixelFormat,
+        fault: Option<(
+            usize,
+            Option<asciiflow_vulkan::C3Fault>,
+            Option<asciiflow_vulkan::SdrPackFault>,
+        )>,
+    ) -> Result<Self> {
+        if fault.is_some_and(|f| f.0 >= SLOT_COUNT) {
+            return Err(Error::InvalidConfig(
+                "invalid HDR→SDR diagnostic slot".into(),
+            ));
+        }
+        if !backend.validates_hdr_to_sdr_source_domain() {
+            return Err(Error::InvalidConfig(
+                "HDR→SDR production requires per-source-pixel domain rejection before averaging"
+                    .into(),
+            ));
+        }
+        let device_info = backend.device_info().clone();
+        if !device_info.dma_buf_interop {
+            return Err(Error::Vulkan(
+                "HDR→SDR requires actual DMA-BUF interop support".into(),
+            ));
+        }
+        let mut first = asciiflow_vulkan::VulkanHdrToSdrPipeline::from_backend(backend);
+        let mut second = first.try_fork()?;
+        let format = match output_format {
+            asciiflow_core::PixelFormat::Nv12 => asciiflow_vulkan::SdrPackFormat::Nv12,
+            asciiflow_core::PixelFormat::P010Le => asciiflow_vulkan::SdrPackFormat::P010,
+        };
+        for (index, slot) in [&mut first, &mut second].into_iter().enumerate() {
+            if let Some((fault_slot, Some(c3), _)) = fault {
+                if index == fault_slot {
+                    slot.inject_fault(c3);
+                }
+            }
+            slot.prepare(&desc, &config, false)?;
+            #[cfg(feature = "hdr-to-sdr-qualification")]
+            if let Some((fault_slot, _, Some(pack))) = fault {
+                if index == fault_slot {
+                    slot.prepare_sdr_output_with_fault(format, pack)?;
+                    continue;
+                }
+            }
+            slot.prepare_sdr_output(format)?;
+        }
+        let slots = vec![
+            WorkerSlot::spawn(
+                WorkerBackend::HdrToSdr(Box::new(first)),
+                desc.clone(),
+                config.clone(),
+            )?,
+            WorkerSlot::spawn(
+                WorkerBackend::HdrToSdr(Box::new(second)),
+                desc.clone(),
+                config,
+            )?,
+        ];
+        Ok(Self {
+            desc,
+            frames,
+            device_info,
+            slots,
+            free: (0..SLOT_COUNT).collect(),
+            pending: VecDeque::with_capacity(SLOT_COUNT),
+            next_sequence: 0,
+            failed: false,
+            validation_errors: 0,
+        })
+    }
+
     pub fn new(
         first: VulkanAsciiBackend,
         frames: VaapiEncoderFrames,
@@ -190,8 +384,16 @@ impl VaapiVulkanFullInteropProcessor {
         let device_info = first.device_info().clone();
         let second = first.try_fork()?;
         let slots = vec![
-            WorkerSlot::spawn(first, desc.clone(), config.clone())?,
-            WorkerSlot::spawn(second, desc.clone(), config)?,
+            WorkerSlot::spawn(
+                WorkerBackend::Standard(Box::new(first)),
+                desc.clone(),
+                config.clone(),
+            )?,
+            WorkerSlot::spawn(
+                WorkerBackend::Standard(Box::new(second)),
+                desc.clone(),
+                config,
+            )?,
         ];
         Ok(Self {
             desc,

@@ -123,6 +123,7 @@ fn run(args: Args, cancellation: CancellationToken) -> Result<()> {
         },
         output_codec: args.output_codec.into(),
         output_bit_depth: args.output_bit_depth.into(),
+        output_dynamic_range: args.output_dynamic_range.into(),
     };
     PipelinePlanner::validate_policy(policy.clone()).map_err(|error| {
         asciiflow_core::Error::pipeline(PipelineStage::Planning, "validate pipeline policy", error)
@@ -149,7 +150,8 @@ fn run(args: Args, cancellation: CancellationToken) -> Result<()> {
         }
     }
     let vaapi = VaapiOptions::new(args.hw_device.clone());
-    let probe = capabilities::probe(&args.input, &vaapi, &config)?;
+    let probe =
+        capabilities::probe_for_request(&args.input, &vaapi, &config, policy.output_dynamic_range)?;
     ensure_not_cancelled(&cancellation)?;
     let planning_started = Instant::now();
     let mut snapshot = probe.snapshot;
@@ -872,12 +874,11 @@ impl PipelineFactory {
             MediaImplementation::Software => DecodeMode::Software,
             MediaImplementation::Hardware => DecodeMode::Vaapi,
         };
-        let decoder_result =
-            if plan.color_processing == asciiflow_core::ColorProcessing::HdrPqPreserve {
-                Decoder::open_with_pq_preserve(&args.input, decode_mode, vaapi.clone())
-            } else {
-                Decoder::open_with(&args.input, decode_mode, vaapi.clone())
-            };
+        let decoder_result = if plan.color_processing != asciiflow_core::ColorProcessing::Sdr {
+            Decoder::open_with_pq_preserve(&args.input, decode_mode, vaapi.clone())
+        } else {
+            Decoder::open_with(&args.input, decode_mode, vaapi.clone())
+        };
         let mut decoder =
             decoder_result.map_err(|error| InitializationFailure::new(decode_capability, error))?;
         let audio_templates = decoder
@@ -972,13 +973,24 @@ impl PipelineFactory {
                 let frames = encoder.encoder_frames().map_err(|error| {
                     InitializationFailure::new(InitCapability::OutputInterop, error)
                 })?;
-                let interop = VaapiVulkanFullInteropProcessor::new(
-                    backend,
-                    frames,
-                    info.frame_desc.clone(),
-                    config.clone(),
-                )
-                .map_err(|error| InitializationFailure::new(InitCapability::Vulkan, error))?;
+                let interop =
+                    if plan.color_processing == asciiflow_core::ColorProcessing::HdrPqToSdrBt709 {
+                        VaapiVulkanFullInteropProcessor::new_hdr_to_sdr(
+                            backend,
+                            frames,
+                            info.frame_desc.clone(),
+                            config.clone(),
+                            plan.output.pixel_format,
+                        )
+                    } else {
+                        VaapiVulkanFullInteropProcessor::new(
+                            backend,
+                            frames,
+                            info.frame_desc.clone(),
+                            config.clone(),
+                        )
+                    }
+                    .map_err(|error| InitializationFailure::new(InitCapability::Vulkan, error))?;
                 BackendSelection {
                     processor: SelectedProcessor::FullInterop(Box::new(interop)),
                     device_info: Some(device),
@@ -1532,6 +1544,7 @@ mod stage40_tests {
                 cpu: supported(),
                 vulkan: supported(),
                 vulkan_pq: supported(),
+                vulkan_hdr_to_sdr: supported(),
                 vulkan_auto_eligible: true,
                 vulkan_device_name: Some("synthetic GPU".into()),
                 vulkan_device_kind: Some(VulkanDeviceKind::IntegratedGpu),
@@ -1659,6 +1672,7 @@ mod stage40_tests {
             output_interop: asciiflow_core::InteropRequest::On,
             output_codec: asciiflow_core::VideoCodec::H264,
             output_bit_depth: 8,
+            output_dynamic_range: asciiflow_core::OutputDynamicRange::Preserve,
         };
         assert!(!InitCapability::HardwareDecode.is_auto(&explicit));
         assert!(!InitCapability::HardwareEncode.is_auto(&explicit));
@@ -1723,7 +1737,16 @@ mod stage40_tests {
             )
             .unwrap(),
         );
-        for codec in [VideoCodec::Hevc, VideoCodec::Av1] {
+        use asciiflow_core::OutputDynamicRange::{Preserve, Sdr};
+        for (codec, depth, dynamic_range) in [
+            (VideoCodec::Hevc, 10, Preserve),
+            (VideoCodec::Av1, 10, Preserve),
+            (VideoCodec::H264, 8, Sdr),
+            (VideoCodec::Hevc, 8, Sdr),
+            (VideoCodec::Av1, 8, Sdr),
+            (VideoCodec::Hevc, 10, Sdr),
+            (VideoCodec::Av1, 10, Sdr),
+        ] {
             for point in [
                 InitializationPoint::DecoderCreate,
                 InitializationPoint::VaapiFramesPoolCreate,
@@ -1738,7 +1761,8 @@ mod stage40_tests {
             ] {
                 let policy = PipelinePolicy {
                     output_codec: codec.clone(),
-                    output_bit_depth: 10,
+                    output_bit_depth: depth,
+                    output_dynamic_range: dynamic_range,
                     ..Default::default()
                 };
                 let mut caps = full_capabilities();

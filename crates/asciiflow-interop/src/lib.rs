@@ -2,6 +2,11 @@ mod drm_prime;
 mod output_processor;
 mod pipeline;
 mod processor;
+#[cfg(feature = "hdr-to-sdr-qualification")]
+mod sdr_qualification;
+
+#[cfg(feature = "hdr-to-sdr-qualification")]
+pub use sdr_qualification::pack_completed_sdr_surface;
 
 pub use drm_prime::{
     DrmLayer, DrmObject, DrmPlane, DrmPrimeFrameDesc, DrmPrimeMapping, fourcc_name,
