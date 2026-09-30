@@ -195,6 +195,91 @@ pub enum DiagnosticOutputFault {
 }
 
 impl VulkanAsciiBackend {
+    #[cfg(feature = "hdr-to-sdr-qualification")]
+    pub(crate) fn c3_map_buffer_bytes(&self) -> u64 {
+        self.resources.as_ref().map_or(0, |r| {
+            [
+                &r.upload,
+                &r.cell_readback,
+                &r.input,
+                &r.cells,
+                &r.lut,
+                &r.atlas_buffer,
+                &r.output,
+                &r.coordinate_lut,
+            ]
+            .into_iter()
+            .map(|b| b.size)
+            .sum::<u64>()
+                + r.readback.as_ref().map_or(0, |b| b.size)
+        })
+    }
+
+    // Feature-only seam: C-3 owns separate float resources/pipelines while the
+    // existing map and DMA-BUF copy remain the sole HDR input implementation.
+    #[cfg(feature = "hdr-to-sdr-qualification")]
+    pub(crate) fn c3_bindings(
+        &mut self,
+        desc: &FrameDesc,
+        config: &AsciiConfig,
+    ) -> Result<crate::tone_map::MapBindings> {
+        self.ensure_resources(desc, config)?;
+        let r = self.resources.as_ref().expect("prepared");
+        Ok(crate::tone_map::MapBindings {
+            context: self.context.clone(),
+            cells: r.cells.handle,
+            atlas: r.atlas_buffer.handle,
+            atlas_width: r.atlas.width(),
+            atlas_height: r.atlas.height(),
+            glyph_count: r.atlas.glyph_count() as u32,
+            grid_width: r.key.grid_width,
+            grid_height: r.key.grid_height,
+        })
+    }
+
+    #[cfg(feature = "hdr-to-sdr-qualification")]
+    pub(crate) fn c3_map_host(
+        &mut self,
+        input: &VideoFrame,
+        config: &AsciiConfig,
+    ) -> Result<Duration> {
+        self.ensure_resources(input.desc(), config)?;
+        let r = self.resources.as_mut().expect("prepared");
+        r.upload_input(&self.context, input.host().as_slice())?;
+        Ok(
+            r.run_compute(&self.context, config.color, true, false, false)?
+                .gpu_mapping,
+        )
+    }
+
+    #[cfg(feature = "hdr-to-sdr-qualification")]
+    pub(crate) fn c3_map_external(
+        &mut self,
+        desc: &FrameDesc,
+        config: &AsciiConfig,
+        planes: [ExternalPlaneImage; 2],
+    ) -> Result<Duration> {
+        validate_external_planes(
+            desc,
+            &planes,
+            crate::ExternalImageAccess::Read,
+            "C-3 input",
+            PixelFormat::P010Le,
+        )?;
+        self.ensure_resources(desc, config)?;
+        let [y, uv] = planes;
+        let (y, _) = ImportedExternalPlane::import(&self.context, y)?;
+        let (uv, _) = ImportedExternalPlane::import(&self.context, uv)?;
+        let r = self.resources.as_mut().expect("prepared");
+        r.copy_external_input(&self.context, [&y, &uv])?;
+        let mapped = r
+            .run_compute(&self.context, config.color, true, false, false)?
+            .gpu_mapping;
+        uv.destroy();
+        y.destroy();
+        Ok(mapped)
+    }
+
     pub fn new() -> Result<Self> {
         Self::from_context(Arc::new(VulkanContext::new()?))
     }
@@ -208,6 +293,12 @@ impl VulkanAsciiBackend {
     #[cfg(feature = "hdr-pq-qualification")]
     pub(crate) fn new_pq_qualification() -> Result<Self> {
         Self::new_for_color_processing(asciiflow_core::ColorProcessing::HdrPqPreserve)
+    }
+
+    #[cfg(feature = "hdr-to-sdr-fp64-experiment")]
+    pub(crate) fn with_pq_qualification(mut self) -> Self {
+        self.pq_preserve = true;
+        self
     }
 
     #[cfg(feature = "hdr-pq-qualification")]
@@ -2632,7 +2723,7 @@ impl Resources {
     }
 }
 
-fn create_pipeline(
+pub(crate) fn create_pipeline(
     device: &ash::Device,
     layout: vk::PipelineLayout,
     bytes: &[u8],

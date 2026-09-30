@@ -152,4 +152,59 @@ fn main() {
         fs::write(output.join(format!("{name}.spv")), artifact.as_binary_u8())
             .expect("failed to write PQ SPIR-V");
     }
+    // Separate C-3 qualification modules. Never alter the PQ-preserve options
+    // or insert tone mapping into an existing production shader.
+    let c3_shared = root.join("c3_common.glsl");
+    println!("cargo:rerun-if-changed={}", c3_shared.display());
+    let mut c3_options = options.clone();
+    c3_options.set_include_callback(|name, _, _, _| {
+        let path = match name {
+            "pq_common.glsl" => &shared,
+            "c3_common.glsl" => &c3_shared,
+            _ => return Err(format!("unexpected C-3 include: {name}")),
+        };
+        Ok(shaderc::ResolvedInclude {
+            resolved_name: path.to_string_lossy().into_owned(),
+            content: fs::read_to_string(path).map_err(|e| e.to_string())?,
+        })
+    });
+    for name in [
+        "ascii_render_hdr_linear",
+        "tone_map_bt2446",
+        "bt2020_to_bt709_limit",
+    ] {
+        let path = root.join(format!("{name}.comp"));
+        println!("cargo:rerun-if-changed={}", path.display());
+        let source = fs::read_to_string(&path).expect("failed to read C-3 shader");
+        let artifact = compiler
+            .compile_into_spirv(
+                &source,
+                ShaderKind::Compute,
+                &path.to_string_lossy(),
+                "main",
+                Some(&c3_options),
+            )
+            .unwrap_or_else(|e| panic!("failed to compile {}: {e}", path.display()));
+        fs::write(output.join(format!("{name}.spv")), artifact.as_binary_u8())
+            .expect("failed to write C-3 SPIR-V");
+    }
+    let experimental_output = output.join("bt2020_to_bt709_fp64_experiment.spv");
+    if env::var_os("CARGO_FEATURE_HDR_TO_SDR_FP64_EXPERIMENT").is_some() {
+        let path = root.join("bt2020_to_bt709_limit.comp");
+        let source = fs::read_to_string(&path).unwrap();
+        let mut experimental_options = c3_options.clone();
+        experimental_options.add_macro_definition("C3_FP64_EXPERIMENT", Some("1"));
+        let artifact = compiler
+            .compile_into_spirv(
+                &source,
+                ShaderKind::Compute,
+                &path.to_string_lossy(),
+                "main",
+                Some(&experimental_options),
+            )
+            .expect("C3 FP64 experimental shader compilation failed");
+        fs::write(experimental_output, artifact.as_binary_u8()).unwrap();
+    } else if experimental_output.exists() {
+        fs::remove_file(experimental_output).expect("remove obsolete experimental module");
+    }
 }

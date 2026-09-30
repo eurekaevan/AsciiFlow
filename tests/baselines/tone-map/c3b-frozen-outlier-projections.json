@@ -1,0 +1,3570 @@
+{
+  "scope": "test-only mathematical diagnostics; no production, codec, or 4:2:0 contract",
+  "channel_order": {
+    "rgb": [
+      "R",
+      "G",
+      "B"
+    ],
+    "limited444": [
+      "Y",
+      "Cb",
+      "Cr"
+    ]
+  },
+  "pairs": 6,
+  "finite_in_bounds_pairs_projected": 6,
+  "invalid_inputs": {
+    "cpu": {
+      "nonfinite_components": 0,
+      "out_of_bounds_components": 0
+    },
+    "gpu": {
+      "nonfinite_components": 0,
+      "out_of_bounds_components": 0
+    }
+  },
+  "errors": {
+    "nonlinear_rgb": [
+      {
+        "samples": 6,
+        "max_absolute": 6.482573253605711e-05,
+        "mean_absolute": 4.886904614005878e-05,
+        "relative_samples_nonzero_cpu": 6,
+        "max_relative_to_cpu": 0.007385359091277231
+      },
+      {
+        "samples": 6,
+        "max_absolute": 1.1195617866111007e-07,
+        "mean_absolute": 1.8659363110185012e-08,
+        "relative_samples_nonzero_cpu": 6,
+        "max_relative_to_cpu": 1.325193996430844e-07
+      },
+      {
+        "samples": 6,
+        "max_absolute": 2.7742423869270283e-07,
+        "mean_absolute": 1.1099804199850756e-07,
+        "relative_samples_nonzero_cpu": 6,
+        "max_relative_to_cpu": 4.3628562421489576e-07
+      }
+    ],
+    "display_linear": [
+      {
+        "samples": 6,
+        "max_absolute": 2.349282388346648e-07,
+        "mean_absolute": 1.6450414314632088e-07,
+        "relative_samples_nonzero_cpu": 6,
+        "max_relative_to_cpu": 0.017816585080379387
+      },
+      {
+        "samples": 6,
+        "max_absolute": 2.12195083615363e-07,
+        "mean_absolute": 3.536584726922717e-08,
+        "relative_samples_nonzero_cpu": 6,
+        "max_relative_to_cpu": 3.180465296312443e-07
+      },
+      {
+        "samples": 6,
+        "max_absolute": 5.005567180749182e-07,
+        "mean_absolute": 1.7640351299141876e-07,
+        "relative_samples_nonzero_cpu": 6,
+        "max_relative_to_cpu": 1.0470851784987374e-06
+      }
+    ]
+  },
+  "luminance_100_nits_errors": {
+    "samples": 6,
+    "max_absolute": 1.7647650949470517e-05,
+    "mean_absolute": 6.047740027289213e-06,
+    "relative_samples_nonzero_cpu": 6,
+    "max_relative_to_cpu": 3.366923469083692e-07
+  },
+  "code_deltas": {
+    "rgb8": [
+      {
+        "samples": 6,
+        "exact": 6,
+        "delta_1": 0,
+        "over_1": 0,
+        "max": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0,
+        "p999": 0,
+        "absolute_delta_histogram": {
+          "0": 6
+        }
+      },
+      {
+        "samples": 6,
+        "exact": 6,
+        "delta_1": 0,
+        "over_1": 0,
+        "max": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0,
+        "p999": 0,
+        "absolute_delta_histogram": {
+          "0": 6
+        }
+      },
+      {
+        "samples": 6,
+        "exact": 6,
+        "delta_1": 0,
+        "over_1": 0,
+        "max": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0,
+        "p999": 0,
+        "absolute_delta_histogram": {
+          "0": 6
+        }
+      }
+    ],
+    "rgb10": [
+      {
+        "samples": 6,
+        "exact": 6,
+        "delta_1": 0,
+        "over_1": 0,
+        "max": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0,
+        "p999": 0,
+        "absolute_delta_histogram": {
+          "0": 6
+        }
+      },
+      {
+        "samples": 6,
+        "exact": 6,
+        "delta_1": 0,
+        "over_1": 0,
+        "max": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0,
+        "p999": 0,
+        "absolute_delta_histogram": {
+          "0": 6
+        }
+      },
+      {
+        "samples": 6,
+        "exact": 6,
+        "delta_1": 0,
+        "over_1": 0,
+        "max": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0,
+        "p999": 0,
+        "absolute_delta_histogram": {
+          "0": 6
+        }
+      }
+    ],
+    "rgb12": [
+      {
+        "samples": 6,
+        "exact": 6,
+        "delta_1": 0,
+        "over_1": 0,
+        "max": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0,
+        "p999": 0,
+        "absolute_delta_histogram": {
+          "0": 6
+        }
+      },
+      {
+        "samples": 6,
+        "exact": 6,
+        "delta_1": 0,
+        "over_1": 0,
+        "max": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0,
+        "p999": 0,
+        "absolute_delta_histogram": {
+          "0": 6
+        }
+      },
+      {
+        "samples": 6,
+        "exact": 6,
+        "delta_1": 0,
+        "over_1": 0,
+        "max": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0,
+        "p999": 0,
+        "absolute_delta_histogram": {
+          "0": 6
+        }
+      }
+    ],
+    "rgb16": [
+      {
+        "samples": 6,
+        "exact": 0,
+        "delta_1": 0,
+        "over_1": 6,
+        "max": 4,
+        "p50": 3,
+        "p95": 4,
+        "p99": 4,
+        "p999": 4,
+        "absolute_delta_histogram": {
+          "3": 5,
+          "4": 1
+        }
+      },
+      {
+        "samples": 6,
+        "exact": 6,
+        "delta_1": 0,
+        "over_1": 0,
+        "max": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0,
+        "p999": 0,
+        "absolute_delta_histogram": {
+          "0": 6
+        }
+      },
+      {
+        "samples": 6,
+        "exact": 6,
+        "delta_1": 0,
+        "over_1": 0,
+        "max": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0,
+        "p999": 0,
+        "absolute_delta_histogram": {
+          "0": 6
+        }
+      }
+    ],
+    "limited444_8": [
+      {
+        "samples": 6,
+        "exact": 6,
+        "delta_1": 0,
+        "over_1": 0,
+        "max": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0,
+        "p999": 0,
+        "absolute_delta_histogram": {
+          "0": 6
+        }
+      },
+      {
+        "samples": 6,
+        "exact": 6,
+        "delta_1": 0,
+        "over_1": 0,
+        "max": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0,
+        "p999": 0,
+        "absolute_delta_histogram": {
+          "0": 6
+        }
+      },
+      {
+        "samples": 6,
+        "exact": 6,
+        "delta_1": 0,
+        "over_1": 0,
+        "max": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0,
+        "p999": 0,
+        "absolute_delta_histogram": {
+          "0": 6
+        }
+      }
+    ],
+    "limited444_10": [
+      {
+        "samples": 6,
+        "exact": 6,
+        "delta_1": 0,
+        "over_1": 0,
+        "max": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0,
+        "p999": 0,
+        "absolute_delta_histogram": {
+          "0": 6
+        }
+      },
+      {
+        "samples": 6,
+        "exact": 6,
+        "delta_1": 0,
+        "over_1": 0,
+        "max": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0,
+        "p999": 0,
+        "absolute_delta_histogram": {
+          "0": 6
+        }
+      },
+      {
+        "samples": 6,
+        "exact": 6,
+        "delta_1": 0,
+        "over_1": 0,
+        "max": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0,
+        "p999": 0,
+        "absolute_delta_histogram": {
+          "0": 6
+        }
+      }
+    ]
+  },
+  "minimum_rgb_boundary_distance_code_units": {
+    "8": {
+      "cpu": [
+        0.2617118419849569,
+        0.06870740832013666,
+        0.05530711624581386
+      ],
+      "gpu": [
+        0.24518128018826246,
+        0.06873595714569092,
+        0.055371880531311035
+      ]
+    },
+    "10": {
+      "cpu": [
+        0.06043793743552506,
+        0.24034383808429993,
+        0.025179686590263373
+      ],
+      "gpu": [
+        0.02098081912845373,
+        0.24045836925506592,
+        0.024919867515563965
+      ]
+    },
+    "12": {
+      "cpu": [
+        0.16883265689411076,
+        0.07311044285916068,
+        0.1414392502224473
+      ],
+      "gpu": [
+        0.1426016241312027,
+        0.07265198230743408,
+        0.14140498638153076
+      ]
+    },
+    "16": {
+      "cpu": [
+        0.03161127461669366,
+        0.3421960617270088,
+        0.04487305563088739
+      ],
+      "gpu": [
+        0.011589008383452892,
+        0.3348590135574341,
+        0.04492980241775513
+      ]
+    }
+  },
+  "notes": [
+    "Relative error uses nonzero CPU references only.",
+    "Display and code projections use pairs with all components finite and in [0, 1].",
+    "Percentiles use nearest rank over absolute per-channel integer code differences."
+  ],
+  "vectors": [
+    {
+      "scope": "test-only mathematical diagnostics; no production, codec, or 4:2:0 contract",
+      "channel_order": {
+        "rgb": [
+          "R",
+          "G",
+          "B"
+        ],
+        "limited444": [
+          "Y",
+          "Cb",
+          "Cr"
+        ]
+      },
+      "pairs": 1,
+      "finite_in_bounds_pairs_projected": 1,
+      "invalid_inputs": {
+        "cpu": {
+          "nonfinite_components": 0,
+          "out_of_bounds_components": 0
+        },
+        "gpu": {
+          "nonfinite_components": 0,
+          "out_of_bounds_components": 0
+        }
+      },
+      "errors": {
+        "nonlinear_rgb": [
+          {
+            "samples": 1,
+            "max_absolute": 3.8539143025421996e-05,
+            "mean_absolute": 3.8539143025421996e-05,
+            "relative_samples_nonzero_cpu": 1,
+            "max_relative_to_cpu": 0.0043955884381336975
+          },
+          {
+            "samples": 1,
+            "max_absolute": 1.1195617866111007e-07,
+            "mean_absolute": 1.1195617866111007e-07,
+            "relative_samples_nonzero_cpu": 1,
+            "max_relative_to_cpu": 1.325193996430844e-07
+          },
+          {
+            "samples": 1,
+            "max_absolute": 8.367238346629335e-09,
+            "mean_absolute": 8.367238346629335e-09,
+            "relative_samples_nonzero_cpu": 1,
+            "max_relative_to_cpu": 1.0005915099598951e-08
+          }
+        ],
+        "display_linear": [
+          {
+            "samples": 1,
+            "max_absolute": 1.2156674218577517e-07,
+            "mean_absolute": 1.2156674218577517e-07,
+            "relative_samples_nonzero_cpu": 1,
+            "max_relative_to_cpu": 0.010516971675795846
+          },
+          {
+            "samples": 1,
+            "max_absolute": 2.12195083615363e-07,
+            "mean_absolute": 2.12195083615363e-07,
+            "relative_samples_nonzero_cpu": 1,
+            "max_relative_to_cpu": 3.180465296312443e-07
+          },
+          {
+            "samples": 1,
+            "max_absolute": 1.5633234484724312e-08,
+            "mean_absolute": 1.5633234484724312e-08,
+            "relative_samples_nonzero_cpu": 1,
+            "max_relative_to_cpu": 2.4014196373087777e-08
+          }
+        ]
+      },
+      "luminance_100_nits_errors": {
+        "samples": 1,
+        "max_absolute": 1.7647650949470517e-05,
+        "mean_absolute": 1.7647650949470517e-05,
+        "relative_samples_nonzero_cpu": 1,
+        "max_relative_to_cpu": 3.366923469083692e-07
+      },
+      "code_deltas": {
+        "rgb8": [
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          }
+        ],
+        "rgb10": [
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          }
+        ],
+        "rgb12": [
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          }
+        ],
+        "rgb16": [
+          {
+            "samples": 1,
+            "exact": 0,
+            "delta_1": 0,
+            "over_1": 1,
+            "max": 3,
+            "p50": 3,
+            "p95": 3,
+            "p99": 3,
+            "p999": 3,
+            "absolute_delta_histogram": {
+              "3": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          }
+        ],
+        "limited444_8": [
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          }
+        ],
+        "limited444_10": [
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          }
+        ]
+      },
+      "minimum_rgb_boundary_distance_code_units": {
+        "8": {
+          "cpu": [
+            0.26423984870266537,
+            0.06870740832013666,
+            0.26155482510543493
+          ],
+          "gpu": [
+            0.2740673301741481,
+            0.06873595714569092,
+            0.26155269145965576
+          ]
+        },
+        "10": {
+          "cpu": [
+            0.46934366579283626,
+            0.24034383808429993,
+            0.03753171012886014
+          ],
+          "gpu": [
+            0.42991812247782946,
+            0.24045836925506592,
+            0.03752315044403076
+          ]
+        },
+        "12": {
+          "cpu": [
+            0.403677723774841,
+            0.07311044285916068,
+            0.1414392502224473
+          ],
+          "gpu": [
+            0.2458599330857396,
+            0.07265198230743408,
+            0.14140498638153076
+          ]
+        },
+        "16": {
+          "cpu": [
+            0.09035888341497866,
+            0.3421960617270088,
+            0.2195900520964642
+          ],
+          "gpu": [
+            0.43530385475605726,
+            0.3348590135574341,
+            0.21904170513153076
+          ]
+        }
+      },
+      "notes": [
+        "Relative error uses nonzero CPU references only.",
+        "Display and code projections use pairs with all components finite and in [0, 1].",
+        "Percentiles use nearest rank over absolute per-channel integer code differences."
+      ],
+      "input": {
+        "path": "BC",
+        "xy": [
+          237,
+          725
+        ],
+        "channel": 0,
+        "cpu": [
+          0.008767686867832684,
+          0.8448285983987446,
+          0.8362291967642924
+        ],
+        "gpu": [
+          0.008729147724807262,
+          0.8448284864425659,
+          0.8362292051315308
+        ]
+      },
+      "projections": {
+        "8": {
+          "cpu": [
+            2,
+            215,
+            213
+          ],
+          "gpu": [
+            2,
+            215,
+            213
+          ],
+          "cpu_boundary_distance": [
+            0.26423984870266537,
+            0.06870740832013666,
+            0.26155482510543493
+          ],
+          "gpu_boundary_distance": [
+            0.2740673301741481,
+            0.06873595714569092,
+            0.26155269145965576
+          ]
+        },
+        "10": {
+          "cpu": [
+            9,
+            864,
+            855
+          ],
+          "gpu": [
+            9,
+            864,
+            855
+          ],
+          "cpu_boundary_distance": [
+            0.46934366579283626,
+            0.24034383808429993,
+            0.03753171012886014
+          ],
+          "gpu_boundary_distance": [
+            0.42991812247782946,
+            0.24045836925506592,
+            0.03752315044403076
+          ]
+        },
+        "12": {
+          "cpu": [
+            36,
+            3460,
+            3424
+          ],
+          "gpu": [
+            36,
+            3460,
+            3424
+          ],
+          "cpu_boundary_distance": [
+            0.403677723774841,
+            0.07311044285916068,
+            0.1414392502224473
+          ],
+          "gpu_boundary_distance": [
+            0.2458599330857396,
+            0.07265198230743408,
+            0.14140498638153076
+          ]
+        },
+        "16": {
+          "cpu": [
+            575,
+            55366,
+            54802
+          ],
+          "gpu": [
+            572,
+            55366,
+            54802
+          ],
+          "cpu_boundary_distance": [
+            0.09035888341497866,
+            0.3421960617270088,
+            0.2195900520964642
+          ],
+          "gpu_boundary_distance": [
+            0.43530385475605726,
+            0.3348590135574341,
+            0.21904170513153076
+          ]
+        }
+      },
+      "linear_rgb": {
+        "cpu": [
+          1.155910141562456e-05,
+          0.6671825152797308,
+          0.6509996937579873
+        ],
+        "gpu": [
+          1.1437534673438784e-05,
+          0.6671823030846472,
+          0.6509997093912218
+        ]
+      },
+      "luminance_nits": {
+        "cpu": 52.41476710569047,
+        "gpu": 52.41474945803952
+      }
+    },
+    {
+      "scope": "test-only mathematical diagnostics; no production, codec, or 4:2:0 contract",
+      "channel_order": {
+        "rgb": [
+          "R",
+          "G",
+          "B"
+        ],
+        "limited444": [
+          "Y",
+          "Cb",
+          "Cr"
+        ]
+      },
+      "pairs": 1,
+      "finite_in_bounds_pairs_projected": 1,
+      "invalid_inputs": {
+        "cpu": {
+          "nonfinite_components": 0,
+          "out_of_bounds_components": 0
+        },
+        "gpu": {
+          "nonfinite_components": 0,
+          "out_of_bounds_components": 0
+        }
+      },
+      "errors": {
+        "nonlinear_rgb": [
+          {
+            "samples": 1,
+            "max_absolute": 6.482573253605711e-05,
+            "mean_absolute": 6.482573253605711e-05,
+            "relative_samples_nonzero_cpu": 1,
+            "max_relative_to_cpu": 0.007385359091277231
+          },
+          {
+            "samples": 1,
+            "max_absolute": 0.0,
+            "mean_absolute": 0.0,
+            "relative_samples_nonzero_cpu": 1,
+            "max_relative_to_cpu": 0.0
+          },
+          {
+            "samples": 1,
+            "max_absolute": 2.53977590181087e-07,
+            "mean_absolute": 2.53977590181087e-07,
+            "relative_samples_nonzero_cpu": 1,
+            "max_relative_to_cpu": 4.3628562421489576e-07
+          }
+        ],
+        "display_linear": [
+          {
+            "samples": 1,
+            "max_absolute": 2.0650302880829562e-07,
+            "mean_absolute": 2.0650302880829562e-07,
+            "relative_samples_nonzero_cpu": 1,
+            "max_relative_to_cpu": 0.017816585080379387
+          },
+          {
+            "samples": 1,
+            "max_absolute": 0.0,
+            "mean_absolute": 0.0,
+            "relative_samples_nonzero_cpu": 1,
+            "max_relative_to_cpu": 0.0
+          },
+          {
+            "samples": 1,
+            "max_absolute": 2.8578590166583595e-07,
+            "mean_absolute": 2.8578590166583595e-07,
+            "relative_samples_nonzero_cpu": 1,
+            "max_relative_to_cpu": 1.0470851784987374e-06
+          }
+        ]
+      },
+      "luminance_100_nits_errors": {
+        "samples": 1,
+        "max_absolute": 2.3279052925317956e-06,
+        "mean_absolute": 2.3279052925317956e-06,
+        "relative_samples_nonzero_cpu": 1,
+        "max_relative_to_cpu": 3.1677571086776566e-08
+      },
+      "code_deltas": {
+        "rgb8": [
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          }
+        ],
+        "rgb10": [
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          }
+        ],
+        "rgb12": [
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          }
+        ],
+        "rgb16": [
+          {
+            "samples": 1,
+            "exact": 0,
+            "delta_1": 0,
+            "over_1": 1,
+            "max": 4,
+            "p50": 4,
+            "p95": 4,
+            "p99": 4,
+            "p999": 4,
+            "absolute_delta_histogram": {
+              "4": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          }
+        ],
+        "limited444_8": [
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          }
+        ],
+        "limited444_10": [
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          }
+        ]
+      },
+      "minimum_rgb_boundary_distance_code_units": {
+        "8": {
+          "cpu": [
+            0.2617118419849569,
+            0.5,
+            0.05530711624581386
+          ],
+          "gpu": [
+            0.24518128018826246,
+            0.5,
+            0.055371880531311035
+          ]
+        },
+        "10": {
+          "cpu": [
+            0.479485433919173,
+            0.5,
+            0.025179686590263373
+          ],
+          "gpu": [
+            0.4541978416964412,
+            0.5,
+            0.024919867515563965
+          ]
+        },
+        "12": {
+          "cpu": [
+            0.4442745375356907,
+            0.5,
+            0.347126897934686
+          ],
+          "gpu": [
+            0.290264087729156,
+            0.5,
+            0.34608685970306396
+          ]
+        },
+        "16": {
+          "cpu": [
+            0.25994339013391254,
+            0.5,
+            0.2139288751714048
+          ],
+          "gpu": [
+            0.011589008383452892,
+            0.5,
+            0.23057329654693604
+          ]
+        }
+      },
+      "notes": [
+        "Relative error uses nonzero CPU references only.",
+        "Display and code projections use pairs with all components finite and in [0, 1].",
+        "Percentiles use nearest rank over absolute per-channel integer code differences."
+      ],
+      "input": {
+        "path": "BC",
+        "xy": [
+          472,
+          942
+        ],
+        "channel": 0,
+        "cpu": [
+          0.008777600619666835,
+          1,
+          0.5821360505245262
+        ],
+        "gpu": [
+          0.008842426352202892,
+          1,
+          0.582135796546936
+        ]
+      },
+      "projections": {
+        "8": {
+          "cpu": [
+            2,
+            255,
+            148
+          ],
+          "gpu": [
+            2,
+            255,
+            148
+          ],
+          "cpu_boundary_distance": [
+            0.2617118419849569,
+            0.5,
+            0.05530711624581386
+          ],
+          "gpu_boundary_distance": [
+            0.24518128018826246,
+            0.5,
+            0.055371880531311035
+          ]
+        },
+        "10": {
+          "cpu": [
+            9,
+            1023,
+            596
+          ],
+          "gpu": [
+            9,
+            1023,
+            596
+          ],
+          "cpu_boundary_distance": [
+            0.479485433919173,
+            0.5,
+            0.025179686590263373
+          ],
+          "gpu_boundary_distance": [
+            0.4541978416964412,
+            0.5,
+            0.024919867515563965
+          ]
+        },
+        "12": {
+          "cpu": [
+            36,
+            4095,
+            2384
+          ],
+          "gpu": [
+            36,
+            4095,
+            2384
+          ],
+          "cpu_boundary_distance": [
+            0.4442745375356907,
+            0.5,
+            0.347126897934686
+          ],
+          "gpu_boundary_distance": [
+            0.290264087729156,
+            0.5,
+            0.34608685970306396
+          ]
+        },
+        "16": {
+          "cpu": [
+            575,
+            65535,
+            38150
+          ],
+          "gpu": [
+            579,
+            65535,
+            38150
+          ],
+          "cpu_boundary_distance": [
+            0.25994339013391254,
+            0.5,
+            0.2139288751714048
+          ],
+          "gpu_boundary_distance": [
+            0.011589008383452892,
+            0.5,
+            0.23057329654693604
+          ]
+        }
+      },
+      "linear_rgb": {
+        "cpu": [
+          1.1590494355492862e-05,
+          1.0,
+          0.27293472158166027
+        ],
+        "gpu": [
+          1.1796997384301158e-05,
+          1.0,
+          0.2729344357957586
+        ]
+      },
+      "luminance_nits": {
+        "cpu": 73.48749328522705,
+        "gpu": 73.48749561313234
+      }
+    },
+    {
+      "scope": "test-only mathematical diagnostics; no production, codec, or 4:2:0 contract",
+      "channel_order": {
+        "rgb": [
+          "R",
+          "G",
+          "B"
+        ],
+        "limited444": [
+          "Y",
+          "Cb",
+          "Cr"
+        ]
+      },
+      "pairs": 1,
+      "finite_in_bounds_pairs_projected": 1,
+      "invalid_inputs": {
+        "cpu": {
+          "nonfinite_components": 0,
+          "out_of_bounds_components": 0
+        },
+        "gpu": {
+          "nonfinite_components": 0,
+          "out_of_bounds_components": 0
+        }
+      },
+      "errors": {
+        "nonlinear_rgb": [
+          {
+            "samples": 1,
+            "max_absolute": 4.832071237963805e-05,
+            "mean_absolute": 4.832071237963805e-05,
+            "relative_samples_nonzero_cpu": 1,
+            "max_relative_to_cpu": 0.006360417842974978
+          },
+          {
+            "samples": 1,
+            "max_absolute": 0.0,
+            "mean_absolute": 0.0,
+            "relative_samples_nonzero_cpu": 1,
+            "max_relative_to_cpu": 0.0
+          },
+          {
+            "samples": 1,
+            "max_absolute": 2.7742423869270283e-07,
+            "mean_absolute": 2.7742423869270283e-07,
+            "relative_samples_nonzero_cpu": 1,
+            "max_relative_to_cpu": 3.4013083690017487e-07
+          }
+        ],
+        "display_linear": [
+          {
+            "samples": 1,
+            "max_absolute": 1.2454177438435343e-07,
+            "mean_absolute": 1.2454177438435343e-07,
+            "relative_samples_nonzero_cpu": 1,
+            "max_relative_to_cpu": 0.015197096258288082
+          },
+          {
+            "samples": 1,
+            "max_absolute": 0.0,
+            "mean_absolute": 0.0,
+            "relative_samples_nonzero_cpu": 1,
+            "max_relative_to_cpu": 0.0
+          },
+          {
+            "samples": 1,
+            "max_absolute": 5.005567180749182e-07,
+            "mean_absolute": 5.005567180749182e-07,
+            "relative_samples_nonzero_cpu": 1,
+            "max_relative_to_cpu": 8.163138140727204e-07
+          }
+        ]
+      },
+      "luminance_100_nits_errors": {
+        "samples": 1,
+        "max_absolute": 6.261878766622431e-06,
+        "mean_absolute": 6.261878766622431e-06,
+        "relative_samples_nonzero_cpu": 1,
+        "max_relative_to_cpu": 8.245409935181805e-08
+      },
+      "code_deltas": {
+        "rgb8": [
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          }
+        ],
+        "rgb10": [
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          }
+        ],
+        "rgb12": [
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          }
+        ],
+        "rgb16": [
+          {
+            "samples": 1,
+            "exact": 0,
+            "delta_1": 0,
+            "over_1": 1,
+            "max": 3,
+            "p50": 3,
+            "p95": 3,
+            "p99": 3,
+            "p999": 3,
+            "absolute_delta_histogram": {
+              "3": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          }
+        ],
+        "limited444_8": [
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          }
+        ],
+        "limited444_10": [
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          }
+        ]
+      },
+      "minimum_rgb_boundary_distance_code_units": {
+        "8": {
+          "cpu": [
+            0.43725977773881564,
+            0.5,
+            0.48814218483124705
+          ],
+          "gpu": [
+            0.4249379960820079,
+            0.5,
+            0.4880714416503906
+          ]
+        },
+        "10": {
+          "cpu": [
+            0.2718304024580718,
+            0.5,
+            0.10051194085338011
+          ],
+          "gpu": [
+            0.22239831369370222,
+            0.5,
+            0.10079574584960938
+          ]
+        },
+        "12": {
+          "cpu": [
+            0.3898870986649037,
+            0.5,
+            0.45512844359200244
+          ],
+          "gpu": [
+            0.41223958414047956,
+            0.5,
+            0.4562644958496094
+          ]
+        },
+        "16": {
+          "cpu": [
+            0.3757628788756051,
+            0.5,
+            0.4525415016323677
+          ],
+          "gpu": [
+            0.20906499307602644,
+            0.5,
+            0.4343605041503906
+          ]
+        }
+      },
+      "notes": [
+        "Relative error uses nonzero CPU references only.",
+        "Display and code projections use pairs with all components finite and in [0, 1].",
+        "Percentiles use nearest rank over absolute per-channel integer code differences."
+      ],
+      "input": {
+        "path": "BC",
+        "xy": [
+          565,
+          1005
+        ],
+        "channel": 0,
+        "cpu": [
+          0.007597097167603198,
+          1,
+          0.8156397732738481
+        ],
+        "gpu": [
+          0.00754877645522356,
+          1,
+          0.8156394958496094
+        ]
+      },
+      "projections": {
+        "8": {
+          "cpu": [
+            2,
+            255,
+            208
+          ],
+          "gpu": [
+            2,
+            255,
+            208
+          ],
+          "cpu_boundary_distance": [
+            0.43725977773881564,
+            0.5,
+            0.48814218483124705
+          ],
+          "gpu_boundary_distance": [
+            0.4249379960820079,
+            0.5,
+            0.4880714416503906
+          ]
+        },
+        "10": {
+          "cpu": [
+            8,
+            1023,
+            834
+          ],
+          "gpu": [
+            8,
+            1023,
+            834
+          ],
+          "cpu_boundary_distance": [
+            0.2718304024580718,
+            0.5,
+            0.10051194085338011
+          ],
+          "gpu_boundary_distance": [
+            0.22239831369370222,
+            0.5,
+            0.10079574584960938
+          ]
+        },
+        "12": {
+          "cpu": [
+            31,
+            4095,
+            3340
+          ],
+          "gpu": [
+            31,
+            4095,
+            3340
+          ],
+          "cpu_boundary_distance": [
+            0.3898870986649037,
+            0.5,
+            0.45512844359200244
+          ],
+          "gpu_boundary_distance": [
+            0.41223958414047956,
+            0.5,
+            0.4562644958496094
+          ]
+        },
+        "16": {
+          "cpu": [
+            498,
+            65535,
+            53453
+          ],
+          "gpu": [
+            495,
+            65535,
+            53453
+          ],
+          "cpu_boundary_distance": [
+            0.3757628788756051,
+            0.5,
+            0.4525415016323677
+          ],
+          "gpu_boundary_distance": [
+            0.20906499307602644,
+            0.5,
+            0.4343605041503906
+          ]
+        }
+      },
+      "linear_rgb": {
+        "cpu": [
+          8.19510334524806e-06,
+          1.0,
+          0.6131915317928537
+        ],
+        "gpu": [
+          8.070561570863706e-06,
+          1.0,
+          0.6131910312361356
+        ]
+      },
+      "luminance_nits": {
+        "cpu": 75.94381378061054,
+        "gpu": 75.94380751873177
+      }
+    },
+    {
+      "scope": "test-only mathematical diagnostics; no production, codec, or 4:2:0 contract",
+      "channel_order": {
+        "rgb": [
+          "R",
+          "G",
+          "B"
+        ],
+        "limited444": [
+          "Y",
+          "Cb",
+          "Cr"
+        ]
+      },
+      "pairs": 1,
+      "finite_in_bounds_pairs_projected": 1,
+      "invalid_inputs": {
+        "cpu": {
+          "nonfinite_components": 0,
+          "out_of_bounds_components": 0
+        },
+        "gpu": {
+          "nonfinite_components": 0,
+          "out_of_bounds_components": 0
+        }
+      },
+      "errors": {
+        "nonlinear_rgb": [
+          {
+            "samples": 1,
+            "max_absolute": 5.2126544343663456e-05,
+            "mean_absolute": 5.2126544343663456e-05,
+            "relative_samples_nonzero_cpu": 1,
+            "max_relative_to_cpu": 0.004607226869690875
+          },
+          {
+            "samples": 1,
+            "max_absolute": 0.0,
+            "mean_absolute": 0.0,
+            "relative_samples_nonzero_cpu": 1,
+            "max_relative_to_cpu": 0.0
+          },
+          {
+            "samples": 1,
+            "max_absolute": 1.0475429912393253e-07,
+            "mean_absolute": 1.0475429912393253e-07,
+            "relative_samples_nonzero_cpu": 1,
+            "max_relative_to_cpu": 1.1622003144320313e-07
+          }
+        ],
+        "display_linear": [
+          {
+            "samples": 1,
+            "max_absolute": 2.349282388346648e-07,
+            "mean_absolute": 2.349282388346648e-07,
+            "relative_samples_nonzero_cpu": 1,
+            "max_relative_to_cpu": 0.011021705822367252
+          },
+          {
+            "samples": 1,
+            "max_absolute": 0.0,
+            "mean_absolute": 0.0,
+            "relative_samples_nonzero_cpu": 1,
+            "max_relative_to_cpu": 0.0
+          },
+          {
+            "samples": 1,
+            "max_absolute": 2.1738538669158203e-07,
+            "mean_absolute": 2.1738538669158203e-07,
+            "relative_samples_nonzero_cpu": 1,
+            "max_relative_to_cpu": 2.789280981405103e-07
+          }
+        ]
+      },
+      "luminance_100_nits_errors": {
+        "samples": 1,
+        "max_absolute": 3.426135279482878e-06,
+        "mean_absolute": 3.426135279482878e-06,
+        "relative_samples_nonzero_cpu": 1,
+        "max_relative_to_cpu": 4.441237891368315e-08
+      },
+      "code_deltas": {
+        "rgb8": [
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          }
+        ],
+        "rgb10": [
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          }
+        ],
+        "rgb12": [
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          }
+        ],
+        "rgb16": [
+          {
+            "samples": 1,
+            "exact": 0,
+            "delta_1": 0,
+            "over_1": 1,
+            "max": 3,
+            "p50": 3,
+            "p95": 3,
+            "p99": 3,
+            "p999": 3,
+            "absolute_delta_histogram": {
+              "3": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          }
+        ],
+        "limited444_8": [
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          }
+        ],
+        "limited444_10": [
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          }
+        ]
+      },
+      "minimum_rgb_boundary_distance_code_units": {
+        "8": {
+          "cpu": [
+            0.3850910067135538,
+            0.5,
+            0.34287600762823445
+          ],
+          "gpu": [
+            0.37179873790591955,
+            0.5,
+            0.3429027199745178
+          ]
+        },
+        "10": {
+          "cpu": [
+            0.07430627399202194,
+            0.5,
+            0.4244621341031234
+          ],
+          "gpu": [
+            0.02098081912845373,
+            0.5,
+            0.4243549704551697
+          ]
+        },
+        "12": {
+          "cpu": [
+            0.16883265689411076,
+            0.5,
+            0.4938147010288958
+          ],
+          "gpu": [
+            0.38229085598140955,
+            0.5,
+            0.4933857321739197
+          ]
+        },
+        "16": {
+          "cpu": [
+            0.03161127461669366,
+            0.5,
+            0.11913396045565605
+          ],
+          "gpu": [
+            0.4477243581786752,
+            0.5,
+            0.12599903345108032
+          ]
+        }
+      },
+      "notes": [
+        "Relative error uses nonzero CPU references only.",
+        "Display and code projections use pairs with all components finite and in [0, 1].",
+        "Percentiles use nearest rank over absolute per-channel integer code differences."
+      ],
+      "input": {
+        "path": "BC",
+        "xy": [
+          618,
+          1041
+        ],
+        "channel": 0,
+        "cpu": [
+          0.011314082379268838,
+          1,
+          0.9013446117946206
+        ],
+        "gpu": [
+          0.011261955834925175,
+          1,
+          0.9013447165489197
+        ]
+      },
+      "projections": {
+        "8": {
+          "cpu": [
+            3,
+            255,
+            230
+          ],
+          "gpu": [
+            3,
+            255,
+            230
+          ],
+          "cpu_boundary_distance": [
+            0.3850910067135538,
+            0.5,
+            0.34287600762823445
+          ],
+          "gpu_boundary_distance": [
+            0.37179873790591955,
+            0.5,
+            0.3429027199745178
+          ]
+        },
+        "10": {
+          "cpu": [
+            12,
+            1023,
+            922
+          ],
+          "gpu": [
+            12,
+            1023,
+            922
+          ],
+          "cpu_boundary_distance": [
+            0.07430627399202194,
+            0.5,
+            0.4244621341031234
+          ],
+          "gpu_boundary_distance": [
+            0.02098081912845373,
+            0.5,
+            0.4243549704551697
+          ]
+        },
+        "12": {
+          "cpu": [
+            46,
+            4095,
+            3691
+          ],
+          "gpu": [
+            46,
+            4095,
+            3691
+          ],
+          "cpu_boundary_distance": [
+            0.16883265689411076,
+            0.5,
+            0.4938147010288958
+          ],
+          "gpu_boundary_distance": [
+            0.38229085598140955,
+            0.5,
+            0.4933857321739197
+          ]
+        },
+        "16": {
+          "cpu": [
+            741,
+            65535,
+            59070
+          ],
+          "gpu": [
+            738,
+            65535,
+            59070
+          ],
+          "cpu_boundary_distance": [
+            0.03161127461669366,
+            0.5,
+            0.11913396045565605
+          ],
+          "gpu_boundary_distance": [
+            0.4477243581786752,
+            0.5,
+            0.12599903345108032
+          ]
+        }
+      },
+      "linear_rgb": {
+        "cpu": [
+          2.1315052553653322e-05,
+          1.0,
+          0.779359943084952
+        ],
+        "gpu": [
+          2.1080124314818657e-05,
+          1.0,
+          0.7793601604703387
+        ]
+      },
+      "luminance_nits": {
+        "cpu": 77.14370099700534,
+        "gpu": 77.14369757087006
+      }
+    },
+    {
+      "scope": "test-only mathematical diagnostics; no production, codec, or 4:2:0 contract",
+      "channel_order": {
+        "rgb": [
+          "R",
+          "G",
+          "B"
+        ],
+        "limited444": [
+          "Y",
+          "Cb",
+          "Cr"
+        ]
+      },
+      "pairs": 1,
+      "finite_in_bounds_pairs_projected": 1,
+      "invalid_inputs": {
+        "cpu": {
+          "nonfinite_components": 0,
+          "out_of_bounds_components": 0
+        },
+        "gpu": {
+          "nonfinite_components": 0,
+          "out_of_bounds_components": 0
+        }
+      },
+      "errors": {
+        "nonlinear_rgb": [
+          {
+            "samples": 1,
+            "max_absolute": 3.643314504260531e-05,
+            "mean_absolute": 3.643314504260531e-05,
+            "relative_samples_nonzero_cpu": 1,
+            "max_relative_to_cpu": 0.0032580886553824897
+          },
+          {
+            "samples": 1,
+            "max_absolute": 0.0,
+            "mean_absolute": 0.0,
+            "relative_samples_nonzero_cpu": 1,
+            "max_relative_to_cpu": 0.0
+          },
+          {
+            "samples": 1,
+            "max_absolute": 8.659004624433919e-10,
+            "mean_absolute": 8.659004624433919e-10,
+            "relative_samples_nonzero_cpu": 1,
+            "max_relative_to_cpu": 9.255632440344925e-10
+          }
+        ],
+        "display_linear": [
+          {
+            "samples": 1,
+            "max_absolute": 1.6168286526198355e-07,
+            "mean_absolute": 1.6168286526198355e-07,
+            "relative_samples_nonzero_cpu": 1,
+            "max_relative_to_cpu": 0.007801587085731303
+          },
+          {
+            "samples": 1,
+            "max_absolute": 0.0,
+            "mean_absolute": 0.0,
+            "relative_samples_nonzero_cpu": 1,
+            "max_relative_to_cpu": 0.0
+          },
+          {
+            "samples": 1,
+            "max_absolute": 1.893066370328711e-09,
+            "mean_absolute": 1.893066370328711e-09,
+            "relative_samples_nonzero_cpu": 1,
+            "max_relative_to_cpu": 2.221351818265185e-09
+          }
+        ]
+      },
+      "luminance_100_nits_errors": {
+        "samples": 1,
+        "max_absolute": 3.4243418838286743e-06,
+        "mean_absolute": 3.4243418838286743e-06,
+        "relative_samples_nonzero_cpu": 1,
+        "max_relative_to_cpu": 4.408855308843768e-08
+      },
+      "code_deltas": {
+        "rgb8": [
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          }
+        ],
+        "rgb10": [
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          }
+        ],
+        "rgb12": [
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          }
+        ],
+        "rgb16": [
+          {
+            "samples": 1,
+            "exact": 0,
+            "delta_1": 0,
+            "over_1": 1,
+            "max": 3,
+            "p50": 3,
+            "p95": 3,
+            "p99": 3,
+            "p999": 3,
+            "absolute_delta_histogram": {
+              "3": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          }
+        ],
+        "limited444_8": [
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          }
+        ],
+        "limited444_10": [
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          }
+        ]
+      },
+      "minimum_rgb_boundary_distance_code_units": {
+        "8": {
+          "cpu": [
+            0.3515037399354264,
+            0.5,
+            0.06243141266782004
+          ],
+          "gpu": [
+            0.3422132879495621,
+            0.5,
+            0.06243163347244263
+          ]
+        },
+        "10": {
+          "cpu": [
+            0.06043793743552506,
+            0.5,
+            0.44365750917961577
+          ],
+          "gpu": [
+            0.0977090448141098,
+            0.5,
+            0.4436566233634949
+          ]
+        },
+        "12": {
+          "cpu": [
+            0.2917953530806727,
+            0.5,
+            0.4680131965697001
+          ],
+          "gpu": [
+            0.1426016241312027,
+            0.5,
+            0.4680096507072449
+          ]
+        },
+        "16": {
+          "cpu": [
+            0.33646116340457866,
+            0.5,
+            0.04487305563088739
+          ],
+          "gpu": [
+            0.0511849969625473,
+            0.5,
+            0.04492980241775513
+          ]
+        }
+      },
+      "notes": [
+        "Relative error uses nonzero CPU references only.",
+        "Display and code projections use pairs with all components finite and in [0, 1].",
+        "Percentiles use nearest rank over absolute per-channel integer code differences."
+      ],
+      "input": {
+        "path": "BC",
+        "xy": [
+          643,
+          1058
+        ],
+        "channel": 0,
+        "cpu": [
+          0.011182367607589908,
+          1,
+          0.9355389467163444
+        ],
+        "gpu": [
+          0.011145934462547302,
+          1,
+          0.9355389475822449
+        ]
+      },
+      "projections": {
+        "8": {
+          "cpu": [
+            3,
+            255,
+            239
+          ],
+          "gpu": [
+            3,
+            255,
+            239
+          ],
+          "cpu_boundary_distance": [
+            0.3515037399354264,
+            0.5,
+            0.06243141266782004
+          ],
+          "gpu_boundary_distance": [
+            0.3422132879495621,
+            0.5,
+            0.06243163347244263
+          ]
+        },
+        "10": {
+          "cpu": [
+            11,
+            1023,
+            957
+          ],
+          "gpu": [
+            11,
+            1023,
+            957
+          ],
+          "cpu_boundary_distance": [
+            0.06043793743552506,
+            0.5,
+            0.44365750917961577
+          ],
+          "gpu_boundary_distance": [
+            0.0977090448141098,
+            0.5,
+            0.4436566233634949
+          ]
+        },
+        "12": {
+          "cpu": [
+            46,
+            4095,
+            3831
+          ],
+          "gpu": [
+            46,
+            4095,
+            3831
+          ],
+          "cpu_boundary_distance": [
+            0.2917953530806727,
+            0.5,
+            0.4680131965697001
+          ],
+          "gpu_boundary_distance": [
+            0.1426016241312027,
+            0.5,
+            0.4680096507072449
+          ]
+        },
+        "16": {
+          "cpu": [
+            733,
+            65535,
+            61311
+          ],
+          "gpu": [
+            730,
+            65535,
+            61311
+          ],
+          "cpu_boundary_distance": [
+            0.33646116340457866,
+            0.5,
+            0.04487305563088739
+          ],
+          "gpu_boundary_distance": [
+            0.0511849969625473,
+            0.5,
+            0.04492980241775513
+          ]
+        }
+      },
+      "linear_rgb": {
+        "cpu": [
+          2.072435563241909e-05,
+          1.0,
+          0.8522136632130358
+        ],
+        "gpu": [
+          2.0562672767157106e-05,
+          1.0,
+          0.8522136651061022
+        ]
+      },
+      "luminance_nits": {
+        "cpu": 77.66963631035365,
+        "gpu": 77.66963288601177
+      }
+    },
+    {
+      "scope": "test-only mathematical diagnostics; no production, codec, or 4:2:0 contract",
+      "channel_order": {
+        "rgb": [
+          "R",
+          "G",
+          "B"
+        ],
+        "limited444": [
+          "Y",
+          "Cb",
+          "Cr"
+        ]
+      },
+      "pairs": 1,
+      "finite_in_bounds_pairs_projected": 1,
+      "invalid_inputs": {
+        "cpu": {
+          "nonfinite_components": 0,
+          "out_of_bounds_components": 0
+        },
+        "gpu": {
+          "nonfinite_components": 0,
+          "out_of_bounds_components": 0
+        }
+      },
+      "errors": {
+        "nonlinear_rgb": [
+          {
+            "samples": 1,
+            "max_absolute": 5.2968999512966776e-05,
+            "mean_absolute": 5.2968999512966776e-05,
+            "relative_samples_nonzero_cpu": 1,
+            "max_relative_to_cpu": 0.0069722682683125295
+          },
+          {
+            "samples": 1,
+            "max_absolute": 0.0,
+            "mean_absolute": 0.0,
+            "relative_samples_nonzero_cpu": 1,
+            "max_relative_to_cpu": 0.0
+          },
+          {
+            "samples": 1,
+            "max_absolute": 2.0598985184250296e-08,
+            "mean_absolute": 2.0598985184250296e-08,
+            "relative_samples_nonzero_cpu": 1,
+            "max_relative_to_cpu": 2.5255003322814005e-08
+          }
+        ],
+        "display_linear": [
+          {
+            "samples": 1,
+            "max_absolute": 1.3780220940285273e-07,
+            "mean_absolute": 1.3780220940285273e-07,
+            "relative_samples_nonzero_cpu": 1,
+            "max_relative_to_cpu": 0.01681518872885935
+          },
+          {
+            "samples": 1,
+            "max_absolute": 0.0,
+            "mean_absolute": 0.0,
+            "relative_samples_nonzero_cpu": 1,
+            "max_relative_to_cpu": 0.0
+          },
+          {
+            "samples": 1,
+            "max_absolute": 3.7166770661123394e-08,
+            "mean_absolute": 3.7166770661123394e-08,
+            "relative_samples_nonzero_cpu": 1,
+            "max_relative_to_cpu": 6.061200902832909e-08
+          }
+        ]
+      },
+      "luminance_100_nits_errors": {
+        "samples": 1,
+        "max_absolute": 3.198527991798983e-06,
+        "mean_absolute": 3.198527991798983e-06,
+        "relative_samples_nonzero_cpu": 1,
+        "max_relative_to_cpu": 4.211703142851129e-08
+      },
+      "code_deltas": {
+        "rgb8": [
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          }
+        ],
+        "rgb10": [
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          }
+        ],
+        "rgb12": [
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          }
+        ],
+        "rgb16": [
+          {
+            "samples": 1,
+            "exact": 0,
+            "delta_1": 0,
+            "over_1": 1,
+            "max": 3,
+            "p50": 3,
+            "p95": 3,
+            "p99": 3,
+            "p999": 3,
+            "absolute_delta_histogram": {
+              "3": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          }
+        ],
+        "limited444_8": [
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          }
+        ],
+        "limited444_10": [
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          },
+          {
+            "samples": 1,
+            "exact": 1,
+            "delta_1": 0,
+            "over_1": 0,
+            "max": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "p999": 0,
+            "absolute_delta_histogram": {
+              "0": 1
+            }
+          }
+        ]
+      },
+      "minimum_rgb_boundary_distance_code_units": {
+        "8": {
+          "cpu": [
+            0.43725977773881564,
+            0.5,
+            0.48814218483124705
+          ],
+          "gpu": [
+            0.4507668726146221,
+            0.5,
+            0.48814743757247925
+          ]
+        },
+        "10": {
+          "cpu": [
+            0.2718304024580718,
+            0.5,
+            0.10051194085338011
+          ],
+          "gpu": [
+            0.32601768895983696,
+            0.5,
+            0.10049086809158325
+          ]
+        },
+        "12": {
+          "cpu": [
+            0.3898870986649037,
+            0.5,
+            0.45512844359200244
+          ],
+          "gpu": [
+            0.17297904565930367,
+            0.5,
+            0.45504409074783325
+          ]
+        },
+        "16": {
+          "cpu": [
+            0.3757628788756051,
+            0.5,
+            0.4525415016323677
+          ],
+          "gpu": [
+            0.15291373804211617,
+            0.5,
+            0.45389145612716675
+          ]
+        }
+      },
+      "notes": [
+        "Relative error uses nonzero CPU references only.",
+        "Display and code projections use pairs with all components finite and in [0, 1].",
+        "Percentiles use nearest rank over absolute per-channel integer code differences."
+      ],
+      "input": {
+        "path": "C",
+        "xy": [
+          565,
+          1005
+        ],
+        "channel": 0,
+        "cpu": [
+          0.007597097167603198,
+          1,
+          0.8156397732738481
+        ],
+        "gpu": [
+          0.007650066167116165,
+          1,
+          0.8156397938728333
+        ]
+      },
+      "projections": {
+        "8": {
+          "cpu": [
+            2,
+            255,
+            208
+          ],
+          "gpu": [
+            2,
+            255,
+            208
+          ],
+          "cpu_boundary_distance": [
+            0.43725977773881564,
+            0.5,
+            0.48814218483124705
+          ],
+          "gpu_boundary_distance": [
+            0.4507668726146221,
+            0.5,
+            0.48814743757247925
+          ]
+        },
+        "10": {
+          "cpu": [
+            8,
+            1023,
+            834
+          ],
+          "gpu": [
+            8,
+            1023,
+            834
+          ],
+          "cpu_boundary_distance": [
+            0.2718304024580718,
+            0.5,
+            0.10051194085338011
+          ],
+          "gpu_boundary_distance": [
+            0.32601768895983696,
+            0.5,
+            0.10049086809158325
+          ]
+        },
+        "12": {
+          "cpu": [
+            31,
+            4095,
+            3340
+          ],
+          "gpu": [
+            31,
+            4095,
+            3340
+          ],
+          "cpu_boundary_distance": [
+            0.3898870986649037,
+            0.5,
+            0.45512844359200244
+          ],
+          "gpu_boundary_distance": [
+            0.17297904565930367,
+            0.5,
+            0.45504409074783325
+          ]
+        },
+        "16": {
+          "cpu": [
+            498,
+            65535,
+            53453
+          ],
+          "gpu": [
+            501,
+            65535,
+            53453
+          ],
+          "cpu_boundary_distance": [
+            0.3757628788756051,
+            0.5,
+            0.4525415016323677
+          ],
+          "gpu_boundary_distance": [
+            0.15291373804211617,
+            0.5,
+            0.45389145612716675
+          ]
+        }
+      },
+      "linear_rgb": {
+        "cpu": [
+          8.19510334524806e-06,
+          1.0,
+          0.6131915317928537
+        ],
+        "gpu": [
+          8.332905554650913e-06,
+          1.0,
+          0.6131915689596243
+        ]
+      },
+      "luminance_nits": {
+        "cpu": 75.94381378061054,
+        "gpu": 75.94381697913853
+      }
+    }
+  ],
+  "signal_matrix_source": "ITU-R BT.709-6 sections 3.2-3.4",
+  "luminance_model": "sealed C2B signed power2.4, D65 xy-derived BT709 XYZ Y, 100nit white"
+}

@@ -18,8 +18,20 @@ formula correction, and raw C-1 has source/Y excursions.
 reference: §2 primary conversion + explicit target-volume limiting (D5+D6),
 not a strict-Y mapper or a production fallback. No production feature is enabled.
 
-This document describes the sole Rust implementation through the Stage 5.3C-2B
-CPU reference, retaining Stage 5.3B-3 PQ production integration on the Stage 5.2C-3 P010
+[C-3](stage5.3c3-vulkan-hdr-to-sdr.md) adds an independent feature-gated Vulkan
+f32 reference: existing HDR map → linear render → Method A → primary conversion /
+target clip. It is **SEALED** under C3B's independently derived N3 contract,
+with real full-frame parity, dual-codec 3000-frame stress/resource and performance
+closure. C3B selects the N3 signal-accuracy contract and
+common-scale/compensated f32 arithmetic; canonical and legal HEVC/AV1 full-frame
+parity pass. Old two-code UNORM16 failures remain historical diagnostics, not
+PASS. A new identity-preserved legal source replaces the unsuitable B-3 input
+for C3 qualification, without changing the B-3 production baseline.
+No HDR→SDR production planner, CLI or encoder path is enabled.
+
+This document describes the sole Rust implementation through the Stage 5.3C-3
+qualification draft and sealed C-2B CPU reference, retaining Stage 5.3B-3 PQ
+production integration on the Stage 5.2C-3 P010
 processing foundation: a permanent CPU reference backend, a Vulkan 1.3 compute
 backend, optional Linux VAAPI media, and qualified Intel DMA-BUF bridges in both
 pixel directions. Stage 3A
@@ -100,7 +112,16 @@ No source preclip, CAT (same D65), Y restoration, quantization or encoder is
 added. Preclip XYZ/Y is colorimetrically preserved within f64 error; limiting
 may change Y/hue and is many-to-one. This is a measured project policy, not
 Annex5, optimality or luminance preservation. Production HDR→SDR remains closed;
-C-3 is justified by this qualification, but no Vulkan C-3 work has started.
+C-3 now has the sealed isolated qualification above; it justifies C-4 but does
+not implement it. CPU references and PQ-preserve production remain unchanged.
+
+C3B's [precision contract review](numerical-qualification.md) separates
+reference-space error, full-scale RGB diagnostics and hypothetical limited
+8/10-bit BT.709 YUV codes. These projections do not implement C4 packing or
+select a production format. Optional `hdr-to-sdr-fp64-experiment` modules and
+explicit experimental devices are qualification-only; ordinary contexts never
+request shaderFloat64. Neither those experiments nor the diagnostic output-code
+contract opens the production HDR→SDR planner.
 
 ```text
 codec parameters / decoded AVFrame metadata

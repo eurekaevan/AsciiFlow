@@ -1,5 +1,146 @@
 # Regression testing
 
+## C3B precision contract review
+
+Stage 5.3C-3 is **SEALED** under P2/N3 on the recorded Intel hardware. See the
+[45-item closure ledger](stage5.3c3-vulkan-hdr-to-sdr.md). Historical UNORM16
+failures remain failures; production HDR→SDR and C4 implementation stay closed.
+
+[Numerical qualification](numerical-qualification.md) audits the historical
+≤2 UNORM16 threshold, adopts an independently derived N3 10-bit diagnostic
+budget, and records M0/M1/M2/M3 semantics. Historical failures remain preserved.
+No production format or C4 packing is implemented. Optional FP64 modules are
+excluded from the ordinary generated set; normal devices never enable Float64.
+Every cached module, including experiments, requires Vulkan1.3 validation.
+
+```bash
+bash scripts/qualify-tone-map-cpu.sh /tmp/asciiflow-c3b-c1
+bash scripts/qualify-target-volume-cpu.sh \
+  /tmp/asciiflow-c3b-c1/method-a-run1.bin /tmp/asciiflow-c3b-c2b
+ASCIIFLOW_VULKAN_VALIDATION=1 \
+C1_INPUT=/tmp/asciiflow-c3b-c1/linear-bt2020-1000-v1.bin \
+C1_OUTPUT=/tmp/asciiflow-c3b-c1/method-a-run1.bin \
+C3_PRECISION_DIR=/tmp/asciiflow-c3b-precision \
+  cargo test -p asciiflow-vulkan --release \
+    --features hdr-to-sdr-fp64-experiment --test c3_precision \
+    canonical_precision_sweep -- --ignored --nocapture --test-threads=1
+ASCIIFLOW_VULKAN_VALIDATION=1 C3_PRECISION_DIR=/tmp/asciiflow-c3b-power-v2 \
+  cargo test -p asciiflow-vulkan --release \
+    --features hdr-to-sdr-fp64-experiment --test c3_precision \
+    independent_power_edges -- --ignored --nocapture --test-threads=1
+ASCIIFLOW_VULKAN_VALIDATION=1 \
+C3_LEGAL_FIXTURE_DIR=/home/eureka/Documents/AsciiFlow/tests/fixtures/codecs \
+C3_PRECISION_REAL_REPORT=/tmp/asciiflow-c3b-selected-real.json \
+  cargo test -p asciiflow-interop --release \
+    --features hdr-to-sdr-qualification --test c3_precision_real \
+    c3_precision_real_full_frame_diagnostics -- --ignored --nocapture --test-threads=1
+ASCIIFLOW_VULKAN_VALIDATION=1 C3_STRESS_REPORT=/tmp/asciiflow-c3b-stress.json \
+  cargo test -p asciiflow-interop --release \
+    --features hdr-to-sdr-qualification --test c3_precision_real \
+    c3_selected_dual_slot_3000_frame_stress -- --ignored --nocapture --test-threads=1
+python3 scripts/test-c3b-precision-diagnostics.py
+jq '[.cases[]|.path as $p|.vectors[]|{path:$p,xy,channel,cpu,gpu}]' \
+  tests/baselines/tone-map/c3b-frozen-outliers.json | \
+  python3 scripts/c3b-precision-diagnostics.py --details
+```
+
+Use fresh output paths: these reports/captures use exclusive creation. A
+successful mixed-precision exploratory test means capture/validation completed,
+**not** passage of the historical numerical gate or C3 sealing. The selected
+canonical/real tests assert N3; neither alone seals C3. Rust distributions use
+`ceil((N-1)*p)`; the Python tool
+uses nearest rank. Histograms allow recomputation of either. Double intermediate
+observations are only f32 casts, not captured binary64 bits.
+Current real-source qualification uses selected f32 mode262 and all 300 VAAPI/DMA-BUF frames per
+codec; the frozen CPU reference consumes a downloaded copy of the same frame.
+Input domain qualification is not renderer/conversion parity. Do not run
+3000-frame stress or performance qualification before the precision policy
+decision and applicable numerical/parity gates. Earlier ordinary-mode0 evidence
+is historical diagnostic data, not selected-configuration parity.
+
+After both stress gates pass, performance runs separately with validation off:
+
+```bash
+ASCIIFLOW_VULKAN_VALIDATION=0 \
+C3_FULL_PERFORMANCE_REPORT=/tmp/asciiflow-c3b-performance.json \
+  cargo test -p asciiflow-interop --release \
+    --features hdr-to-sdr-qualification --test c3_performance \
+    c3_full_host_input_performance -- --ignored --nocapture --test-threads=1
+```
+
+This measures 300 complete CPU reference frames and 300 Vulkan frames per mode,
+with 5 warmup batches excluded. Input is the checksum-verified legal HEVC first
+frame downloaded once and repeated as cached host P010. Full map/A/B/C and GPU
+final/cell/counter readback are included; decode/download/DMA-BUF/encode are not.
+Both maps finish before either dual-slot A/B/C submit; throughput uses whole
+batch wall, not summed overlapping per-frame intervals. Timed validation is
+disabled and is not credited as a Validation PASS. The separate real stress
+provides actual VAAPI/DMA-BUF and enabled-validation evidence.
+
+## Historical C3/C3A diagnostics; current closure uses C3B N3
+
+[The C-3 report](stage5.3c3-vulkan-hdr-to-sdr.md) and
+[machine record](../tests/baselines/tone-map/stage53c3.json) retain an actual
+strict-gate failure separately from the C3B-derived N3 contract. Historical original B+C
+max UNORM16 error 10 (7 samples above 2), isolated C max 11 (4 above 2).
+C3A's 18 actual arithmetic experiments improve the best B+C result to 4 (5 above
+2) and isolated C to 3 (1 above 2), but **all fail**. Exact masks in the best
+compensated C comparison do not waive final-code failures. Keep original f64,
+true per-operation f32 and actual GPU observations, plus f32-input-promoted
+f64 comparisons and exact failing coordinates. Do not widen thresholds, snap
+outputs or modify sealed C-1/C-2B to make GPU tests pass. The independently
+derived, reviewed C3B N3 contract is a methodology correction, not an empirical
+widening of the old diagnostic to four codes.
+
+```sh
+bash scripts/qualify-tone-map-vulkan.sh /tmp/asciiflow-c3-fresh-qualification
+ASCIIFLOW_VULKAN_VALIDATION=1 cargo test -p asciiflow-interop \
+  --features hdr-to-sdr-qualification --test c3_hardware \
+  -- --ignored --nocapture --test-threads=1
+C3_LEGAL_FIXTURE_DIR=/absolute/path/to/canonical-fixtures \
+C3_LEGAL_REPORT=/absolute/path/to/NEW-legal-domain.json \
+  cargo test -p asciiflow-interop --release --features hdr-to-sdr-qualification \
+  --test c3_legal_domain -- --ignored --nocapture --test-threads=1
+ASCIIFLOW_VULKAN_VALIDATION=1 C1_INPUT=/absolute/path/to/linear-bt2020-1000-v1.bin \
+C1_OUTPUT=/absolute/path/to/method-a-run1.bin \
+C3_ARITHMETIC_REPORT=/absolute/path/to/NEW-arithmetic.json \
+  cargo test -p asciiflow-vulkan --release --features hdr-to-sdr-qualification \
+  --test c3_arithmetic canonical_arithmetic_sweep -- --ignored --nocapture --test-threads=1
+python3 scripts/audit-c3-spirv.py /absolute/path/to/ACTUAL/bt2020_to_bt709_limit.spv
+cargo test --workspace --features asciiflow-media/encode-characterization,asciiflow-interop/hdr-to-sdr-qualification
+cargo clippy --workspace --all-targets --features asciiflow-media/encode-characterization,asciiflow-interop/hdr-to-sdr-qualification -- -D warnings
+```
+
+Use a fresh output directory and real GPU device access. The historical C3A
+wrapper exited nonzero at the old canonical hard gate after preserving its
+report. The explicit arithmetic sweep above retains that failed diagnostic;
+the current wrapper instead asserts N3, full selected parity, stress and finally
+performance, failing closed on any required gate. Synthetic render/domain/fault
+tests are independent of the historical failure. Capture stores raw
+R8 coverage bytes, avoiding false atlas mismatches from fraction normalization.
+No ignored test counts as a PASS.
+
+B-3's preserved real canonical source exceeds 1000 nits. Actual HEVC/AV1 import
+tests prove correct full-frame rejection, not selected-valid-subset parity.
+Keep that input identity unchanged; qualify a separate, reproducible legal-domain
+source before full real C-3 closure. The new
+[C3 legal-domain PQ v1](../tests/fixtures/codecs/c3-pq-legal-v1.md) source has now
+passed all-300-frame software/VAAPI unclamped RGB-domain and timestamp audits for
+both codecs; it is separate from B-3. The test checks actual input SHA256 before
+decoding, and a changed-bytes negative control was rejected before qualification.
+Full legal-source CPU/GPU parity, both 3000-frame stresses, FD restoration,
+resource-growth checks and 1080p/300-frame performance were unqualified at C3A;
+the C3B evidence above closes them under N3. C4 is justified, not implemented or
+started; production integration is not authorized by this qualification alone.
+
+Every future qualification/benchmark must retain source generator/version,
+exact command, input SHA256, feature/config/output command, toolchain and device
+identity, and output hashes or a structured nondeterministic oracle. A failure
+record must distinguish observations, approved gates and unrun requirements.
+Enumerate every actual Debug/Release SPIR-V cache file and validate Vulkan1.3;
+old file counts are not targets. Current 524 cache files pass, with no Float16/Float64
+capabilities in the three new C-3 modules.
+
 ## C-2B primary conversion and target-volume CPU reference
 
 [C-2B closure](stage5.3c2b-target-volume-cpu.md) is the replacement f64 CPU

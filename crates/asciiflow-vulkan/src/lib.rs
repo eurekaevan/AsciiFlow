@@ -4,6 +4,10 @@ mod context;
 mod external;
 mod pq;
 mod streaming;
+#[cfg(feature = "hdr-to-sdr-qualification")]
+mod tone_map;
+#[cfg(feature = "hdr-to-sdr-qualification")]
+pub use tone_map::{C3Fault, C3MatrixExperiment, C3Output, C3Timings, VulkanHdrToSdrQualification};
 
 #[cfg(feature = "hdr-pq-qualification")]
 pub use pq::{GpuPqCell, PqQualificationFault, VulkanPqQualification};

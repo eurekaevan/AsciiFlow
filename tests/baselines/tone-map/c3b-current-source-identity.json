@@ -1,0 +1,28 @@
+{
+  "scope": "C3B final implementation tree; documentation and the self-referential master record excluded",
+  "base_head": "89e5f67864c1d2985792ebd904ae3dbd1b372429",
+  "sha256": {
+    "Cargo.lock": "f8cf97f855fcbcb422ef1b74f2367a7ac40b612dcc41cc0a1d8a23f3e27746b8",
+    "crates/asciiflow-vulkan/src/context.rs": "bede65dc44d1548eee567f5c52a5a907548627fe04a44f2ceaceabd4c12f3144",
+    "crates/asciiflow-vulkan/src/tone_map.rs": "629430403ed97f584aa7e8c582af4868b8877695d594828b18b06039693366ee",
+    "crates/asciiflow-vulkan/src/backend.rs": "e917895996b8cac7d975d136c801383bea25a8d97229ac6f9a8f43fb31dd27ae",
+    "crates/asciiflow-vulkan/build.rs": "e38fa6294dae54fe7ff67cd4483b943c2599920fb3ee5df8f4a88a731b7a0fc3",
+    "crates/asciiflow-vulkan/Cargo.toml": "727273c29f4cd39677f3fc51867b87c6719c853fe798383235f1dab5995e6d13",
+    "crates/asciiflow-vulkan/tests/c3_precision.rs": "e6cd98443054d6ec4588461cd122a69a2e1b01d2eb4dd04e8b2365fe0a349d5d",
+    "crates/asciiflow-vulkan/tests/c3_qualification.rs": "42205b504894eb169b5f42a5f8a6147000d7df4669211e23e6eaa52130d76bb6",
+    "crates/asciiflow-vulkan/tests/c3_render.rs": "a45c078cd6370690ef58f156e842e233bdb13b835c909618e4e04f95f719676f",
+    "crates/asciiflow-interop/tests/c3_precision_real.rs": "784aa55e98b72d233b967f4bbce7ca1b52b081e53a0efee6aa1e7c61991e6dbe",
+    "crates/asciiflow-interop/tests/c3_performance.rs": "ba37d5e36e6b9c437b1fb0f1bf9ddffb3f494888a4045177cd59d66bf4927b2b",
+    "shaders/src/bt2020_to_bt709_limit.comp": "51f6848acb87f48015e45b6ec56b232ff5d63fc814c7a972131e3cec87cd8ea7",
+    "shaders/src/tone_map_bt2446.comp": "aa78f39f3c17d8d205c822e422dc6acac7a38fcee6863ad12839bb3bf63dc7da",
+    "shaders/src/c3_common.glsl": "e461c7452b4598d577d420dad0be6fa9c18ffcfd3a3aaee9abcb8319444c4bbd",
+    "shaders/src/ascii_render_hdr_linear.comp": "93403a81e6c62cf1c6d68cfe20cb5ed177c80cc4a24bad6f60a655606398329e",
+    "scripts/qualify-tone-map-vulkan.sh": "222f9b34897f7ac59482737c62594b14de637168a118abfc9d609e03ca64c2a5",
+    "scripts/evaluate-c3b-contract.py": "0a5f23b1d4b456f41a2d59c0259eb1ed1b2d2543fa6275258e7efcd6206b3331",
+    "scripts/c3b-precision-diagnostics.py": "5d401dee62070003d4731afa67c5509105dfc009dcc830bf89f34e96321ca95d",
+    "scripts/test-c3b-precision-diagnostics.py": "b74914f28f62a67b0573fb0900b178710b9c083bbbcc5124197fdacde18a0d40",
+    "crates/asciiflow-core/src/tone_map_bt2446.rs": "209208b850936869e6a8b73c960b2cf7be9d957ceb544eaca1bbe4fe88407107",
+    "crates/asciiflow-core/src/sdr_target_volume.rs": "ca92bb3d6d26113254788a0a09549e064ce3c37be0db7b7636f71ea6dcf836b5"
+  },
+  "parity_note": "The 600-frame selected parity run preceded addition of staged submission/teardown observers and the explicit finite-output assertion. Arithmetic, shader module, source inputs and conversion configuration are identical. Its GPU invalid-arithmetic counters were checked. The subsequent final-tree stress checks all finite/bounded outputs and staging/teardown; CPU f64 sources are frozen."
+}

@@ -4,6 +4,15 @@ C-1 implements ITU-R BT.2446-1 Method A, fixed 1000→100 cd/m², as a permanent
 f64 CPU qualification oracle. It is not a production backend, CLI feature,
 encoder, or universal policy for PQ content.
 
+The independent [C-3 Vulkan f32 draft](stage5.3c3-vulkan-hdr-to-sdr.md) is
+**NOT SEALED**: near-zero target-channel arithmetic fails the unchanged
+diagnostic UNORM16≤2 gate. Original B+C/C maxima 10/11 are retained; C3A's best
+tested candidates still reach 4/3, with 5/1 channels above 2. CPU f64 remains
+authoritative; neither oracle nor gate is relaxed. A separate reproducible
+legal-domain PQ fixture now passes complete software/VAAPI domain audits;
+B-3's original above-1000-nit fixture is unchanged and remains correctly rejected.
+Production HDR→SDR stays disabled.
+
 ## Authorities
 
 - [BT.2446-1 (03/2021), §4.1 Tables 2–3](https://www.itu.int/dms_pub/itu-r/opb/rep/R-REP-BT.2446-1-2021-PDF-E.pdf): forward Method A, printed pp. 8–9. Forward formulas have no equation numbers.

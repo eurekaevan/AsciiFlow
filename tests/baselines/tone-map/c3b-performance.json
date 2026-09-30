@@ -1,0 +1,157 @@
+{
+  "status": "PASS",
+  "scope": "cached downloaded first-frame host P010; complete CPU reference map+A+B+C vs GPU host stage/map+A+B+C+final/cells/diagnostics readback; excludes decode/download/DMA-BUF/encode; not production qualification",
+  "source": "/home/eureka/Documents/AsciiFlow/crates/asciiflow-interop/../../tests/fixtures/codecs/hevc-main10-pq-c3-legal-v1.mp4",
+  "source_sha256": "eb8d8c42cd99369b99031900e8861c08f611bfcc662b8d0eb741eb695a0c366a",
+  "source_frame_index": 0,
+  "source_pts": 0,
+  "width": 1920,
+  "height": 1080,
+  "grid": [
+    160,
+    90
+  ],
+  "color": true,
+  "atlas": "builtin",
+  "validation_enabled": false,
+  "vulkan_validation_errors": 0,
+  "device": "DeviceInfo { name: \"Intel(R) Arc(tm) Graphics (MTL)\", vendor_id: 32902, device_id: 32085, device_type: INTEGRATED_GPU, api_version: 4211042, driver_version: 109060099, queue_family: 0, timestamp_valid_bits: 36, timestamp_period_ns: 52.083332, non_coherent_atom_size: 64, max_storage_buffer_range: 4294967295, max_compute_work_group_invocations: 1024, max_compute_work_group_size: [1024, 1024, 1024], dma_buf_interop: true, p010_storage_supported: true, memory_heaps: [MemoryHeapInfo { index: 0, size: 24774706176, flags: DEVICE_LOCAL }], memory_types: [MemoryTypeInfo { index: 0, heap_index: 0, property_flags: DEVICE_LOCAL | HOST_VISIBLE | HOST_COHERENT }, MemoryTypeInfo { index: 1, heap_index: 0, property_flags: DEVICE_LOCAL | HOST_VISIBLE | HOST_CACHED }, MemoryTypeInfo { index: 2, heap_index: 0, property_flags: DEVICE_LOCAL | PROTECTED }, MemoryTypeInfo { index: 3, heap_index: 0, property_flags: DEVICE_LOCAL | HOST_VISIBLE | HOST_COHERENT }, MemoryTypeInfo { index: 4, heap_index: 0, property_flags: DEVICE_LOCAL | HOST_VISIBLE | HOST_CACHED }] }",
+  "warmup_batches_per_mode": 5,
+  "requested_measured_frames_per_mode": 300,
+  "correctness_prechecks": [
+    {
+      "glyph_mismatches": 0,
+      "r8_coverage_mismatches": 0,
+      "exact_cpu_clip_mask_mismatches": 0,
+      "exact_limiter_policy_mismatches": 0,
+      "invalid_final_components": 0,
+      "components_over_n3_epsilon": 0,
+      "limited_10bit_codes_over_one": 0,
+      "max_rgb_error": 0.0000153791804062553,
+      "max_code_distance": 0,
+      "n3_epsilon": 0.0005580357142857143
+    },
+    {
+      "glyph_mismatches": 0,
+      "r8_coverage_mismatches": 0,
+      "exact_cpu_clip_mask_mismatches": 0,
+      "exact_limiter_policy_mismatches": 0,
+      "invalid_final_components": 0,
+      "components_over_n3_epsilon": 0,
+      "limited_10bit_codes_over_one": 0,
+      "max_rgb_error": 0.0000153791804062553,
+      "max_code_distance": 0,
+      "n3_epsilon": 0.0005580357142857143
+    }
+  ],
+  "gpu_buffer_bytes_per_slot": [
+    75596984,
+    75596984
+  ],
+  "cpu_f64_full": {
+    "measured_frames": 300,
+    "frames_per_batch": 1,
+    "map": {
+      "median_ms": 194.71304199999997,
+      "p95_ms": 199.664418
+    },
+    "pass_a": {
+      "median_ms": 32.408113,
+      "p95_ms": 33.868986
+    },
+    "pass_b": {
+      "median_ms": 91.12181849999999,
+      "p95_ms": 93.98434499999999
+    },
+    "pass_c": {
+      "median_ms": 114.5924785,
+      "p95_ms": 118.480803
+    },
+    "host_stage_wall": null,
+    "readback": null,
+    "backend_frame_wall": null,
+    "whole_batch_wall": {
+      "median_ms": 446.9968735,
+      "p95_ms": 459.334835
+    },
+    "measured_total_wall_seconds": 134.015306077,
+    "throughput_fps": 2.2385502729638334
+  },
+  "vulkan_one_slot": {
+    "measured_frames": 300,
+    "frames_per_batch": 1,
+    "map": {
+      "median_ms": 0.615208,
+      "p95_ms": 0.700521
+    },
+    "pass_a": {
+      "median_ms": 0.659219,
+      "p95_ms": 0.705521
+    },
+    "pass_b": {
+      "median_ms": 0.7784635,
+      "p95_ms": 1.386146
+    },
+    "pass_c": {
+      "median_ms": 4.8669530000000005,
+      "p95_ms": 8.602031
+    },
+    "host_stage_wall": {
+      "median_ms": 2.5482875,
+      "p95_ms": 3.562731
+    },
+    "readback": {
+      "median_ms": 165.094564,
+      "p95_ms": 170.571387
+    },
+    "backend_frame_wall": {
+      "median_ms": 174.9964705,
+      "p95_ms": 185.209392
+    },
+    "whole_batch_wall": {
+      "median_ms": 174.997432,
+      "p95_ms": 185.21080800000001
+    },
+    "measured_total_wall_seconds": 52.79191930500002,
+    "throughput_fps": 5.682687880067024
+  },
+  "vulkan_two_slot": {
+    "measured_frames": 300,
+    "frames_per_batch": 2,
+    "map": {
+      "median_ms": 0.6151819999999999,
+      "p95_ms": 0.657865
+    },
+    "pass_a": {
+      "median_ms": 0.671797,
+      "p95_ms": 1.118333
+    },
+    "pass_b": {
+      "median_ms": 0.781901,
+      "p95_ms": 1.276875
+    },
+    "pass_c": {
+      "median_ms": 5.1484635,
+      "p95_ms": 6.0168230000000005
+    },
+    "host_stage_wall": {
+      "median_ms": 2.3173329999999996,
+      "p95_ms": 3.243183
+    },
+    "readback": {
+      "median_ms": 165.64362799999998,
+      "p95_ms": 166.858162
+    },
+    "backend_frame_wall": {
+      "median_ms": 261.73094549999996,
+      "p95_ms": 342.29408
+    },
+    "whole_batch_wall": {
+      "median_ms": 343.4754305,
+      "p95_ms": 346.157528
+    },
+    "measured_total_wall_seconds": 51.54995003000002,
+    "throughput_fps": 5.819598269744431
+  },
+  "measurement_note": "Final independent run after stress and static SPIR-V validation completed; no other qualification workload during timing. Preliminary run retained separately."
+}

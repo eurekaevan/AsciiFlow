@@ -1,0 +1,34 @@
+{
+  "candidate": "N3: finite/bounded RGB, absolute nonlinear error<=1/1792, limited444 YUV10 max<=1 and over1=0",
+  "epsilon": 0.0005580357142857143,
+  "checks": [
+    {
+      "source": "canonical-BC",
+      "numerical_candidate_pass": true,
+      "semantic_parity_pass": true,
+      "validation_pass": true
+    },
+    {
+      "source": "canonical-C",
+      "numerical_candidate_pass": true,
+      "semantic_parity_pass": true,
+      "validation_pass": true
+    },
+    {
+      "source": "hevc-main10-pq-c3-legal-v1.mp4",
+      "numerical_candidate_pass": true,
+      "semantic_parity_pass": true,
+      "validation_pass": true
+    },
+    {
+      "source": "av1-main10-pq-c3-legal-v1.mp4",
+      "numerical_candidate_pass": true,
+      "semantic_parity_pass": true,
+      "validation_pass": true
+    }
+  ],
+  "numerical_candidate_pass": true,
+  "semantic_parity_pass": true,
+  "validation_pass": true,
+  "scope": "corpus evaluation only; no stage sealing, output-format selection or automatic gate replacement"
+}

@@ -1,0 +1,142 @@
+{
+  "module": "target/release/build/asciiflow-vulkan-4bb1289906b59828/out/bt2020_to_bt709_limit.spv",
+  "module_sha256": "21520eea09437c48c61886a784123993dfbef7a79adea420135bd07c538f2930",
+  "cpu_matrix_source_sha256": "ca92bb3d6d26113254788a0a09549e064ce3c37be0db7b7636f71ea6dcf836b5",
+  "capabilities": [
+    "Shader"
+  ],
+  "float_widths": [
+    "32"
+  ],
+  "operations": {
+    "OpFAdd": 28,
+    "OpFSub": 36,
+    "OpFMul": 28,
+    "OpFDiv": 0,
+    "Fma": 4,
+    "Pow": 2,
+    "Log": 0,
+    "Exp": 0,
+    "NoContraction": 96
+  },
+  "coefficients": [
+    {
+      "row": 0,
+      "column": 0,
+      "sealed_f64": 1.6604910021084345,
+      "f64_bits": "3ffa915f0355ba57",
+      "f32_bits": "3fd48af8",
+      "residual_f32_bits": "32556e96",
+      "residual_used": true,
+      "actual_spirv_residual_uint_present": true,
+      "actual_spirv_constant_present": true
+    },
+    {
+      "row": 0,
+      "column": 1,
+      "sealed_f64": -0.5876411387885495,
+      "f64_bits": "bfe2cdf4ca1c314b",
+      "f32_bits": "bf166fa6",
+      "residual_f32_bits": "b2a1c315",
+      "residual_used": false,
+      "actual_spirv_residual_uint_present": false,
+      "actual_spirv_constant_present": true
+    },
+    {
+      "row": 0,
+      "column": 2,
+      "sealed_f64": -0.07284986331988488,
+      "f64_bits": "bfb2a649e47a1b12",
+      "f32_bits": "bd95324f",
+      "residual_f32_bits": "b08f4362",
+      "residual_used": true,
+      "actual_spirv_residual_uint_present": true,
+      "actual_spirv_constant_present": true
+    },
+    {
+      "row": 1,
+      "column": 0,
+      "sealed_f64": -0.12455047452159074,
+      "f64_bits": "bfbfe28a36c581e8",
+      "f32_bits": "bdff1452",
+      "residual_f32_bits": "3113a7e2",
+      "residual_used": true,
+      "actual_spirv_residual_uint_present": true,
+      "actual_spirv_constant_present": true
+    },
+    {
+      "row": 1,
+      "column": 1,
+      "sealed_f64": 1.1328998971259603,
+      "f64_bits": "3ff2205ba47cc3a4",
+      "f32_bits": "3f9102dd",
+      "residual_f32_bits": "328f9874",
+      "residual_used": false,
+      "actual_spirv_residual_uint_present": false,
+      "actual_spirv_constant_present": true
+    },
+    {
+      "row": 1,
+      "column": 2,
+      "sealed_f64": -0.008349422604369477,
+      "f64_bits": "bf8119808835c296",
+      "f32_bits": "bc08cc04",
+      "residual_f32_bits": "af835c29",
+      "residual_used": true,
+      "actual_spirv_residual_uint_present": true,
+      "actual_spirv_constant_present": true
+    },
+    {
+      "row": 2,
+      "column": 0,
+      "sealed_f64": -0.018150763354905303,
+      "f64_bits": "bf92961d1c06ea65",
+      "f32_bits": "bc94b0e9",
+      "residual_f32_bits": "2f7e4567",
+      "residual_used": true,
+      "actual_spirv_residual_uint_present": true,
+      "actual_spirv_constant_present": true
+    },
+    {
+      "row": 2,
+      "column": 1,
+      "sealed_f64": -0.10057889800800739,
+      "f64_bits": "bfb9bf89e59cb353",
+      "f32_bits": "bdcdfc4f",
+      "residual_f32_bits": "b0b3966a",
+      "residual_used": false,
+      "actual_spirv_residual_uint_present": false,
+      "actual_spirv_constant_present": true
+    },
+    {
+      "row": 2,
+      "column": 2,
+      "sealed_f64": 1.1187296613629127,
+      "f64_bits": "3ff1e65112c9e6df",
+      "f32_bits": "3f8f3289",
+      "residual_f32_bits": "b3536192",
+      "residual_used": true,
+      "actual_spirv_residual_uint_present": true,
+      "actual_spirv_constant_present": true
+    }
+  ],
+  "fma_instructions": [
+    {
+      "id": "%518",
+      "no_contraction": false
+    },
+    {
+      "id": "%519",
+      "no_contraction": false
+    },
+    {
+      "id": "%879",
+      "no_contraction": false
+    },
+    {
+      "id": "%900",
+      "no_contraction": false
+    }
+  ],
+  "scope": "module-level instruction census; expression order is additionally audited against disassembly and captured terms"
+}

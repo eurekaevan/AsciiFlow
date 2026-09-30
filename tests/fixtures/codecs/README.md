@@ -1,5 +1,16 @@
 # Video codec regression fixtures
 
+## C3 legal-domain PQ input v1
+
+[Recipe, identities and qualification limits](c3-pq-legal-v1.md) describe the new
+1920×1080/300-frame/50-fps true-10-bit source. HEVC Main10 and AV1 Main are encoded
+losslessly from the same deterministic tight P010 bytes. Three final-version
+generations are identical. Full project software/VAAPI decode audits measured
+0–904.317285 nits and zero negative/>1000/nonfinite components without preclamp.
+This qualifies input legality only: C3's numerical gate still fails, and full
+GPU parity, stress, FD closure and performance are not inherited from B3.
+Existing B3 source bytes/identity are unchanged.
+
 ## Stage 5.3B-2 positive PQ inputs
 
 Run `bash tests/fixtures/codecs/generate-pq-qualification.sh [OUTPUT_DIRECTORY]`

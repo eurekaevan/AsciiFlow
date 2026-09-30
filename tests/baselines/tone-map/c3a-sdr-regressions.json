@@ -1,0 +1,321 @@
+{
+  "scope": "fresh five SDR production paths x3; whole-file identity, full decode, frame/packet counts, metadata and timestamps",
+  "ffmpeg": "ffmpeg version 8.1.3 Copyright (c) 2000-2026 the FFmpeg developers",
+  "records": [
+    {
+      "case": "h264-8",
+      "run": 1,
+      "sha256": "7c8a7572320b8c6c999143dfece4a76d487d6c9e7788206b7af52df9acd4e1cc",
+      "decoded_framemd5_sha256": "c5b5f8bcd31bdbdc5b40cdb3a4e075332e2359c46c4a35317a60de1e2d0a263c",
+      "metadata": {
+        "width": 1920,
+        "height": 1080,
+        "avg_frame_rate": "50/1",
+        "pix_fmt": "yuv420p",
+        "profile": "High",
+        "color_primaries": "bt709",
+        "color_transfer": "bt709",
+        "color_space": "bt709",
+        "color_range": "tv"
+      },
+      "frames": 300,
+      "packets": 300,
+      "pts": "0..299 at 1/50 s",
+      "status": "PASS"
+    },
+    {
+      "case": "h264-8",
+      "run": 2,
+      "sha256": "7c8a7572320b8c6c999143dfece4a76d487d6c9e7788206b7af52df9acd4e1cc",
+      "decoded_framemd5_sha256": "c5b5f8bcd31bdbdc5b40cdb3a4e075332e2359c46c4a35317a60de1e2d0a263c",
+      "metadata": {
+        "width": 1920,
+        "height": 1080,
+        "avg_frame_rate": "50/1",
+        "pix_fmt": "yuv420p",
+        "profile": "High",
+        "color_primaries": "bt709",
+        "color_transfer": "bt709",
+        "color_space": "bt709",
+        "color_range": "tv"
+      },
+      "frames": 300,
+      "packets": 300,
+      "pts": "0..299 at 1/50 s",
+      "status": "PASS"
+    },
+    {
+      "case": "h264-8",
+      "run": 3,
+      "sha256": "7c8a7572320b8c6c999143dfece4a76d487d6c9e7788206b7af52df9acd4e1cc",
+      "decoded_framemd5_sha256": "c5b5f8bcd31bdbdc5b40cdb3a4e075332e2359c46c4a35317a60de1e2d0a263c",
+      "metadata": {
+        "width": 1920,
+        "height": 1080,
+        "avg_frame_rate": "50/1",
+        "pix_fmt": "yuv420p",
+        "profile": "High",
+        "color_primaries": "bt709",
+        "color_transfer": "bt709",
+        "color_space": "bt709",
+        "color_range": "tv"
+      },
+      "frames": 300,
+      "packets": 300,
+      "pts": "0..299 at 1/50 s",
+      "status": "PASS"
+    },
+    {
+      "case": "hevc-8",
+      "run": 1,
+      "sha256": "294a1b63ac5b0e440dcf60c4c60f975594c6e944829478b69f09f981d268ff71",
+      "decoded_framemd5_sha256": "755bdcd256c58b748b95d2a5417461b5077656ec0d7265a1dfe1d78a8d6fa799",
+      "metadata": {
+        "width": 1920,
+        "height": 1080,
+        "avg_frame_rate": "50/1",
+        "pix_fmt": "yuv420p",
+        "profile": "Main",
+        "color_primaries": "bt709",
+        "color_transfer": "bt709",
+        "color_space": "bt709",
+        "color_range": "tv"
+      },
+      "frames": 300,
+      "packets": 300,
+      "pts": "0..299 at 1/50 s",
+      "status": "PASS"
+    },
+    {
+      "case": "hevc-8",
+      "run": 2,
+      "sha256": "294a1b63ac5b0e440dcf60c4c60f975594c6e944829478b69f09f981d268ff71",
+      "decoded_framemd5_sha256": "755bdcd256c58b748b95d2a5417461b5077656ec0d7265a1dfe1d78a8d6fa799",
+      "metadata": {
+        "width": 1920,
+        "height": 1080,
+        "avg_frame_rate": "50/1",
+        "pix_fmt": "yuv420p",
+        "profile": "Main",
+        "color_primaries": "bt709",
+        "color_transfer": "bt709",
+        "color_space": "bt709",
+        "color_range": "tv"
+      },
+      "frames": 300,
+      "packets": 300,
+      "pts": "0..299 at 1/50 s",
+      "status": "PASS"
+    },
+    {
+      "case": "hevc-8",
+      "run": 3,
+      "sha256": "294a1b63ac5b0e440dcf60c4c60f975594c6e944829478b69f09f981d268ff71",
+      "decoded_framemd5_sha256": "755bdcd256c58b748b95d2a5417461b5077656ec0d7265a1dfe1d78a8d6fa799",
+      "metadata": {
+        "width": 1920,
+        "height": 1080,
+        "avg_frame_rate": "50/1",
+        "pix_fmt": "yuv420p",
+        "profile": "Main",
+        "color_primaries": "bt709",
+        "color_transfer": "bt709",
+        "color_space": "bt709",
+        "color_range": "tv"
+      },
+      "frames": 300,
+      "packets": 300,
+      "pts": "0..299 at 1/50 s",
+      "status": "PASS"
+    },
+    {
+      "case": "av1-8",
+      "run": 1,
+      "sha256": "1531e29f52ae4e747251cf1889003dfd420303c523fb0ddc55cc9140e3bf2a4c",
+      "decoded_framemd5_sha256": "086c1821e563822576d872af8761f4282ae8c0e41972d1008870578fde5b4dc6",
+      "metadata": {
+        "width": 1920,
+        "height": 1080,
+        "avg_frame_rate": "50/1",
+        "pix_fmt": "yuv420p",
+        "profile": "Main",
+        "color_primaries": "bt709",
+        "color_transfer": "bt709",
+        "color_space": "bt709",
+        "color_range": "tv"
+      },
+      "frames": 300,
+      "packets": 300,
+      "pts": "0..299 at 1/50 s",
+      "status": "PASS"
+    },
+    {
+      "case": "av1-8",
+      "run": 2,
+      "sha256": "1531e29f52ae4e747251cf1889003dfd420303c523fb0ddc55cc9140e3bf2a4c",
+      "decoded_framemd5_sha256": "086c1821e563822576d872af8761f4282ae8c0e41972d1008870578fde5b4dc6",
+      "metadata": {
+        "width": 1920,
+        "height": 1080,
+        "avg_frame_rate": "50/1",
+        "pix_fmt": "yuv420p",
+        "profile": "Main",
+        "color_primaries": "bt709",
+        "color_transfer": "bt709",
+        "color_space": "bt709",
+        "color_range": "tv"
+      },
+      "frames": 300,
+      "packets": 300,
+      "pts": "0..299 at 1/50 s",
+      "status": "PASS"
+    },
+    {
+      "case": "av1-8",
+      "run": 3,
+      "sha256": "1531e29f52ae4e747251cf1889003dfd420303c523fb0ddc55cc9140e3bf2a4c",
+      "decoded_framemd5_sha256": "086c1821e563822576d872af8761f4282ae8c0e41972d1008870578fde5b4dc6",
+      "metadata": {
+        "width": 1920,
+        "height": 1080,
+        "avg_frame_rate": "50/1",
+        "pix_fmt": "yuv420p",
+        "profile": "Main",
+        "color_primaries": "bt709",
+        "color_transfer": "bt709",
+        "color_space": "bt709",
+        "color_range": "tv"
+      },
+      "frames": 300,
+      "packets": 300,
+      "pts": "0..299 at 1/50 s",
+      "status": "PASS"
+    },
+    {
+      "case": "hevc-10",
+      "run": 1,
+      "sha256": "f213a9f75542421bb816550cd7a93796db98ae36296a00636f7273492740a142",
+      "decoded_framemd5_sha256": "3eeb03862bf1d3aa1762192bc393fddd25024f0f187ce4982323accfb8eef517",
+      "metadata": {
+        "width": 1920,
+        "height": 1080,
+        "avg_frame_rate": "50/1",
+        "pix_fmt": "yuv420p10le",
+        "profile": "Main 10",
+        "color_primaries": "bt709",
+        "color_transfer": "bt709",
+        "color_space": "bt709",
+        "color_range": "tv"
+      },
+      "frames": 300,
+      "packets": 300,
+      "pts": "0..299 at 1/50 s",
+      "status": "PASS"
+    },
+    {
+      "case": "hevc-10",
+      "run": 2,
+      "sha256": "f213a9f75542421bb816550cd7a93796db98ae36296a00636f7273492740a142",
+      "decoded_framemd5_sha256": "3eeb03862bf1d3aa1762192bc393fddd25024f0f187ce4982323accfb8eef517",
+      "metadata": {
+        "width": 1920,
+        "height": 1080,
+        "avg_frame_rate": "50/1",
+        "pix_fmt": "yuv420p10le",
+        "profile": "Main 10",
+        "color_primaries": "bt709",
+        "color_transfer": "bt709",
+        "color_space": "bt709",
+        "color_range": "tv"
+      },
+      "frames": 300,
+      "packets": 300,
+      "pts": "0..299 at 1/50 s",
+      "status": "PASS"
+    },
+    {
+      "case": "hevc-10",
+      "run": 3,
+      "sha256": "f213a9f75542421bb816550cd7a93796db98ae36296a00636f7273492740a142",
+      "decoded_framemd5_sha256": "3eeb03862bf1d3aa1762192bc393fddd25024f0f187ce4982323accfb8eef517",
+      "metadata": {
+        "width": 1920,
+        "height": 1080,
+        "avg_frame_rate": "50/1",
+        "pix_fmt": "yuv420p10le",
+        "profile": "Main 10",
+        "color_primaries": "bt709",
+        "color_transfer": "bt709",
+        "color_space": "bt709",
+        "color_range": "tv"
+      },
+      "frames": 300,
+      "packets": 300,
+      "pts": "0..299 at 1/50 s",
+      "status": "PASS"
+    },
+    {
+      "case": "av1-10",
+      "run": 1,
+      "sha256": "b69c68525ac6ab2464e04b8fc1f123d887b45bba580377bafad99dc74cf62ad7",
+      "decoded_framemd5_sha256": "21ba0466e1805b28281675312619f1cd192a8e67fdb577024c7dadddcf7af933",
+      "metadata": {
+        "width": 1920,
+        "height": 1080,
+        "avg_frame_rate": "50/1",
+        "pix_fmt": "yuv420p10le",
+        "profile": "Main",
+        "color_primaries": "bt709",
+        "color_transfer": "bt709",
+        "color_space": "bt709",
+        "color_range": "tv"
+      },
+      "frames": 300,
+      "packets": 300,
+      "pts": "0..299 at 1/50 s",
+      "status": "PASS"
+    },
+    {
+      "case": "av1-10",
+      "run": 2,
+      "sha256": "b69c68525ac6ab2464e04b8fc1f123d887b45bba580377bafad99dc74cf62ad7",
+      "decoded_framemd5_sha256": "21ba0466e1805b28281675312619f1cd192a8e67fdb577024c7dadddcf7af933",
+      "metadata": {
+        "width": 1920,
+        "height": 1080,
+        "avg_frame_rate": "50/1",
+        "pix_fmt": "yuv420p10le",
+        "profile": "Main",
+        "color_primaries": "bt709",
+        "color_transfer": "bt709",
+        "color_space": "bt709",
+        "color_range": "tv"
+      },
+      "frames": 300,
+      "packets": 300,
+      "pts": "0..299 at 1/50 s",
+      "status": "PASS"
+    },
+    {
+      "case": "av1-10",
+      "run": 3,
+      "sha256": "b69c68525ac6ab2464e04b8fc1f123d887b45bba580377bafad99dc74cf62ad7",
+      "decoded_framemd5_sha256": "21ba0466e1805b28281675312619f1cd192a8e67fdb577024c7dadddcf7af933",
+      "metadata": {
+        "width": 1920,
+        "height": 1080,
+        "avg_frame_rate": "50/1",
+        "pix_fmt": "yuv420p10le",
+        "profile": "Main",
+        "color_primaries": "bt709",
+        "color_transfer": "bt709",
+        "color_space": "bt709",
+        "color_range": "tv"
+      },
+      "frames": 300,
+      "packets": 300,
+      "pts": "0..299 at 1/50 s",
+      "status": "PASS"
+    }
+  ]
+}

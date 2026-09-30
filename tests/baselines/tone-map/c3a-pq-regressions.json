@@ -1,0 +1,176 @@
+{
+  "scope": "fresh retained PQ production x3; full original verifier PASS against checked-in baseline",
+  "full_report_sha256": "268bc1e7c6ae6d161b6eba02279fef684b0e80c569aee1a3e01f40c334956d0a",
+  "ffmpeg_version": "ffmpeg version 8.1.3 Copyright (c) 2000-2026 the FFmpeg developers\nbuilt with gcc 16 (GCC)\nconfiguration: --prefix=/usr --bindir=/usr/bin --datadir=/usr/share/ffmpeg --docdir=/usr/share/doc/ffmpeg --incdir=/usr/include/ffmpeg --libdir=/usr/lib64 --mandir=/usr/share/man --arch=x86_64 --optflags='-O2 -flto=auto -ffat-lto-objects -fexceptions -g -grecord-gcc-switches -pipe -Wall -Wno-complain-wrong-lang -Werror=format-security -Wp,-U_FORTIFY_SOURCE,-D_FORTIFY_SOURCE=3 -Wp,-D_GLIBCXX_ASSERTIONS -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -fstack-protector-strong -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -m64 -march=x86-64 -mtune=generic -fasynchronous-unwind-tables -fstack-clash-protection -fcf-protection -mtls-dialect=gnu2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer' --extra-ldflags='-Wl,-z,relro -Wl,--as-needed -Wl,-z,pack-relative-relocs -Wl,-z,now -specs=/usr/lib/rpm/redhat/redhat-hardened-ld -specs=/usr/lib/rpm/redhat/redhat-hardened-ld-errors -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -Wl,--build-id=sha1 -specs=/usr/lib/rpm/redhat/redhat-package-notes ' --extra-cflags=' -I/usr/include/rav1e' --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libvo-amrwbenc --enable-version3 --enable-bzlib --enable-chromaprint --enable-fontconfig --enable-frei0r --enable-gcrypt --enable-gnutls --enable-ladspa --enable-lcms2 --enable-libaom --enable-libaribb24 --enable-libaribcaption --enable-libdav1d --enable-libass --enable-libbluray --enable-libbs2b --enable-libcodec2 --enable-cuda --enable-cuda-llvm --enable-cuvid --enable-libcdio --enable-libdrm --enable-libfdk-aac --enable-libjack --enable-libjxl --enable-libklvanc --enable-libfreetype --enable-libfribidi --enable-libgme --enable-libgsm --enable-libharfbuzz --enable-libilbc --enable-liblc3 --enable-libmp3lame --enable-libmysofa --enable-nvenc --enable-nvdec --enable-openal --enable-liboapv --enable-opencl --enable-opengl --enable-libopenh264 --enable-libopenjpeg --enable-libopenmpt --enable-libopus --enable-libpulse --enable-libplacebo --enable-librsvg --enable-librav1e --enable-librubberband --enable-libqrencode --enable-libsmbclient --enable-version3 --enable-libsnappy --enable-libsoxr --enable-libspeex --enable-libsrt --enable-libssh --enable-libsvtav1 --enable-libtesseract --enable-libtheora --enable-libtwolame --enable-libvorbis --enable-libv4l2 --enable-libvidstab --enable-libvmaf --enable-version3 --enable-vapoursynth --enable-libvpx --enable-libvvenc --enable-vulkan --enable-libshaderc --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxvid --enable-libxml2 --enable-libzimg --enable-libzmq --enable-libzvbi --enable-lv2 --enable-avfilter --enable-libmodplug --enable-pthreads --disable-static --enable-shared --enable-gpl --disable-debug --disable-stripping --shlibdir=/usr/lib64 --enable-lto --enable-libvpl --enable-runtime-cpudetect\nlibavutil      60. 26.103 / 60. 26.103\nlibavcodec     62. 28.103 / 62. 28.103\nlibavformat    62. 12.103 / 62. 12.103\nlibavdevice    62.  3.103 / 62.  3.103\nlibavfilter    11. 14.103 / 11. 14.103\nlibswscale      9.  5.103 /  9.  5.103\nlibswresample   6.  3.103 /  6.  3.103\n\nExiting with exit code 0\n",
+  "verifier": "tests/baselines/media/verify-pq-production.py",
+  "profiles": {
+    "av1": {
+      "tier1a": true,
+      "tier1b": true,
+      "tier1c": true,
+      "tier2": true,
+      "tier3": true,
+      "runs": [
+        {
+          "filename": "av1-10-run1.mp4",
+          "byte_size": 5239237,
+          "sha256": "41a8af52985a6be0121cfe7c4f4160a3ebdecd0acc908882774d2a0151185388",
+          "stream": {
+            "codec_name": "av1",
+            "profile": "Main",
+            "pix_fmt": "yuv420p10le",
+            "width": 1920,
+            "height": 1080,
+            "avg_frame_rate": "50/1",
+            "time_base": "1/12800",
+            "color_primaries": "bt2020",
+            "color_transfer": "smpte2084",
+            "color_space": "bt2020nc",
+            "color_range": "tv",
+            "chroma_location": "left"
+          },
+          "frames": 300,
+          "packets": 300,
+          "frames_record_sha256": "c94ff6371452e41405709fb69c8c6e49deddbd436a2b095e37e1d53c3f22fd3e",
+          "packets_record_sha256": "30da7e9beade6390ddd87d7305246f96639af89a998ae27c8a0260b41fd1fda4",
+          "decoded_framehash_record_sha256": "94a2788397f3203c447467156a0261842538a42ee7262058062bcb5c2c034c4b",
+          "elementary_stream_record_sha256": "d680d1f9064d0e24e6212e8d1bd947a02473c4fa322a147f324bfdd5954da618"
+        },
+        {
+          "filename": "av1-10-run2.mp4",
+          "byte_size": 5239237,
+          "sha256": "41a8af52985a6be0121cfe7c4f4160a3ebdecd0acc908882774d2a0151185388",
+          "stream": {
+            "codec_name": "av1",
+            "profile": "Main",
+            "pix_fmt": "yuv420p10le",
+            "width": 1920,
+            "height": 1080,
+            "avg_frame_rate": "50/1",
+            "time_base": "1/12800",
+            "color_primaries": "bt2020",
+            "color_transfer": "smpte2084",
+            "color_space": "bt2020nc",
+            "color_range": "tv",
+            "chroma_location": "left"
+          },
+          "frames": 300,
+          "packets": 300,
+          "frames_record_sha256": "c94ff6371452e41405709fb69c8c6e49deddbd436a2b095e37e1d53c3f22fd3e",
+          "packets_record_sha256": "30da7e9beade6390ddd87d7305246f96639af89a998ae27c8a0260b41fd1fda4",
+          "decoded_framehash_record_sha256": "94a2788397f3203c447467156a0261842538a42ee7262058062bcb5c2c034c4b",
+          "elementary_stream_record_sha256": "d680d1f9064d0e24e6212e8d1bd947a02473c4fa322a147f324bfdd5954da618"
+        },
+        {
+          "filename": "av1-10-run3.mp4",
+          "byte_size": 5239237,
+          "sha256": "41a8af52985a6be0121cfe7c4f4160a3ebdecd0acc908882774d2a0151185388",
+          "stream": {
+            "codec_name": "av1",
+            "profile": "Main",
+            "pix_fmt": "yuv420p10le",
+            "width": 1920,
+            "height": 1080,
+            "avg_frame_rate": "50/1",
+            "time_base": "1/12800",
+            "color_primaries": "bt2020",
+            "color_transfer": "smpte2084",
+            "color_space": "bt2020nc",
+            "color_range": "tv",
+            "chroma_location": "left"
+          },
+          "frames": 300,
+          "packets": 300,
+          "frames_record_sha256": "c94ff6371452e41405709fb69c8c6e49deddbd436a2b095e37e1d53c3f22fd3e",
+          "packets_record_sha256": "30da7e9beade6390ddd87d7305246f96639af89a998ae27c8a0260b41fd1fda4",
+          "decoded_framehash_record_sha256": "94a2788397f3203c447467156a0261842538a42ee7262058062bcb5c2c034c4b",
+          "elementary_stream_record_sha256": "d680d1f9064d0e24e6212e8d1bd947a02473c4fa322a147f324bfdd5954da618"
+        }
+      ]
+    },
+    "hevc": {
+      "tier1a": true,
+      "tier1b": true,
+      "tier1c": true,
+      "tier2": true,
+      "tier3": true,
+      "runs": [
+        {
+          "filename": "hevc-10-run1.mp4",
+          "byte_size": 2101434,
+          "sha256": "0e8de23d5d222ab0476ea816d27b18e37dc73bf1f824e79bedc1070c409ded63",
+          "stream": {
+            "codec_name": "hevc",
+            "profile": "Main 10",
+            "pix_fmt": "yuv420p10le",
+            "width": 1920,
+            "height": 1080,
+            "avg_frame_rate": "50/1",
+            "time_base": "1/12800",
+            "color_primaries": "bt2020",
+            "color_transfer": "smpte2084",
+            "color_space": "bt2020nc",
+            "color_range": "tv",
+            "chroma_location": "left"
+          },
+          "frames": 300,
+          "packets": 300,
+          "frames_record_sha256": "14fabcd80f641034347692207745f3229843d8696bda4e72e4fb279ff8eb64aa",
+          "packets_record_sha256": "296cb0f7d214ba83ff1f4f4296d76c27977cd739557c57e1a051de7aa1ea15c0",
+          "decoded_framehash_record_sha256": "f02f5962d772941be1b4b1f1315f3bb8e33303a236578451a5a9591879c913a1",
+          "elementary_stream_record_sha256": "c85192238bc6f7f0e2c2cea97c16c42f1d098685c95a57acf919b7d5ec64d0e2"
+        },
+        {
+          "filename": "hevc-10-run2.mp4",
+          "byte_size": 2101434,
+          "sha256": "0e8de23d5d222ab0476ea816d27b18e37dc73bf1f824e79bedc1070c409ded63",
+          "stream": {
+            "codec_name": "hevc",
+            "profile": "Main 10",
+            "pix_fmt": "yuv420p10le",
+            "width": 1920,
+            "height": 1080,
+            "avg_frame_rate": "50/1",
+            "time_base": "1/12800",
+            "color_primaries": "bt2020",
+            "color_transfer": "smpte2084",
+            "color_space": "bt2020nc",
+            "color_range": "tv",
+            "chroma_location": "left"
+          },
+          "frames": 300,
+          "packets": 300,
+          "frames_record_sha256": "14fabcd80f641034347692207745f3229843d8696bda4e72e4fb279ff8eb64aa",
+          "packets_record_sha256": "296cb0f7d214ba83ff1f4f4296d76c27977cd739557c57e1a051de7aa1ea15c0",
+          "decoded_framehash_record_sha256": "f02f5962d772941be1b4b1f1315f3bb8e33303a236578451a5a9591879c913a1",
+          "elementary_stream_record_sha256": "c85192238bc6f7f0e2c2cea97c16c42f1d098685c95a57acf919b7d5ec64d0e2"
+        },
+        {
+          "filename": "hevc-10-run3.mp4",
+          "byte_size": 2101434,
+          "sha256": "0e8de23d5d222ab0476ea816d27b18e37dc73bf1f824e79bedc1070c409ded63",
+          "stream": {
+            "codec_name": "hevc",
+            "profile": "Main 10",
+            "pix_fmt": "yuv420p10le",
+            "width": 1920,
+            "height": 1080,
+            "avg_frame_rate": "50/1",
+            "time_base": "1/12800",
+            "color_primaries": "bt2020",
+            "color_transfer": "smpte2084",
+            "color_space": "bt2020nc",
+            "color_range": "tv",
+            "chroma_location": "left"
+          },
+          "frames": 300,
+          "packets": 300,
+          "frames_record_sha256": "14fabcd80f641034347692207745f3229843d8696bda4e72e4fb279ff8eb64aa",
+          "packets_record_sha256": "296cb0f7d214ba83ff1f4f4296d76c27977cd739557c57e1a051de7aa1ea15c0",
+          "decoded_framehash_record_sha256": "f02f5962d772941be1b4b1f1315f3bb8e33303a236578451a5a9591879c913a1",
+          "elementary_stream_record_sha256": "c85192238bc6f7f0e2c2cea97c16c42f1d098685c95a57acf919b7d5ec64d0e2"
+        }
+      ]
+    }
+  }
+}

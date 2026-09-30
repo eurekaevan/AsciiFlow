@@ -1,0 +1,48 @@
+#version 460
+#extension GL_GOOGLE_include_directive : require
+#include "c3_common.glsl"
+layout(local_size_x=256) in;
+void main() {
+    uint i=gl_GlobalInvocationID.x;
+    if (i>=params.width*params.height) return;
+    vec3 nits=c3_read_a(i);
+    bool invalid=false;
+    for (uint c=0u;c<3u;c++) {
+        if (isnan(nits[c])) { atomicAdd(diagnostic[2],1u); invalid=true; }
+        else if (isinf(nits[c])) { atomicAdd(diagnostic[3],1u); invalid=true; }
+        else {
+            if (nits[c]<0.0) { atomicAdd(diagnostic[0],1u); invalid=true; }
+            if (nits[c]>1000.0) { atomicAdd(diagnostic[1],1u); invalid=true; }
+        }
+    }
+    if (invalid) { c3_write_b(i,vec3(0.0)); return; }
+    // BT.2446-1 Tables2/3, exactly the sealed fixed 1000 -> 100 MethodA.
+    // Standard GLSL pow/log/exp; no custom approximation, LUT or peak adaptation.
+    precise vec3 nonlinear=pow(nits/1000.0,vec3(1.0/2.4));
+    precise float y=.2627*nonlinear.r+.6780*nonlinear.g+.0593*nonlinear.b;
+    if (y==0.0) { c3_write_b(i,vec3(0.0)); return; }
+    float rh=32.0*pow(1000.0/10000.0,1.0/2.4);
+    float rs=32.0*pow(100.0/10000.0,1.0/2.4);
+    float p=log(1.0+rh*y)/log(1.0+rh);
+    precise float compressed;
+    if (p<=.7399) compressed=1.0770*p;
+    else if (p<.9909) compressed=-1.1510*p*p+2.7811*p-.6302;
+    else compressed=.5000*p+.5000;
+    float mapped=(exp(compressed*log(1.0+rs))-1.0)/rs;
+    float scale=mapped/(1.1*y);
+    float cb=scale*(nonlinear.b-y)/1.8814;
+    float cr=scale*(nonlinear.r-y)/1.4746;
+    float corrected=mapped-max(.1*cr,0.0);
+    precise float r=corrected+1.4746*cr;
+    precise float b2020=corrected+1.8814*cb;
+    precise float g=(corrected-.2627*r-.0593*b2020)/.6780;
+    vec3 output2020=vec3(r,g,b2020);
+    if ((params.mode & 256u)!=0u) {
+        // Table 3 after algebraic cancellation of forward/inverse NCL.
+        // Same real-valued coefficients; no fitted constants or source clamp.
+        precise float offset=.1*y-max(.1*(nonlinear.r-y)/1.4746,0.0);
+        output2020=scale*(nonlinear+vec3(offset));
+    }
+    if (!c3_finite(output2020)) atomicAdd(diagnostic[4],1u);
+    c3_write_b(i,output2020); // excursions deliberately retained
+}

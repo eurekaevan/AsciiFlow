@@ -1,0 +1,1455 @@
+{
+  "schema_version": 1,
+  "stage": "5.3C-3",
+  "status": "SEALED",
+  "qualified_at": "2026-09-30",
+  "current_closure_record": "c3b",
+  "historical_snapshot_keys": ["source", "canonical_numeric", "c3a"],
+  "c3b": {
+    "date": "2026-09-30",
+    "status": "SEALED",
+    "policy": "P2 / N3",
+    "selected_internal_arithmetic": "f32 common-scale B and compensated C; mode262",
+    "historical_unorm16_gate": "FAIL retained as engineering diagnostic; replaced as closure gate, not marked PASS",
+    "contract": {
+      "final_nonlinear_rgb": "finite, each component in [0,1]",
+      "maximum_absolute_component_error": 0.0005580357142857143,
+      "derivation": "1/1792: half one limited-range 10-bit chroma code before rounding",
+      "test_only_limited_bt709_yuv444_10bit_maximum_delta": 1,
+      "test_only_limited_bt709_yuv444_10bit_count_above_one": 0,
+      "independent_exact_gates": ["glyph", "R8 coverage", "clip masks", "domain and clipping policy"],
+      "scope": "Engineering signal-accuracy budget, not normative or perceptual; no production packing/transfer/codec qualification"
+    },
+    "shaderFloat64": true,
+    "fp64_selected": false,
+    "evidence": {
+      "frozen_outliers": "c3b-frozen-outliers.json",
+      "outlier_projections": "c3b-frozen-outlier-projections.json",
+      "mixed_precision": "c3b-mixed-precision.json",
+      "power_edges": "c3b-power-edges.json",
+      "historical_mode0_real_diagnostics": "c3b-real-precision.json",
+      "corpus_evaluation": "c3b-contract-evaluation.json",
+      "selected_canonical_n3": "c3b-canonical-n3.json",
+      "selected_real_parity": "c3b-selected-real.json",
+      "selected_corpus_evaluation": "c3b-selected-contract-evaluation.json",
+      "selected_spirv": "c3b-selected-spirv.json",
+      "stress": "c3b-stress.json",
+      "current_source_identity": "c3b-current-source-identity.json",
+      "historical_h264_recheck": "c3b-h264-regression.json",
+      "performance": "c3b-performance.json",
+      "preliminary_performance": "c3b-performance-preliminary.json",
+      "sdr_regressions": "c3b-sdr-regressions.json",
+      "pq_regressions": "c3b-pq-regressions.json"
+    },
+    "remaining_gates": [],
+    "evidence_sha256": {
+      "c3b-canonical-n3.json": "6328040dd52d94c49278006d4cbb2e63b6c072b8832b85b265d7b1942d4196f7",
+      "c3b-contract-evaluation.json": "db677b97507e3d9d54ed9abafa5a10161d2208f45a9d830f7d11e7d093002e1b",
+      "c3b-current-source-identity.json": "a7a408721419484c7589c209b95a518e5abae0a49aa114bb95b64526bd42a540",
+      "c3b-frozen-outlier-projections.json": "03c77f5172134c350e1c9cefd5a8c4b5b0c7de7a7d3d625a7950ccf8d416a2bd",
+      "c3b-frozen-outliers.json": "11a8c70bdbdefe18b54fb3a16066f43dd7c562c5e09556570de2b3c2e9f6dc11",
+      "c3b-h264-regression.json": "ee518f9ad55e9f445da17bff36f80c2585d5973aff97f1bae3614392ddbc61d7",
+      "c3b-mixed-precision.json": "abab4163e81946307554c4b8b43970a44920d5c853a4b0d07f780cc12fca77b4",
+      "c3b-performance-preliminary.json": "f698271ac06f4043406423ed5c638014b2afbf17bfdfa7536abb024e5a12aa5d",
+      "c3b-performance.json": "22a021b455b72afc699e6912e535f8c78518c0fe32ed1dfd0311f720ebd23ed5",
+      "c3b-power-edges.json": "86b909fef21026d67e035c7af854e79d55c7634ee568631bdff4914ae679cb0a",
+      "c3b-pq-regressions.json": "720a4b0982dd3fd93ff1f167a0f0ad6baf47293c581cdf54e3381215a364d7b5",
+      "c3b-real-precision.json": "7c9e7ea35257f09b1df7c1c7df5d14c3011a5cce3607ee98381ff969ef570860",
+      "c3b-sdr-regressions.json": "a5011b15f2e744de77fc78a6516b224fb1ae3594441d7ef3c96a0125aff5b352",
+      "c3b-selected-contract-evaluation.json": "db677b97507e3d9d54ed9abafa5a10161d2208f45a9d830f7d11e7d093002e1b",
+      "c3b-selected-real.json": "f2479eef2158a94ab9ab907560eedd8cceeaab7ed8564efa27100b7312ff8e98",
+      "c3b-selected-spirv.json": "0689ed99dd6ec0e11fe3f9ada3ff9c501fa7962bca60f43ea1de69a1817c02df",
+      "c3b-stress.json": "95959170a09d6bd59f724a109ac49fb262df859d34e907a20a70a85da571ce63"
+    },
+    "static_checks": {"default_passed": 210, "default_ignored": 79, "combined_passed": 215, "combined_ignored": 115, "python_passed": 7, "clippy": "PASS -Dwarnings", "fmt": "PASS", "diff_check": "PASS", "shell_syntax": "PASS"},
+    "spirv_validation": {"target": "vulkan1.3", "cached_generated_files": 709, "all_passed": true, "ordinary_qualification_out_dir_modules": 22, "fp64_in_ordinary_out_dir": false},
+    "production_hdr_to_sdr": "disabled",
+    "c4": "justified, not started"
+  },
+  "production_hdr_to_sdr": "disabled",
+  "source": {
+    "base_head": "89e5f67864c1d2985792ebd904ae3dbd1b372429",
+    "qualification": "uncommitted isolated C3 draft; no production math or CPU oracle changes",
+    "sha256": {
+      "Cargo.lock": "f8cf97f855fcbcb422ef1b74f2367a7ac40b612dcc41cc0a1d8a23f3e27746b8",
+      "scripts/qualify-tone-map-vulkan.sh": "b5b55465b3673b4b0fe300920d28ac29ea3831d91d339d0e7d6240728e77fcd8",
+      "shaders/src/ascii_render_hdr_linear.comp": "933ec3694f0b3ec5043bd507b679905a7751fd1ec819aad4b1f35c3fc95fd38d",
+      "shaders/src/tone_map_bt2446.comp": "bc8b635f0917ed468d8e64709de0eadd138a36352be2a507bef7c3a78eb04668",
+      "shaders/src/bt2020_to_bt709_limit.comp": "6ab397155207131d8680aaba57f3662410e6d0a2c0fe9c18c0abec9889877010",
+      "shaders/src/c3_common.glsl": "0612598ab699ff1ade4fd74b607fcafb9c8e965d576d895d2b4603e2e0108c8d",
+      "crates/asciiflow-vulkan/src/tone_map.rs": "796c2c6f7615c04c61f4b72f6c84abaea2c16fc44d12247d0e2f21b6dde34a18",
+      "crates/asciiflow-vulkan/tests/c3_qualification.rs": "b4439a82fba208792898f8c3a52f3a96a165c6f25b14dd900f8553ac3e41f543"
+    }
+  },
+  "hardware": {
+    "device": "Intel Arc Meteor Lake",
+    "render_node": "/dev/dri/renderD128",
+    "vulkan_driver": "mesa-vulkan-drivers-26.2.3-1.fc44.x86_64",
+    "vaapi_driver": "intel-media-driver-26.1.5-1.fc44.x86_64",
+    "ffmpeg": "8.1.3-1.fc44, libavcodec 62.28.103",
+    "rustc": "1.97.1 (8bab26f4f)",
+    "glibc": "2.43-8.fc44",
+    "spirv_tools": "2026.1-1.fc44",
+    "scope": "Not qualified on other GPU implementations"
+  },
+  "cpu_oracles": {
+    "input_sha256": "a6246d4e5e34c1c69c9cd629e35d82a0f1e8af387436044c82483511bd749f33",
+    "c1_sha256": "d0eb86dcc265fe7f675d87055f038d258176e331eb2aac412ba7358a6c8c1e6b",
+    "c2b_sha256": "a7e7ffe64d61269288c8e9b2e9b22a62f8c16fd2287083386bc8cefb9c3471af",
+    "runs_each": 3,
+    "byte_identical": true
+  },
+  "canonical_numeric": {
+    "status": "FAIL",
+    "scope": "canonical B+C and isolated C, not full hardware closure",
+    "width": 1920,
+    "height": 1080,
+    "float_bytes_per_slot": 49766400,
+    "diagnostic_bytes_per_slot": 141004836,
+    "diagnostics": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      1073490,
+      408464,
+      161835,
+      429811
+    ],
+    "validation_errors": 0,
+    "cpu_clip_counts": [
+      1138470,
+      343484,
+      161835,
+      429811
+    ],
+    "gpu_clip_counts": [
+      1138470,
+      343484,
+      161835,
+      429811
+    ],
+    "promoted_clip_mask_mismatches": 0,
+    "first_clip_mismatches": [],
+    "over_two_code_samples": [
+      {
+        "path": "BC",
+        "xy": [
+          237,
+          725
+        ],
+        "channel": 0,
+        "code_error": 4,
+        "hdr_original": [
+          123.50182386659719,
+          343.22820037105754,
+          355.8162267839687
+        ],
+        "B_gpu": [
+          0.559258,
+          0.819896,
+          0.83125967
+        ],
+        "B_cpu": [
+          0.5592580562241856,
+          0.8198959005144927,
+          0.8312597095278565
+        ],
+        "C_gpu_pre": [
+          0.000011363882,
+          0.6671827,
+          0.6509996
+        ],
+        "C_cpu_pre": [
+          0.000011559101415624558,
+          0.6671825152797308,
+          0.6509996937579872
+        ],
+        "gpu_final": 0.008705684,
+        "cpu_final": 0.008767686867832684,
+        "gpu_inverse_power_error": 2.121829805606934e-9
+      },
+      {
+        "path": "BC",
+        "xy": [
+          328,
+          787
+        ],
+        "channel": 0,
+        "code_error": 3,
+        "hdr_original": [
+          170.9223553934341,
+          458.2560296846011,
+          626.5884652981428
+        ],
+        "B_gpu": [
+          0.611424,
+          0.88430417,
+          0.9970615
+        ],
+        "B_cpu": [
+          0.6114242405714276,
+          0.8843042553248732,
+          0.9970618010355807
+        ],
+        "C_gpu_pre": [
+          0.00005375035,
+          0.79686874,
+          1.0304054
+        ],
+        "C_cpu_pre": [
+          0.000054039545109019205,
+          0.7968689359537031,
+          1.030406157394146
+        ],
+        "gpu_final": 0.016633831,
+        "cpu_final": 0.016671059514600555,
+        "gpu_inverse_power_error": 2.8076752069117195e-9
+      },
+      {
+        "path": "BC",
+        "xy": [
+          472,
+          942
+        ],
+        "channel": 0,
+        "code_error": 4,
+        "hdr_original": [
+          245.96143824908808,
+          745.8256029684601,
+          220.9188660801564
+        ],
+        "B_gpu": [
+          0.6646914,
+          1.007418,
+          0.63916993
+        ],
+        "B_cpu": [
+          0.6646915106371646,
+          1.0074183358757574,
+          0.6391700442140275
+        ],
+        "C_gpu_pre": [
+          0.000011794269,
+          1.103588,
+          0.27293462
+        ],
+        "C_cpu_pre": [
+          0.000011590494355492864,
+          1.1035889068519866,
+          0.2729347215816602
+        ],
+        "gpu_final": 0.008841572,
+        "cpu_final": 0.008777600619666835,
+        "gpu_inverse_power_error": 1.884576777619329e-9
+      },
+      {
+        "path": "BC",
+        "xy": [
+          267,
+          952
+        ],
+        "channel": 2,
+        "code_error": 4,
+        "hdr_original": [
+          139.13496612819176,
+          764.3784786641929,
+          49.853372434017594
+        ],
+        "B_gpu": [
+          0.5505539,
+          1.0377805,
+          0.3865406
+        ],
+        "B_cpu": [
+          0.5505540055043336,
+          1.0377806259570772,
+          0.3865406672521121
+        ],
+        "C_gpu_pre": [
+          -0.25336218,
+          1.2077662,
+          0.000011563301
+        ],
+        "C_cpu_pre": [
+          -0.2533622409412167,
+          1.207766425405005,
+          0.000011758761662372663
+        ],
+        "gpu_final": 0.008769013,
+        "cpu_final": 0.008830473567887402,
+        "gpu_inverse_power_error": 1.0269711001736903e-9
+      },
+      {
+        "path": "BC",
+        "xy": [
+          593,
+          1024
+        ],
+        "channel": 0,
+        "code_error": 4,
+        "hdr_original": [
+          309.01511203751954,
+          897.9591836734694,
+          579.6676441837732
+        ],
+        "B_gpu": [
+          0.6958642,
+          1.0375726,
+          0.8788295
+        ],
+        "B_cpu": [
+          0.6958641459044085,
+          1.0375723873188272,
+          0.8788293275877885
+        ],
+        "C_gpu_pre": [
+          0.00003330782,
+          1.1794667,
+          0.7030425
+        ],
+        "C_cpu_pre": [
+          0.000033630421682202816,
+          1.1794660321652137,
+          0.7030423533003325
+        ],
+        "gpu_final": 0.013626816,
+        "cpu_final": 0.01368164960460985,
+        "gpu_inverse_power_error": 3.986620965637511e-9
+      },
+      {
+        "path": "BC",
+        "xy": [
+          51,
+          1027
+        ],
+        "channel": 2,
+        "code_error": 3,
+        "hdr_original": [
+          26.576341844710786,
+          903.5250463821892,
+          58.651026392961874
+        ],
+        "B_gpu": [
+          0.31675494,
+          1.1141623,
+          0.4098682
+        ],
+        "B_cpu": [
+          0.3167549028242125,
+          1.1141621278663505,
+          0.40986814183002196
+        ],
+        "C_gpu_pre": [
+          -0.66508436,
+          1.4596075,
+          0.000022411346
+        ],
+        "C_cpu_pre": [
+          -0.6650840707071947,
+          1.459606956510316,
+          0.00002260194582981434
+        ],
+        "gpu_final": 0.011553006,
+        "cpu_final": 0.011593843374944216,
+        "gpu_inverse_power_error": 7.825671239497511e-10
+      },
+      {
+        "path": "BC",
+        "xy": [
+          1064,
+          1032
+        ],
+        "channel": 2,
+        "code_error": 10,
+        "hdr_original": [
+          554.4554455445544,
+          912.8014842300556,
+          62.56109481915934
+        ],
+        "B_gpu": [
+          0.85518825,
+          1.0327222,
+          0.39602178
+        ],
+        "B_cpu": [
+          0.8551884275017645,
+          1.032722496537985,
+          0.39602175466959433
+        ],
+        "C_gpu_pre": [
+          0.4979949,
+          1.1374485,
+          0.0000010728836
+        ],
+        "C_cpu_pre": [
+          0.49799490389970835,
+          1.1374492938938197,
+          9.512089085284003e-7
+        ],
+        "gpu_final": 0.0032563459,
+        "cpu_final": 0.003097050560399752,
+        "gpu_inverse_power_error": 2.043694356974879e-9
+      },
+      {
+        "path": "C",
+        "xy": [
+          565,
+          1005
+        ],
+        "channel": 0,
+        "code_error": 4,
+        "hdr_original": [
+          294.4241792600313,
+          862.708719851577,
+          496.5786901270772
+        ],
+        "B_gpu": [
+          0.6893343,
+          1.0311023,
+          0.83650756
+        ],
+        "B_cpu": [
+          0.6893342600745298,
+          1.031102337363317,
+          0.8365075832118195
+        ],
+        "C_gpu_pre": [
+          0.000008355826,
+          1.1628739,
+          0.61319137
+        ],
+        "C_cpu_pre": [
+          0.000008195103345248061,
+          1.1628740171333303,
+          0.6131915317928538
+        ],
+        "gpu_final": 0.007658827,
+        "cpu_final": 0.007597097167603198,
+        "gpu_inverse_power_error": 3.256265196718844e-10
+      },
+      {
+        "path": "C",
+        "xy": [
+          1064,
+          1032
+        ],
+        "channel": 2,
+        "code_error": 11,
+        "hdr_original": [
+          554.4554455445544,
+          912.8014842300556,
+          62.56109481915934
+        ],
+        "B_gpu": [
+          0.8551884,
+          1.0327225,
+          0.39602175
+        ],
+        "B_cpu": [
+          0.8551884275017645,
+          1.032722496537985,
+          0.39602175466959433
+        ],
+        "C_gpu_pre": [
+          0.49799496,
+          1.1374493,
+          8.34465e-7
+        ],
+        "C_cpu_pre": [
+          0.49799490389970835,
+          1.1374492938938197,
+          9.512089085284003e-7
+        ],
+        "gpu_final": 0.0029326042,
+        "cpu_final": 0.003097050560399752,
+        "gpu_inverse_power_error": 3.791001575159658e-10
+      },
+      {
+        "path": "C",
+        "xy": [
+          618,
+          1041
+        ],
+        "channel": 0,
+        "code_error": 3,
+        "hdr_original": [
+          322.04273058884837,
+          929.4990723562153,
+          653.958944281525
+        ],
+        "B_gpu": [
+          0.7013764,
+          1.0430983,
+          0.912665
+        ],
+        "B_cpu": [
+          0.7013763735419544,
+          1.0430983679676842,
+          0.9126650246409266
+        ],
+        "C_gpu_pre": [
+          0.000021465123,
+          1.1937677,
+          0.7793599
+        ],
+        "C_cpu_pre": [
+          0.00002131505255365332,
+          1.193767722170503,
+          0.779359943084952
+        ],
+        "gpu_final": 0.011347209,
+        "cpu_final": 0.011314082379268838,
+        "gpu_inverse_power_error": 3.96111491524076e-9
+      },
+      {
+        "path": "C",
+        "xy": [
+          668,
+          1075
+        ],
+        "channel": 0,
+        "code_error": 3,
+        "hdr_original": [
+          348.09796769150597,
+          992.5788497217069,
+          802.5415444770283
+        ],
+        "B_gpu": [
+          0.7116002,
+          1.0534338,
+          0.9715483
+        ],
+        "B_cpu": [
+          0.7116001577710573,
+          1.0534338330648494,
+          0.971548322006647
+        ],
+        "C_gpu_pre": [
+          0.000029351562,
+          1.2208217,
+          0.92186934
+        ],
+        "C_cpu_pre": [
+          0.00002907947335348965,
+          1.22082208157188,
+          0.9218692023576711
+        ],
+        "gpu_final": 0.012927455,
+        "cpu_final": 0.012877386291805668,
+        "gpu_inverse_power_error": 6.57210199456193e-10
+      }
+    ],
+    "metrics": [
+      {
+        "label": "B-original-f64",
+        "channels": [
+          {
+            "channel": 0,
+            "p50": 8.242199922570137e-8,
+            "p95": 2.887404427776019e-7,
+            "p99": 4.206402268724929e-7,
+            "p999": 5.588383091836846e-7,
+            "max": 9.297722607382042e-7,
+            "worst_xy": [
+              1631,
+              722
+            ],
+            "gpu": 1.0718502,
+            "cpu": 1.0718492508536548,
+            "unorm16": null
+          },
+          {
+            "channel": 1,
+            "p50": 9.946909862446063e-8,
+            "p95": 4.1404138828582404e-7,
+            "p99": 4.609148316347955e-7,
+            "p999": 5.992268138355072e-7,
+            "max": 9.319805518437363e-7,
+            "worst_xy": [
+              173,
+              1054
+            ],
+            "gpu": 1.0975095,
+            "cpu": 1.0975085713840111,
+            "unorm16": null
+          },
+          {
+            "channel": 2,
+            "p50": 7.108843924630293e-8,
+            "p95": 2.9384095978635116e-7,
+            "p99": 4.3362167101435034e-7,
+            "p999": 5.782819822996998e-7,
+            "max": 0.0000010481044203647372,
+            "worst_xy": [
+              514,
+              842
+            ],
+            "gpu": 1.1352012,
+            "cpu": 1.1352001676395982,
+            "unorm16": null
+          }
+        ],
+        "unorm16_evaluated": false,
+        "unorm16_max": 0,
+        "unorm16_over_two": 0
+      },
+      {
+        "label": "B-promoted-f32-input",
+        "channels": [
+          {
+            "channel": 0,
+            "p50": 8.279582530690277e-8,
+            "p95": 2.8818197284063984e-7,
+            "p99": 4.21227908664612e-7,
+            "p999": 5.595981327211064e-7,
+            "max": 9.341215787550539e-7,
+            "worst_xy": [
+              1631,
+              722
+            ],
+            "gpu": 1.0718502,
+            "cpu": 1.0718492465043368,
+            "unorm16": null
+          },
+          {
+            "channel": 1,
+            "p50": 9.934723654847488e-8,
+            "p95": 4.139029669003591e-7,
+            "p99": 4.5993422770340686e-7,
+            "p999": 5.984997635266609e-7,
+            "max": 9.364238595654939e-7,
+            "worst_xy": [
+              173,
+              1054
+            ],
+            "gpu": 1.0975095,
+            "cpu": 1.0975085669407034,
+            "unorm16": null
+          },
+          {
+            "channel": 2,
+            "p50": 7.108843924630293e-8,
+            "p95": 2.9355029118605103e-7,
+            "p99": 4.3410632966089935e-7,
+            "p999": 5.774686482329372e-7,
+            "max": 0.0000010592094517036799,
+            "worst_xy": [
+              514,
+              842
+            ],
+            "gpu": 1.1352012,
+            "cpu": 1.1352001565345669,
+            "unorm16": null
+          }
+        ],
+        "unorm16_evaluated": false,
+        "unorm16_max": 0,
+        "unorm16_over_two": 0
+      },
+      {
+        "label": "BC-pre-original-f64",
+        "channels": [
+          {
+            "channel": 0,
+            "p50": 1.469474567999951e-7,
+            "p95": 8.573606876671747e-7,
+            "p99": 0.0000011634278531680309,
+            "p999": 0.0000018161272359318303,
+            "max": 0.0000037251248030667483,
+            "worst_xy": [
+              1871,
+              731
+            ],
+            "gpu": 1.7519941,
+            "cpu": 1.7519978581204085,
+            "unorm16": null
+          },
+          {
+            "channel": 1,
+            "p50": 1.3451026639743624e-7,
+            "p95": 0.0000010040792930432474,
+            "p99": 0.0000014978743667626304,
+            "p999": 0.0000015911705908422391,
+            "max": 0.000002984248377080334,
+            "worst_xy": [
+              12,
+              1063
+            ],
+            "gpu": 1.5640929,
+            "cpu": 1.5640898902786005,
+            "unorm16": null
+          },
+          {
+            "channel": 2,
+            "p50": 1.2552274930577312e-7,
+            "p95": 9.225416212066406e-7,
+            "p99": 0.0000010874139690919549,
+            "p999": 0.0000016271912079979245,
+            "max": 0.000003093983874435935,
+            "worst_xy": [
+              514,
+              842
+            ],
+            "gpu": 1.4268365,
+            "cpu": 1.426833396647229,
+            "unorm16": null
+          }
+        ],
+        "unorm16_evaluated": false,
+        "unorm16_max": 0,
+        "unorm16_over_two": 0
+      },
+      {
+        "label": "BC-pre-promoted-f32-input",
+        "channels": [
+          {
+            "channel": 0,
+            "p50": 1.4677889803582644e-7,
+            "p95": 8.573606876671747e-7,
+            "p99": 0.000001161344873934489,
+            "p999": 0.0000018192827284657653,
+            "max": 0.000003776387281329008,
+            "worst_xy": [
+              1871,
+              731
+            ],
+            "gpu": 1.7519941,
+            "cpu": 1.7519979093828868,
+            "unorm16": null
+          },
+          {
+            "channel": 1,
+            "p50": 1.3451026639743624e-7,
+            "p95": 0.0000010038130950906776,
+            "p99": 0.0000014978743667626304,
+            "p999": 0.0000015931207304475947,
+            "max": 0.0000030127978929428423,
+            "worst_xy": [
+              12,
+              1063
+            ],
+            "gpu": 1.5640929,
+            "cpu": 1.5640898617290846,
+            "unorm16": null
+          },
+          {
+            "channel": 2,
+            "p50": 1.2552274930577312e-7,
+            "p95": 9.214306324611954e-7,
+            "p99": 0.0000010867562196814617,
+            "p999": 0.0000016254692944972504,
+            "max": 0.000003132279509099334,
+            "worst_xy": [
+              514,
+              842
+            ],
+            "gpu": 1.4268365,
+            "cpu": 1.4268333583515944,
+            "unorm16": null
+          }
+        ],
+        "unorm16_evaluated": false,
+        "unorm16_max": 0,
+        "unorm16_over_two": 0
+      },
+      {
+        "label": "BC-final-original-f64",
+        "channels": [
+          {
+            "channel": 0,
+            "p50": 1.466548449347016e-8,
+            "p95": 3.9139429985901586e-7,
+            "p99": 4.6236455641945895e-7,
+            "p999": 0.000001056525281623033,
+            "max": 0.00006397170973513472,
+            "worst_xy": [
+              472,
+              942
+            ],
+            "gpu": 0.008841572,
+            "cpu": 0.008777600619666835,
+            "unorm16": {
+              "p50": 0,
+              "p95": 0,
+              "p99": 0,
+              "p999": 1,
+              "max": 4
+            }
+          },
+          {
+            "channel": 1,
+            "p50": 2.8099233231881904e-8,
+            "p95": 3.140118794986435e-7,
+            "p99": 4.6069279047156186e-7,
+            "p999": 6.08609739383148e-7,
+            "max": 9.47469779855048e-7,
+            "worst_xy": [
+              259,
+              873
+            ],
+            "gpu": 0.9991081,
+            "cpu": 0.9991071286258012,
+            "unorm16": {
+              "p50": 0,
+              "p95": 0,
+              "p99": 0,
+              "p999": 1,
+              "max": 1
+            }
+          },
+          {
+            "channel": 2,
+            "p50": 4.696904976064786e-8,
+            "p95": 3.3178965508362523e-7,
+            "p99": 4.124786296966221e-7,
+            "p999": 6.126786122884198e-7,
+            "max": 0.00015929530584825975,
+            "worst_xy": [
+              1064,
+              1032
+            ],
+            "gpu": 0.0032563459,
+            "cpu": 0.003097050560399752,
+            "unorm16": {
+              "p50": 0,
+              "p95": 0,
+              "p99": 0,
+              "p999": 1,
+              "max": 10
+            }
+          }
+        ],
+        "unorm16_evaluated": true,
+        "unorm16_max": 10,
+        "unorm16_over_two": 7
+      },
+      {
+        "label": "BC-final-promoted-f32-input",
+        "channels": [
+          {
+            "channel": 0,
+            "p50": 1.466548449347016e-8,
+            "p95": 3.906919104901263e-7,
+            "p99": 4.604894587867392e-7,
+            "p999": 0.000001047915918289677,
+            "max": 0.00006648331411428926,
+            "worst_xy": [
+              472,
+              942
+            ],
+            "gpu": 0.008841572,
+            "cpu": 0.00877508901528768,
+            "unorm16": {
+              "p50": 0,
+              "p95": 0,
+              "p99": 0,
+              "p999": 1,
+              "max": 4
+            }
+          },
+          {
+            "channel": 1,
+            "p50": 2.8099233231881904e-8,
+            "p95": 3.1364730157523724e-7,
+            "p99": 4.601253531522076e-7,
+            "p999": 6.071488150016791e-7,
+            "max": 9.324259107046373e-7,
+            "worst_xy": [
+              259,
+              873
+            ],
+            "gpu": 0.9991081,
+            "cpu": 0.9991071436696704,
+            "unorm16": {
+              "p50": 0,
+              "p95": 0,
+              "p99": 0,
+              "p999": 1,
+              "max": 1
+            }
+          },
+          {
+            "channel": 2,
+            "p50": 4.707248246749174e-8,
+            "p95": 3.3178965508362523e-7,
+            "p99": 4.11707101188874e-7,
+            "p999": 6.113104769334132e-7,
+            "max": 0.0001602787655720279,
+            "worst_xy": [
+              1064,
+              1032
+            ],
+            "gpu": 0.0032563459,
+            "cpu": 0.0030960671006759837,
+            "unorm16": {
+              "p50": 0,
+              "p95": 0,
+              "p99": 0,
+              "p999": 1,
+              "max": 10
+            }
+          }
+        ],
+        "unorm16_evaluated": true,
+        "unorm16_max": 10,
+        "unorm16_over_two": 6
+      },
+      {
+        "label": "C-final-original-f64",
+        "channels": [
+          {
+            "channel": 0,
+            "p50": 1.2263875803775193e-8,
+            "p95": 9.426759306485621e-8,
+            "p99": 1.6965691196357824e-7,
+            "p999": 5.880489535869948e-7,
+            "max": 0.00006172995097237458,
+            "worst_xy": [
+              565,
+              1005
+            ],
+            "gpu": 0.007658827,
+            "cpu": 0.007597097167603198,
+            "unorm16": {
+              "p50": 0,
+              "p95": 0,
+              "p99": 0,
+              "p999": 1,
+              "max": 4
+            }
+          },
+          {
+            "channel": 1,
+            "p50": 1.6604250349661065e-8,
+            "p95": 8.538317597395206e-8,
+            "p99": 1.2318675679523494e-7,
+            "p999": 1.4877439347138477e-7,
+            "max": 2.1299031771615518e-7,
+            "worst_xy": [
+              1736,
+              995
+            ],
+            "gpu": 0.9688152,
+            "cpu": 0.9688149944910666,
+            "unorm16": {
+              "p50": 0,
+              "p95": 0,
+              "p99": 0,
+              "p999": 0,
+              "max": 1
+            }
+          },
+          {
+            "channel": 2,
+            "p50": 1.5188273971844524e-8,
+            "p95": 8.864082146065044e-8,
+            "p99": 1.5267479669400785e-7,
+            "p999": 5.702004421959117e-7,
+            "max": 0.00016444639092669982,
+            "worst_xy": [
+              1064,
+              1032
+            ],
+            "gpu": 0.0029326042,
+            "cpu": 0.003097050560399752,
+            "unorm16": {
+              "p50": 0,
+              "p95": 0,
+              "p99": 0,
+              "p999": 1,
+              "max": 11
+            }
+          }
+        ],
+        "unorm16_evaluated": true,
+        "unorm16_max": 11,
+        "unorm16_over_two": 4
+      },
+      {
+        "label": "C-final-promoted-f32-input",
+        "channels": [
+          {
+            "channel": 0,
+            "p50": 0,
+            "p95": 7.906652299549677e-8,
+            "p99": 1.3233710505211604e-7,
+            "p999": 4.259405255030435e-7,
+            "max": 0.00003160466403018605,
+            "worst_xy": [
+              472,
+              942
+            ],
+            "gpu": 0.008780774,
+            "cpu": 0.008749169065055736,
+            "unorm16": {
+              "p50": 0,
+              "p95": 0,
+              "p99": 0,
+              "p999": 0,
+              "max": 2
+            }
+          },
+          {
+            "channel": 1,
+            "p50": 0,
+            "p95": 7.657011735773267e-8,
+            "p99": 1.1920928955078125e-7,
+            "p999": 1.3602281634383928e-7,
+            "max": 1.8705506865668298e-7,
+            "worst_xy": [
+              1460,
+              868
+            ],
+            "gpu": 0.88525695,
+            "cpu": 0.8852567590318149,
+            "unorm16": {
+              "p50": 0,
+              "p95": 0,
+              "p99": 0,
+              "p999": 0,
+              "max": 1
+            }
+          },
+          {
+            "channel": 2,
+            "p50": 4.656612873077393e-10,
+            "p95": 8.175065990823072e-8,
+            "p99": 1.4590225183575e-7,
+            "p999": 5.654957829226426e-7,
+            "max": 0.00017124655451857158,
+            "worst_xy": [
+              1064,
+              1032
+            ],
+            "gpu": 0.0029326042,
+            "cpu": 0.0031038507239916236,
+            "unorm16": {
+              "p50": 0,
+              "p95": 0,
+              "p99": 0,
+              "p999": 1,
+              "max": 11
+            }
+          }
+        ],
+        "unorm16_evaluated": true,
+        "unorm16_max": 11,
+        "unorm16_over_two": 1
+      }
+    ]
+  },
+  "synthetic_render": {
+    "width": 66,
+    "height": 50,
+    "grid": [
+      13,
+      9
+    ],
+    "fonts": [
+      "builtin-8x8",
+      "Inconsolata-Regular.ttf"
+    ],
+    "modes": [
+      "color",
+      "monochrome"
+    ],
+    "low_two_bits": {
+      "nonzero_samples": 2475,
+      "total_samples": 4950,
+      "ratio": 0.5
+    },
+    "glyph_mismatches": 0,
+    "coverage": "raw R8 bytes exactly identical",
+    "a_max_abs_nits": {
+      "builtin_monochrome": 0.0011678166151227742,
+      "builtin_color": 0.0020213290673183337,
+      "freetype_monochrome": 0.0008905947879114251,
+      "freetype_color": 0.001536981046569963
+    },
+    "max_final_unorm16_code_error": 1,
+    "dual_slot_iterations_per_configuration": 200,
+    "configurations": 4,
+    "pts_match": true,
+    "cross_slot_contamination": 0,
+    "validation_errors": 0,
+    "scope": "bounded synthetic fixtures, not full C3 closure"
+  },
+  "gpu_vectors": {
+    "method_a": "black/0.0001/1/10/100/203/400/1000 nits, RGB/CMY, skin, both knee neighborhoods",
+    "normal_diagnostics_first_five": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "invalid_component_counts_each": 12,
+    "invalid_cases": [
+      "negative",
+      ">1000",
+      "NaN",
+      "Inf"
+    ],
+    "limiter_epsilon": 0.000244140625,
+    "interior_bit_identity": true,
+    "idempotent": true,
+    "component_monotonic": true,
+    "negative_zero_bits": "80000000",
+    "fault_checkpoints": [
+      "LinearRenderPipeline",
+      "FloatAAllocation",
+      "FloatBAllocation",
+      "ToneMapDescriptor",
+      "BeforeSubmit",
+      "BeforeC2bDispatch",
+      "DiagnosticReadback",
+      "AfterFence"
+    ],
+    "faults": "all hard fail, safe subsequent reuse, validation errors=0",
+    "cases": {
+      "green": {
+        "mask": 21,
+        "bounded": [
+          0,
+          1,
+          0
+        ]
+      },
+      "cyan": {
+        "mask": 49,
+        "bounded": [
+          0,
+          1,
+          1
+        ]
+      },
+      "yellow": {
+        "mask": 28,
+        "bounded": [
+          1,
+          1,
+          0
+        ]
+      }
+    },
+    "scope": "qualification vectors only, no Y-preservation claim"
+  },
+  "real_input": {
+    "fixtures": [
+      "hevc-main10-pq-canonical-v1.mp4",
+      "av1-main10-pq-canonical-v1.mp4"
+    ],
+    "frames_tested_each": 1,
+    "path": "VAAPI decode -> actual surface download for CPU oracle / DMA-BUF import -> HDR map -> A -> B -> C -> diagnostic completion",
+    "cpu_above_1000_components_each": 835695,
+    "cpu_max_nits": 10000,
+    "gpu_above_1000_components_each": 835695,
+    "diagnostics_each": [
+      0,
+      835695,
+      0,
+      0,
+      0,
+      2057400,
+      0,
+      16200,
+      0
+    ],
+    "validation_errors": 0,
+    "domain_rejection": "PASS",
+    "conversion_parity": "NOT QUALIFIED",
+    "reason": "B3 canonical source includes 4000/10000-nit patches; no clipping, renormalization or valid subset used"
+  },
+  "memory": {
+    "representation": "two packed vec3-equivalent scalar f32 RGB buffers, 12 bytes/pixel each",
+    "rgb_pair_bytes_per_1080p_slot": 49766400,
+    "capture_buffers_bytes_per_slot": 141004836,
+    "capture_buffers_bytes_two_slots": 282009672,
+    "no_capture_buffers_bytes_per_slot": 49766472,
+    "excludes": "reused B2 buffers, allocator padding, Vulkan driver objects, imported surfaces and CPU oracle/readback Vecs"
+  },
+  "production_regression": {
+    "runs_each": 3,
+    "sdr": {
+      "h264_8": "7c8a7572320b8c6c999143dfece4a76d487d6c9e7788206b7af52df9acd4e1cc",
+      "hevc_8": "294a1b63ac5b0e440dcf60c4c60f975594c6e944829478b69f09f981d268ff71",
+      "av1_8": "1531e29f52ae4e747251cf1889003dfd420303c523fb0ddc55cc9140e3bf2a4c",
+      "hevc_10": "f213a9f75542421bb816550cd7a93796db98ae36296a00636f7273492740a142",
+      "av1_10": "b69c68525ac6ab2464e04b8fc1f123d887b45bba580377bafad99dc74cf62ad7"
+    },
+    "pq": {
+      "hevc_10": "0e8de23d5d222ab0476ea816d27b18e37dc73bf1f824e79bedc1070c409ded63",
+      "av1_10": "41a8af52985a6be0121cfe7c4f4160a3ebdecd0acc908882774d2a0151185388"
+    },
+    "decode_metadata": "all retained hashes / decoded hashes / 300 frame packet timestamps metadata pass",
+    "policy_rejections": [
+      "PQ default 8-bit",
+      "HLG",
+      "BT2020 SDR",
+      "full range"
+    ],
+    "historical_h264": {
+      "raw_1a": "FAIL",
+      "semantic_1b": "PASS",
+      "decoded_1c": "PASS",
+      "structure_2": "PASS",
+      "whole_file": "DIFFERENT",
+      "exact_build_identity": "not attested"
+    }
+  },
+  "unverified": [
+    "full valid-domain HEVC and AV1 C3 CPU/GPU per-frame parity",
+    "3000-frame HEVC dual-slot stress",
+    "3000-frame AV1 dual-slot stress",
+    "FD before/peak/after equality under C3 stress",
+    "resource-growth and validation across those stress runs",
+    "1080p/300-frame CPU/GPU single-slot and dual-slot performance"
+  ],
+  "blockers": [
+    "strict diagnostic UNORM16 <=2: BC max10/7 over-two samples; isolated C max11/4 over-two; promoted-input C max11/1 over-two",
+    "B3 canonical fixture is outside immutable C1 fixed-1000-nit domain",
+    "complete remaining hardware/stress qualification after correctness is resolved"
+  ],
+  "next_stage": "C4 not justified; not started",
+  "static_checks": {
+    "release_workspace_build": "PASS",
+    "default_tests": {
+      "passed": 210,
+      "failed": 0,
+      "ignored": 79
+    },
+    "encode_characterization_tests": {
+      "passed": 210,
+      "failed": 0,
+      "ignored": 79
+    },
+    "combined_qualification_tests": {
+      "passed": 212,
+      "failed": 0,
+      "ignored": 107
+    },
+    "default_clippy_all_targets": "PASS",
+    "combined_clippy_all_targets": "PASS after fixing test-only needless range-loop and needless borrow diagnostics",
+    "clippy_policy": "-D warnings",
+    "fmt": "PASS",
+    "diff": "PASS",
+    "spirv": {
+      "debug_files": 398,
+      "release_files": 60,
+      "total_files": 458,
+      "failures": 0,
+      "target": "vulkan1.3",
+      "semantics": "actual cached files; not distinct shader algorithms",
+      "new_modules": {
+        "ascii_render_hdr_linear": [
+          "Shader",
+          "StorageBuffer8BitAccess"
+        ],
+        "tone_map_bt2446": [
+          "Shader"
+        ],
+        "bt2020_to_bt709_limit": [
+          "Shader"
+        ]
+      },
+      "float16_or_float64_capabilities": false
+    }
+  },
+  "commands": {
+    "cpu_c1": "bash scripts/qualify-tone-map-cpu.sh /tmp/asciiflow-c3-c1-regression",
+    "cpu_c2b": "bash scripts/qualify-target-volume-cpu.sh /tmp/asciiflow-c3-c1-regression/method-a-run1.bin /tmp/asciiflow-c3-c2b-regression",
+    "canonical": "ASCIIFLOW_VULKAN_VALIDATION=1 C1_INPUT=/tmp/asciiflow-c3-c1-regression/linear-bt2020-1000-v1.bin C1_OUTPUT=/tmp/asciiflow-c3-c1-regression/method-a-run1.bin C3_REPORT=/tmp/asciiflow-c3-canonical-final.json cargo test -p asciiflow-vulkan --features hdr-to-sdr-qualification --test c3_qualification canonical_f64_and_f32_input_oracles -- --ignored --nocapture --test-threads=1",
+    "canonical_expected_exit": 101,
+    "wrapper": "bash scripts/qualify-tone-map-vulkan.sh NEW_OUTPUT_DIRECTORY",
+    "wrapper_execution": "syntax checked, components executed individually",
+    "real_domain": "ASCIIFLOW_VULKAN_VALIDATION=1 cargo test -p asciiflow-interop --features hdr-to-sdr-qualification --test c3_hardware -- --ignored --nocapture --test-threads=1",
+    "pq_production": "bash tests/baselines/media/generate-pq-production-v1.sh tests/fixtures/codecs /tmp/asciiflow-c3-pq",
+    "sdr_production": "bash tests/baselines/media/generate-post-polarity-v2.sh /tmp/asciiflow-c2-input8.mp4 tests/fixtures/codecs/hevc-main10-canonical-v1.mp4 /tmp/asciiflow-c3-sdr"
+  },
+  "c3a": {
+    "scope": "Stage 5.3C-3A numerical closure and legal-domain input qualification; qualification-only source changes",
+    "status": "NOT SEALED",
+    "observed_at": "2026-09-29",
+    "evidence_finalized_at": "2026-09-30",
+    "historical_evidence_policy": "Existing canonical_numeric, source and static_checks are the original C3 snapshot; retained without replacing failed values.",
+    "source_sha256": {
+      "Cargo.lock": "f8cf97f855fcbcb422ef1b74f2367a7ac40b612dcc41cc0a1d8a23f3e27746b8",
+      "crates/asciiflow-core/src/tone_map_bt2446.rs": "209208b850936869e6a8b73c960b2cf7be9d957ceb544eaca1bbe4fe88407107",
+      "crates/asciiflow-core/src/sdr_target_volume.rs": "ca92bb3d6d26113254788a0a09549e064ce3c37be0db7b7636f71ea6dcf836b5",
+      "crates/asciiflow-vulkan/src/tone_map.rs": "0ee0bdb9c4fedb2c34ed9eba7ae62e0cf0a7c7653563a698addeab57704fb6d4",
+      "crates/asciiflow-vulkan/tests/c3_arithmetic.rs": "81202a0d05107b06434cd46917565902b7ec1549fe3a9ccaa0bf193f58a336ed",
+      "crates/asciiflow-interop/tests/c3_legal_domain.rs": "565a4d4b836ab65b42e6d0c795c5e4445dbdd4bfab016dd00f4d16e4f91ebf2b",
+      "shaders/src/ascii_render_hdr_linear.comp": "93403a81e6c62cf1c6d68cfe20cb5ed177c80cc4a24bad6f60a655606398329e",
+      "shaders/src/tone_map_bt2446.comp": "aa78f39f3c17d8d205c822e422dc6acac7a38fcee6863ad12839bb3bf63dc7da",
+      "shaders/src/bt2020_to_bt709_limit.comp": "3b57dc11b5beafda9c800afc80ecb477f71a97de424e3395153ef7606708402f",
+      "shaders/src/c3_common.glsl": "e461c7452b4598d577d420dad0be6fa9c18ffcfd3a3aaee9abcb8319444c4bbd",
+      "scripts/audit-c3-spirv.py": "7d1fb52a2664e55b183c9023fb45731100484c72c57827251ba4723fa2c36f69",
+      "scripts/qualify-tone-map-vulkan.sh": "51049a914e330bc3343259ac9a8597282da4d206ea54b33a5dc70106abddc6b6",
+      "tests/fixtures/codecs/generate-c3-pq-legal-v1.py": "c7ddf94a576d3d96934a56a4538a0086a04298fa9751ec434ea81af0f18eba65",
+      "tests/fixtures/codecs/generate-c3-pq-legal-v1.sh": "b264d019ad7406dfd0c7ce7f4102c59679dae482bf46469a71ee68ae1abd41bd"
+    },
+    "evidence_sha256": {
+      "tests/baselines/tone-map/c3a-arithmetic-final.json": "3a9e2ff37d2f4945591cbf676c6657c25aec054a3f0830009d27aa27a2c001cb",
+      "tests/baselines/tone-map/c3a-legal-domain-v1.json": "48c4a99e71520e5989be0962e114ea3cbda2f7ee03b8ca1f7e6cb49afdc0f3ea",
+      "tests/baselines/tone-map/c3a-pq-regressions.json": "628de446aff997ec5bdd880035121f4d4a264a44aec3813b00daabf42a1f4084",
+      "tests/baselines/tone-map/c3a-sdr-regressions.json": "02303a8dc7e3f8efa23f984b24fcdcdbea78d2c7a886431caae138d9b7ba0d5a",
+      "tests/baselines/tone-map/c3a-spirv-audit-final.json": "d9844043bcc7a41484060ce2009e89df433c7ace3801a5b5b4ec08d091f47def",
+      "tests/baselines/tone-map/c3-historical-failure-vectors.json": "40ba416fbdaab74ee0e603cbfe0a02fe3c84ddc9971690608107684991c99985",
+      "tests/fixtures/codecs/c3-pq-legal-v1-identity.json": "557357f31a16b7f68f8c3a4407f02edba5f949c391f9630f5fff31f39ffa375a"
+    },
+    "numerical": {
+      "scientific_oracle": "immutable sealed C1/C2B f64",
+      "shader_contract_oracle": "true per-operation f32; host extended-instruction estimates distinguished from actual GPU",
+      "actual_cases": 18,
+      "all_pixels_including_near_black_and_clipped": true,
+      "unorm16_gate": {
+        "maximum": 2,
+        "over_two_count": 0
+      },
+      "passing_BC_cases": 0,
+      "passing_C_cases": 0,
+      "selected_fix": null,
+      "normal_dispatch_mode": 0,
+      "best_BC": {
+        "matrix": "row-left or neutral-two-product",
+        "common_scale_B": true,
+        "maximum": 4,
+        "over_two_count": 5
+      },
+      "best_isolated_C": {
+        "matrix": "neutral-two-product",
+        "maximum": 3,
+        "over_two_count": 1,
+        "remaining_sample": {
+          "xy": [
+            565,
+            1005
+          ],
+          "channel": 0
+        }
+      },
+      "first_divergence": "Remaining isolated-C sample first differs in source Pow (GPU red one host-f32 ULP higher); matrix from captured source agrees to approximately 2.44e-13 but nonlinear near-black amplification still yields three codes.",
+      "fma_observation": "GLSL.std.450 Fma nodes lack NoContraction; unfused product-residual model reproduces four historical compensated-C outputs. Dekker residual experiment avoids reliance on fused Fma.",
+      "forbidden_shortcuts_used": false,
+      "float64_capability_required": false
+    },
+    "legal_fixture": {
+      "name": "C3 legal-domain PQ v1",
+      "generator_command": "bash tests/fixtures/codecs/generate-c3-pq-legal-v1.sh NEW_OUTPUT_DIRECTORY",
+      "reproducible_final_runs": [
+        3,
+        4,
+        5
+      ],
+      "superseded_manifest_runs": [
+        1,
+        2
+      ],
+      "raw_p010_sha256": "7e28e4832332a7febe72e9c6b9fb4b7fbad0d141ed204b4f9267f50e2ff87a37",
+      "raw_bytes": 1866240000,
+      "width": 1920,
+      "height": 1080,
+      "frames": 300,
+      "fps": [
+        50,
+        1
+      ],
+      "pixel_format": "p010le",
+      "color": "BT.2020/PQ/BT.2020 NCL/limited/left",
+      "designed_peak_nits": 900,
+      "decoded_peak_nits": 904.3172845983241,
+      "nonzero_low_two_bit_samples": 583051212,
+      "total_samples": 933120000,
+      "software_and_VAAPI_all_frames": "PASS both codecs; zero negative/above1000/nonfinite/invalid-code/malformed-low-six-packing counts",
+      "changed_input_bytes_negative_control": "PASS: checksum mismatch rejected before decoding",
+      "packing_negative_control": "PASS: valid ten-bit low-two-bit precision distinguished from malformed unused low-six bits",
+      "original_B3_fixture_changed": false
+    },
+    "retained_regressions": {
+      "c1_runs": 3,
+      "c1_sha256": "d0eb86dcc265fe7f675d87055f038d258176e331eb2aac412ba7358a6c8c1e6b",
+      "c2b_runs": 3,
+      "c2b_sha256": "a7e7ffe64d61269288c8e9b2e9b22a62f8c16fd2287083386bc8cefb9c3471af",
+      "SDR": "5 paths x3: hashes/full decode/metadata/timestamps PASS",
+      "PQ_preserve": "2 paths x3: retained verifier tiers1A/1B/1C/2/3 PASS",
+      "historical_h264": {
+        "raw_1A": "FAIL",
+        "coded_1B": "PASS",
+        "decoded_1C": "PASS",
+        "structure_2": "PASS",
+        "whole_file": "DIFFERENT; exact build identity unattested",
+        "reference": "target/stage51b-evidence/bench-h264-full-1.mp4",
+        "candidate": "/tmp/asciiflow-c1-h264-legacy.mp4",
+        "comparison": "rerun during C3A; preexisting candidate bytes, not a newly generated historical artifact"
+      },
+      "PQ_default_8bit_rejection": "PASS both codecs; no staged output",
+      "production_HDR_to_SDR": "disabled"
+    },
+    "safety": {
+      "synthetic_builtin_FreeType_color_mono": "PASS final shader source; glyph mismatch0; exact R8 coverage",
+      "synthetic_dual_slot_alternations_per_config": 200,
+      "synthetic_configs": 4,
+      "fault_checkpoints": 8,
+      "fault_reuse": "PASS",
+      "executed_GPU_validation_errors": 0,
+      "real_device_loss_or_hung_fence": "not forced"
+    },
+    "static_checks": {
+      "observed_at": "2026-09-29",
+      "release_build": "PASS",
+      "default_tests": {
+        "passed": 210,
+        "failed": 0,
+        "ignored": 79
+      },
+      "measurement_tests": {
+        "passed": 210,
+        "failed": 0,
+        "ignored": 79
+      },
+      "combined_tests": {
+        "passed": 214,
+        "failed": 0,
+        "ignored": 109
+      },
+      "clippy_default_all_targets": "PASS -D warnings",
+      "clippy_combined_all_targets": "PASS -D warnings",
+      "fmt": "PASS",
+      "diff_check": "PASS",
+      "spirv": {
+        "debug_files": 420,
+        "release_files": 104,
+        "total_cache_files": 524,
+        "target": "vulkan1.3",
+        "failures": 0,
+        "semantics": "actual cached files, not distinct algorithms"
+      },
+      "finalization_checks_2026_09_30": "JSON identities, fmt, diff and shell syntax rechecked; prior execution counts retained without claiming reruns"
+    },
+    "commands": {
+      "cpu_c1": "bash scripts/qualify-tone-map-cpu.sh /tmp/asciiflow-c3a-c1-regression",
+      "cpu_c2b": "bash scripts/qualify-target-volume-cpu.sh /tmp/asciiflow-c3a-c1-regression/method-a-run1.bin /tmp/asciiflow-c3a-c2b-regression",
+      "arithmetic": "ASCIIFLOW_VULKAN_VALIDATION=1 C1_INPUT=/tmp/asciiflow-c3-c1-regression/linear-bt2020-1000-v1.bin C1_OUTPUT=/tmp/asciiflow-c3-c1-regression/method-a-run1.bin C3_ARITHMETIC_REPORT=/tmp/asciiflow-c3a-arithmetic-final.json cargo test -p asciiflow-vulkan --release --features hdr-to-sdr-qualification --test c3_arithmetic canonical_arithmetic_sweep -- --ignored --nocapture --test-threads=1",
+      "arithmetic_exit": 101,
+      "legal_domain": "C3_LEGAL_FIXTURE_DIR=/home/eureka/Documents/AsciiFlow/tests/fixtures/codecs C3_LEGAL_REPORT=/tmp/asciiflow-c3a-legal-domain-packing-final.json cargo test -p asciiflow-interop --release --features hdr-to-sdr-qualification --test c3_legal_domain -- --ignored --nocapture --test-threads=1",
+      "spirv_audit": "python3 scripts/audit-c3-spirv.py target/release/build/asciiflow-vulkan-4bb1289906b59828/out/bt2020_to_bt709_limit.spv",
+      "fixture_runs": "bash tests/fixtures/codecs/generate-c3-pq-legal-v1.sh /tmp/asciiflow-c3a-fixture-run{3,4,5} (three separate invocations)",
+      "SDR_generation": "bash tests/baselines/media/generate-post-polarity-v2.sh /tmp/asciiflow-c2-input8.mp4 tests/fixtures/codecs/hevc-main10-canonical-v1.mp4 /tmp/asciiflow-c3a-sdr",
+      "PQ_generation": "bash tests/baselines/media/generate-pq-production-v1.sh tests/fixtures/codecs /tmp/asciiflow-c3a-pq",
+      "PQ_verification": "python3 tests/baselines/media/verify-pq-production.py /tmp/asciiflow-c3a-pq /tmp/asciiflow-c3a-pq-verification.json --input-directory tests/fixtures/codecs --check-baseline tests/baselines/media/pq-production-v1.json",
+      "wrapper": "bash scripts/qualify-tone-map-vulkan.sh NEW_OUTPUT_DIRECTORY",
+      "wrapper_execution": "syntax checked; components executed individually"
+    },
+    "remaining_gates": [
+      "strict canonical scientific UNORM16 maximum<=2 and over-two count0",
+      "legal-source HEVC and AV1 full CPU/GPU parity (glyph/coverage/masks/final)",
+      "each codec real3000-frame dual-slot stress",
+      "C3 FD before/peak/after equality and resource-growth closure",
+      "correctness-first CPU full C3/Vulkan1-slot/Vulkan2-slot/per-pass/stabilization-cost measurements"
+    ],
+    "performance": "NOT RUN: numerical gate red",
+    "stage_5_3C_4": "NOT SEALED; not started"
+  }
+}

@@ -79,9 +79,11 @@ pub(crate) struct VulkanContext {
     pub queue_submit_lock: Mutex<()>,
     pub external_memory_fd: Option<ash::khr::external_memory_fd::Device>,
     pub info: DeviceInfo,
+    #[cfg(feature = "hdr-to-sdr-fp64-experiment")]
+    pub(crate) shader_float64_enabled: bool,
     debug_utils: Option<ash::ext::debug_utils::Instance>,
     debug_messenger: vk::DebugUtilsMessengerEXT,
-    validation_errors: Option<Box<AtomicUsize>>,
+    validation_errors: Option<Arc<AtomicUsize>>,
     abandoned: Arc<AtomicBool>,
 }
 
@@ -90,7 +92,7 @@ struct InstanceOwner {
     instance: Option<ash::Instance>,
     debug_utils: Option<ash::ext::debug_utils::Instance>,
     debug_messenger: vk::DebugUtilsMessengerEXT,
-    validation_errors: Option<Box<AtomicUsize>>,
+    validation_errors: Option<Arc<AtomicUsize>>,
 }
 
 #[derive(Clone)]
@@ -117,7 +119,7 @@ impl InstanceOwner {
         ash::Instance,
         Option<ash::ext::debug_utils::Instance>,
         vk::DebugUtilsMessengerEXT,
-        Option<Box<AtomicUsize>>,
+        Option<Arc<AtomicUsize>>,
     ) {
         let entry = self.entry.take().expect("Vulkan entry missing");
         let instance = self.instance.take().expect("Vulkan instance missing");
@@ -170,10 +172,17 @@ impl VulkanContext {
     pub fn new() -> Result<Self> {
         let validation =
             std::env::var_os("ASCIIFLOW_VULKAN_VALIDATION").is_some_and(|value| value != "0");
-        Self::create(validation)
+        Self::create(validation, false)
     }
 
-    fn create(validation: bool) -> Result<Self> {
+    #[cfg(feature = "hdr-to-sdr-fp64-experiment")]
+    pub(crate) fn new_fp64_experiment() -> Result<Self> {
+        let validation =
+            std::env::var_os("ASCIIFLOW_VULKAN_VALIDATION").is_some_and(|value| value != "0");
+        Self::create(validation, true)
+    }
+
+    fn create(validation: bool, fp64_experiment: bool) -> Result<Self> {
         let entry = unsafe { Entry::load() }
             .map_err(|e| Error::Vulkan(format!("failed to load system Vulkan loader: {e}")))?;
         let app = application_info();
@@ -213,7 +222,7 @@ impl VulkanContext {
             .map_err(vk_error("failed to create Vulkan 1.3 instance"))?;
         let mut owner = InstanceOwner::new(entry, instance);
         if validation {
-            owner.validation_errors = Some(Box::new(AtomicUsize::new(0)));
+            owner.validation_errors = Some(Arc::new(AtomicUsize::new(0)));
             let error_counter = owner
                 .validation_errors
                 .as_ref()
@@ -258,7 +267,24 @@ impl VulkanContext {
         let queue_info = [vk::DeviceQueueCreateInfo::default()
             .queue_family_index(selected.queue_family)
             .queue_priorities(&priority)];
-        let features = vk::PhysicalDeviceFeatures::default().shader_int64(true);
+        if fp64_experiment
+            && unsafe {
+                owner
+                    .instance
+                    .as_ref()
+                    .unwrap()
+                    .get_physical_device_features(physical_device)
+            }
+            .shader_float64
+                == vk::FALSE
+        {
+            return Err(Error::Vulkan(
+                "selected device lacks shaderFloat64 for qualification experiment".into(),
+            ));
+        }
+        let features = vk::PhysicalDeviceFeatures::default()
+            .shader_int64(true)
+            .shader_float64(fp64_experiment);
         let mut features11 = vk::PhysicalDeviceVulkan11Features::default()
             .storage_buffer16_bit_access(selected.p010_storage_supported);
         let mut features12 =
@@ -310,6 +336,8 @@ impl VulkanContext {
             debug_messenger,
             validation_errors,
             abandoned: Arc::new(AtomicBool::new(false)),
+            #[cfg(feature = "hdr-to-sdr-fp64-experiment")]
+            shader_float64_enabled: fp64_experiment,
         })
     }
 
@@ -317,6 +345,11 @@ impl VulkanContext {
         self.validation_errors
             .as_ref()
             .map_or(0, |counter| counter.load(Ordering::Relaxed))
+    }
+
+    #[cfg(feature = "hdr-to-sdr-qualification")]
+    pub(crate) fn validation_counter(&self) -> Option<Arc<AtomicUsize>> {
+        self.validation_errors.clone()
     }
 
     pub(crate) fn abandon(&self) {
@@ -338,6 +371,11 @@ impl Drop for VulkanContext {
             // The driver did not confirm that submitted work completed. Leaking
             // the device is safer than destroying resources that may still be
             // referenced by the GPU. Process exit reclaims the kernel objects.
+            // The intentionally live messenger still owns a native pointer to
+            // this counter. Retain it too, even after observers are dropped.
+            if let Some(counter) = self.validation_errors.take() {
+                std::mem::forget(counter);
+            }
             return;
         }
         unsafe {

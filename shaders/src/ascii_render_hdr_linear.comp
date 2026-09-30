@@ -1,0 +1,29 @@
+#version 460
+#extension GL_EXT_shader_8bit_storage : require
+#extension GL_GOOGLE_include_directive : require
+#include "pq_common.glsl"
+#include "c3_common.glsl"
+layout(local_size_x=32,local_size_y=4) in;
+layout(set=0,binding=0,std430) readonly buffer Cells { HdrCell cells[]; };
+layout(set=0,binding=1,std430) readonly buffer Atlas { uint8_t atlas[]; };
+void main() {
+    uint x=gl_GlobalInvocationID.x, y=gl_GlobalInvocationID.y;
+    if (x>=params.width || y>=params.height) return;
+    uint i=y*params.width+x;
+    uint ci=pq_cell_at(y,params.height,params.grid_height)*params.grid_width
+        +pq_cell_at(x,params.width,params.grid_width);
+    uint glyph=cells[ci].counts.x;
+    vec3 foreground=cells[ci].linear_and_perceptual.rgb;
+    if (glyph>=params.glyph_count || cells[ci].counts.z!=0 || !c3_finite(foreground)) {
+        atomicAdd(diagnostic[4],1u);
+        c3_write_a(i,vec3(0.0));
+        return; // Host must reject diagnostics; never a successful fallback.
+    }
+    if (params.color==0u) foreground=vec3(pq_luminance(foreground));
+    uint ax=pq_atlas_at(x,params.width,params.grid_width,params.atlas_width);
+    uint ay=pq_atlas_at(y,params.height,params.grid_height,params.atlas_height);
+    uint coverage_byte=uint(atlas[glyph*params.atlas_width*params.atlas_height+ay*params.atlas_width+ax]);
+    float coverage=float(coverage_byte)/255.0;
+    c3_write_a(i,foreground*10000.0*coverage); // absolute cd/m², no inverse PQ/YUV/quantization
+    if (params.capture!=0u) observation[C3_OBSERVATION_WORDS*i+7]=float(coverage_byte);
+}

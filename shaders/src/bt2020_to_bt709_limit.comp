@@ -1,0 +1,166 @@
+#version 460
+#ifdef C3_FP64_EXPERIMENT
+#extension GL_ARB_gpu_shader_fp64 : require
+#endif
+#extension GL_GOOGLE_include_directive : require
+#include "c3_common.glsl"
+layout(local_size_x=256) in;
+const vec3 ROWS[3]=vec3[3](
+    vec3(1.6604910021084345,-.5876411387885495,-.07284986331988488),
+    vec3(-.12455047452159074,1.1328998971259603,-.008349422604369477),
+    vec3(-.018150763354905303,-.10057889800800739,1.1187296613629127));
+
+#ifdef C3_FP64_EXPERIMENT
+// GLSL double has no native pow. Qualification-only range-reduced log/exp:
+// log uses 32 atanh terms, z<=1/3; exp uses 24 Taylor terms, |r|<=ln(2)/2.
+// Truncation is below binary64 roundoff on this domain. This is independently
+// tested against the immutable CPU oracle, not assumed correctly rounded.
+double power64(double x, double exponent) {
+    if (x==0.0lf) return 0.0lf;
+    int e;
+    precise double m=frexp(x,e)*2.0lf;
+    e-=1;
+    precise double z=(m-1.0lf)/(m+1.0lf), z2=z*z;
+    precise double term=z, sum=z;
+    for (int n=1;n<32;n++) { term=term*z2; sum=sum+term/double(2*n+1); }
+    const double LN2=0.693147180559945309417232121458176568lf;
+    precise double y=(2.0lf*sum+double(e)*LN2)*exponent;
+    int k=int(floor(y/LN2+0.5lf));
+    precise double r=y-double(k)*LN2;
+    term=1.0lf; sum=1.0lf;
+    for (int n=1;n<=24;n++) { term=term*r/double(n); sum=sum+term; }
+    return ldexp(sum,k);
+}
+dvec3 matrix64(dvec3 source) {
+    precise double dr=source.r-source.g, db=source.b-source.g;
+    precise dvec3 result=dvec3(
+        source.g+1.6604910021084345lf*dr-.07284986331988488lf*db,
+        source.g-.12455047452159074lf*dr-.008349422604369477lf*db,
+        source.g-.018150763354905303lf*dr+1.1187296613629127lf*db);
+    return result;
+}
+#endif
+
+// Knuth TwoSum, explicit FMA residuals and high/low representations of the
+// sealed f64 coefficients. These are arithmetic experiments, not new primaries.
+vec2 two_sum(float a,float b) {
+    precise float s=a+b;
+    precise float bb=s-a;
+    precise float error=(a-(s-bb))+(b-bb);
+    return vec2(s,error);
+}
+float product_residual(float a,float b,float p) {
+    // Dekker split: portable residual experiment without assuming that
+    // GLSL.std.450 Fma is a correctly rounded fused hardware operation.
+    precise float ca=4097.0*a, cb=4097.0*b;
+    precise float ah=ca-(ca-a), bh=cb-(cb-b);
+    precise float al=a-ah, bl=b-bh;
+    precise float error=(((ah*bh-p)+ah*bl)+al*bh)+al*bl;
+    return error;
+}
+float compensated_neutral(vec3 source,uint row,bool split_product) {
+    vec2 dr=two_sum(source.r,-source.g), db=two_sum(source.b,-source.g);
+    float a=ROWS[row].r, b=ROWS[row].b;
+    // lo = float(sealed_f64 - double(hi)); exact bit identities are audited.
+    const uvec2 LOW_BITS[3]=uvec2[3](uvec2(0x32556e96u,0xb08f4362u),
+        uvec2(0x3113a7e2u,0xaf835c29u),uvec2(0x2f7e4567u,0xb3536192u));
+    vec2 low=uintBitsToFloat(LOW_BITS[row]);
+    precise float p=a*dr.x, q=b*db.x;
+    precise float ep=(split_product ? product_residual(a,dr.x,p) : fma(a,dr.x,-p))+a*dr.y;
+    precise float eq=(split_product ? product_residual(b,db.x,q) : fma(b,db.x,-q))+b*db.y;
+    vec2 s=two_sum(source.g,p), t=two_sum(s.x,q);
+    precise float coefficient_error=low.x*dr.x+low.y*db.x;
+    precise float result=t.x+(((s.y+t.y)+(ep+eq))+coefficient_error);
+    return result;
+}
+void main() {
+    uint i=gl_GlobalInvocationID.x;
+    if (i>=params.width*params.height) return;
+    vec3 signal=c3_read_b(i);
+    if (!c3_finite(signal)) {
+        atomicAdd(diagnostic[4],1u); c3_write_a(i,vec3(0.0)); return;
+    }
+    // Explicit C-2B sign-reflected display power; NEVER source-clamp.
+    vec3 source=sign(signal)*pow(abs(signal),vec3(2.4));
+    // Nearest-f32 representations of the sealed D65 combined coefficients.
+    // Neutral-axis evaluation mirrors C-2B, no CAT/snap/Y restoration.
+    precise float dr=source.r-source.g, db=source.b-source.g;
+    precise vec3 pre=vec3(
+        source.g+1.6604910021084345*dr-.07284986331988488*db,
+        source.g-.12455047452159074*dr-.008349422604369477*db,
+        source.g-.018150763354905303*dr+1.1187296613629127*db);
+    uint mode=params.mode & 255u;
+    for (uint row=0u;row<3u;row++) {
+        precise vec3 terms=ROWS[row]*source;
+        if (mode==2u) pre[row]=(terms.r+terms.g)+terms.b;
+        else if (mode==3u) pre[row]=terms.r+(terms.g+terms.b);
+        else if (mode==4u) pre[row]=fma(ROWS[row].r,source.r,
+            fma(ROWS[row].g,source.g,terms.b));
+        else if (mode==5u || mode==6u) pre[row]=compensated_neutral(source,row,mode==6u);
+        if (params.capture!=0u) {
+            // Capture the actual three summands of the selected expression,
+            // not a different full-row expansion of neutral-axis arithmetic.
+            if (mode==0u || mode==5u || mode==6u)
+                terms=vec3(source.g,ROWS[row].r*dr,ROWS[row].b*db);
+            for (uint c=0u;c<3u;c++)
+                observation[C3_OBSERVATION_WORDS*i+11u+3u*row+c]=terms[c];
+        }
+    }
+#ifdef C3_FP64_EXPERIMENT
+    dvec3 pre64=dvec3(pre);
+    if (mode>=17u && mode<=19u) {
+        dvec3 source64=dvec3(source);
+        if (mode==19u) {
+            for (uint c=0u;c<3u;c++)
+                source64[c]=double(sign(signal[c]))*power64(abs(double(signal[c])),2.4lf);
+            source=vec3(source64);
+        }
+        pre64=matrix64(source64);
+        pre=vec3(pre64);
+        if (params.capture!=0u) {
+            const dvec2 AB[3]=dvec2[3](
+                dvec2(1.6604910021084345lf,-.07284986331988488lf),
+                dvec2(-.12455047452159074lf,-.008349422604369477lf),
+                dvec2(-.018150763354905303lf,1.1187296613629127lf));
+            for (uint row=0u;row<3u;row++) {
+                dvec3 terms=dvec3(source64.g,AB[row].x*(source64.r-source64.g),
+                    AB[row].y*(source64.b-source64.g));
+                for (uint c=0u;c<3u;c++)
+                    observation[C3_OBSERVATION_WORDS*i+11u+3u*row+c]=float(terms[c]);
+            }
+        }
+    }
+#endif
+    if (mode==1u) pre=signal; // diagnostic-only direct limiter helper
+    if (!c3_finite(pre)) { atomicAdd(diagnostic[4],1u); c3_write_a(i,vec3(0.0)); return; }
+    uint mask=0u;
+    vec3 bounded=pre;
+    for (uint c=0u;c<3u;c++) {
+#ifdef C3_FP64_EXPERIMENT
+        double clip_value=(mode==18u || mode==19u) ? pre64[c] : double(pre[c]);
+#else
+        float clip_value=pre[c];
+#endif
+        if (clip_value<0.0) { mask|=1u<<c; bounded[c]=0.0; }
+        else if (clip_value>1.0) { mask|=1u<<(c+3u); bounded[c]=1.0; }
+    }
+    atomicAdd(diagnostic[5u+uint(bitCount(mask))],1u);
+    if (params.capture!=0u) {
+        for (uint c=0u;c<3u;c++) {
+            observation[C3_OBSERVATION_WORDS*i+c]=pre[c];
+            observation[C3_OBSERVATION_WORDS*i+c+3u]=bounded[c];
+            observation[C3_OBSERVATION_WORDS*i+c+8u]=source[c];
+        }
+        observation[C3_OBSERVATION_WORDS*i+6]=uintBitsToFloat(mask);
+    }
+    vec3 final709=pow(bounded,vec3(1.0/2.4));
+#ifdef C3_FP64_EXPERIMENT
+    if (mode==18u || mode==19u) {
+        for (uint c=0u;c<3u;c++)
+            final709[c]=float(power64(clamp(pre64[c],0.0lf,1.0lf),1.0lf/2.4lf));
+    }
+#endif
+    if (!c3_finite(final709) || any(lessThan(final709,vec3(0.0))) || any(greaterThan(final709,vec3(1.0))))
+        atomicAdd(diagnostic[4],1u);
+    c3_write_a(i,final709); // nonlinear display signal, not camera OETF
+}

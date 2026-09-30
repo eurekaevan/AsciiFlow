@@ -5,6 +5,12 @@ CPU f64 only. C-2A selected D5+D6; C-2B implements two **separate** operations:
 standards-derived colorimetric primary conversion and explicit project
 target-capability limiting. This is not Annex5 or production HDR→SDR.
 
+[C-3](stage5.3c3-vulkan-hdr-to-sdr.md) now has an isolated Vulkan f32 draft,
+**NOT SEALED**. Canonical clip counts and promoted-input masks are exact, but
+small pre-limit errors near zero fail the strict final diagnostic code gate.
+This does not qualify gamut quality, change the CPU oracle, repair Annex5 or
+enable production HDR→SDR.
+
 ```text
 immutable raw C-1 nonlinear BT.2020
  -> sign(v)|v|^2.4, normalized display-linear (1=100 nit)

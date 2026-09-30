@@ -1,0 +1,84 @@
+{
+  "scope": "Fresh current-source production outputs, 5 paths x3; whole-file hashes identical to preserved C3A full-decode/metadata/timestamp evidence. Decode not rerun independently in this record.",
+  "observed_at": "2026-09-30",
+  "status": "PASS",
+  "prior_oracle": "tests/baselines/tone-map/c3a-sdr-regressions.json",
+  "command": "bash tests/baselines/media/generate-post-polarity-v2.sh /tmp/asciiflow-c3b-input8.mp4 tests/fixtures/codecs/hevc-main10-canonical-v1.mp4 /tmp/asciiflow-c3b-sdr",
+  "records": [
+    {
+      "case": "av1-10",
+      "run": 1,
+      "sha256": "b69c68525ac6ab2464e04b8fc1f123d887b45bba580377bafad99dc74cf62ad7"
+    },
+    {
+      "case": "av1-10",
+      "run": 2,
+      "sha256": "b69c68525ac6ab2464e04b8fc1f123d887b45bba580377bafad99dc74cf62ad7"
+    },
+    {
+      "case": "av1-10",
+      "run": 3,
+      "sha256": "b69c68525ac6ab2464e04b8fc1f123d887b45bba580377bafad99dc74cf62ad7"
+    },
+    {
+      "case": "av1-8",
+      "run": 1,
+      "sha256": "1531e29f52ae4e747251cf1889003dfd420303c523fb0ddc55cc9140e3bf2a4c"
+    },
+    {
+      "case": "av1-8",
+      "run": 2,
+      "sha256": "1531e29f52ae4e747251cf1889003dfd420303c523fb0ddc55cc9140e3bf2a4c"
+    },
+    {
+      "case": "av1-8",
+      "run": 3,
+      "sha256": "1531e29f52ae4e747251cf1889003dfd420303c523fb0ddc55cc9140e3bf2a4c"
+    },
+    {
+      "case": "h264-8",
+      "run": 1,
+      "sha256": "7c8a7572320b8c6c999143dfece4a76d487d6c9e7788206b7af52df9acd4e1cc"
+    },
+    {
+      "case": "h264-8",
+      "run": 2,
+      "sha256": "7c8a7572320b8c6c999143dfece4a76d487d6c9e7788206b7af52df9acd4e1cc"
+    },
+    {
+      "case": "h264-8",
+      "run": 3,
+      "sha256": "7c8a7572320b8c6c999143dfece4a76d487d6c9e7788206b7af52df9acd4e1cc"
+    },
+    {
+      "case": "hevc-10",
+      "run": 1,
+      "sha256": "f213a9f75542421bb816550cd7a93796db98ae36296a00636f7273492740a142"
+    },
+    {
+      "case": "hevc-10",
+      "run": 2,
+      "sha256": "f213a9f75542421bb816550cd7a93796db98ae36296a00636f7273492740a142"
+    },
+    {
+      "case": "hevc-10",
+      "run": 3,
+      "sha256": "f213a9f75542421bb816550cd7a93796db98ae36296a00636f7273492740a142"
+    },
+    {
+      "case": "hevc-8",
+      "run": 1,
+      "sha256": "294a1b63ac5b0e440dcf60c4c60f975594c6e944829478b69f09f981d268ff71"
+    },
+    {
+      "case": "hevc-8",
+      "run": 2,
+      "sha256": "294a1b63ac5b0e440dcf60c4c60f975594c6e944829478b69f09f981d268ff71"
+    },
+    {
+      "case": "hevc-8",
+      "run": 3,
+      "sha256": "294a1b63ac5b0e440dcf60c4c60f975594c6e944829478b69f09f981d268ff71"
+    }
+  ]
+}
