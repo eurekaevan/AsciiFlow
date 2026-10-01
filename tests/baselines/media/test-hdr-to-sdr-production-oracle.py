@@ -131,6 +131,19 @@ class SdrOracleTests(unittest.TestCase):
         with self.assertRaisesRegex(AssertionError, "exact build scope changed"):
             oracle.check_baseline(changed, baseline)
 
+    def test_artifact_comparison_keeps_all_tiers_without_transferring_build_scope(self):
+        baseline = {"input_identity": {"manifest": {"sha256": "input"}},
+                    "build_identity": {"source": "old"},
+                    "profiles": {"hevc-to-hevc-8": {"runs": [self.record()], "tiers": {"tier3": True}}}}
+        candidate = copy.deepcopy(baseline)
+        candidate["build_identity"] = {"source": "new"}
+        oracle.check_retained_artifacts(candidate, baseline)
+        for field in ("packets", "stream", "elementary_stream", "frames", "decoded_framehash", "identity"):
+            changed = copy.deepcopy(candidate)
+            changed["profiles"]["hevc-to-hevc-8"]["runs"][0][field] = {"sha256": "changed"} if field == "identity" else "changed"
+            with self.subTest(field=field), self.assertRaises(AssertionError):
+                oracle.check_retained_artifacts(changed, baseline)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -75,6 +75,122 @@ fn failure_exit_code(error: &anyhow::Error) -> u8 {
 }
 
 fn run(args: Args, cancellation: CancellationToken) -> Result<()> {
+    let report_path = args.diagnostic_report.clone();
+    let mut report = serde_json::json!({
+        "schema_version": 1,
+        "mode": if args.capabilities || args.explain_plan { "inspection" } else { "production" },
+        "input_requirements": null,
+        "capabilities": null,
+        "selected_plan": null,
+        "plan_scope": null,
+    });
+    let outcome = run_inner(args, cancellation, &mut report);
+    report["status"] = serde_json::json!(if outcome.is_ok() {
+        "success"
+    } else {
+        "failure"
+    });
+    report["failure"] = outcome
+        .as_ref()
+        .err()
+        .map(failure_diagnostic)
+        .unwrap_or(serde_json::Value::Null);
+    if let Some(path) = report_path {
+        if let Err(error) = write_diagnostic_report(&path, &report) {
+            // Diagnostics are secondary: never turn a committed conversion
+            // into a reported pipeline failure, or replace its original error.
+            eprintln!("Warning: diagnostic report failed: {error:#}");
+        }
+    }
+    outcome
+}
+
+fn write_diagnostic_report(path: &Path, report: &serde_json::Value) -> Result<()> {
+    let bytes = serde_json::to_vec_pretty(report).context("serialize diagnostic report")?;
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(path)
+        .with_context(|| {
+            format!(
+                "create diagnostic report {} (overwrite refused)",
+                path.display()
+            )
+        })?;
+    use std::io::Write;
+    file.write_all(&bytes).context("write diagnostic report")?;
+    file.write_all(b"\n").context("finish diagnostic report")?;
+    Ok(())
+}
+
+fn failure_diagnostic(error: &anyhow::Error) -> serde_json::Value {
+    use asciiflow_core::Error;
+    let core = error
+        .chain()
+        .find_map(|cause| cause.downcast_ref::<Error>());
+    let stage = core
+        .and_then(Error::stage)
+        .map(|stage| format!("{stage:?}"));
+    let mut leaf = core;
+    while let Some(Error::Pipeline { error, .. }) = leaf {
+        leaf = Some(error.source_error());
+    }
+    let category = match leaf {
+        Some(Error::Color(_)) => "Color",
+        Some(Error::UnsupportedColor { .. }) => "UnsupportedColor",
+        Some(Error::InvalidConfig(_)) => "InvalidConfig",
+        Some(Error::UnsupportedFrame(_)) => "UnsupportedFrame",
+        Some(Error::Media(_)) => "Media",
+        Some(Error::Cpu(_)) => "Cpu",
+        Some(Error::Vulkan(_)) => "Vulkan",
+        Some(Error::DeviceLost(_)) => "DeviceLost",
+        Some(Error::TeardownTimeout(_)) => "TeardownTimeout",
+        Some(Error::Cancelled) => "Cancelled",
+        Some(Error::Pipeline { .. }) => unreachable!("pipeline wrappers were unwrapped"),
+        None => "Other",
+    };
+    let code = match leaf {
+        Some(Error::UnsupportedColor { reason, .. }) => Some(format!("{reason:?}")),
+        Some(Error::Color(reason)) => Some(format!("{reason:?}")),
+        _ => None,
+    };
+    serde_json::json!({ "stage": stage, "category": category, "code": code, "message": format!("{error:#}") })
+}
+
+fn input_diagnostic(input: &asciiflow_core::InputRequirements) -> serde_json::Value {
+    serde_json::json!({
+        "codec": format!("{:?}", input.codec), "profile": input.profile.as_ref().map(|value| format!("{value:?}")),
+        "pixel_format": input.pixel_format, "bit_depth": input.bit_depth,
+        "chroma_subsampling": format!("{:?}", input.chroma_subsampling),
+        "width": input.width, "height": input.height,
+        "frame_rate": { "numerator": input.frame_rate.numerator, "denominator": input.frame_rate.denominator },
+        "color_space": format!("{:?}", input.color_space),
+        "dynamic_range": input.color_semantics.map(|value| format!("{:?}", value.dynamic_range)),
+        "color_semantics": input.color_semantics.map(|value| format!("{value:?}")),
+    })
+}
+
+fn plan_diagnostic(plan: &PipelinePlan) -> serde_json::Value {
+    serde_json::json!({
+        "backend": format!("{:?}", plan.backend), "decode": format!("{:?}", plan.decode),
+        "encode": format!("{:?}", plan.encode), "color_processing": format!("{:?}", plan.color_processing),
+        "pixel_path": format!("{:?}", plan.pixel_path),
+        "hardware_input_interop": plan.hardware_input_interop, "hardware_output_interop": plan.hardware_output_interop,
+        "hardware_download": plan.hardware_download, "hardware_upload": plan.hardware_upload,
+        "buffer_capacity": plan.buffer_capacity, "reasons": plan.reasons,
+        "output": { "codec": format!("{:?}", plan.output.codec),
+            "profile": plan.output.profile.as_ref().map(|value| format!("{value:?}")),
+            "bit_depth": plan.output.bit_depth, "pixel_format": format!("{:?}", plan.output.pixel_format),
+            "color_space": format!("{:?}", plan.output.color_space),
+            "chroma_subsampling": format!("{:?}", plan.output.chroma_subsampling) },
+    })
+}
+
+fn run_inner(
+    args: Args,
+    cancellation: CancellationToken,
+    report: &mut serde_json::Value,
+) -> Result<()> {
     if args.output.is_none() && !args.capabilities && !args.explain_plan {
         bail!("output path is required unless --capabilities or --explain-plan is used");
     }
@@ -140,6 +256,7 @@ fn run(args: Args, cancellation: CancellationToken) -> Result<()> {
             asciiflow_core::Error::pipeline(PipelineStage::InputProbe, "open input media", error)
         })?;
         if let Err(error) = inspection.next_frame() {
+            report["input_requirements"] = input_diagnostic(&inspection.info().requirements);
             capabilities::print_rejected_color(&inspection.info().requirements);
             return Err(asciiflow_core::Error::pipeline(
                 PipelineStage::InputProbe,
@@ -151,7 +268,16 @@ fn run(args: Args, cancellation: CancellationToken) -> Result<()> {
     }
     let vaapi = VaapiOptions::new(args.hw_device.clone());
     let probe =
-        capabilities::probe_for_request(&args.input, &vaapi, &config, policy.output_dynamic_range)?;
+        capabilities::probe_for_request(&args.input, &vaapi, &config, policy.output_dynamic_range)
+            .map_err(|error| {
+                asciiflow_core::Error::pipeline(
+                    PipelineStage::CapabilityProbe,
+                    "probe requested pipeline capabilities",
+                    error,
+                )
+            })?;
+    report["input_requirements"] = input_diagnostic(&probe.media_info.requirements);
+    report["capabilities"] = capabilities::diagnostic(&probe.snapshot);
     ensure_not_cancelled(&cancellation)?;
     let planning_started = Instant::now();
     let mut snapshot = probe.snapshot;
@@ -165,6 +291,8 @@ fn run(args: Args, cancellation: CancellationToken) -> Result<()> {
                 )
             })?;
     let planning_duration = planning_started.elapsed();
+    report["selected_plan"] = plan_diagnostic(&decision.selected);
+    report["plan_scope"] = serde_json::json!("selected_by_planner");
     let audio_plan = AudioPlan::select(args.audio.into(), &probe.media_info.audio_streams)
         .map_err(|error| {
             asciiflow_core::Error::pipeline(
@@ -260,6 +388,9 @@ fn run(args: Args, cancellation: CancellationToken) -> Result<()> {
     let replan = initialized.replan;
     ensure_not_cancelled(&cancellation)?;
     let plan = decision.selected;
+    report["selected_plan"] = plan_diagnostic(&plan);
+    report["plan_scope"] = serde_json::json!("initialized_execution");
+    report["capabilities"] = capabilities::diagnostic(&snapshot);
     if args.verbose {
         capabilities::print_plan(&plan);
         capabilities::print_audio_plan(&audio_plan);
@@ -1504,6 +1635,130 @@ mod stage2_tests {
         println!(
             "frames=30 decoded_differing_bytes={differing} decoded_absolute_error={absolute_error} decoded_max_error={maximum_error}"
         );
+    }
+}
+
+#[cfg(test)]
+mod diagnostic_tests {
+    use super::*;
+
+    #[test]
+    fn failure_fields_follow_error_types_and_preserve_stage() {
+        let error = anyhow::Error::new(asciiflow_core::Error::pipeline(
+            PipelineStage::ProcessingRuntime,
+            "process frame",
+            asciiflow_core::Error::UnsupportedFrame("quote \" slash \\ newline\n".into()),
+        ))
+        .context("outer diagnostic context");
+        let report = failure_diagnostic(&error);
+        assert_eq!(report["stage"], "ProcessingRuntime");
+        assert_eq!(report["category"], "UnsupportedFrame");
+        let encoded = serde_json::to_vec(&report).unwrap();
+        let parsed: serde_json::Value = serde_json::from_slice(&encoded).unwrap();
+        assert_eq!(parsed, report);
+        assert_eq!(
+            failure_diagnostic(&anyhow::Error::new(asciiflow_core::Error::Cancelled))["stage"],
+            "Cancellation"
+        );
+        assert_eq!(
+            failure_diagnostic(&anyhow::anyhow!("unsupported Vulkan phrase"))["category"],
+            "Other"
+        );
+    }
+
+    #[test]
+    fn report_refuses_overwrite_and_keeps_original_failure() {
+        let directory = std::env::temp_dir().join(format!(
+            "asciiflow-diagnostic-{}-{}",
+            std::process::id(),
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos(),
+        ));
+        fs::create_dir(&directory).unwrap();
+        let path = directory.join("report.json");
+        let args = Args::try_parse_from([
+            "asciiflow",
+            "input.mp4",
+            "--diagnostic-report",
+            path.to_str().unwrap(),
+        ])
+        .unwrap();
+        assert!(run(args, CancellationToken::new()).is_err());
+        let failure: serde_json::Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+        assert_eq!(failure["status"], "failure");
+        assert_eq!(failure["failure"]["category"], "Other");
+        assert!(failure["selected_plan"].is_null());
+        fs::remove_file(&path).unwrap();
+        let sentinel = serde_json::json!({"original": "preserve me"});
+        write_diagnostic_report(&path, &sentinel).unwrap();
+        let original = fs::read(&path).unwrap();
+        assert!(write_diagnostic_report(&path, &serde_json::json!({"replacement": true})).is_err());
+        let args = Args::try_parse_from([
+            "asciiflow",
+            "input.mp4",
+            "--diagnostic-report",
+            path.to_str().unwrap(),
+        ])
+        .unwrap();
+        let error = run(args, CancellationToken::new()).unwrap_err();
+        assert_eq!(
+            error.to_string(),
+            "output path is required unless --capabilities or --explain-plan is used"
+        );
+        assert_eq!(fs::read(&path).unwrap(), original);
+        fs::remove_file(path).unwrap();
+        fs::remove_dir(directory).unwrap();
+    }
+
+    #[test]
+    fn secondary_report_failure_does_not_relabel_committed_conversion() {
+        let directory = std::env::temp_dir().join(format!(
+            "asciiflow-committed-diagnostic-{}-{}",
+            std::process::id(),
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos(),
+        ));
+        fs::create_dir(&directory).unwrap();
+        let report = directory.join("report.json");
+        let output = directory.join("output.mp4");
+        fs::write(&report, b"retained diagnostic sentinel").unwrap();
+        let input = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../tests/fixtures/codecs/hevc-main8-bframes.mp4");
+        let args = Args::try_parse_from([
+            "asciiflow",
+            input.to_str().unwrap(),
+            output.to_str().unwrap(),
+            "--diagnostic-report",
+            report.to_str().unwrap(),
+            "--backend",
+            "cpu",
+            "--decode",
+            "software",
+            "--encode",
+            "software",
+            "--vaapi-vulkan-input-interop",
+            "off",
+            "--vaapi-vulkan-output-interop",
+            "off",
+            "--audio",
+            "none",
+            "--width",
+            "16",
+            "--max-frames",
+            "3",
+            "--no-progress",
+        ])
+        .unwrap();
+        run(args, CancellationToken::new()).unwrap();
+        assert!(fs::metadata(&output).unwrap().len() > 0);
+        assert_eq!(fs::read(&report).unwrap(), b"retained diagnostic sentinel");
+        fs::remove_file(report).unwrap();
+        fs::remove_file(output).unwrap();
+        fs::remove_dir(directory).unwrap();
     }
 }
 

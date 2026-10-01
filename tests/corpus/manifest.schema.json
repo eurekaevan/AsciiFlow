@@ -1,0 +1,198 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://asciiflow.invalid/tests/corpus/manifest.schema.json",
+  "title": "AsciiFlow representative media corpus manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "fixtures"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "fixtures": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/fixture" }
+    }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "identity": {
+      "type": "object", "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "source": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "path", "sha256", "byte_size", "generator", "generator_sha256", "tool_identity", "exact_command"],
+      "properties": {
+        "kind": { "enum": ["generated", "retained_binary", "external_reference"] },
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "byte_size": { "type": "integer", "minimum": 1 },
+        "generator": { "type": "string", "minLength": 1 },
+        "generator_sha256": { "$ref": "#/$defs/sha256" },
+        "tool_identity": { "type": "string", "minLength": 1 },
+        "exact_command": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "reference_manifest": { "$ref": "#/$defs/identity" }
+      }
+    },
+    "media": {
+      "type": "object", "additionalProperties": false,
+      "required": ["container", "codec", "profile", "width", "height", "pixel_format", "bit_depth", "chroma_420", "timing", "gop", "audio", "subtitles", "metadata"],
+      "properties": {
+        "container": { "type": "string", "minLength": 1 },
+        "codec": { "type": "string", "minLength": 1 },
+        "profile": { "type": "string", "minLength": 1 },
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 },
+        "pixel_format": { "type": "string", "minLength": 1 },
+        "bit_depth": { "type": "integer", "minimum": 1 },
+        "chroma_420": { "type": "boolean" },
+        "timing": {
+          "type": "object", "additionalProperties": false,
+          "required": ["frame_rate", "frame_count", "time_base", "start_pts", "negative_dts", "reorder", "odd_durations"],
+          "properties": {
+            "model": { "enum": ["CFR", "VFR", "Unknown"] },
+            "frame_rate": { "type": "string", "pattern": "^[0-9]+/[0-9]+$" },
+            "frame_count": { "type": ["integer", "null"], "minimum": 1 },
+            "time_base": { "type": ["string", "null"] },
+            "start_pts": { "type": ["integer", "null"] },
+            "negative_dts": { "type": "boolean" },
+            "reorder": { "type": "boolean" },
+            "odd_durations": { "type": "boolean" }
+          }
+        },
+        "gop": {
+          "type": "object", "additionalProperties": false,
+          "required": ["model", "keyint", "b_frames", "open_gop", "key_cadence"],
+          "properties": {
+            "model": { "type": "string", "minLength": 1 },
+            "keyint": { "type": ["integer", "null"], "minimum": 1 },
+            "b_frames": { "type": ["integer", "null"], "minimum": 0 },
+            "open_gop": { "type": ["boolean", "null"] },
+            "key_cadence": { "type": ["string", "null"] }
+          }
+        },
+        "audio": {
+          "type": "array", "items": { "$ref": "#/$defs/audioStream" }
+        },
+        "subtitles": {
+          "type": "array", "items": { "$ref": "#/$defs/subtitleStream" }
+        },
+        "metadata": {
+          "type": "object", "additionalProperties": false,
+          "required": ["color_primaries", "color_transfer", "color_matrix", "color_range", "chroma_location", "side_data"],
+          "properties": {
+            "title": { "type": ["string", "null"] },
+            "language": { "type": ["string", "null"] },
+            "rotation_degrees": { "type": ["number", "null"] },
+            "orientation": { "type": ["string", "null"] },
+            "mastering_display": { "$ref": "#/$defs/masteringDisplay" },
+            "content_light": { "$ref": "#/$defs/contentLight" },
+            "color_primaries": { "type": ["string", "null"] },
+            "color_transfer": { "type": ["string", "null"] },
+            "color_matrix": { "type": ["string", "null"] },
+            "color_range": { "type": ["string", "null"] },
+            "chroma_location": { "type": ["string", "null"] },
+            "side_data": { "type": "array", "items": { "type": "string" } }
+          }
+        }
+      }
+    },
+    "request": {
+      "type": "object", "additionalProperties": false,
+      "required": ["dynamic_range", "codec", "bit_depth"],
+      "properties": {
+        "dynamic_range": { "enum": ["sdr", "preserve"] },
+        "codec": { "type": "string", "minLength": 1 },
+        "bit_depth": { "type": "integer", "enum": [8, 10] }
+      }
+    },
+    "outcome": {
+      "type": "object", "additionalProperties": false,
+      "required": ["classification", "status", "planner", "runtime", "failure_stage", "root_cause", "mutation", "corruption"],
+      "properties": {
+        "classification": { "enum": ["Sdr", "HdrPq", "HdrHlg", "Unknown", "Conflicting"] },
+        "status": { "enum": ["Supported", "ConditionallySupported", "Unsupported", "Unqualified"] },
+        "planner": { "enum": ["accept", "reject", "not_observed"] },
+        "runtime": { "enum": ["Pass", "RejectAtClassification", "RejectAtPlanning", "RejectAtInitialization", "RuntimeFailureExpected"] },
+        "failure_stage": { "type": ["string", "null"], "enum": ["InputProbe", "CapabilityProbe", "Planning", "DecoderInitialization", "InputInteropInitialization", "ProcessorInitialization", "OutputInteropInitialization", "EncoderInitialization", "MuxInitialization", "DecodeRuntime", "InputInteropRuntime", "ProcessingRuntime", "OutputInteropRuntime", "EncodeRuntime", "MuxRuntime", "Cancellation", "Drain", "Finalization", null] },
+        "root_cause": { "type": ["string", "null"], "enum": ["Color", "UnsupportedColor", "InvalidConfig", "UnsupportedFrame", "Media", "Cpu", "Vulkan", "DeviceLost", "TeardownTimeout", "Cancelled", "Other", null] },
+        "mutation": {
+          "type": ["object", "null"], "additionalProperties": false,
+          "required": ["event", "frame_index", "expected_failure"],
+          "properties": {
+            "event": { "type": "string", "minLength": 1 },
+            "frame_index": { "type": "integer", "minimum": 0 },
+            "expected_failure": { "type": "string", "minLength": 1 }
+          }
+        },
+        "corruption": {
+          "type": ["object", "null"], "additionalProperties": false,
+          "required": ["kind"],
+          "properties": {
+            "kind": { "enum": ["truncated_file", "damaged_packet", "invalid_extradata"] },
+            "offset": { "type": ["integer", "null"], "minimum": 0 },
+            "description": { "type": ["string", "null"] }
+          }
+        },
+        "evidence": { "type": ["string", "null"] }
+      }
+    },
+    "masteringDisplay": {
+      "type": ["object", "null"], "additionalProperties": false,
+      "properties": {
+        "primaries_xy": { "type": "array", "items": { "type": "array", "items": { "type": "string", "pattern": "^[0-9]+/[1-9][0-9]*$" } } },
+        "white_point_xy": { "type": "array", "items": { "type": "string", "pattern": "^[0-9]+/[1-9][0-9]*$" } },
+        "min_luminance": { "type": ["string", "null"] },
+        "max_luminance": { "type": ["string", "null"] }
+      }
+    },
+    "contentLight": {
+      "type": ["object", "null"], "additionalProperties": false,
+      "properties": {
+        "max_cll": { "type": ["integer", "null"], "minimum": 0 },
+        "max_fall": { "type": ["integer", "null"], "minimum": 0 }
+      }
+    },
+    "audioStream": {
+      "type": "object", "additionalProperties": false,
+      "required": ["codec", "channels", "sample_rate", "time_base", "language", "default"],
+      "properties": {
+        "codec": { "type": "string", "minLength": 1 },
+        "channels": { "type": "integer", "minimum": 1 },
+        "sample_rate": { "type": "integer", "minimum": 1 },
+        "time_base": { "type": "string", "minLength": 1 },
+        "language": { "type": ["string", "null"] },
+        "default": { "type": "boolean" }
+      }
+    },
+    "subtitleStream": {
+      "type": "object", "additionalProperties": false,
+      "required": ["codec", "time_base", "language", "default"],
+      "properties": {
+        "expected_behavior": { "enum": ["ignored", "rejected", "copied", "unqualified"] },
+        "codec": { "type": "string", "minLength": 1 },
+        "time_base": { "type": "string", "minLength": 1 },
+        "language": { "type": ["string", "null"] },
+        "default": { "type": "boolean" }
+      }
+    },
+    "fixture": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "description", "categories", "source", "media", "request", "expected", "performance_fixture"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+        "description": { "type": "string", "minLength": 1 },
+        "categories": { "type": "array", "minItems": 1, "items": { "enum": ["basic", "timing", "gop", "container", "color", "audio", "metadata", "mutation", "corruption", "error", "stress"] } },
+        "source": { "$ref": "#/$defs/source" },
+        "media": { "$ref": "#/$defs/media" },
+        "request": { "$ref": "#/$defs/request" },
+        "expected": { "$ref": "#/$defs/outcome" },
+        "performance_fixture": { "type": "boolean" }
+      }
+    }
+  }
+}

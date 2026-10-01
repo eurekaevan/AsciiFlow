@@ -177,6 +177,12 @@ pub struct Args {
     pub explain_plan: bool,
     #[arg(long)]
     pub capabilities: bool,
+    #[arg(
+        long,
+        value_name = "PATH",
+        help = "Write structured diagnostics as JSON; refuses to overwrite an existing file"
+    )]
+    pub diagnostic_report: Option<PathBuf>,
     #[arg(long,default_value_t=160,value_parser=clap::value_parser!(u32).range(1..=8192))]
     pub width: u32,
     #[arg(long,value_parser=clap::value_parser!(u32).range(1..=8192))]
@@ -221,6 +227,7 @@ mod tests {
     #[test]
     fn output_codec_defaults_to_h264_and_parses_hardware_codecs_independently() {
         let default = Args::try_parse_from(["asciiflow", "input.mp4", "output.mp4"]).unwrap();
+        assert!(default.diagnostic_report.is_none());
         assert_eq!(default.output_codec, OutputCodecArg::H264);
         assert_eq!(default.output_bit_depth, OutputBitDepthArg::Eight);
         assert_eq!(
@@ -295,6 +302,27 @@ mod tests {
             ])
             .is_err()
         );
+    }
+
+    #[test]
+    fn diagnostic_report_is_optional_and_help_documents_overwrite_policy() {
+        use clap::CommandFactory;
+        let args = Args::try_parse_from([
+            "asciiflow",
+            "input.mp4",
+            "--explain-plan",
+            "--diagnostic-report",
+            "report.json",
+        ])
+        .unwrap();
+        assert_eq!(
+            args.diagnostic_report.as_deref(),
+            Some(std::path::Path::new("report.json"))
+        );
+        assert!(args.output.is_none());
+        let help = Args::command().render_long_help().to_string();
+        assert!(help.contains("--diagnostic-report <PATH>"));
+        assert!(help.contains("refuses to overwrite"));
     }
 
     #[test]

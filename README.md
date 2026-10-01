@@ -8,35 +8,43 @@ remaining feature gaps are recorded in the [Rust follow-up inventory](docs/legac
 
 ## Current support
 
-- Input: H.264, HEVC Main and AV1 Main 8-bit 4:2:0, plus explicitly tagged
-  BT.709 limited-range SDR HEVC Main10 and AV1 Main 10-bit. Qualified full
-  hardware pipelines also admit BT.2020/PQ/NCL limited-range, left-sited
-  HEVC Main10 and AV1 Main 10-bit for HDR-preserving ASCII processing, or
-  explicitly requested, qualified HDR→SDR conversion. FFmpeg may demux
-  other containers, but that does not imply every codec or color mode is
-  qualified.
-- Output: MP4 with H.264 8-bit by default. HEVC Main and AV1 Main/Profile0
-  8-bit, or explicit HEVC Main10 and AV1 Main 10-bit, require qualified VAAPI
-  hardware. The 10-bit path preserves P010 precision; it does not silently
-  convert to 8-bit.
-- Processing: built-in 8×8 or explicit scalable monospaced FreeType font;
-  `standard`, `detailed`, or literal character ramp; color or monochrome
-  rendering. On a black background the default ramps run sparse to dense, so
-  black stays dark and white renders brighter.
-- Audio: compatible compressed streams are copied into MP4 with `--audio
-  auto`; `--audio copy` is strict and `--audio none` makes video-only output.
-  Audio copy currently requires the existing CFR video timeline.
-- Safety: explicit hardware requests fail instead of silently falling back.
-  Output is staged in the destination directory and committed only after a
-  successful encode/mux; failure or cancellation preserves an existing file.
-  The default `--output-dynamic-range preserve` requires HEVC/AV1 ten-bit output
-  for PQ. Explicit `sdr` admits H.264/HEVC/AV1 eight-bit or HEVC/AV1 ten-bit SDR,
-  using fixed 1000→100-nit Method A and BT.709 target-volume limiting. Both
-  hardware interop directions and VAAPI/Vulkan are mandatory; no HDR fallback.
-  Actual source pixels above 1000 nit reject before averaging or glyph coverage.
-  HLG, BT.2020 SDR, full-range and unresolved color semantics are rejected
-  before output staging. Generalized tone mapping and perceptual gamut mapping
-  are not provided.
+<!-- production-support-contract:begin -->
+Support contract `1.0.0`. Hardware conditions and evidence: [production support contract](docs/production-support.md).
+
+| Dimension | Value | Support state | Conditions |
+|---|---|---|---|
+| input_container | mp4 | ConditionallySupported | Only the sealed codec/profile/depth/path matrix is qualified. |
+| input_container | matroska | Unqualified | No sealed Matroska production matrix. The current CLI accepts MP4 output only; that implementation restriction is not Matroska qualification evidence. |
+| output_container | mp4 | Supported |  |
+| output_container | matroska | Unsupported | The current CLI rejects non-MP4 output paths. |
+| input_color | sdr709 | Supported |  |
+| input_color | sdr601 | Unqualified | Legacy 8-bit software normalization is planner-accepted, but this path lacks production qualification. |
+| input_color | pq | ConditionallySupported | Canonical limited BT.2020 NCL/PQ and left chroma; HEVC Main10 or AV1 Main 10-bit 4:2:0; VAAPI decode, Vulkan processing, VAAPI encode and matching input/output profile interop. The 0–1000 cd/m2 source pixel ceiling applies only to explicit HDR-to-SDR conversion. |
+| input_color | hlg | Unsupported |  |
+| input_color | full_pq | Unsupported |  |
+| input_color | wide_sdr | Unsupported |  |
+| input_color | unknown | Unsupported |  |
+| input_color | conflicting | Unsupported |  |
+| output_profile | h264-encoder-selected | Supported | H.264 output is qualified at 8-bit SDR; no 10-bit H.264 output. |
+| output_profile | hevc-main | ConditionallySupported | 8-bit SDR output requires the scoped VAAPI HEVC Main encode path. |
+| output_profile | hevc-main10 | ConditionallySupported | 10-bit SDR conversion or PQ preservation requires the scoped VAAPI P010 path. |
+| output_profile | av1-main | ConditionallySupported | AV1 8-bit SDR or 10-bit SDR conversion/PQ preserve requires the matching scoped VAAPI profile and format probe. |
+| output_dynamic_range | preserve | ConditionallySupported | SDR preserve is qualified for the five 8/10-bit output profiles; PQ preserve only for HEVC Main10 and AV1 Main 10-bit. The 1000 cd/m2 limit does not apply to PQ preservation. |
+| output_dynamic_range | sdr | ConditionallySupported | Explicit PQ-to-SDR conversion is qualified only for canonical input with every source pixel at or below 1000 cd/m2. |
+<!-- production-support-contract:end -->
+
+The generated rows classify dimensions, not all combinations. Complete paths
+require the contract conditions and runtime probes. Audio copy requires the
+existing CFR timeline; failure/cancellation preserves the destination. The
+default `preserve` never requests tone mapping. Explicit `sdr` uses the sealed
+1000→100-nit C pipeline; source pixels above its decoded domain reject.
+
+Rendering supports the built-in 8×8 font or an explicit monospaced FreeType
+font, color or monochrome, and standard/detailed/literal character ramps.
+The default ramps run sparse to dense on black, so black remains dark and
+white renders brighter. Audio auto copies eligible compressed tracks; copy
+is strict and none produces video-only output. Explicit hardware requests
+fail rather than silently falling back.
 
 PQ hardware qualification currently covers Intel Arc Meteor Lake with the
 specific iHD/ANV/toolchain in the [Stage 5.3B-3 report](docs/stage5.3b3-hdr-production.md),

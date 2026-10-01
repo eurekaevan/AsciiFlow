@@ -1,5 +1,13 @@
 # AsciiFlow architecture
 
+Stage 5.4A adds the [versioned support contract](production-support.md),
+[structured diagnostics and corpus runner](compatibility-corpus.md), and a
+[pending closure record](stage5.4a-support-contract.md). It changes neither
+planner selection nor the production pixel/media contract. Runtime probe facts
+remain scoped to the input/device; architectural plans and historical qualified
+hardware evidence are separate. No additional feature is enabled and Stage
+5.4B has not started.
+
 This is the canonical architecture for the Rust application. The former C#
 implementation has left the active tree; its distinct user-facing features
 are tracked in [legacy-feature-parity.md](legacy-feature-parity.md), not treated

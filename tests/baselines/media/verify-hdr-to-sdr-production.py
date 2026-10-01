@@ -151,19 +151,31 @@ def compare_runs(records):
     return tiers
 
 
-def check_baseline(report, baseline):
+def check_retained_artifacts(report, baseline):
+    """Compare every retained tier, without transferring historical build attestation.
+
+    Whole-file identity is still mandatory when retained Tier 3 was established.
+    A new executable may produce identical artifacts; that observation does not
+    make it the old qualified executable. Exact-build callers use check_baseline.
+    """
     assert report["input_identity"]["manifest"]["sha256"] == baseline["input_identity"]["manifest"]["sha256"]
     assert set(report["profiles"]) == set(baseline["profiles"])
     for key, profile in report["profiles"].items():
         golden = baseline["profiles"][key]
-        if golden["tiers"]["tier3"]:
-            assert report["build_identity"] == baseline["build_identity"], f"{key}: Tier 3 exact build scope changed"
         first = golden["runs"][0]
         for current in profile["runs"]:
             for field in ("packets", "stream", "elementary_stream", "decoded_framehash", "frames"):
                 assert current[field] == first[field], f"{key}: retained {field} oracle changed"
             if golden["tiers"]["tier3"]:
                 assert current["identity"]["sha256"] == first["identity"]["sha256"], f"{key}: retained Tier 3 changed"
+
+
+def check_baseline(report, baseline):
+    # Existing exact-build semantics remain strict; no implicit scope downgrade.
+    for key, golden in baseline["profiles"].items():
+        if golden["tiers"]["tier3"]:
+            assert report["build_identity"] == baseline["build_identity"], f"{key}: Tier 3 exact build scope changed"
+    check_retained_artifacts(report, baseline)
 
 
 def write_json(path, document):

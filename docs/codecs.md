@@ -1,5 +1,12 @@
 # Video codecs and color processing (Stage 5.3A implementation)
 
+The [versioned production support contract](production-support.md) separates
+measured qualification, architectural representability, unsupported behavior
+and absent probe evidence. Its [corpus runner](compatibility-corpus.md) checks
+complete scenarios; independent dimension rows are not a Cartesian-product
+support promise. The [Stage 5.4A record](stage5.4a-support-contract.md) is
+SEALED and enables no additional codec path.
+
 Qualified software input scope: H.264 8-bit 4:2:0, HEVC Main 8-bit 4:2:0,
 and AV1 Main 8-bit 4:2:0. Codec identity comes from probing; no input-codec flag
 is needed. MP4 output defaults to H.264 8-bit; `--output-codec hevc` selects

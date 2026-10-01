@@ -660,6 +660,46 @@ pub fn probe(
     })
 }
 
+/// Runtime facts are scoped to this probe, input, driver, and device. They do
+/// not promote an implementation or historical fixture to global qualification.
+pub fn diagnostic(snapshot: &CapabilitySnapshot) -> serde_json::Value {
+    fn fact(value: &CapabilitySupport) -> serde_json::Value {
+        let state = match value {
+            CapabilitySupport::Supported => "Supported",
+            CapabilitySupport::Unsupported(_) => "Unsupported",
+            CapabilitySupport::NotProbed(_) => "NotProbed",
+        };
+        serde_json::json!({ "state": state, "reason": value.unavailable_reason() })
+    }
+    macro_rules! facts {
+        ($group:expr; $($field:ident),+ $(,)?) => {{
+            let mut result = serde_json::Map::new();
+            $(result.insert(stringify!($field).into(), fact(&$group.$field));)+
+            serde_json::Value::Object(result)
+        }};
+    }
+    serde_json::json!({
+        "scope": "runtime_probe_not_global_qualification",
+        "scope_description": "runtime probe for this input/device; Supported is not global hardware qualification",
+        "historical_hardware_evidence": "separate bounded qualification artifacts; not established by this runtime probe",
+        "hdr_to_sdr_input_domain": "decoded per-pixel RGB components must be finite and within 0–1000 cd/m²; metadata alone is insufficient; no implicit highlight clipping",
+        "media": facts!(snapshot.media;
+            software_decode, software_encode, vaapi_device, h264_vaapi_decode, hevc_vaapi_decode,
+            av1_vaapi_decode, h264_vaapi_encode, hevc_vaapi_encode, hevc_main10_vaapi_decode,
+            av1_10bit_vaapi_decode, hevc_main10_vaapi_encode, av1_vaapi_encode, av1_10bit_vaapi_encode,
+            nv12_hardware_frames, nv12_hardware_upload, p010_hardware_frames, p010_hardware_upload),
+        "processing": facts!(snapshot.processing;
+            cpu, vulkan, vulkan_pq, vulkan_hdr_to_sdr, compute_queue, storage_buffer_8bit,
+            shader_int64, synchronization2),
+        "vulkan_device": { "name": snapshot.processing.vulkan_device_name,
+            "kind": snapshot.processing.vulkan_device_kind.as_ref().map(|value| format!("{value:?}")),
+            "auto_eligible": snapshot.processing.vulkan_auto_eligible },
+        "interop": facts!(snapshot.interop;
+            input, hevc_input, av1_input, output, hevc_output, av1_output,
+            p010_input, p010_output, av1_p010_output),
+    })
+}
+
 pub fn print(
     snapshot: &CapabilitySnapshot,
     media: &MediaInfo,
@@ -667,6 +707,12 @@ pub fn print(
     duration: Duration,
 ) {
     let requirements = &media.requirements;
+    println!(
+        "Runtime probe facts are scoped to this input/device; Supported does not mean global hardware qualification."
+    );
+    println!(
+        "Historical hardware evidence is recorded separately in bounded qualification artifacts."
+    );
     println!("Input:");
     println!(
         "  codec/profile: {:?} / {:?}",
@@ -734,19 +780,22 @@ pub fn print(
     println!("  BT.709 limited-range SDR: Supported");
     println!("  BT.601/170M limited-range SDR: Software decode normalization only");
     println!(
-        "  PQ preservation: qualified Vulkan + VAAPI decode/encode + both P010 interop paths only"
+        "  PQ preservation implementation: Vulkan + VAAPI decode/encode + both P010 interop paths; requires runtime probes"
     );
     print_fact(
         "Vulkan PQ execution on this input",
         &snapshot.processing.vulkan_pq,
     );
     print_fact(
-        "PQ HDR → BT.709 SDR (explicit request, qualified C pipeline and output interop)",
+        "PQ HDR → BT.709 SDR (explicit request, runtime C pipeline and output interop probe)",
         &snapshot.processing.vulkan_hdr_to_sdr,
     );
     println!("  HLG → SDR: unsupported; full-range HDR → SDR: unsupported");
     println!(
         "  HDR→SDR: fixed BT.2446-1 1000→100 cd/m² mapping + BT.709 target-volume limiting; source HDR side data not propagated"
+    );
+    println!(
+        "  HDR→SDR domain: decoded per-pixel RGB components must be finite and within 0–1000 cd/m²; metadata alone does not establish eligibility; no implicit highlight clipping"
     );
     println!("  BT.2020 / P3 wide-gamut SDR: Detected, unsupported");
     println!("  full-range SDR: Not qualified for current ASCII output code values");
@@ -937,7 +986,7 @@ pub fn print_plan(plan: &PipelinePlan) {
             "Processing: HDR-aware ASCII -> BT.2446-1 Method A -> BT.2020→BT.709 primary conversion -> target-volume limiting -> BT.709 limited SDR pack"
         );
         println!(
-            "Input domain: 0–1000 cd/m²; no implicit highlight clipping. CPU and software media paths are not production-qualified."
+            "Input domain: decoded per-pixel RGB components must be finite and within 0–1000 cd/m²; metadata alone is insufficient; no implicit highlight clipping. CPU and software media paths are not production paths."
         );
         println!(
             "HDR metadata policy: source mastering/content-light/dynamic HDR side data is not propagated to SDR frames"
@@ -1109,6 +1158,30 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn structured_facts_preserve_not_probed_and_runtime_scope() {
+        let mut snapshot = full_snapshot();
+        snapshot.processing.vulkan_pq = CapabilitySupport::not_probed("no matching input");
+        snapshot.processing.vulkan_hdr_to_sdr = CapabilitySupport::unsupported("domain rejected");
+        let report = diagnostic(&snapshot);
+        assert_eq!(report["processing"]["vulkan_pq"]["state"], "NotProbed");
+        assert_eq!(
+            report["processing"]["vulkan_pq"]["reason"],
+            "no matching input"
+        );
+        assert_eq!(
+            report["processing"]["vulkan_hdr_to_sdr"]["state"],
+            "Unsupported"
+        );
+        assert_eq!(report["media"]["software_decode"]["state"], "Supported");
+        assert!(
+            report["scope_description"]
+                .as_str()
+                .unwrap()
+                .contains("not global hardware qualification")
+        );
     }
 
     #[test]

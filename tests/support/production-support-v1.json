@@ -1,0 +1,240 @@
+{
+  "schema_version": 1,
+  "support_contract_version": "1.0.0",
+  "states": {
+    "Supported": "Qualified by retained production evidence within the scope stated here.",
+    "ConditionallySupported": "Qualified only when every listed condition holds.",
+    "Unsupported": "Explicitly rejected by the current product contract or sealed production evidence.",
+    "Unqualified": "No production evidence supports a claim; current planner acceptance is not qualification."
+  },
+  "hardware_scope": {
+    "gpu": "Intel Arc Meteor Lake, PCI vendor/device 8086:7d55",
+    "vulkan": "Mesa ANV 26.2.3",
+    "vaapi": "Intel iHD 26.1.5",
+    "ffmpeg": "FFmpeg 8.1.3",
+    "media_device": "/dev/dri/renderD128",
+    "limitations": [
+      "Production qualification is tied to the sealed Stage 5.3C-4B source, binary and host manifest.",
+      "The per-source-pixel 1000 cd/m2 ceiling applies only to explicit HDR PQ to SDR conversion; it does not apply to PQ preservation.",
+      "PQ preservation passes PQ code values through. The HDR-to-SDR source-domain gate is not evidence of PQ-preserve luminance limits.",
+      "Stage 5.3C-4B reports CPU and software/staged HDR paths as unqualified.",
+      "Planner acceptance and synthetic capability facts never promote a dimension to a production support state."
+    ]
+  },
+  "production_limits": {
+    "hdr_to_sdr": {
+      "decoded_max_nits": 1000,
+      "unit": "cd/m2",
+      "applies_to": "explicit_pq_to_sdr_only",
+      "measurement": "per_source_pixel_before_average_or_coverage",
+      "applies_to_pq_preserve": false,
+      "enforced_before_output_pack": true
+    }
+  },
+  "evidence": [
+    { "id": "stage53c4b", "stage": "Stage 5.3C-4B", "kind": "sealed-manifest", "artifact": "tests/baselines/media/stage53c4b.json", "status": "SEALED" },
+    { "id": "stage53c4b-report", "stage": "Stage 5.3C-4B", "kind": "production-report", "artifact": "docs/stage5.3c4b-hdr-to-sdr-production.md", "status": "SEALED" },
+    { "id": "stage53c4b-runtime", "stage": "Stage 5.3C-4B", "kind": "observed-system-evidence", "artifact": "tests/baselines/media/c4b-system-evidence.txt", "status": "SEALED" },
+    { "id": "stage53c4b-device", "stage": "Stage 5.3C-4B", "kind": "device-and-runtime-evidence", "artifact": "tests/baselines/media/c4b-static-and-device-evidence.txt", "status": "SEALED" },
+    { "id": "stage53b1", "stage": "Stage 5.3B-1", "kind": "qualified-baseline-manifest", "artifact": "tests/baselines/media/post-polarity-v2.json", "status": "QUALIFIED" },
+    { "id": "stage2", "stage": "Stage 2", "kind": "validation-report", "artifact": "docs/stage2-validation.md", "status": "QUALIFIED" },
+    { "id": "current-cli", "stage": "current checkout", "kind": "output-container-guard", "artifact": "apps/asciiflow-cli/src/main.rs", "status": "CURRENT" }
+  ],
+  "dimensions": {
+    "input_resolution": [
+      { "value": "1920x1080", "status": "ConditionallySupported", "evidence": ["stage53b1", "stage53c4b"], "conditions": "Canonical production matrix. Native decode/encode and interop probes must accept the actual dimensions; profile availability alone is insufficient." },
+      { "value": "other", "status": "Unqualified", "evidence": [], "conditions": "No blanket resolution claim. Current planner may admit dimensions after actual runtime probing; 64x64 P010 encoder probes reject on the recorded iHD stack." }
+    ],
+    "input_container": [
+      { "value": "mp4", "status": "ConditionallySupported", "evidence": ["stage53b1", "stage53c4b"], "conditions": "Only the sealed codec/profile/depth/path matrix is qualified." },
+      { "value": "matroska", "status": "Unqualified", "evidence": [], "conditions": "No sealed Matroska production matrix. The current CLI accepts MP4 output only; that implementation restriction is not Matroska qualification evidence." }
+    ],
+    "output_container": [
+      { "value": "mp4", "status": "Supported", "evidence": ["stage53b1", "stage53c4b"] },
+      { "value": "matroska", "status": "Unsupported", "evidence": ["current-cli"], "conditions": "The current CLI rejects non-MP4 output paths." }
+    ],
+    "input_codec": [
+      { "value": "h264", "status": "Supported", "evidence": ["stage53b1", "stage2"] },
+      { "value": "hevc", "status": "Supported", "evidence": ["stage53b1", "stage53c4b", "stage2"] },
+      { "value": "av1", "status": "ConditionallySupported", "evidence": ["stage53b1", "stage53c4b"], "conditions": "Qualified input profiles and bit depths in the retained production cases; PQ input additionally requires AV1 Main 10-bit 4:2:0." },
+      { "value": "other", "status": "Unqualified", "evidence": [] }
+    ],
+    "input_profile": [
+      { "value": "h264-baseline", "status": "Supported", "evidence": ["stage2"] },
+      { "value": "h264-main", "status": "Unqualified", "evidence": [], "conditions": "Device capability enumeration is not a production profile qualification." },
+      { "value": "h264-high", "status": "Supported", "evidence": ["stage53b1", "stage2"] },
+      { "value": "hevc-main", "status": "ConditionallySupported", "evidence": ["stage53b1", "stage53c4b"], "conditions": "Qualified 8-bit HEVC Main production case." },
+      { "value": "hevc-main10", "status": "ConditionallySupported", "evidence": ["stage53c4b"], "conditions": "Qualified PQ input and 10-bit output cases only with 4:2:0 and the scoped Intel hardware path." },
+      { "value": "av1-main", "status": "ConditionallySupported", "evidence": ["stage53c4b"], "conditions": "Qualified AV1 Main / Profile 0 8-bit output and AV1 Main 10-bit PQ input cases only." },
+      { "value": "other", "status": "Unqualified", "evidence": [] }
+    ],
+    "output_profile": [
+      { "value": "h264-encoder-selected", "status": "Supported", "evidence": ["stage53b1", "stage53c4b"], "conditions": "H.264 output is qualified at 8-bit SDR; no 10-bit H.264 output." },
+      { "value": "hevc-main", "status": "ConditionallySupported", "evidence": ["stage53b1", "stage53c4b"], "conditions": "8-bit SDR output requires the scoped VAAPI HEVC Main encode path." },
+      { "value": "hevc-main10", "status": "ConditionallySupported", "evidence": ["stage53c4b"], "conditions": "10-bit SDR conversion or PQ preservation requires the scoped VAAPI P010 path." },
+      { "value": "av1-main", "status": "ConditionallySupported", "evidence": ["stage53b1", "stage53c4b"], "conditions": "AV1 8-bit SDR or 10-bit SDR conversion/PQ preserve requires the matching scoped VAAPI profile and format probe." }
+    ],
+    "input_bit_depth": [
+      { "value": "8", "status": "Supported", "evidence": ["stage53b1", "stage53c4b"] },
+      { "value": "10", "status": "ConditionallySupported", "evidence": ["stage53c4b"], "conditions": "HEVC Main10 or AV1 Main 10-bit 4:2:0 under the scoped hardware path." },
+      { "value": "12", "status": "Unsupported", "evidence": ["stage53c4b"] },
+      { "value": "other", "status": "Unsupported", "evidence": ["stage53c4b"] }
+    ],
+    "input_chroma_subsampling": [
+      { "value": "yuv420", "status": "Supported", "evidence": ["stage53b1", "stage53c4b"] },
+      { "value": "yuv422", "status": "Unsupported", "evidence": ["stage53c4b"] },
+      { "value": "yuv444", "status": "Unsupported", "evidence": ["stage53c4b"] },
+      { "value": "other", "status": "Unqualified", "evidence": [] },
+      { "value": "unknown", "status": "Unqualified", "evidence": [] }
+    ],
+    "chroma_location": [
+      { "value": "left", "status": "Supported", "evidence": ["stage53b1", "stage53c4b"] },
+      { "value": "center", "status": "Unsupported", "evidence": ["stage53c4b"] },
+      { "value": "unspecified", "status": "Unqualified", "evidence": [] }
+    ],
+    "input_pixel_format": [
+      { "value": "nv12", "status": "Supported", "evidence": ["stage53b1", "stage53c4b"] },
+      { "value": "yuv420p", "status": "Supported", "evidence": ["stage53b1", "stage53c4b"] },
+      { "value": "p010le", "status": "ConditionallySupported", "evidence": ["stage53c4b"], "conditions": "Qualified 10-bit 4:2:0 only." },
+      { "value": "yuv420p10le", "status": "ConditionallySupported", "evidence": ["stage53c4b"], "conditions": "Qualified 10-bit 4:2:0 only." },
+      { "value": "other", "status": "Unqualified", "evidence": [] }
+    ],
+    "color_primaries": [
+      { "value": "bt709", "status": "Supported", "evidence": ["stage53b1", "stage53c4b"] },
+      { "value": "bt2020", "status": "ConditionallySupported", "evidence": ["stage53c4b"], "conditions": "PQ input only; limited range, BT.2020 NCL matrix, left chroma, VAAPI decode, Vulkan processing, VAAPI encode and matching input/output profile interop." },
+      { "value": "bt470bg", "status": "Unqualified", "evidence": [] },
+      { "value": "smpte170m", "status": "Unqualified", "evidence": [] },
+      { "value": "smpte240m", "status": "Unqualified", "evidence": [] },
+      { "value": "display-p3", "status": "Unsupported", "evidence": ["stage53c4b"] },
+      { "value": "unspecified", "status": "Unqualified", "evidence": [] },
+      { "value": "unknown", "status": "Unqualified", "evidence": [] },
+      { "value": "other", "status": "Unqualified", "evidence": [] }
+    ],
+    "color_transfer": [
+      { "value": "bt709", "status": "Supported", "evidence": ["stage53b1", "stage53c4b"] },
+      { "value": "smpte170m", "status": "Unqualified", "evidence": [] },
+      { "value": "srgb", "status": "Unqualified", "evidence": [] },
+      { "value": "gamma22", "status": "Unqualified", "evidence": [] },
+      { "value": "gamma28", "status": "Unqualified", "evidence": [] },
+      { "value": "linear", "status": "Unqualified", "evidence": [] },
+      { "value": "pq", "status": "ConditionallySupported", "evidence": ["stage53c4b"], "conditions": "Canonical PQ preservation or explicit HDR-to-SDR conversion using VAAPI decode, Vulkan processing, VAAPI encode and matching input/output profile interop; source-domain ceiling of 1000 cd/m2 applies only to conversion." },
+      { "value": "hlg", "status": "Unsupported", "evidence": ["stage53c4b"] },
+      { "value": "unspecified", "status": "Unqualified", "evidence": [] },
+      { "value": "unknown", "status": "Unqualified", "evidence": [] },
+      { "value": "other", "status": "Unqualified", "evidence": [] }
+    ],
+    "color_matrix": [
+      { "value": "bt709", "status": "Supported", "evidence": ["stage53b1", "stage53c4b"] },
+      { "value": "bt2020-ncl", "status": "ConditionallySupported", "evidence": ["stage53c4b"], "conditions": "Canonical PQ input only." },
+      { "value": "bt601", "status": "Unqualified", "evidence": [], "conditions": "Legacy 8-bit software normalization exists in code/tests; no sealed production qualification for this path." },
+      { "value": "bt2020-constant", "status": "Unsupported", "evidence": ["stage53c4b"] },
+      { "value": "identity", "status": "Unqualified", "evidence": [] },
+      { "value": "unspecified", "status": "Unqualified", "evidence": [] },
+      { "value": "unknown", "status": "Unqualified", "evidence": [] },
+      { "value": "other", "status": "Unqualified", "evidence": [] }
+    ],
+    "color_range": [
+      { "value": "limited", "status": "Supported", "evidence": ["stage53b1", "stage53c4b"] },
+      { "value": "full", "status": "Unsupported", "evidence": ["stage53c4b"] },
+      { "value": "unspecified", "status": "Unqualified", "evidence": [] }
+    ],
+    "dynamic_range": [
+      { "value": "sdr", "status": "Supported", "evidence": ["stage53b1", "stage53c4b"] },
+      { "value": "pq", "status": "ConditionallySupported", "evidence": ["stage53c4b"], "conditions": "Preserve canonical PQ or explicitly convert PQ to SDR; only the conversion is limited to 0–1000 cd/m2 per source pixel." },
+      { "value": "hlg", "status": "Unsupported", "evidence": ["stage53c4b"] },
+      { "value": "unknown", "status": "Unsupported", "evidence": ["stage53c4b"], "conditions": "Strict 10-bit unknown metadata is rejected. Legacy 8-bit unspecified metadata may use BT.709 defaults; that normalization is not a production qualification." },
+      { "value": "conflicting", "status": "Unsupported", "evidence": ["stage53c4b"] }
+    ],
+    "input_color": [
+      { "value": "sdr709", "status": "Supported", "evidence": ["stage53b1", "stage53c4b"] },
+      { "value": "sdr601", "status": "Unqualified", "evidence": [], "conditions": "Legacy 8-bit software normalization is planner-accepted, but this path lacks production qualification." },
+      { "value": "pq", "status": "ConditionallySupported", "evidence": ["stage53c4b"], "conditions": "Canonical limited BT.2020 NCL/PQ and left chroma; HEVC Main10 or AV1 Main 10-bit 4:2:0; VAAPI decode, Vulkan processing, VAAPI encode and matching input/output profile interop. The 0–1000 cd/m2 source pixel ceiling applies only to explicit HDR-to-SDR conversion." },
+      { "value": "hlg", "status": "Unsupported", "evidence": ["stage53c4b"] },
+      { "value": "full_pq", "status": "Unsupported", "evidence": ["stage53c4b"] },
+      { "value": "wide_sdr", "status": "Unsupported", "evidence": ["stage53c4b"] },
+      { "value": "unknown", "status": "Unsupported", "evidence": ["stage53c4b"] },
+      { "value": "conflicting", "status": "Unsupported", "evidence": ["stage53c4b"] }
+    ],
+    "decode": [
+      { "value": "vaapi", "status": "ConditionallySupported", "evidence": ["stage53b1", "stage53c4b"], "conditions": "Intel iHD 26.1.5 on PCI 8086:7d55, qualified input profile and format." },
+      { "value": "software", "status": "Supported", "evidence": ["stage2"], "conditions": "Portable 8-bit SDR decode path; strict 10-bit processing has separate format qualification. PQ software decode is inspection only, never production." },
+      { "value": "auto", "status": "ConditionallySupported", "evidence": ["stage53c4b"], "conditions": "Only for the sealed automatic-path font/color/mono NV12/P010 smoke cases." }
+    ],
+    "backend": [
+      { "value": "vulkan", "status": "ConditionallySupported", "evidence": ["stage53c4b"], "conditions": "Scoped Mesa ANV device and qualified operation." },
+      { "value": "cpu", "status": "Supported", "evidence": ["stage2"], "conditions": "Portable NV12 SDR production. P010 CPU is separately qualified processing; CPU production HDR preserve/tone mapping is unsupported." },
+      { "value": "auto", "status": "ConditionallySupported", "evidence": ["stage53c4b"], "conditions": "Only for sealed automatic-path test cases." }
+    ],
+    "input_interop": [
+      { "value": "on", "status": "ConditionallySupported", "evidence": ["stage53c4b"], "conditions": "Qualified decoded codec/format and Intel VAAPI-to-Vulkan path." },
+      { "value": "off", "status": "Supported", "evidence": ["stage2"], "conditions": "Portable software NV12 SDR path; PQ production requires input interop on. This does not qualify staged HDR." },
+      { "value": "auto", "status": "ConditionallySupported", "evidence": ["stage53c4b"], "conditions": "Only for sealed automatic-path smokes." }
+    ],
+    "output_dynamic_range": [
+      { "value": "preserve", "status": "ConditionallySupported", "evidence": ["stage53b1", "stage53c4b"], "conditions": "SDR preserve is qualified for the five 8/10-bit output profiles; PQ preserve only for HEVC Main10 and AV1 Main 10-bit. The 1000 cd/m2 limit does not apply to PQ preservation." },
+      { "value": "sdr", "status": "ConditionallySupported", "evidence": ["stage53c4b"], "conditions": "Explicit PQ-to-SDR conversion is qualified only for canonical input with every source pixel at or below 1000 cd/m2." }
+    ],
+    "output_codec": [
+      { "value": "h264", "status": "Supported", "evidence": ["stage53b1", "stage53c4b"] },
+      { "value": "hevc", "status": "ConditionallySupported", "evidence": ["stage53b1", "stage53c4b"], "conditions": "VAAPI HEVC codec/profile/depth probe and scoped P010/NV12 path required." },
+      { "value": "av1", "status": "ConditionallySupported", "evidence": ["stage53b1", "stage53c4b"], "conditions": "VAAPI AV1 codec/profile/depth probe and scoped P010/NV12 path required." },
+      { "value": "other", "status": "Unsupported", "evidence": ["stage53c4b"] }
+    ],
+    "output_bit_depth": [
+      { "value": "8", "status": "Supported", "evidence": ["stage53b1", "stage53c4b"] },
+      { "value": "10", "status": "ConditionallySupported", "evidence": ["stage53c4b"], "conditions": "HEVC Main10 or AV1 Main 10-bit profile on the scoped P010 path." },
+      { "value": "12", "status": "Unsupported", "evidence": ["stage53c4b"] },
+      { "value": "other", "status": "Unsupported", "evidence": ["stage53c4b"] }
+    ],
+    "encode": [
+      { "value": "vaapi", "status": "ConditionallySupported", "evidence": ["stage53b1", "stage53c4b"], "conditions": "Qualified output codec/profile/depth on Intel iHD 26.1.5." },
+      { "value": "software", "status": "Supported", "evidence": ["stage2"], "conditions": "H.264 8-bit SDR via libx264 only. Software HEVC/AV1 encoding and all software HDR production are unsupported." },
+      { "value": "auto", "status": "ConditionallySupported", "evidence": ["stage53c4b"], "conditions": "Only for sealed automatic-path smoke cases." }
+    ],
+    "output_interop": [
+      { "value": "on", "status": "ConditionallySupported", "evidence": ["stage53c4b"], "conditions": "Qualified output codec/profile/depth and NV12/P010 format on the scoped Intel path." },
+      { "value": "off", "status": "Supported", "evidence": ["stage2"], "conditions": "Portable software H.264/NV12 SDR output; PQ production requires output interop on. No staged HDR qualification." },
+      { "value": "auto", "status": "ConditionallySupported", "evidence": ["stage53c4b"], "conditions": "Only for sealed automatic-path smoke cases." }
+    ],
+    "audio_policy": [
+      { "value": "auto", "status": "ConditionallySupported", "evidence": ["stage53c4b-runtime"], "conditions": "MP4-compatible compressed streams; AAC single/dual-track cases qualified. Existing CFR video timeline required; incompatible streams are omitted, not transcoded." },
+      { "value": "copy", "status": "ConditionallySupported", "evidence": ["stage53c4b-runtime"], "conditions": "Strict MP4 copy eligibility and the existing CFR video timeline; AAC single/dual-track cases qualified. VFR/discontinuities reject." },
+      { "value": "none", "status": "Supported", "evidence": ["stage53c4b-runtime"] }
+    ],
+    "audio_codec": [
+      { "value": "aac", "status": "ConditionallySupported", "evidence": ["stage53c4b-runtime"], "conditions": "MP4-compatible single/dual AAC cases only." },
+      { "value": "other", "status": "Unqualified", "evidence": [] }
+    ],
+    "font": [
+      { "value": "builtin-8x8", "status": "ConditionallySupported", "evidence": ["stage53c4b-runtime"], "conditions": "Sealed automatic-path render smoke cases." },
+      { "value": "freetype", "status": "ConditionallySupported", "evidence": ["stage53c4b-runtime"], "conditions": "Sealed smoke tests use a valid installed font; font availability remains host-dependent." }
+    ]
+  },
+  "cases": [
+    { "id": "portable-h264-sdr", "input_codec": "h264", "input_profile": "h264-high", "input_depth": 8, "color": "sdr709", "output_codec": "h264", "output_depth": 8, "output_dynamic_range": "preserve", "backend": "cpu", "decode": "software", "encode": "software", "input_interop": "off", "output_interop": "off", "status": "Supported", "expected_planner": { "result": "selected", "backend": "cpu", "decode": "software", "encode": "software", "output_pixel_format": "nv12", "color_processing": "sdr" } },
+    { "id": "sdr-h264-8", "input_codec": "h264", "input_profile": "h264-high", "input_depth": 8, "color": "sdr709", "output_codec": "h264", "output_depth": 8, "output_dynamic_range": "preserve", "backend": "vulkan", "decode": "hardware", "encode": "hardware", "input_interop": "on", "output_interop": "on", "status": "ConditionallySupported", "expected_planner": { "result": "selected", "backend": "vulkan", "decode": "hardware", "encode": "hardware", "output_pixel_format": "nv12", "color_processing": "sdr" } },
+    { "id": "sdr-hevc-8", "input_codec": "h264", "input_profile": "h264-high", "input_depth": 8, "color": "sdr709", "output_codec": "hevc", "output_depth": 8, "output_dynamic_range": "preserve", "backend": "vulkan", "decode": "hardware", "encode": "hardware", "input_interop": "on", "output_interop": "on", "status": "ConditionallySupported", "expected_planner": { "result": "selected", "backend": "vulkan", "decode": "hardware", "encode": "hardware", "output_pixel_format": "nv12", "color_processing": "sdr" } },
+    { "id": "sdr-av1-8", "input_codec": "h264", "input_profile": "h264-high", "input_depth": 8, "color": "sdr709", "output_codec": "av1", "output_depth": 8, "output_dynamic_range": "preserve", "backend": "vulkan", "decode": "hardware", "encode": "hardware", "input_interop": "on", "output_interop": "on", "status": "ConditionallySupported", "expected_planner": { "result": "selected", "backend": "vulkan", "decode": "hardware", "encode": "hardware", "output_pixel_format": "nv12", "color_processing": "sdr" } },
+    { "id": "sdr-hevc-10", "input_codec": "hevc", "input_profile": "hevc-main10", "input_depth": 10, "color": "sdr709", "output_codec": "hevc", "output_depth": 10, "output_dynamic_range": "preserve", "backend": "vulkan", "decode": "hardware", "encode": "hardware", "input_interop": "on", "output_interop": "on", "status": "ConditionallySupported", "expected_planner": { "result": "selected", "backend": "vulkan", "decode": "hardware", "encode": "hardware", "output_pixel_format": "p010le", "color_processing": "sdr" } },
+    { "id": "sdr-av1-10", "input_codec": "hevc", "input_profile": "hevc-main10", "input_depth": 10, "color": "sdr709", "output_codec": "av1", "output_depth": 10, "output_dynamic_range": "preserve", "backend": "vulkan", "decode": "hardware", "encode": "hardware", "input_interop": "on", "output_interop": "on", "status": "ConditionallySupported", "expected_planner": { "result": "selected", "backend": "vulkan", "decode": "hardware", "encode": "hardware", "output_pixel_format": "p010le", "color_processing": "sdr" } },
+    { "id": "pq-preserve-hevc", "input_codec": "hevc", "input_profile": "hevc-main10", "input_depth": 10, "color": "pq", "output_codec": "hevc", "output_depth": 10, "output_dynamic_range": "preserve", "backend": "vulkan", "decode": "hardware", "encode": "hardware", "input_interop": "on", "output_interop": "on", "status": "ConditionallySupported", "expected_planner": { "result": "selected", "backend": "vulkan", "decode": "hardware", "encode": "hardware", "output_pixel_format": "p010le", "color_processing": "hdrpqpreserve" } },
+    { "id": "pq-preserve-av1", "input_codec": "av1", "input_profile": "av1-main", "input_depth": 10, "color": "pq", "output_codec": "av1", "output_depth": 10, "output_dynamic_range": "preserve", "backend": "vulkan", "decode": "hardware", "encode": "hardware", "input_interop": "on", "output_interop": "on", "status": "ConditionallySupported", "expected_planner": { "result": "selected", "backend": "vulkan", "decode": "hardware", "encode": "hardware", "output_pixel_format": "p010le", "color_processing": "hdrpqpreserve" } },
+    { "id": "matrix-hevc-to-h264-8", "input_codec": "hevc", "input_profile": "hevc-main10", "input_depth": 10, "color": "pq", "output_codec": "h264", "output_depth": 8, "output_dynamic_range": "sdr", "backend": "vulkan", "decode": "hardware", "encode": "hardware", "input_interop": "on", "output_interop": "on", "status": "ConditionallySupported", "expected_planner": { "result": "selected", "backend": "vulkan", "decode": "hardware", "encode": "hardware", "output_pixel_format": "nv12", "color_processing": "hdrpqtosdrbt709" } },
+    { "id": "matrix-hevc-to-hevc-8", "input_codec": "hevc", "input_profile": "hevc-main10", "input_depth": 10, "color": "pq", "output_codec": "hevc", "output_depth": 8, "output_dynamic_range": "sdr", "backend": "vulkan", "decode": "hardware", "encode": "hardware", "input_interop": "on", "output_interop": "on", "status": "ConditionallySupported", "expected_planner": { "result": "selected", "backend": "vulkan", "decode": "hardware", "encode": "hardware", "output_pixel_format": "nv12", "color_processing": "hdrpqtosdrbt709" } },
+    { "id": "matrix-hevc-to-av1-8", "input_codec": "hevc", "input_profile": "hevc-main10", "input_depth": 10, "color": "pq", "output_codec": "av1", "output_depth": 8, "output_dynamic_range": "sdr", "backend": "vulkan", "decode": "hardware", "encode": "hardware", "input_interop": "on", "output_interop": "on", "status": "ConditionallySupported", "expected_planner": { "result": "selected", "backend": "vulkan", "decode": "hardware", "encode": "hardware", "output_pixel_format": "nv12", "color_processing": "hdrpqtosdrbt709" } },
+    { "id": "matrix-hevc-to-hevc-10", "input_codec": "hevc", "input_profile": "hevc-main10", "input_depth": 10, "color": "pq", "output_codec": "hevc", "output_depth": 10, "output_dynamic_range": "sdr", "backend": "vulkan", "decode": "hardware", "encode": "hardware", "input_interop": "on", "output_interop": "on", "status": "ConditionallySupported", "expected_planner": { "result": "selected", "backend": "vulkan", "decode": "hardware", "encode": "hardware", "output_pixel_format": "p010le", "color_processing": "hdrpqtosdrbt709" } },
+    { "id": "matrix-hevc-to-av1-10", "input_codec": "hevc", "input_profile": "hevc-main10", "input_depth": 10, "color": "pq", "output_codec": "av1", "output_depth": 10, "output_dynamic_range": "sdr", "backend": "vulkan", "decode": "hardware", "encode": "hardware", "input_interop": "on", "output_interop": "on", "status": "ConditionallySupported", "expected_planner": { "result": "selected", "backend": "vulkan", "decode": "hardware", "encode": "hardware", "output_pixel_format": "p010le", "color_processing": "hdrpqtosdrbt709" } },
+    { "id": "matrix-av1-to-h264-8", "input_codec": "av1", "input_profile": "av1-main", "input_depth": 10, "color": "pq", "output_codec": "h264", "output_depth": 8, "output_dynamic_range": "sdr", "backend": "vulkan", "decode": "hardware", "encode": "hardware", "input_interop": "on", "output_interop": "on", "status": "ConditionallySupported", "expected_planner": { "result": "selected", "backend": "vulkan", "decode": "hardware", "encode": "hardware", "output_pixel_format": "nv12", "color_processing": "hdrpqtosdrbt709" } },
+    { "id": "matrix-av1-to-hevc-8", "input_codec": "av1", "input_profile": "av1-main", "input_depth": 10, "color": "pq", "output_codec": "hevc", "output_depth": 8, "output_dynamic_range": "sdr", "backend": "vulkan", "decode": "hardware", "encode": "hardware", "input_interop": "on", "output_interop": "on", "status": "ConditionallySupported", "expected_planner": { "result": "selected", "backend": "vulkan", "decode": "hardware", "encode": "hardware", "output_pixel_format": "nv12", "color_processing": "hdrpqtosdrbt709" } },
+    { "id": "matrix-av1-to-av1-8", "input_codec": "av1", "input_profile": "av1-main", "input_depth": 10, "color": "pq", "output_codec": "av1", "output_depth": 8, "output_dynamic_range": "sdr", "backend": "vulkan", "decode": "hardware", "encode": "hardware", "input_interop": "on", "output_interop": "on", "status": "ConditionallySupported", "expected_planner": { "result": "selected", "backend": "vulkan", "decode": "hardware", "encode": "hardware", "output_pixel_format": "nv12", "color_processing": "hdrpqtosdrbt709" } },
+    { "id": "matrix-av1-to-hevc-10", "input_codec": "av1", "input_profile": "av1-main", "input_depth": 10, "color": "pq", "output_codec": "hevc", "output_depth": 10, "output_dynamic_range": "sdr", "backend": "vulkan", "decode": "hardware", "encode": "hardware", "input_interop": "on", "output_interop": "on", "status": "ConditionallySupported", "expected_planner": { "result": "selected", "backend": "vulkan", "decode": "hardware", "encode": "hardware", "output_pixel_format": "p010le", "color_processing": "hdrpqtosdrbt709" } },
+    { "id": "matrix-av1-to-av1-10", "input_codec": "av1", "input_profile": "av1-main", "input_depth": 10, "color": "pq", "output_codec": "av1", "output_depth": 10, "output_dynamic_range": "sdr", "backend": "vulkan", "decode": "hardware", "encode": "hardware", "input_interop": "on", "output_interop": "on", "status": "ConditionallySupported", "expected_planner": { "result": "selected", "backend": "vulkan", "decode": "hardware", "encode": "hardware", "output_pixel_format": "p010le", "color_processing": "hdrpqtosdrbt709" } },
+    { "id": "missing-tone-map-capability", "input_codec": "hevc", "input_profile": "hevc-main10", "input_depth": 10, "color": "pq", "output_codec": "hevc", "output_depth": 10, "output_dynamic_range": "sdr", "backend": "vulkan", "decode": "hardware", "encode": "hardware", "input_interop": "on", "output_interop": "on", "missing_capability": "vulkan_hdr_to_sdr", "status": "Unsupported", "expected_planner": { "result": "rejected", "error_variant": "InvalidConfig" } },
+    { "id": "missing-pq-encoder-capability", "input_codec": "hevc", "input_profile": "hevc-main10", "input_depth": 10, "color": "pq", "output_codec": "hevc", "output_depth": 10, "output_dynamic_range": "preserve", "backend": "vulkan", "decode": "hardware", "encode": "hardware", "input_interop": "on", "output_interop": "on", "missing_capability": "hevc_main10_encode", "status": "Unsupported", "expected_planner": { "result": "rejected", "error_variant": "InvalidConfig" } },
+    { "id": "unknown-color", "input_codec": "hevc", "input_profile": "hevc-main10", "input_depth": 10, "color": "unknown", "output_codec": "hevc", "output_depth": 10, "output_dynamic_range": "preserve", "backend": "vulkan", "decode": "hardware", "encode": "hardware", "input_interop": "on", "output_interop": "on", "status": "Unsupported", "expected_planner": { "result": "rejected", "error_variant": "UnsupportedColor", "color_reason": "Unknown" } },
+    { "id": "conflicting-color", "input_codec": "hevc", "input_profile": "hevc-main10", "input_depth": 10, "color": "conflict", "output_codec": "hevc", "output_depth": 10, "output_dynamic_range": "preserve", "backend": "vulkan", "decode": "hardware", "encode": "hardware", "input_interop": "on", "output_interop": "on", "status": "Unsupported", "expected_planner": { "result": "rejected", "error_variant": "UnsupportedColor", "color_reason": "Conflicting" } },
+    { "id": "unqualified-h264-main-currently-plans", "input_codec": "h264", "input_profile": "h264-main", "input_depth": 8, "color": "sdr709", "output_codec": "h264", "output_depth": 8, "output_dynamic_range": "preserve", "backend": "cpu", "decode": "software", "encode": "software", "input_interop": "off", "output_interop": "off", "status": "Unqualified", "expected_planner": { "result": "selected", "backend": "cpu", "decode": "software", "encode": "software", "output_pixel_format": "nv12", "color_processing": "sdr" } },
+    { "id": "unqualified-601-normalization-currently-plans", "input_codec": "h264", "input_profile": "h264-high", "input_depth": 8, "color": "sdr601", "output_codec": "h264", "output_depth": 8, "output_dynamic_range": "preserve", "backend": "cpu", "decode": "software", "encode": "software", "input_interop": "off", "output_interop": "off", "status": "Unqualified", "expected_planner": { "result": "selected", "backend": "cpu", "decode": "software", "encode": "software", "output_pixel_format": "nv12", "color_processing": "sdr" } },
+    { "id": "h264-10bit-output-unsupported", "input_codec": "h264", "input_profile": "h264-high", "input_depth": 8, "color": "sdr709", "output_codec": "h264", "output_depth": 10, "output_dynamic_range": "preserve", "backend": "cpu", "decode": "software", "encode": "software", "input_interop": "off", "output_interop": "off", "status": "Unsupported", "expected_planner": { "result": "rejected", "error_variant": "InvalidConfig" } }
+  ]
+}

@@ -1,5 +1,14 @@
 # Regression testing
 
+Stage 5.4A adds a [compatibility corpus and unified runner](compatibility-corpus.md)
+for the [versioned production support contract](production-support.md). Its
+[closure record](stage5.4a-support-contract.md) is SEALED with durable
+run/environment/artifact identities. `python3 tests/corpus/run.py full --retained --output
+/tmp/asciiflow-corpus-new` selects the full workspace/reference checks and all
+17 retained production paths × three runs. The directory must be fresh;
+inaccessible hardware is reported as SKIPPED for the current environment.
+Existing baseline records and their historical build scope remain unchanged.
+
 ## C-4B HDR→SDR production closure
 
 [C-4B](stage5.3c4b-hdr-to-sdr-production.md) and Stage 5.3C overall are **SEALED**
