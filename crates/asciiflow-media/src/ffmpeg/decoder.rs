@@ -53,6 +53,7 @@ pub struct Decoder {
     packet_pending: bool,
     download_format_checked: bool,
     format_locked: bool,
+    native_pixel_format: Option<i32>,
     stream_color: ColorMetadataRaw,
     first_color: Option<ResolvedColorSemantics>,
     pq_preserve: bool,
@@ -239,6 +240,7 @@ impl Decoder {
             chroma_location: ChromaLocation::Left,
         };
         let guessed = unsafe { ffi::av_guess_frame_rate(format.as_ptr(), stream, ptr::null_mut()) };
+        validate_sample_aspect_ratio(unsafe { (*stream).sample_aspect_ratio })?;
         let frame_rate = if guessed.num > 0 && guessed.den > 0 {
             Rational::new(guessed.num, guessed.den)?
         } else {
@@ -267,7 +269,18 @@ impl Decoder {
             },
         );
         let stream_color = ColorMetadataRaw {
-            space: requirements.color_space,
+            // avcodec_open2 may replace context colors with bitstream colors.
+            // Keep the independent container descriptor for first-frame conflict
+            // resolution instead of comparing the bitstream with itself.
+            space: unsafe {
+                ColorSpace {
+                    matrix: map_matrix((*parameters).color_space),
+                    range: map_range((*parameters).color_range),
+                    primaries: map_primaries((*parameters).color_primaries),
+                    transfer: map_transfer((*parameters).color_trc),
+                    chroma_location: map_chroma_location((*parameters).chroma_location),
+                }
+            },
             ..read_stream_static_metadata(parameters)?
         };
         let frame_desc = if requirements.bit_depth == Some(10) {
@@ -340,6 +353,9 @@ impl Decoder {
             packet_pending: false,
             download_format_checked: false,
             format_locked: false,
+            native_pixel_format: (mode == DecodeMode::Software
+                && decoder_pixel_format != ffi::AVPixelFormat::AV_PIX_FMT_NONE)
+                .then_some(decoder_pixel_format as i32),
             stream_color,
             first_color: None,
             pq_preserve: false,
@@ -373,6 +389,27 @@ impl Decoder {
         self.timings.frame_receive += receive_started.elapsed();
         if result == 0 {
             let native = unsafe { &*self.source_frame.as_mut_ptr() };
+            validate_sample_aspect_ratio(native.sample_aspect_ratio)?;
+            let display = unsafe {
+                ffi::av_frame_get_side_data(
+                    self.source_frame.as_mut_ptr(),
+                    ffi::AVFrameSideDataType::AV_FRAME_DATA_DISPLAYMATRIX,
+                )
+            };
+            if let Some(display) = unsafe { display.as_ref() } {
+                validate_display_matrix(display.data, display.size)?;
+            }
+            if native.width != self.info.requirements.width as i32
+                || native.height != self.info.requirements.height as i32
+            {
+                return Err(asciiflow_core::Error::UnsupportedFrame(format!(
+                    "decoded dimensions changed from {}x{} to {}x{}",
+                    self.info.requirements.width,
+                    self.info.requirements.height,
+                    native.width,
+                    native.height
+                )));
+            }
             let pts = if native.best_effort_timestamp == ffi::AV_NOPTS_VALUE {
                 None
             } else {
@@ -418,6 +455,15 @@ impl Decoder {
             } else {
                 None
             };
+            if self
+                .native_pixel_format
+                .is_some_and(|expected| expected != format)
+            {
+                return Err(asciiflow_core::Error::UnsupportedFrame(
+                    "decoded native pixel format changed; the fixed scaler/interop layout cannot be reused".into(),
+                ));
+            }
+            self.native_pixel_format.get_or_insert(format);
             let mut actual = self.info.requirements.clone();
             actual.bit_depth = pixel.map(|p| p.comp[0].depth as u8);
             actual.pixel_format = pixel.map(|p| {
@@ -975,6 +1021,43 @@ fn parse_content_light(data: *const u8, size: usize) -> Result<ContentLightLevel
     })
 }
 
+fn validate_sample_aspect_ratio(ratio: ffi::AVRational) -> Result<()> {
+    // Unspecified SAR retains the existing square-pixel default. An explicit
+    // display shape must not be silently lost by a pipeline that does not apply it.
+    if ratio.den < 0
+        || (ratio.num != 0 && (ratio.num <= 0 || ratio.den <= 0 || ratio.num != ratio.den))
+    {
+        return Err(asciiflow_core::Error::UnsupportedFrame(
+            "non-square or invalid sample aspect ratio is not supported".into(),
+        ));
+    }
+    Ok(())
+}
+
+fn validate_display_matrix(data: *const u8, size: usize) -> Result<()> {
+    if data.is_null() || size != 9 * std::mem::size_of::<i32>() {
+        return Err(asciiflow_core::Error::UnsupportedFrame(
+            "invalid display matrix".into(),
+        ));
+    }
+    // FFmpeg owns this native-endian array. Copy from bytes rather than assuming
+    // its storage is aligned for an i32 reference.
+    let bytes = unsafe { std::slice::from_raw_parts(data, size) };
+    let identity = [1 << 16, 0, 0, 0, 1 << 16, 0, 0, 0, 1 << 30];
+    if bytes
+        .chunks_exact(4)
+        .zip(identity)
+        .any(|(bytes, expected)| {
+            i32::from_ne_bytes(bytes.try_into().expect("four-byte matrix entry")) != expected
+        })
+    {
+        return Err(asciiflow_core::Error::UnsupportedFrame(
+            "rotation or display transform is not supported; orientation cannot be silently discarded".into(),
+        ));
+    }
+    Ok(())
+}
+
 fn read_stream_static_metadata(
     parameters: *const ffi::AVCodecParameters,
 ) -> Result<ColorMetadataRaw> {
@@ -997,6 +1080,9 @@ fn read_stream_static_metadata(
     let side_data = unsafe { std::slice::from_raw_parts(pointer, count as usize) };
     for entry in side_data {
         match entry.type_ {
+            ffi::AVPacketSideDataType::AV_PKT_DATA_DISPLAYMATRIX => {
+                validate_display_matrix(entry.data, entry.size)?;
+            }
             ffi::AVPacketSideDataType::AV_PKT_DATA_MASTERING_DISPLAY_METADATA => {
                 if result.mastering_display.is_some() {
                     return Err(ColorError::MalformedMasteringMetadata.into());
@@ -1412,6 +1498,58 @@ impl Drop for ScalerGuard {
 #[cfg(test)]
 mod p010_tests {
     use super::*;
+
+    #[test]
+    fn sample_aspect_ratio_accepts_only_unspecified_or_square_pixels() {
+        for (num, den) in [(0, 0), (0, 1), (1, 1), (2, 2)] {
+            validate_sample_aspect_ratio(ffi::AVRational { num, den }).unwrap();
+        }
+        for (num, den) in [(4, 3), (-1, 1), (1, 0), (0, -1), (-1, -1)] {
+            let error = validate_sample_aspect_ratio(ffi::AVRational { num, den }).unwrap_err();
+            assert!(
+                error.to_string().contains("sample aspect ratio"),
+                "{num}/{den}: {error}"
+            );
+        }
+    }
+
+    #[test]
+    fn display_matrix_accepts_unaligned_identity_and_rejects_transforms_or_bad_storage() {
+        #[repr(align(4))]
+        struct AlignedBytes([u8; 37]);
+
+        let identity: [i32; 9] = [1 << 16, 0, 0, 0, 1 << 16, 0, 0, 0, 1 << 30];
+        let mut storage = AlignedBytes([0; 37]);
+        for (bytes, value) in storage.0[1..].chunks_exact_mut(4).zip(identity) {
+            bytes.copy_from_slice(&value.to_ne_bytes());
+        }
+        let sliced = &storage.0;
+        let unaligned = &sliced[1..];
+        assert_ne!(unaligned.as_ptr() as usize % std::mem::align_of::<i32>(), 0);
+        validate_display_matrix(unaligned.as_ptr(), unaligned.len()).unwrap();
+        for (data, size) in [
+            (ptr::null(), 36),
+            (unaligned.as_ptr(), 0),
+            (unaligned.as_ptr(), 35),
+            (unaligned.as_ptr(), 37),
+        ] {
+            let error = validate_display_matrix(data, size).unwrap_err();
+            assert!(error.to_string().contains("invalid display matrix"));
+        }
+        let transforms: [[i32; 9]; 4] = [
+            [0, -(1 << 16), 0, 1 << 16, 0, 0, 0, 0, 1 << 30],
+            [-(1 << 16), 0, 0, 0, 1 << 16, 0, 0, 0, 1 << 30],
+            [1 << 16, 0, 0, 0, 1 << 16, 0, 1 << 16, 0, 1 << 30],
+            [2 << 16, 0, 0, 0, 1 << 16, 0, 0, 0, 1 << 30],
+        ];
+        for matrix in transforms {
+            for (bytes, value) in storage.0[1..].chunks_exact_mut(4).zip(matrix) {
+                bytes.copy_from_slice(&value.to_ne_bytes());
+            }
+            let error = validate_display_matrix(storage.0[1..].as_ptr(), 36).unwrap_err();
+            assert!(error.to_string().contains("rotation or display transform"));
+        }
+    }
 
     #[test]
     fn p010_native_geometry_is_checked_before_host_or_vaapi_delivery() {

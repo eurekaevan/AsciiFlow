@@ -7,6 +7,27 @@ complete scenarios; independent dimension rows are not a Cartesian-product
 support promise. The [Stage 5.4A record](stage5.4a-support-contract.md) is
 SEALED and enables no additional codec path.
 
+The [Stage 5.4B real-media record](stage5.4b-real-media-compatibility.md)
+extends qualification only to exact source/request tuples, not arbitrary
+containers or profiles. Ordinary, fast-start and fragmented MP4 cases exercise
+real demux/mux with strict AAC packet/timestamp/language/default checks.
+Matroska and MOV remain unqualified where the unchanged strict audio oracle
+finds language/disposition or duration differences. FLAC is actually MP4-copy
+eligible on this FFmpeg build, but its tested container metadata is unqualified;
+Speex is explicitly copy-ineligible. No audio codec is transcoded.
+Audio track display titles are copied using the muxer's semantic title/name
+mapping and checked separately from the unchanged strict packet/audio oracle.
+
+Native odd 4:2:0 dimensions, non-square SAR and non-identity display matrices
+reject rather than silently pad, stretch or rotate. Midstream coded geometry,
+native pixel format and color semantic changes fail before an incompatible
+cached processing path is used. A benign same-geometry SPS level update drains
+all frames, but timestamp-less elementary-stream timing remains unqualified.
+Strict 10-bit missing primaries/transfer/matrix and SDR plus HDR static side
+data fail closed. PQ outputs retain PQ/BT.2020 limited signal and deliberately
+do not clone or recompute source mastering/CLL metadata. Subtitle streams and
+video titles are deliberately omitted, not preserved.
+
 Qualified software input scope: H.264 8-bit 4:2:0, HEVC Main 8-bit 4:2:0,
 and AV1 Main 8-bit 4:2:0. Codec identity comes from probing; no input-codec flag
 is needed. MP4 output defaults to H.264 8-bit; `--output-codec hevc` selects

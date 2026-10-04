@@ -294,6 +294,23 @@ pub fn seconds(value: i64, stream: &Stream) -> f64 {
     value as f64 * stream.num as f64 / stream.den as f64
 }
 pub fn same_audio(input: &Stream, output: &Stream) {
+    let input_metadata = (
+        &input.codec,
+        input.rate,
+        input.channels,
+        &input.language,
+        input.default,
+    );
+    let output_metadata = (
+        &output.codec,
+        output.rate,
+        output.channels,
+        &output.language,
+        output.default,
+    );
+    if input_metadata != output_metadata {
+        record_strict_audio_failure("MetadataMismatch");
+    }
     assert_eq!(
         (
             &input.codec,
@@ -310,11 +327,17 @@ pub fn same_audio(input: &Stream, output: &Stream) {
             output.default
         )
     );
+    if input.packets.len() != output.packets.len() {
+        record_strict_audio_failure("PacketCountMismatch");
+    }
     assert_eq!(input.packets.len(), output.packets.len());
     let same_time = |x: i64, y: i64| {
         let difference = (i128::from(x) * i128::from(input.num) * i128::from(output.den)
             - i128::from(y) * i128::from(output.num) * i128::from(input.den))
         .abs();
+        if difference > i128::from(output.num) * i128::from(input.den) {
+            record_strict_audio_failure("TimestampMismatch");
+        }
         assert!(
             difference <= i128::from(output.num) * i128::from(input.den),
             "media timestamp changed"
@@ -324,6 +347,9 @@ pub fn same_audio(input: &Stream, output: &Stream) {
         same_time(input.duration, output.duration);
     }
     for (a, b) in input.packets.iter().zip(&output.packets) {
+        if a.data != b.data {
+            record_strict_audio_failure("PayloadMismatch");
+        }
         assert_eq!(
             a.data, b.data,
             "compressed payload changed or crossed audio tracks"
@@ -332,4 +358,30 @@ pub fn same_audio(input: &Stream, output: &Stream) {
             same_time(x, y);
         }
     }
+}
+
+fn record_strict_audio_failure(code: &str) {
+    // Optional evidence emitted immediately before the unchanged strict assert.
+    // No report means an orchestration/build/decode failure, not a registered
+    // comparison limitation. Never parse localized panic text for this purpose.
+    let Some(path) = std::env::var_os("ASCIIFLOW_AUDIO_ORACLE_REPORT") else {
+        return;
+    };
+    let file = fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(path)
+        .unwrap();
+    serde_json::to_writer_pretty(
+        file,
+        &serde_json::json!({
+            "schema_version": 1,
+            "test": "retained_audio_pair_from_env",
+            "outcome": "STRICT_FAILURE",
+            "code": code,
+            "reference": std::env::var("ASCIIFLOW_AUDIO_REFERENCE").unwrap(),
+            "candidate": std::env::var("ASCIIFLOW_AUDIO_CANDIDATE").unwrap(),
+        }),
+    )
+    .unwrap();
 }

@@ -2,11 +2,27 @@
 
 Stage 5.4A adds the [versioned support contract](production-support.md),
 [structured diagnostics and corpus runner](compatibility-corpus.md), and a
-[pending closure record](stage5.4a-support-contract.md). It changes neither
+[sealed closure record](stage5.4a-support-contract.md). It changes neither
 planner selection nor the production pixel/media contract. Runtime probe facts
 remain scoped to the input/device; architectural plans and historical qualified
-hardware evidence are separate. No additional feature is enabled and Stage
-5.4B has not started.
+hardware evidence are separate. Stage 5.4B adds the
+[real-media compatibility corpus](stage5.4b-real-media-compatibility.md),
+not new processing algorithms or media formats. Native decoded dimensions,
+pixel format, SAR and display matrices are admitted before cached scaler or
+interop use; independent stream codec parameters retain first-frame color
+conflict evidence. Corrupt compressed audio fails before mux enqueue, and
+static HDR metadata with SDR transfer fails as conflicting input.
+Passthrough audio preserves display labels across container title/name spellings
+alongside language and disposition; compressed payload and timestamps are not
+transcoded or regenerated.
+
+Video processing retains source presentation timestamps, but the encoder uses
+sequential CFR frame indices. Without copied audio, output starts at zero and
+maps one output frame to each decoded input frame. With copied audio, source
+video must remain on its original CFR grid; mux restores the video origin and
+preserves compressed audio timestamps. This is not faithful VFR presentation:
+video-only VFR is retimed, and VFR/discontinuous audio-copy input rejects.
+No display-transform, subtitle-transcode or audio-transcode path is added.
 
 This is the canonical architecture for the Rust application. The former C#
 implementation has left the active tree; its distinct user-facing features

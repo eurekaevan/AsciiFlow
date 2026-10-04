@@ -35,11 +35,13 @@
         "generator_sha256": { "$ref": "#/$defs/sha256" },
         "tool_identity": { "type": "string", "minLength": 1 },
         "exact_command": { "type": "array", "minItems": 1, "items": { "type": "string" } },
-        "reference_manifest": { "$ref": "#/$defs/identity" }
+        "reference_manifest": { "$ref": "#/$defs/identity" },
+        "generation_group": { "type": "string", "minLength": 1 },
+        "probe_sha256": { "$ref": "#/$defs/sha256" }
       }
     },
     "media": {
-      "type": "object", "additionalProperties": false,
+      "type": ["object", "null"], "additionalProperties": false,
       "required": ["container", "codec", "profile", "width", "height", "pixel_format", "bit_depth", "chroma_420", "timing", "gop", "audio", "subtitles", "metadata"],
       "properties": {
         "container": { "type": "string", "minLength": 1 },
@@ -89,6 +91,7 @@
             "language": { "type": ["string", "null"] },
             "rotation_degrees": { "type": ["number", "null"] },
             "orientation": { "type": ["string", "null"] },
+            "sample_aspect_ratio": { "type": ["string", "null"] },
             "mastering_display": { "$ref": "#/$defs/masteringDisplay" },
             "content_light": { "$ref": "#/$defs/contentLight" },
             "color_primaries": { "type": ["string", "null"] },
@@ -107,7 +110,9 @@
       "properties": {
         "dynamic_range": { "enum": ["sdr", "preserve"] },
         "codec": { "type": "string", "minLength": 1 },
-        "bit_depth": { "type": "integer", "enum": [8, 10] }
+        "bit_depth": { "type": "integer", "enum": [8, 10] },
+        "audio": { "enum": ["none", "copy", "auto"] },
+        "route": { "enum": ["portable", "hardware"] }
       }
     },
     "outcome": {
@@ -138,7 +143,11 @@
             "description": { "type": ["string", "null"] }
           }
         },
-        "evidence": { "type": ["string", "null"] }
+        "evidence": { "type": ["string", "null"] },
+        "video_timing": { "enum": ["cfr_zero", "cfr_origin", "retimed_unqualified"] },
+        "audio_limits": { "type": "array", "minItems": 1, "items": { "enum": ["undefined_language", "default_disposition", "millisecond_duration", "missing_first_duration"] } },
+        "blocker": { "type": "string", "minLength": 1 },
+        "safe_output": { "type": "boolean" }
       }
     },
     "masteringDisplay": {
@@ -186,7 +195,7 @@
       "properties": {
         "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
         "description": { "type": "string", "minLength": 1 },
-        "categories": { "type": "array", "minItems": 1, "items": { "enum": ["basic", "timing", "gop", "container", "color", "audio", "metadata", "mutation", "corruption", "error", "stress"] } },
+        "categories": { "type": "array", "minItems": 1, "items": { "enum": ["basic", "timing", "gop", "container", "color", "audio", "metadata", "short", "negative", "corrupt", "mutation", "corruption", "error", "stress"] } },
         "source": { "$ref": "#/$defs/source" },
         "media": { "$ref": "#/$defs/media" },
         "request": { "$ref": "#/$defs/request" },

@@ -5,6 +5,13 @@ evidence into a reproducible runner. It enables no additional codec, color,
 container, backend or interop path. [The stage record](stage5.4a-support-contract.md)
 records the observed gates and final qualification decision.
 
+Stage 5.4B adds [`real-media-v1.json`](../tests/corpus/real-media-v1.json):
+79 deterministic encoded/muxed sources and three separately requested hardware
+tuples. Its [closure report](stage5.4b-real-media-compatibility.md) and
+[durable receipt](../tests/corpus/stage54b-closure.json) distinguish qualified
+tuples, expected rejections and explicit Unqualified limitations. Generated
+compatibility media is not a new benchmark source or a blanket container claim.
+
 ## Contract and fixture identities
 
 [`tests/support/production-support-v1.json`](../tests/support/production-support-v1.json)
@@ -35,6 +42,37 @@ from representative compatibility cases; a fixture inventory is not evidence
 that every plausible stream feature is supported.
 
 ## Running
+
+For the Stage 5.4B real-media corpus:
+
+```bash
+python3 -B tests/corpus/run.py quick --manifest tests/corpus/real-media-v1.json \
+  --output target/stage54b-evidence-new
+```
+
+The three checked-in `generate-real-*.py` recipes generate each group once.
+`--generated-inputs` can reuse a flat cache, but generator/reference identity,
+source bytes, complete normalized probe SHA and actual media facts are checked
+before conversion. Only the probe filename is normalized. A mismatch is setup
+failure, never an expected codec rejection. Hardware smokes and retained output
+hashes always use the separate 300-frame canonical H.264 source, not the first
+short corpus file. The executable is copied once into the fresh run directory
+so concurrent builds cannot change it halfway through a matrix.
+
+Every command has a finite deadline (`--watchdog-seconds`, default 600;
+`--generation-watchdog-seconds`, default 2400). TIMEOUT / possible hang fails
+the gate and terminates the entire process group, including descendants which
+ignore SIGTERM. It is never reclassified as a normal media rejection. Each
+conversion records the sampled process peak RSS; this excludes child/GPU memory
+and is not a performance qualification.
+
+`UNQUALIFIED` is distinct from PASS. Six registered audio limits require the
+unchanged strict Rust oracle to fail with a fresh exact typed report; missing
+reports, compilation errors, wrong failure codes, payload/timestamp changes or
+full source/output audio decode errors still fail. The characterization only
+explains explicit metadata/duration bounds; it cannot qualify or promote a case.
+Other Unqualified cases also require precise blockers. Fatal conversion checks
+preserve a preexisting sentinel destination and require no residual staging.
 
 Build the production CLI first, then choose a fresh directory for each invocation:
 
@@ -88,7 +126,7 @@ a changed result.
 Each run writes `environment.json`, `pairwise-coverage.json`, command logs,
 per-input diagnostic reports, `results.json` and `results.md`. Environment records
 include source/diff/untracked identities, lockfile and executable SHA-256, native
-tools, kernel and driver queries. Results report PASS, FAILED or SKIPPED with
+tools, kernel and driver queries. Results report PASS, FAILED, SKIPPED or UNQUALIFIED with
 command exit status and category-specific counts. Unexpected success is a failure
 for a rejection case; unexpected rejection is a failure for a positive case.
 Surface counts overlap: a positive fixture verifies classification, planner,

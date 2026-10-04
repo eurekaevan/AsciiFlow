@@ -5,6 +5,8 @@ import importlib.util
 import json
 from pathlib import Path
 import tempfile
+import sys
+import time
 import unittest
 from unittest.mock import patch
 
@@ -16,6 +18,34 @@ spec.loader.exec_module(runner)
 
 
 class HarnessTests(unittest.TestCase):
+    def test_watchdog_kills_term_resistant_child_after_leader_exits(self):
+        with tempfile.TemporaryDirectory() as folder:
+            run = runner.Run.__new__(runner.Run)
+            run.out = Path(folder)
+            run.commands = []
+            run.args = type("Args", (), {"watchdog_seconds": 1})()
+            child = "import os,signal,time; signal.signal(signal.SIGTERM,signal.SIG_IGN); print(os.getpid(),flush=True); time.sleep(30)"
+            parent = f"import subprocess,sys,time; subprocess.Popen([sys.executable,'-c',{child!r}]); time.sleep(30)"
+            with self.assertRaisesRegex(ValueError, "TIMEOUT / possible hang"):
+                run.command("watchdog-descendant-control", [sys.executable, "-c", parent])
+            pid = int((run.out / run.commands[0]["log"]).read_text().strip())
+            status = Path(f"/proc/{pid}/stat")
+            deadline = time.monotonic() + 2
+            while status.exists() and status.read_text().split()[2] != "Z" and time.monotonic() < deadline:
+                time.sleep(0.02)
+            self.assertTrue(not status.exists() or status.read_text().split()[2] == "Z")
+
+    def test_watchdog_is_distinct_from_an_expected_media_rejection(self):
+        with tempfile.TemporaryDirectory() as folder:
+            run = runner.Run.__new__(runner.Run)
+            run.out = Path(folder)
+            run.commands = []
+            run.args = type("Args", (), {"watchdog_seconds": 0.15})()
+            with self.assertRaisesRegex(ValueError, "TIMEOUT / possible hang"):
+                run.command("watchdog-control", [sys.executable, "-c", "import time; time.sleep(30)"])
+            self.assertEqual(run.commands[0]["watchdog"], "TIMEOUT / possible hang")
+            self.assertNotEqual(run.commands[0]["exit_code"], 0)
+
     def setUp(self):
         self.schema = runner.load(runner.ROOT / "tests/corpus/manifest.schema.json")
         self.manifest = runner.load(runner.ROOT / "tests/corpus/representative-v1.json")

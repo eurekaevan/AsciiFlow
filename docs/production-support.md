@@ -1,6 +1,6 @@
 # Production support contract
 
-Version: 1.0.0. Generated from `tests/support/production-support-v1.json`; do not edit the tables manually.
+Version: 1.1.0. Generated from `tests/support/production-support-v1.json`; do not edit the tables manually.
 
 ## Support states
 
@@ -13,7 +13,7 @@ Version: 1.0.0. Generated from `tests/support/production-support-v1.json`; do no
 
 - ffmpeg: FFmpeg 8.1.3
 - gpu: Intel Arc Meteor Lake, PCI vendor/device 8086:7d55
-- limitations: ['Production qualification is tied to the sealed Stage 5.3C-4B source, binary and host manifest.', 'The per-source-pixel 1000 cd/m2 ceiling applies only to explicit HDR PQ to SDR conversion; it does not apply to PQ preservation.', 'PQ preservation passes PQ code values through. The HDR-to-SDR source-domain gate is not evidence of PQ-preserve luminance limits.', 'Stage 5.3C-4B reports CPU and software/staged HDR paths as unqualified.', 'Planner acceptance and synthetic capability facts never promote a dimension to a production support state.']
+- limitations: ['Production qualification is tied to the sealed Stage 5.3C-4B source, binary and host manifest.', 'The per-source-pixel 1000 cd/m2 ceiling applies only to explicit HDR PQ to SDR conversion; it does not apply to PQ preservation.', 'PQ preservation passes PQ code values through. The HDR-to-SDR source-domain gate is not evidence of PQ-preserve luminance limits.', 'Stage 5.3C-4B reports CPU and software/staged HDR paths as unqualified.', 'Planner acceptance and synthetic capability facts never promote a dimension to a production support state.', 'Stage 5.4B extensions qualify only the exact source SHA/probe and request tuples in real-media-v1.json. Portable and hardware cases are distinct; no Cartesian-product or general container/profile promotion.']
 - media_device: /dev/dri/renderD128
 - vaapi: Intel iHD 26.1.5
 - vulkan: Mesa ANV 26.2.3
@@ -84,6 +84,9 @@ Rows classify individual dimensions, not their Cartesian product. Conditions and
 | decode | auto | ConditionallySupported | Only for the sealed automatic-path font/color/mono NV12/P010 smoke cases. | stage53c4b |
 | decode | software | Supported | Portable 8-bit SDR decode path; strict 10-bit processing has separate format qualification. PQ software decode is inspection only, never production. | stage2 |
 | decode | vaapi | ConditionallySupported | Intel iHD 26.1.5 on PCI 8086:7d55, qualified input profile and format. | stage53b1, stage53c4b |
+| display_geometry | non-square-sar-or-non-identity-matrix | Unsupported | Reject InputProbe/UnsupportedFrame; no silent rotation, reflection, aspect-ratio normalization or transform application. | stage54b-corpus, stage54b-report |
+| display_geometry | odd-420-dimensions | Unsupported | Native 129x97 AV1 yuv420p rejected InputProbe/Media by the even-dimension NV12 admission guard; not padded into a claimed supported source. | stage54b-corpus, stage54b-report |
+| display_geometry | square-or-unspecified-sar-identity-or-absent-matrix | ConditionallySupported | Exact reviewed tuples; unspecified SAR uses the existing square interpretation. Renderer does not implement display transforms. | stage54b-corpus, stage54b-report |
 | dynamic_range | conflicting | Unsupported |  | stage53c4b |
 | dynamic_range | hlg | Unsupported |  | stage53c4b |
 | dynamic_range | pq | ConditionallySupported | Preserve canonical PQ or explicitly convert PQ to SDR; only the conversion is limited to 0–1000 cd/m2 per source pixel. | stage53c4b |
@@ -115,11 +118,18 @@ Rows classify individual dimensions, not their Cartesian product. Conditions and
 | input_color | sdr709 | Supported |  | stage53b1, stage53c4b |
 | input_color | unknown | Unsupported |  | stage53c4b |
 | input_color | wide_sdr | Unsupported |  | stage53c4b |
-| input_container | matroska | Unqualified | No sealed Matroska production matrix. The current CLI accepts MP4 output only; that implementation restriction is not Matroska qualification evidence. |  |
-| input_container | mp4 | ConditionallySupported | Only the sealed codec/profile/depth/path matrix is qualified. | stage53b1, stage53c4b |
+| input_container | matroska | Unqualified | Video-only H.264 sample converts, but AAC/FLAC Matroska-to-MP4 strict oracles fail: unspecified language becomes und, absent default becomes true, millisecond packet duration and missing first duration differ. Not a supported Matroska/audio preservation claim. |  |
+| input_container | mov | Unqualified | H.264/AAC sample converts but the unchanged strict audio oracle rejects undefined language becoming und. No MOV support promotion. |  |
+| input_container | mp4 | ConditionallySupported | Sealed retained matrix plus exact Stage 5.4B MP4 tuples (ordinary/fast-start/fragmented) only. AAC payload/timing/default/language are strictly checked where copied. Subtitles and video display titles are explicitly not copied. | stage53b1, stage53c4b, stage54b-corpus |
+| input_gop | benign-elementary-stream-parameter-update | Unqualified | Level-only SPS change drains eight frames, but original Annex B PTS/DTS are absent; timeline preservation is unqualified. |  |
+| input_gop | reviewed-b-frames-long-gop-all-intra | ConditionallySupported | Exact H.264 B0/B2/B4, HEVC B2, 250-frame GOP and all-intra portable sources plus the H.264 B2 hardware clone. Packet DTS monotonicity/reorder and decoded presentation spans checked; no open-GOP blanket claim. | stage54b-corpus, stage54b-report |
 | input_interop | auto | ConditionallySupported | Only for sealed automatic-path smokes. | stage53c4b |
 | input_interop | off | Supported | Portable software NV12 SDR path; PQ production requires input interop on. This does not qualify staged HDR. | stage2 |
 | input_interop | on | ConditionallySupported | Qualified decoded codec/format and Intel VAAPI-to-Vulkan path. | stage53c4b |
+| input_metadata | legacy-8bit-unspecified-color | ConditionallySupported | Only exact reviewed 8-bit sources use the existing BT.709 default policy. Raw null metadata remains recorded, never inferred from pixels. This does not permit unknown strict 10-bit color. | stage54b-corpus, stage54b-report |
+| input_metadata | pq-static-output-policy | ConditionallySupported | Exact 1080p PQ sources with/without static metadata qualify on the Intel path. Output retains PQ/BT.2020 limited signal but does NOT propagate or recompute source mastering/MaxCLL/MaxFALL/dynamic HDR side data; no static-metadata fidelity claim. | stage54b-corpus, stage54b-report |
+| input_metadata | sdr-with-hdr-static | Unsupported | Static mastering/content-light with known SDR transfer is Conflicting, including stream or frame side data. | stage54b-corpus, stage54b-report |
+| input_metadata | strict-10bit-missing-primaries-transfer-matrix | Unsupported | Actual generated HEVC10 negatives fail InputProbe/UnsupportedColor. Native missing range was not constructed; its fixture still reports limited range and remains Unqualified. | stage54b-corpus, stage54b-report |
 | input_pixel_format | nv12 | Supported |  | stage53b1, stage53c4b |
 | input_pixel_format | other | Unqualified |  |  |
 | input_pixel_format | p010le | ConditionallySupported | Qualified 10-bit 4:2:0 only. | stage53c4b |
@@ -132,8 +142,18 @@ Rows classify individual dimensions, not their Cartesian product. Conditions and
 | input_profile | hevc-main | ConditionallySupported | Qualified 8-bit HEVC Main production case. | stage53b1, stage53c4b |
 | input_profile | hevc-main10 | ConditionallySupported | Qualified PQ input and 10-bit output cases only with 4:2:0 and the scoped Intel hardware path. | stage53c4b |
 | input_profile | other | Unqualified |  |  |
+| input_resolution | 1280x720 | ConditionallySupported | Only exact Stage 5.4B portable software H.264 8-bit video-only tuple; no VAAPI/profiles/10-bit resolution generalization. | stage54b-corpus, stage54b-report |
+| input_resolution | 128x96 | ConditionallySupported | Only exact Stage 5.4B portable software H.264 8-bit video-only tuple; no VAAPI/profiles/10-bit resolution generalization. | stage54b-corpus, stage54b-report |
 | input_resolution | 1920x1080 | ConditionallySupported | Canonical production matrix. Native decode/encode and interop probes must accept the actual dimensions; profile availability alone is insufficient. | stage53b1, stage53c4b |
+| input_resolution | 2x2 | ConditionallySupported | Only exact Stage 5.4B portable software H.264 8-bit video-only tuple; no VAAPI/profiles/10-bit resolution generalization. | stage54b-corpus, stage54b-report |
+| input_resolution | 4x4 | ConditionallySupported | Only exact Stage 5.4B portable software H.264 8-bit video-only tuple; no VAAPI/profiles/10-bit resolution generalization. | stage54b-corpus, stage54b-report |
 | input_resolution | other | Unqualified | No blanket resolution claim. Current planner may admit dimensions after actual runtime probing; 64x64 P010 encoder probes reject on the recorded iHD stack. |  |
+| input_timing | cfr-tested-rates | ConditionallySupported | 24000/1001,24,25,30000/1001,30,50,60000/1001,60: exact portable H.264 8-bit tuples. Source frames map one-to-one to encoder sequential CFR index; video-only origin is zero. Audio-copy checks original source video CFR grid and preserves its origin. Native source/output tick bounds, not arbitrary millisecond tolerance. | stage54b-corpus, stage54b-report |
+| input_timing | discontinuous-with-audio-copy | Unsupported | Observed timestamp gap/backward/VFR AAC cases reject DecodeRuntime/Media and preserve preexisting output. | stage54b-corpus, stage54b-report |
+| input_timing | unusual-time-bases-and-origins | ConditionallySupported | Exact 1/1000,1/90000,1/48000,1/1000000 and +2s/+86400s source tuples only; output policy as above. Audio/video offset and shorter/longer AAC preserve compressed timestamps and endpoints in exact reviewed MP4 tuples. | stage54b-corpus, stage54b-report |
+| input_timing | vfr | Unqualified | Video-only VFR is retimed one frame per decoded frame to zero-origin CFR: source presentation duration is not preserved. Audio-copy VFR fails DecodeRuntime/Media; future faithful timeline policy required. |  |
+| midstream_changes | color-semantic-change | Unsupported | Stream codec parameters and actual frame color remain independent; tested changed SPS and container/frame conflict reject UnsupportedColor/Conflicting. | stage54b-corpus, stage54b-report |
+| midstream_changes | geometry-or-pixel-format | Unsupported | Actual native decoded dimensions and software pixel format are checked before cached scaler/interop use; tested resolution and 8-to-10-bit elementary streams reject. | stage54b-corpus, stage54b-report |
 | output_bit_depth | 10 | ConditionallySupported | HEVC Main10 or AV1 Main 10-bit profile on the scoped P010 path. | stage53c4b |
 | output_bit_depth | 12 | Unsupported |  | stage53c4b |
 | output_bit_depth | 8 | Supported |  | stage53b1, stage53c4b |
@@ -153,6 +173,7 @@ Rows classify individual dimensions, not their Cartesian product. Conditions and
 | output_profile | h264-encoder-selected | Supported | H.264 output is qualified at 8-bit SDR; no 10-bit H.264 output. | stage53b1, stage53c4b |
 | output_profile | hevc-main | ConditionallySupported | 8-bit SDR output requires the scoped VAAPI HEVC Main encode path. | stage53b1, stage53c4b |
 | output_profile | hevc-main10 | ConditionallySupported | 10-bit SDR conversion or PQ preservation requires the scoped VAAPI P010 path. | stage53c4b |
+| subtitle_policy | ignored | ConditionallySupported | Exact mov_text input is decoded alongside video but subtitles are intentionally omitted, not transcoded or copied. | stage54b-corpus, stage54b-report |
 
 ## Evidence
 
@@ -163,3 +184,5 @@ Rows classify individual dimensions, not their Cartesian product. Conditions and
 - `stage53c4b-device`: [tests/baselines/media/c4b-static-and-device-evidence.txt](../tests/baselines/media/c4b-static-and-device-evidence.txt) — Stage 5.3C-4B, device-and-runtime-evidence, SEALED.
 - `stage53c4b-report`: [docs/stage5.3c4b-hdr-to-sdr-production.md](../docs/stage5.3c4b-hdr-to-sdr-production.md) — Stage 5.3C-4B, production-report, SEALED.
 - `stage53c4b-runtime`: [tests/baselines/media/c4b-system-evidence.txt](../tests/baselines/media/c4b-system-evidence.txt) — Stage 5.3C-4B, observed-system-evidence, SEALED.
+- `stage54b-corpus`: [tests/corpus/real-media-v1.json](../tests/corpus/real-media-v1.json) — Stage 5.4B, reviewed-real-media-corpus, QUALIFIED.
+- `stage54b-report`: [docs/stage5.4b-real-media-compatibility.md](../docs/stage5.4b-real-media-compatibility.md) — Stage 5.4B, compatibility-report, QUALIFIED.

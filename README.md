@@ -9,12 +9,13 @@ remaining feature gaps are recorded in the [Rust follow-up inventory](docs/legac
 ## Current support
 
 <!-- production-support-contract:begin -->
-Support contract `1.0.0`. Hardware conditions and evidence: [production support contract](docs/production-support.md).
+Support contract `1.1.0`. Hardware conditions and evidence: [production support contract](docs/production-support.md).
 
 | Dimension | Value | Support state | Conditions |
 |---|---|---|---|
-| input_container | mp4 | ConditionallySupported | Only the sealed codec/profile/depth/path matrix is qualified. |
-| input_container | matroska | Unqualified | No sealed Matroska production matrix. The current CLI accepts MP4 output only; that implementation restriction is not Matroska qualification evidence. |
+| input_container | mp4 | ConditionallySupported | Sealed retained matrix plus exact Stage 5.4B MP4 tuples (ordinary/fast-start/fragmented) only. AAC payload/timing/default/language are strictly checked where copied. Subtitles and video display titles are explicitly not copied. |
+| input_container | matroska | Unqualified | Video-only H.264 sample converts, but AAC/FLAC Matroska-to-MP4 strict oracles fail: unspecified language becomes und, absent default becomes true, millisecond packet duration and missing first duration differ. Not a supported Matroska/audio preservation claim. |
+| input_container | mov | Unqualified | H.264/AAC sample converts but the unchanged strict audio oracle rejects undefined language becoming und. No MOV support promotion. |
 | output_container | mp4 | Supported |  |
 | output_container | matroska | Unsupported | The current CLI rejects non-MP4 output paths. |
 | input_color | sdr709 | Supported |  |

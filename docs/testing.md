@@ -1,5 +1,31 @@
 # Regression testing
 
+## Stage 5.4B real-media compatibility and evidence retention
+
+Use the [real-media corpus](compatibility-corpus.md), its
+[stage report](stage5.4b-real-media-compatibility.md), and the checked-in
+[`stage54b-closure.json`](../tests/corpus/stage54b-closure.json) receipt.
+The corpus's exact sources/requests qualify only those tuples. New containers,
+VFR fidelity, missing strict 10-bit metadata and broad driver/toolchain
+portability are not inferred from planner acceptance or successful conversion.
+
+Future compatibility runs, benchmarks and retained outputs must preserve:
+generator source/SHA and version, exact generation command, tool/package/source
+identity and configuration, input filename/size/SHA, complete actual probe,
+conversion command/configuration, executable/source/lockfile/host identity,
+output SHA or the structured nondeterministic oracle, and typed failure/watchdog
+records. Save durable receipts inside the repository; `/tmp` is scratch space,
+not the sole evidence store. Logs/media may live under a fresh ignored `target`
+directory, but checked-in receipts must retain their SHA, exact recipes and
+decisions so their absence never turns into guessed historical evidence.
+
+Compare timing as exact rational seconds with explicit source/output tick
+bounds. Video-only output is zero-origin CFR, one output per decoded input;
+audio-copy requires the original CFR video grid and preserves its origin.
+VFR-only retiming is characterized, not presentation fidelity. Keep strict
+packet/audio and historical H.264 semantic oracles unchanged; never automatically
+rewrite a golden record or relabel an Unqualified limitation PASS.
+
 Stage 5.4A adds a [compatibility corpus and unified runner](compatibility-corpus.md)
 for the [versioned production support contract](production-support.md). Its
 [closure record](stage5.4a-support-contract.md) is SEALED with durable

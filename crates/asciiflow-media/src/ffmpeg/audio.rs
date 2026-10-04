@@ -17,6 +17,7 @@ pub(crate) struct AudioInputStream {
     parameters: CodecParameters,
     pub time_base: ffi::AVRational,
     pub disposition: i32,
+    title: Option<String>,
 }
 
 impl AudioInputStream {
@@ -27,6 +28,7 @@ impl AudioInputStream {
             input_time_base: self.time_base,
             disposition: self.disposition,
             language: self.info.language.clone(),
+            title: self.title.clone(),
         })
     }
 }
@@ -37,6 +39,7 @@ pub struct AudioOutputTemplate {
     pub(crate) input_time_base: ffi::AVRational,
     pub(crate) disposition: i32,
     pub(crate) language: Option<String>,
+    pub(crate) title: Option<String>,
 }
 
 pub(crate) struct CodecParameters(NonNull<ffi::AVCodecParameters>);
@@ -147,6 +150,10 @@ pub(crate) fn discover_audio_streams(
             parameters: CodecParameters::copy_from(parameters)?,
             time_base,
             disposition: unsafe { (*stream).disposition },
+            // MP4 exposes its track display title as "name"; Matroska/MOV
+            // may expose "title". Preserve the semantic label across muxers.
+            title: dictionary_value(unsafe { (*stream).metadata }, "title")
+                .or_else(|| dictionary_value(unsafe { (*stream).metadata }, "name")),
         });
     }
     Ok(result)
@@ -243,6 +250,13 @@ impl AudioPacketSender {
             ));
         }
         let native = unsafe { &*packet.as_mut_ptr() };
+        if native.flags & ffi::AV_PKT_FLAG_CORRUPT != 0 {
+            return Err(Error::pipeline_message(
+                PipelineStage::MuxRuntime,
+                "validate passthrough audio integrity",
+                format!("audio stream #{input_index} packet is marked corrupt by the demuxer"),
+            ));
+        }
         if native.pts == ffi::AV_NOPTS_VALUE || native.dts == ffi::AV_NOPTS_VALUE {
             return Err(Error::pipeline_message(
                 PipelineStage::MuxRuntime,
@@ -317,6 +331,21 @@ mod tests {
             (*packet.as_mut_ptr()).dts = dts;
         }
         packet
+    }
+
+    #[test]
+    fn corrupt_audio_is_rejected_before_enqueueing() {
+        let (tx, rx) = bounded(1);
+        let sender =
+            AudioPacketSender::new(tx, CancellationToken::new(), Arc::new(Mutex::new(None)));
+        let mut damaged = packet(0, 0);
+        unsafe { (*damaged.as_mut_ptr()).flags |= ffi::AV_PKT_FLAG_CORRUPT };
+        let error = sender
+            .send(damaged, 7, ffi::AVRational { num: 1, den: 48000 })
+            .unwrap_err();
+        assert_eq!(error.stage(), Some(PipelineStage::MuxRuntime));
+        assert!(error.to_string().contains("stream #7"));
+        assert!(rx.is_empty());
     }
 
     #[test]

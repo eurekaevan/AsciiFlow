@@ -291,7 +291,19 @@ impl ResolvedColorSemantics {
             matrix: matrix_source,
             range: range_source,
         };
-        let source_conflict = primaries_conflict
+        let static_hdr_on_sdr = matches!(
+            transfer,
+            TransferCharacteristic::Bt709
+                | TransferCharacteristic::Smpte170M
+                | TransferCharacteristic::Srgb
+                | TransferCharacteristic::Gamma22
+                | TransferCharacteristic::Gamma28
+        ) && (stream.mastering_display.is_some()
+            || frame.mastering_display.is_some()
+            || stream.content_light.is_some()
+            || frame.content_light.is_some());
+        let source_conflict = static_hdr_on_sdr
+            || primaries_conflict
             || transfer_conflict
             || matrix_conflict
             || range_conflict
@@ -404,6 +416,41 @@ impl ResolvedColorSemantics {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn static_hdr_metadata_on_sdr_is_a_conflict_not_a_hdr_classifier() {
+        for space in [ColorSpace::default(), ColorSpace::pq_bt2020()] {
+            for frame_metadata in [false, true] {
+                let mut stream = ColorMetadataRaw {
+                    space,
+                    ..ColorMetadataRaw::unspecified()
+                };
+                let mut frame = stream;
+                let metadata = ContentLightLevelMetadata {
+                    max_cll: Some(1000),
+                    max_fall: Some(400),
+                };
+                if frame_metadata {
+                    frame.content_light = Some(metadata);
+                } else {
+                    stream.content_light = Some(metadata);
+                }
+                let resolved = ResolvedColorSemantics::resolve(
+                    stream,
+                    frame,
+                    ColorResolutionPolicy::StrictTenBit,
+                )
+                .unwrap();
+                if space.transfer == TransferCharacteristic::Pq {
+                    assert_eq!(resolved.dynamic_range, DynamicRangeClass::HdrPq);
+                    assert_eq!(resolved.support, Err(ColorSupportReason::UnsupportedHdrPq));
+                } else {
+                    assert_eq!(resolved.dynamic_range, DynamicRangeClass::Conflicting);
+                    assert_eq!(resolved.support, Err(ColorSupportReason::Conflicting));
+                }
+            }
+        }
+    }
 
     #[test]
     fn depth_does_not_classify_hdr_and_wide_gamut_sdr_is_not_hdr() {

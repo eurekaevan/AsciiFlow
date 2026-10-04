@@ -6,7 +6,10 @@ from fractions import Fraction
 import hashlib
 import importlib.util
 import json
+import math
 import os
+import signal
+import shutil
 from pathlib import Path
 import subprocess
 import sys
@@ -113,20 +116,73 @@ class Run:
         self.commands = []
         self.fixture_cache = {}
         self.fixture_setups = []
-        self.binary = args.binary.resolve()
+        self.binary_source = args.binary.resolve()
+        self.binary = self.binary_source
+        if self.binary_source.is_file():
+            # A concurrent build must not silently change the executable halfway
+            # through a corpus/retained run. This is an execution artifact, not a
+            # new golden or another build pipeline.
+            self.binary = self.out / "production-asciiflow"
+            shutil.copy2(self.binary_source, self.binary)
         self.skip_hardware = hardware_availability(args.device)
 
-    def command(self, label, argv, env=None):
+    def command(self, label, argv, env=None, timeout=None, stderr_log=None):
         index = len(self.commands)
         logfile = self.out / f"command-{index:03d}.log"
         started = time.monotonic()
-        with logfile.open("x") as stream:
-            result = subprocess.run([str(x) for x in argv], cwd=ROOT, env=env,
-                                    stdout=stream, stderr=subprocess.STDOUT)
+        timeout = getattr(self.args, "watchdog_seconds", 600) if timeout is None else timeout
+        if not math.isfinite(timeout) or timeout <= 0:
+            raise ValueError("command deadline must be finite and positive")
+        timed_out = False
+        peak_rss_kib = 0
+        from contextlib import ExitStack
+        with ExitStack() as resources:
+            stream = resources.enter_context(logfile.open("x"))
+            errors = resources.enter_context(Path(stderr_log).open("x")) if stderr_log else subprocess.STDOUT
+            process = subprocess.Popen([str(x) for x in argv], cwd=ROOT, env=env,
+                                       stdout=stream, stderr=errors,
+                                       start_new_session=True)
+            deadline = started + timeout
+            while process.poll() is None:
+                try:
+                    status = Path(f"/proc/{process.pid}/status").read_text()
+                    for line in status.splitlines():
+                        if line.startswith("VmHWM:"):
+                            peak_rss_kib = max(peak_rss_kib, int(line.split()[1]))
+                except (FileNotFoundError, ProcessLookupError):
+                    pass
+                if time.monotonic() >= deadline:
+                    timed_out = True
+                    try:
+                        os.killpg(process.pid, signal.SIGTERM)
+                    except ProcessLookupError:
+                        pass  # It exited between the deadline check and signal.
+                    try:
+                        process.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        pass
+                    # The leader exiting does not imply that its descendants
+                    # exited. Kill surviving group members even in that case.
+                    try:
+                        os.killpg(process.pid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+                    process.wait(timeout=5)
+                    break
+                try:
+                    process.wait(timeout=min(0.1, max(0.001, deadline-time.monotonic())))
+                except subprocess.TimeoutExpired:
+                    pass
         self.commands.append({"id": label, "argv": [str(x) for x in argv],
-                              "exit_code": result.returncode, "log": logfile.name,
+                              "exit_code": process.returncode, "log": logfile.name,
+                              "watchdog": "TIMEOUT / possible hang" if timed_out else "completed",
+                              "peak_process_rss_kib": peak_rss_kib,
                               "elapsed_seconds": time.monotonic() - started})
-        return result.returncode == 0
+        if stderr_log:
+            self.commands[-1]["stderr_log"] = Path(stderr_log).name
+        if timed_out:
+            raise ValueError(f"{label}: TIMEOUT / possible hang; process group terminated, not an ordinary rejection")
+        return process.returncode == 0
 
     def gate(self, name, category, action, hardware=False):
         if hardware and self.skip_hardware:
@@ -135,7 +191,9 @@ class Run:
             return False
         try:
             evidence = action()
-            self.results.append({"id": name, "category": category, "result": "SKIPPED" if isinstance(evidence, dict) and evidence.get("skipped") else "PASS",
+            result = ("SKIPPED" if isinstance(evidence, dict) and evidence.get("skipped") else
+                      "UNQUALIFIED" if isinstance(evidence, dict) and evidence.get("unqualified") else "PASS")
+            self.results.append({"id": name, "category": category, "result": result,
                                  "evidence": evidence})
             return not (isinstance(evidence, dict) and evidence.get("skipped"))
         except (AssertionError, ValueError, OSError, subprocess.SubprocessError) as error:
@@ -143,8 +201,8 @@ class Run:
                                  "reason": str(error)})
             return False
 
-    def checked(self, name, argv, env=None):
-        if not self.command(name, argv, env):
+    def checked(self, name, argv, env=None, timeout=None):
+        if not self.command(name, argv, env, **({"timeout": timeout} if timeout is not None else {})):
             raise ValueError(f"{name}: nonzero exit; inspect command log")
         return {"command": name}
 
@@ -165,6 +223,7 @@ class Run:
                     "untracked_sha256": {p: digest(ROOT / p) for p in sorted(untracked) if (ROOT / p).is_file()},
                     "cargo_lock_sha256": digest(ROOT / "Cargo.lock"),
                     "binary_sha256": digest(self.binary) if self.binary.is_file() else None,
+                    "binary_source": str(getattr(self, "binary_source", self.binary)),
                     "ffmpeg": query(["ffmpeg", "-version"]),
                     "ffprobe": query(["ffprobe", "-version"]),
                     "kernel": query(["uname", "-a"]),
@@ -201,7 +260,8 @@ class Run:
             path.parent.mkdir(exist_ok=True)
             argv = [str(path) if item == "{output}" else item for item in source["exact_command"]]
             if str(path) not in self.fixture_cache:
-                self.checked(f"generate-{fixture['id']}", argv)
+                self.checked(f"generate-{fixture['id']}", argv,
+                             timeout=getattr(self.args, "generation_watchdog_seconds", 2400))
                 self.fixture_cache[str(path)] = source["sha256"]
             elif self.fixture_cache[str(path)] != source["sha256"]:
                 raise ValueError("conflicting generated fixture identities")
@@ -451,16 +511,32 @@ def main():
     parser.add_argument("--device", default="/dev/dri/renderD128")
     parser.add_argument("--generated-inputs", type=Path, help="read-only reuse of already generated inputs, still checked against exact size/SHA and generator identity")
     parser.add_argument("--retained", action="store_true", help="all 17 retained production paths, three runs each; hardware required")
+    parser.add_argument("--manifest", type=Path, default=ROOT / "tests/corpus/representative-v1.json")
+    parser.add_argument("--watchdog-seconds", type=float, default=600, help="per-command deadline; timeouts never count as expected rejection")
+    parser.add_argument("--generation-watchdog-seconds", type=float, default=2400, help="bounded setup deadline for expensive retained lossless generation")
     args = parser.parse_args()
     if args.mode == "quick" and args.retained:
         parser.error("--retained requires full or hardware mode so the C-1/C-2B prerequisites run")
     if args.retained and args.device != "/dev/dri/renderD128":
         parser.error("retained canonical commands are pinned to /dev/dri/renderD128; other nodes may run hardware smokes without --retained")
-    run = Run(args)
+    if any(not math.isfinite(value) or value <= 0 for value in
+           (args.watchdog_seconds, args.generation_watchdog_seconds)):
+        parser.error("watchdog deadlines must be positive")
+    if args.manifest.name == "real-media-v1.json":
+        from real_media import RealMediaMixin
+        class RealRun(RealMediaMixin, Run):
+            pass
+        run = RealRun(args)
+    else:
+        run = Run(args)
     run.environment()
-    manifest = load(ROOT / "tests/corpus/representative-v1.json")
+    manifest = load(args.manifest)
     run.gate("corpus-schema", "static", lambda: validate(manifest, load(ROOT / "tests/corpus/manifest.schema.json")))
     if run.results[-1]["result"] == "FAILED":
+        return run.finish()
+    if len({fixture["id"] for fixture in manifest["fixtures"]}) != len(manifest["fixtures"]):
+        run.results.append({"id": "corpus-unique-identities", "category": "static",
+                            "result": "FAILED", "reason": "duplicate fixture identities"})
         return run.finish()
     run.gate("support-planner-consistency", "planner", lambda: run.checked("support-planner", ["cargo", "test", "-p", "asciiflow-core", "--test", "support_contract"]))
     run.gate("support-document-consistency", "static", lambda: run.checked("support-document", ["python3", "tests/support/matrix.py", "check"]))
@@ -478,10 +554,13 @@ def main():
         run.gate("workspace-tests", "static", lambda: run.checked("workspace-tests", ["cargo", "test", "--workspace"]))
     if args.mode == "hardware" or args.retained:
         fixtures = ROOT / "tests/fixtures/codecs"
-        inputs8 = [f for f in manifest["fixtures"] if f["source"]["kind"] == "generated" and f["media"]["codec"] == "h264"]
+        # Hardware smokes and retained hashes require the 300-frame canonical
+        # source, not whichever short real-media H.264 case sorts first.
+        canonical_manifest = load(ROOT / "tests/corpus/representative-v1.json")
+        canonical_input = next(f for f in canonical_manifest["fixtures"] if f["id"] == "canonical-h2648")
         prepared_inputs = {}
         def prepare_sdr_input():
-            path = run.fixture_path(inputs8[0])
+            path = run.fixture_path(canonical_input)
             prepared_inputs["sdr"] = path
             return {"input_sha256": digest(path)}
         input_ready = run.gate("hardware-sdr-input-identity", "static", prepare_sdr_input, True)

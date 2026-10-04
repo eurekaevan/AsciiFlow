@@ -631,12 +631,12 @@ impl Encoder {
                     (*output_stream.as_ptr()).time_base = template.input_time_base;
                     (*output_stream.as_ptr()).disposition = template.disposition;
                 }
-                if let Some(language) = template.language {
-                    let key =
-                        CString::new("language").expect("static metadata key contains no NUL");
-                    let value = CString::new(language).map_err(|_| {
-                        Error::Media("audio language metadata contains a NUL byte".into())
+                for (key, value) in [("language", template.language), ("title", template.title)] {
+                    let Some(value) = value else { continue };
+                    let value = CString::new(value).map_err(|_| {
+                        Error::Media(format!("audio {key} metadata contains a NUL byte"))
                     })?;
+                    let key = CString::new(key).expect("static metadata key contains no NUL");
                     check(
                         unsafe {
                             ffi::av_dict_set(
@@ -646,7 +646,7 @@ impl Encoder {
                                 0,
                             )
                         },
-                        "failed to copy audio language metadata",
+                        "failed to copy audio stream metadata",
                     )?;
                 }
                 routes.push(AudioMuxRoute {

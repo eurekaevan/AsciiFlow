@@ -525,7 +525,7 @@ fn versioned_support_contract_matches_core_planner() {
     ))
     .expect("support contract must match its strict schema");
     assert_eq!(contract.schema_version, 1);
-    assert_eq!(contract.support_contract_version, "1.0.0");
+    assert_eq!(contract.support_contract_version, "1.1.0");
     assert_eq!(
         contract
             .states

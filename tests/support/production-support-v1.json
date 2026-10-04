@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "support_contract_version": "1.0.0",
+  "support_contract_version": "1.1.0",
   "states": {
     "Supported": "Qualified by retained production evidence within the scope stated here.",
     "ConditionallySupported": "Qualified only when every listed condition holds.",
@@ -18,7 +18,8 @@
       "The per-source-pixel 1000 cd/m2 ceiling applies only to explicit HDR PQ to SDR conversion; it does not apply to PQ preservation.",
       "PQ preservation passes PQ code values through. The HDR-to-SDR source-domain gate is not evidence of PQ-preserve luminance limits.",
       "Stage 5.3C-4B reports CPU and software/staged HDR paths as unqualified.",
-      "Planner acceptance and synthetic capability facts never promote a dimension to a production support state."
+      "Planner acceptance and synthetic capability facts never promote a dimension to a production support state.",
+      "Stage 5.4B extensions qualify only the exact source SHA/probe and request tuples in real-media-v1.json. Portable and hardware cases are distinct; no Cartesian-product or general container/profile promotion."
     ]
   },
   "production_limits": {
@@ -38,16 +39,23 @@
     { "id": "stage53c4b-device", "stage": "Stage 5.3C-4B", "kind": "device-and-runtime-evidence", "artifact": "tests/baselines/media/c4b-static-and-device-evidence.txt", "status": "SEALED" },
     { "id": "stage53b1", "stage": "Stage 5.3B-1", "kind": "qualified-baseline-manifest", "artifact": "tests/baselines/media/post-polarity-v2.json", "status": "QUALIFIED" },
     { "id": "stage2", "stage": "Stage 2", "kind": "validation-report", "artifact": "docs/stage2-validation.md", "status": "QUALIFIED" },
-    { "id": "current-cli", "stage": "current checkout", "kind": "output-container-guard", "artifact": "apps/asciiflow-cli/src/main.rs", "status": "CURRENT" }
+    { "id": "current-cli", "stage": "current checkout", "kind": "output-container-guard", "artifact": "apps/asciiflow-cli/src/main.rs", "status": "CURRENT" },
+    { "id": "stage54b-corpus", "stage": "Stage 5.4B", "kind": "reviewed-real-media-corpus", "artifact": "tests/corpus/real-media-v1.json", "status": "QUALIFIED" },
+    { "id": "stage54b-report", "stage": "Stage 5.4B", "kind": "compatibility-report", "artifact": "docs/stage5.4b-real-media-compatibility.md", "status": "QUALIFIED" }
   ],
   "dimensions": {
     "input_resolution": [
       { "value": "1920x1080", "status": "ConditionallySupported", "evidence": ["stage53b1", "stage53c4b"], "conditions": "Canonical production matrix. Native decode/encode and interop probes must accept the actual dimensions; profile availability alone is insufficient." },
-      { "value": "other", "status": "Unqualified", "evidence": [], "conditions": "No blanket resolution claim. Current planner may admit dimensions after actual runtime probing; 64x64 P010 encoder probes reject on the recorded iHD stack." }
+      { "value": "other", "status": "Unqualified", "evidence": [], "conditions": "No blanket resolution claim. Current planner may admit dimensions after actual runtime probing; 64x64 P010 encoder probes reject on the recorded iHD stack." },
+      { "value": "2x2", "status": "ConditionallySupported", "evidence": ["stage54b-corpus", "stage54b-report"], "conditions": "Only exact Stage 5.4B portable software H.264 8-bit video-only tuple; no VAAPI/profiles/10-bit resolution generalization." },
+      { "value": "4x4", "status": "ConditionallySupported", "evidence": ["stage54b-corpus", "stage54b-report"], "conditions": "Only exact Stage 5.4B portable software H.264 8-bit video-only tuple; no VAAPI/profiles/10-bit resolution generalization." },
+      { "value": "128x96", "status": "ConditionallySupported", "evidence": ["stage54b-corpus", "stage54b-report"], "conditions": "Only exact Stage 5.4B portable software H.264 8-bit video-only tuple; no VAAPI/profiles/10-bit resolution generalization." },
+      { "value": "1280x720", "status": "ConditionallySupported", "evidence": ["stage54b-corpus", "stage54b-report"], "conditions": "Only exact Stage 5.4B portable software H.264 8-bit video-only tuple; no VAAPI/profiles/10-bit resolution generalization." }
     ],
     "input_container": [
-      { "value": "mp4", "status": "ConditionallySupported", "evidence": ["stage53b1", "stage53c4b"], "conditions": "Only the sealed codec/profile/depth/path matrix is qualified." },
-      { "value": "matroska", "status": "Unqualified", "evidence": [], "conditions": "No sealed Matroska production matrix. The current CLI accepts MP4 output only; that implementation restriction is not Matroska qualification evidence." }
+      { "value": "mp4", "status": "ConditionallySupported", "evidence": ["stage53b1", "stage53c4b", "stage54b-corpus"], "conditions": "Sealed retained matrix plus exact Stage 5.4B MP4 tuples (ordinary/fast-start/fragmented) only. AAC payload/timing/default/language are strictly checked where copied. Subtitles and video display titles are explicitly not copied." },
+      { "value": "matroska", "status": "Unqualified", "evidence": [], "conditions": "Video-only H.264 sample converts, but AAC/FLAC Matroska-to-MP4 strict oracles fail: unspecified language becomes und, absent default becomes true, millisecond packet duration and missing first duration differ. Not a supported Matroska/audio preservation claim." },
+      { "value": "mov", "status": "Unqualified", "evidence": [], "conditions": "H.264/AAC sample converts but the unchanged strict audio oracle rejects undefined language becoming und. No MOV support promotion." }
     ],
     "output_container": [
       { "value": "mp4", "status": "Supported", "evidence": ["stage53b1", "stage53c4b"] },
@@ -208,6 +216,34 @@
     "font": [
       { "value": "builtin-8x8", "status": "ConditionallySupported", "evidence": ["stage53c4b-runtime"], "conditions": "Sealed automatic-path render smoke cases." },
       { "value": "freetype", "status": "ConditionallySupported", "evidence": ["stage53c4b-runtime"], "conditions": "Sealed smoke tests use a valid installed font; font availability remains host-dependent." }
+    ],
+    "input_timing": [
+      { "value": "cfr-tested-rates", "status": "ConditionallySupported", "evidence": ["stage54b-corpus", "stage54b-report"], "conditions": "24000/1001,24,25,30000/1001,30,50,60000/1001,60: exact portable H.264 8-bit tuples. Source frames map one-to-one to encoder sequential CFR index; video-only origin is zero. Audio-copy checks original source video CFR grid and preserves its origin. Native source/output tick bounds, not arbitrary millisecond tolerance." },
+      { "value": "vfr", "status": "Unqualified", "evidence": [], "conditions": "Video-only VFR is retimed one frame per decoded frame to zero-origin CFR: source presentation duration is not preserved. Audio-copy VFR fails DecodeRuntime/Media; future faithful timeline policy required." },
+      { "value": "discontinuous-with-audio-copy", "status": "Unsupported", "evidence": ["stage54b-corpus", "stage54b-report"], "conditions": "Observed timestamp gap/backward/VFR AAC cases reject DecodeRuntime/Media and preserve preexisting output." },
+      { "value": "unusual-time-bases-and-origins", "status": "ConditionallySupported", "evidence": ["stage54b-corpus", "stage54b-report"], "conditions": "Exact 1/1000,1/90000,1/48000,1/1000000 and +2s/+86400s source tuples only; output policy as above. Audio/video offset and shorter/longer AAC preserve compressed timestamps and endpoints in exact reviewed MP4 tuples." }
+    ],
+    "input_gop": [
+      { "value": "reviewed-b-frames-long-gop-all-intra", "status": "ConditionallySupported", "evidence": ["stage54b-corpus", "stage54b-report"], "conditions": "Exact H.264 B0/B2/B4, HEVC B2, 250-frame GOP and all-intra portable sources plus the H.264 B2 hardware clone. Packet DTS monotonicity/reorder and decoded presentation spans checked; no open-GOP blanket claim." },
+      { "value": "benign-elementary-stream-parameter-update", "status": "Unqualified", "evidence": [], "conditions": "Level-only SPS change drains eight frames, but original Annex B PTS/DTS are absent; timeline preservation is unqualified." }
+    ],
+    "display_geometry": [
+      { "value": "square-or-unspecified-sar-identity-or-absent-matrix", "status": "ConditionallySupported", "evidence": ["stage54b-corpus", "stage54b-report"], "conditions": "Exact reviewed tuples; unspecified SAR uses the existing square interpretation. Renderer does not implement display transforms." },
+      { "value": "non-square-sar-or-non-identity-matrix", "status": "Unsupported", "evidence": ["stage54b-corpus", "stage54b-report"], "conditions": "Reject InputProbe/UnsupportedFrame; no silent rotation, reflection, aspect-ratio normalization or transform application." },
+      { "value": "odd-420-dimensions", "status": "Unsupported", "evidence": ["stage54b-corpus", "stage54b-report"], "conditions": "Native 129x97 AV1 yuv420p rejected InputProbe/Media by the even-dimension NV12 admission guard; not padded into a claimed supported source." }
+    ],
+    "midstream_changes": [
+      { "value": "geometry-or-pixel-format", "status": "Unsupported", "evidence": ["stage54b-corpus", "stage54b-report"], "conditions": "Actual native decoded dimensions and software pixel format are checked before cached scaler/interop use; tested resolution and 8-to-10-bit elementary streams reject." },
+      { "value": "color-semantic-change", "status": "Unsupported", "evidence": ["stage54b-corpus", "stage54b-report"], "conditions": "Stream codec parameters and actual frame color remain independent; tested changed SPS and container/frame conflict reject UnsupportedColor/Conflicting." }
+    ],
+    "input_metadata": [
+      { "value": "strict-10bit-missing-primaries-transfer-matrix", "status": "Unsupported", "evidence": ["stage54b-corpus", "stage54b-report"], "conditions": "Actual generated HEVC10 negatives fail InputProbe/UnsupportedColor. Native missing range was not constructed; its fixture still reports limited range and remains Unqualified." },
+      { "value": "legacy-8bit-unspecified-color", "status": "ConditionallySupported", "evidence": ["stage54b-corpus", "stage54b-report"], "conditions": "Only exact reviewed 8-bit sources use the existing BT.709 default policy. Raw null metadata remains recorded, never inferred from pixels. This does not permit unknown strict 10-bit color." },
+      { "value": "sdr-with-hdr-static", "status": "Unsupported", "evidence": ["stage54b-corpus", "stage54b-report"], "conditions": "Static mastering/content-light with known SDR transfer is Conflicting, including stream or frame side data." },
+      { "value": "pq-static-output-policy", "status": "ConditionallySupported", "evidence": ["stage54b-corpus", "stage54b-report"], "conditions": "Exact 1080p PQ sources with/without static metadata qualify on the Intel path. Output retains PQ/BT.2020 limited signal but does NOT propagate or recompute source mastering/MaxCLL/MaxFALL/dynamic HDR side data; no static-metadata fidelity claim." }
+    ],
+    "subtitle_policy": [
+      { "value": "ignored", "status": "ConditionallySupported", "evidence": ["stage54b-corpus", "stage54b-report"], "conditions": "Exact mov_text input is decoded alongside video but subtitles are intentionally omitted, not transcoded or copied." }
     ]
   },
   "cases": [
