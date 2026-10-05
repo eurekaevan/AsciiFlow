@@ -135,6 +135,8 @@ class Run:
             raise ValueError("command deadline must be finite and positive")
         timed_out = False
         peak_rss_kib = 0
+        loaded_driver_paths = set()
+        attest_native_maps = (os.environ if env is None else env).get("ASCIIFLOW_ATTEST_NATIVE_MAPS") == "1"
         from contextlib import ExitStack
         with ExitStack() as resources:
             stream = resources.enter_context(logfile.open("x"))
@@ -149,6 +151,11 @@ class Run:
                     for line in status.splitlines():
                         if line.startswith("VmHWM:"):
                             peak_rss_kib = max(peak_rss_kib, int(line.split()[1]))
+                    if attest_native_maps:
+                        for line in Path(f"/proc/{process.pid}/maps").read_text().splitlines():
+                            fields = line.split(maxsplit=5)
+                            if len(fields) == 6 and Path(fields[5]).name in {"libvulkan_intel.so", "iHD_drv_video.so"}:
+                                loaded_driver_paths.add(str(Path(fields[5]).resolve(strict=True)))
                 except (FileNotFoundError, ProcessLookupError):
                     pass
                 if time.monotonic() >= deadline:
@@ -178,6 +185,8 @@ class Run:
                               "watchdog": "TIMEOUT / possible hang" if timed_out else "completed",
                               "peak_process_rss_kib": peak_rss_kib,
                               "elapsed_seconds": time.monotonic() - started})
+        if attest_native_maps:
+            self.commands[-1]["loaded_driver_files"] = {path: {"sha256": digest(path)} for path in sorted(loaded_driver_paths)}
         if stderr_log:
             self.commands[-1]["stderr_log"] = Path(stderr_log).name
         if timed_out:

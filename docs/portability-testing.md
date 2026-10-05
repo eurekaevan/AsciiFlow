@@ -1,5 +1,26 @@
 # Stack-scoped portability qualification
 
+Stage 5.4C-2 uses `tests/portability/c2-matrix.json` as a canonical-centered
+star matrix. `run-expanded-matrix.py` orchestrates the existing corpus and media
+oracles; it does not invent a relaxed comparison engine. Schema-v2 stack capture
+attests initialized ANV/iHD modules and their native dependency closure. Child
+selectors are cleared and explicitly reconstructed for each stack; requested
+driver paths alone are not evidence. Opt-in `/proc` samples additionally retain
+actual CLI driver mappings when the process lives long enough to observe them.
+Missing mappings remain unobserved, not inferred success.
+
+Repeated same-stack comparisons may reuse a previously executed, passing Rust
+Tier 1B/1C/2 result only when the complete runtime identity and the inspected
+candidate file SHA match, and both new files are byte-identical. Receipts label
+this exact-byte proof and hash the prior comparison; they do not claim a new
+Rust invocation. Missing/failed semantic evidence or any byte/runtime drift
+still invokes the unchanged oracle. Cross-stack comparisons never take this
+shortcut.
+
+The [C-2 report](stage5.4c2-expanded-portability-matrix.md) records the current
+qualification outcome. `tests/portability/qualified-stacks.json` distinguishes
+qualified, failed and incomplete stacks; exploration never promotes canonical.
+
 Qualified support is scoped to the recorded Intel/Mesa/iHD/FFmpeg stacks, not
 a claim about every release or a minimum supported version. A second passing
 stack does not broaden the support contract or overwrite canonical artifacts.

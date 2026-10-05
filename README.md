@@ -13,6 +13,12 @@ driver versions. [Stack-scoped portability testing](docs/portability-testing.md)
 separates media correctness from exact-build artifact identity; alternate
 stacks do not automatically broaden this support contract.
 
+Stage 5.4C2's expanded portability matrix is under construction and is not
+sealed. Its five stack definitions and qualification boundaries are tracked in
+the [matrix report](docs/stage5.4c2-expanded-portability-matrix.md) and the
+[qualified-stack registry](tests/portability/qualified-stacks.json); neither
+changes this support contract until reviewed closure.
+
 <!-- production-support-contract:begin -->
 Support contract `1.1.0`. Hardware conditions and evidence: [production support contract](docs/production-support.md).
 

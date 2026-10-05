@@ -1,5 +1,16 @@
 # AsciiFlow architecture
 
+Stage 5.4C2's expanded five-stack portability matrix is under construction,
+not sealed. See the [matrix report](stage5.4c2-expanded-portability-matrix.md)
+and [qualified-stack registry](../tests/portability/qualified-stacks.json).
+Its alternate FFmpeg/Mesa/iHD stacks are exploratory evidence only; native
+all-ready probes do not qualify a stack. Qualification remains scoped to exact
+artifacts and actual loaded-library evidence from stack manifest v2, captured
+with loader diagnostics during initialization and a scoped child environment.
+Toolchains stay under new target prefixes, without host installation. The
+alternate-kernel edge is `UnavailableSafely` because checking it would require
+an unauthorized reboot. This matrix does not imply sealing or Stage D.
+
 Stage 5.4A adds the [versioned support contract](production-support.md),
 [structured diagnostics and corpus runner](compatibility-corpus.md), and a
 [sealed closure record](stage5.4a-support-contract.md). It changes neither

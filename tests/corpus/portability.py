@@ -11,7 +11,13 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
 CLASSES = {"ExpectedExact", "ApprovedVolatileDifference", "SemanticEquivalent",
-           "CapabilityDrift", "PerformanceDrift", "Regression", "Unresolved"}
+           "CapabilityDrift", "CapabilityDrivenPlanChange", "PerformanceDrift", "Regression", "Unresolved"}
+
+
+class StackSetupError(ValueError):
+    def __init__(self, message, probes):
+        super().__init__(message)
+        self.probes = probes
 
 
 def digest(path):
@@ -19,9 +25,9 @@ def digest(path):
         return hashlib.file_digest(stream, "sha256").hexdigest()
 
 
-def query(argv):
+def query(argv, env=None):
     result = subprocess.run(argv, cwd=ROOT, capture_output=True, text=True,
-                            timeout=60, check=False)
+                            timeout=60, check=False, env=env)
     return {"argv": [str(x) for x in argv], "exit_code": result.returncode,
             "stdout": result.stdout, "stderr": result.stderr}
 
@@ -31,8 +37,8 @@ def identity(path):
     return {"path": str(path), "bytes": path.stat().st_size, "sha256": digest(path)}
 
 
-def loaded_libraries(binary):
-    result = query(["ldd", str(binary)])
+def loaded_libraries(binary, env=None):
+    result = query(["ldd", str(binary)], env)
     if result["exit_code"]:
         raise ValueError(f"cannot resolve runtime libraries: {result}")
     libraries = {}
@@ -53,8 +59,8 @@ def loaded_libraries(binary):
     return libraries
 
 
-def dependency_identity(binary):
-    result = query(["ldd", str(binary)])
+def dependency_identity(binary, env=None):
+    result = query(["ldd", str(binary)], env)
     if result["exit_code"]:
         raise ValueError("could not attest linked runtime dependencies")
     dependencies = {}
@@ -77,6 +83,9 @@ def source_identity():
                            ":(exclude)tests/portability/stacks/**",
                            ":(exclude)tests/portability/stage54c1.json",
                            ":(exclude)tests/portability/stage54c1a.json",
+                           ":(exclude)tests/portability/stage54c2.json",
+                           ":(exclude)tests/portability/qualified-stacks.json",
+                           ":(exclude)docs/stage5.4c2-expanded-portability-matrix.md",
                            ":(exclude)docs/stage5.4c1a-deterministic-mux.md",
                            ":(exclude)docs/stage5.4c1-portability-baseline.md"], cwd=ROOT,
                           capture_output=True, check=True).stdout
@@ -86,49 +95,101 @@ def source_identity():
     # self-referential identity when the second manifest records the first one.
     files = {p: digest(ROOT / p) for p in sorted(set(paths))
              if (ROOT / p).is_file() and not p.startswith("tests/portability/stacks/")
-             and p not in {"tests/portability/stage54c1.json", "tests/portability/stage54c1a.json", "docs/stage5.4c1a-deterministic-mux.md", "docs/stage5.4c1-portability-baseline.md"}}
+             and p not in {"tests/portability/stage54c1.json", "tests/portability/stage54c1a.json", "tests/portability/stage54c2.json", "tests/portability/qualified-stacks.json", "docs/stage5.4c2-expanded-portability-matrix.md", "docs/stage5.4c1a-deterministic-mux.md", "docs/stage5.4c1-portability-baseline.md"}}
     return {"head": query(["git", "rev-parse", "HEAD"])["stdout"].strip(),
             "dirty_diff_sha256": hashlib.sha256(diff).hexdigest(),
             "cargo_lock_sha256": digest(ROOT / "Cargo.lock"), "files_sha256": files}
 
 
-def capture(stack_id, binary, prefix=None):
+def capture_drivers(env):
+    from stack_environment import loader_modules
+    traced = dict(env, LD_DEBUG="libs")
+    probes = {"anv": query(["vulkaninfo", "--summary"], traced),
+              "ihd": query(["vainfo", "--display", "drm", "--device", "/dev/dri/renderD128"], traced)}
+    expected = {"anv": "libvulkan_intel.so", "ihd": "iHD_drv_video.so"}
+    drivers = {}
+    for kind, result in probes.items():
+        modules = loader_modules(result["stderr"])
+        paths = [p for p in modules if Path(p).name == expected[kind]]
+        if result["exit_code"] or len(paths) != 1:
+            raise StackSetupError(f"FAIL SETUP: actual {kind} driver initialization not attested", probes)
+        drivers[kind] = identity(paths[0])
+        result["loaded_modules"] = {Path(p).name: identity(p) for p in modules}
+    if not re.search(r"vendorID\s*=\s*0x8086", probes["anv"]["stdout"]) or "DRIVER_ID_INTEL_OPEN_SOURCE_MESA" not in probes["anv"]["stdout"]:
+        raise StackSetupError("FAIL SETUP: Vulkan probe is not Intel ANV hardware", probes)
+    if env.get("LIBVA_DRIVERS_PATH"):
+        requested = Path(env["LIBVA_DRIVERS_PATH"]) / "iHD_drv_video.so"
+        if drivers["ihd"] != identity(requested):
+            raise StackSetupError("FAIL SETUP: requested iHD differs from loaded module", probes)
+    if env.get("VK_ICD_FILENAMES"):
+        icd_path = Path(env["VK_ICD_FILENAMES"])
+        library = Path(json.loads(icd_path.read_text())["ICD"]["library_path"])
+        if library.is_absolute() and drivers["anv"] != identity(library):
+            raise StackSetupError("FAIL SETUP: requested ICD differs from loaded ANV", probes)
+    return drivers, probes
+
+
+def capture(stack_id, binary, prefix=None, selectors=None, provenance=None):
     if not re.fullmatch(r"[a-z0-9][a-z0-9.-]+", stack_id) or stack_id in {"old", "new", "test"}:
         raise ValueError("stack_id must be a stable descriptive identifier")
+    from stack_environment import environment
+    version2 = selectors is not None
+    env = environment(prefix, selectors) if version2 else dict(os.environ)
     with tempfile.TemporaryDirectory(prefix="asciiflow-vulkan-profile-") as directory:
         result = subprocess.run(["vulkaninfo", "--json=0"], cwd=directory,
-                                capture_output=True, text=True, timeout=60)
+                                capture_output=True, text=True, timeout=60, env=env)
         profiles = list(Path(directory).glob("VP_VULKANINFO_*.json"))
         vulkan_profile = {"exit_code": result.returncode, "stderr": result.stderr,
                           "profiles": [json.loads(p.read_text()) for p in profiles]}
-    vaapi = query(["vainfo", "--display", "drm", "--device", "/dev/dri/renderD128"])
+        if version2 and (result.returncode or not profiles):
+            raise StackSetupError("FAIL SETUP: structured Vulkan profile unavailable", {"vulkan_profile": vulkan_profile})
+    vaapi = query(["vainfo", "--display", "drm", "--device", "/dev/dri/renderD128"], env)
     profiles = {}
     for profile, entrypoint in re.findall(r"(VAProfile\w+)\s*:\s*(VAEntrypoint\w+)", vaapi["stdout"]):
         profiles.setdefault(profile, []).append(entrypoint)
     profiles = {key: sorted(set(value)) for key, value in sorted(profiles.items())}
-    return {"schema_version": 1, "stack_id": stack_id,
-            "runtime": {"prefix": str(Path(prefix).resolve()) if prefix else None},
+    drivers, probes = capture_drivers(env) if version2 else (driver_identity(), None)
+    native_dependencies = {path:record for probe in (probes or {}).values()
+                           for record in probe["loaded_modules"].values() for path in [record["path"]]}
+    libraries = loaded_libraries(binary, env)
+    tools = {tool: identity(shutil.which(tool, path=env["PATH"])) for tool in ("ffmpeg", "ffprobe")}
+    if version2 and prefix:
+        root = Path(prefix).resolve(strict=True)
+        if (any(not Path(record["path"]).is_relative_to(root / "lib") for record in libraries.values())
+                or any(not Path(record["path"]).is_relative_to(root / "bin") for record in tools.values())):
+            raise StackSetupError("FAIL SETUP: isolated libav/tool prefix was not actually loaded", probes)
+    return {"schema_version": 2 if version2 else 1, "stack_id": stack_id,
+            "runtime": {"prefix": str(Path(prefix).resolve()) if prefix else None,
+                        **({"selectors": selectors, "effective_environment": {k:env[k] for k in ("PATH", "LD_LIBRARY_PATH", "LIBVA_DRIVER_NAME", "LIBVA_DRIVERS_PATH", "VK_ICD_FILENAMES") if k in env}} if version2 else {})},
+            **({"provenance": provenance or {}, "native_loader_probes": probes,
+                "native_dependencies": native_dependencies,
+                "icd": identity(env["VK_ICD_FILENAMES"]) if env.get("VK_ICD_FILENAMES") else None} if version2 else {}),
             "source": source_identity(), "binary": identity(binary),
-            "libraries": loaded_libraries(binary),
-            "dependencies": dependency_identity(binary), "driver_files": driver_identity(),
-            "ffmpeg": {"identity": identity(shutil.which("ffmpeg")), "version": query(["ffmpeg", "-version"])},
-            "ffprobe": {"identity": identity(shutil.which("ffprobe")), "version": query(["ffprobe", "-version"])},
+            "libraries": libraries,
+            "dependencies": dependency_identity(binary, env), "driver_files": drivers,
+            "ffmpeg": {"identity": tools["ffmpeg"], "version": query(["ffmpeg", "-version"], env)},
+            "ffprobe": {"identity": tools["ffprobe"], "version": query(["ffprobe", "-version"], env)},
             "kernel": query(["uname", "-a"]), "rustc": query(["rustc", "-Vv"]),
             "cargo": query(["cargo", "-V"]),
             "packages": query(["rpm", "-q", "mesa-vulkan-drivers", "libva", "intel-media-driver", "libdrm"]),
             "gpu": query(["lspci", "-nnk", "-s", "00:02.0"]),
             "render_node": "/dev/dri/renderD128",
             "vaapi": vaapi, "vaapi_profiles": profiles,
-            "vulkan": query(["vulkaninfo", "--summary"]), "vulkan_profile": vulkan_profile}
+            "vulkan": query(["vulkaninfo", "--summary"], env), "vulkan_profile": vulkan_profile}
 
 
 def activate(manifest, binary):
     """Activate only a recorded isolated prefix, then attest actual executables/libs."""
     stack = json.loads(Path(manifest).read_text())
-    if stack.get("schema_version") != 1:
+    if stack.get("schema_version") not in (1, 2):
         raise ValueError("unsupported stack manifest schema")
     prefix = stack["runtime"]["prefix"]
-    if prefix:
+    if stack["schema_version"] == 2:
+        from stack_environment import environment
+        env = environment(prefix, stack["runtime"]["selectors"])
+        os.environ.clear()
+        os.environ.update(env)  # This runner is one disposable process per stack.
+    elif prefix:
         prefix = Path(prefix).resolve(strict=True)
         os.environ["PATH"] = str(prefix / "bin") + os.pathsep + os.environ["PATH"]
         os.environ["LD_LIBRARY_PATH"] = str(prefix / "lib")
@@ -139,7 +200,16 @@ def activate(manifest, binary):
             raise ValueError(f"stack {tool} identity changed")
     if loaded_libraries(binary) != stack["libraries"]:
         raise ValueError("stack loaded libav identity changed")
-    if dependency_identity(binary) != stack["dependencies"] or driver_identity() != stack["driver_files"]:
+    if stack["schema_version"] == 2:
+        if stack.get("icd") != identity(os.environ["VK_ICD_FILENAMES"]):
+            raise ValueError("FAIL SETUP: ICD bytes changed")
+        drivers, probes = capture_drivers(dict(os.environ))
+        dependencies = {record["path"]:record for probe in probes.values() for record in probe["loaded_modules"].values()}
+        if dependencies != stack["native_dependencies"]:
+            raise ValueError("FAIL SETUP: native loader dependency closure changed")
+    else:
+        drivers = driver_identity()
+    if dependency_identity(binary) != stack["dependencies"] or drivers != stack["driver_files"]:
         raise ValueError("stack linked dependency or driver bytes changed")
     if source_identity() != stack["source"]:
         raise ValueError("stack source identity changed; recapture both stacks after fixes")
@@ -192,6 +262,7 @@ def exact_stack_identity(stack):
             "tools": {tool: stack[tool]["identity"]["sha256"] for tool in ("ffmpeg", "ffprobe")},
             "dependencies": {name: value["sha256"] for name, value in stack["dependencies"].items()},
             "driver_files": {name: value["sha256"] for name, value in stack["driver_files"].items()},
+            "native_dependencies": {name: value["sha256"] for name, value in stack.get("native_dependencies", {}).items()},
             "host": {key: stack[key]["stdout"] for key in ("kernel", "packages", "gpu", "rustc", "cargo")},
             "render_node": stack["render_node"], "vulkan_profile": stack["vulkan_profile"]["profiles"]}
 
@@ -207,6 +278,34 @@ def oracle_tiers(log):
         if matches and len(set(matches)) == 1:
             tiers[tier] = matches[0]
     return tiers
+
+
+def exact_byte_proof(prior, fixture, stack_identity, reference_sha256, candidate_sha256):
+    """Reuse inspected bytes, never use an identical SHA to invent semantics.
+
+    The prior candidate must have passed the real semantic oracle under this
+    exact runtime. This shortcut only replaces redundant same-stack decoding.
+    """
+    if reference_sha256 != candidate_sha256 or prior.get("candidate_stack_identity") != stack_identity:
+        return None
+    record = next((r for r in prior.get("differences", []) if r["fixture"] == fixture), None)
+    if (not record or record.get("candidate_output_sha256") != reference_sha256
+            or record.get("classification") not in {"ExpectedExact", "SemanticEquivalent"}
+            or any(record.get("tiers", {}).get(tier) != "PASS" for tier in ("1B", "1C", "2"))):
+        return None
+    evidence = record.get("semantic_oracle") or {}
+    log = Path(evidence.get("log_path", ""))
+    try:
+        if (evidence.get("exit_code") != 0 or "compare_portability_pair_from_env" not in evidence.get("argv", [])
+                or not log.is_file() or digest(log) != evidence.get("log_sha256")):
+            return None
+        tiers = oracle_tiers(log.read_text())
+    except OSError:
+        return None  # Missing retained evidence requires a fresh native oracle.
+    if len(tiers) != 5 or any(tiers.get(tier) != "PASS" for tier in ("1B", "1C", "2")):
+        return None
+    return {"tiers": {"1A": "PASS", "1B": "PASS", "1C": "PASS", "2": "PASS", "3": "MATCH"},
+            "semantic_oracle": evidence}
 
 
 def compare_corpus(run, reference_directory, manifest):
@@ -225,6 +324,8 @@ def compare_corpus(run, reference_directory, manifest):
     if set(reference) != ids or set(candidate) != ids:
         raise ValueError("fixture identities differ between stack runs")
     records = []
+    prior_path = reference_directory / "portability-comparison.json"
+    prior = load(prior_path) if same_stack and prior_path.exists() else {}
     for fixture in manifest["fixtures"]:
         name = fixture["id"]
         before, after = reference[name], candidate[name]
@@ -255,7 +356,15 @@ def compare_corpus(run, reference_directory, manifest):
             records.append(record)
             continue
         paths = [directory / f"{name}-output.mp4" for directory in [reference_directory, run.out]]
-        exact = digest(paths[0]) == digest(paths[1])
+        hashes = [digest(path) for path in paths]
+        exact = hashes[0] == hashes[1]
+        record.update(reference_output_sha256=hashes[0], candidate_output_sha256=hashes[1])
+        proof = exact_byte_proof(prior, name, exact_stack_identity(candidate_stack), *hashes) if same_stack else None
+        if proof is not None and not record["planner_diff"]:
+            records.append({**record, **proof, "whole_file_equal": True,
+                            "classification": "ExpectedExact", "oracle_evidence": "exact-byte identity plus previously executed semantic oracle",
+                            "prior_comparison_sha256": digest(prior_path)})
+            continue
         env = dict(os.environ, ASCIIFLOW_REGRESSION_REFERENCE=str(paths[0]),
                    ASCIIFLOW_REGRESSION_CANDIDATE=str(paths[1]),
                    ASCIIFLOW_PORTABILITY_PQ="1" if fixture["expected"]["classification"] == "HdrPq" and fixture["request"]["dynamic_range"] == "preserve" else "0")
@@ -272,12 +381,14 @@ def compare_corpus(run, reference_directory, manifest):
         semantic = passed if len(tiers) == 5 else None
         record.update(tiers=tiers, whole_file_equal=exact, oracle_command=command["id"],
                       oracle_log_sha256=digest(run.out / command["log"]),
+                      semantic_oracle={"log_path": str(run.out / command["log"]), "log_sha256": digest(run.out / command["log"]),
+                                       "exit_code": command["exit_code"], "argv": command["argv"]},
                       classification=artifact_classification(same_stack, exact, semantic, passed))
         if record["planner_diff"]:
             record["classification"] = "Unresolved"
         records.append(record)
     document = {"schema_version": 1, "mode": "same-stack regression" if same_stack else "cross-stack portability",
-                "source_identity_equal": True, "differences": records}
+                "source_identity_equal": True, "candidate_stack_identity": exact_stack_identity(candidate_stack), "differences": records}
     save(run.out / "portability-comparison.json", document)
     if any(r["classification"] in {"Regression", "Unresolved"} for r in records):
         raise ValueError("portability semantic/eligibility differences remain unresolved; see comparison receipt")

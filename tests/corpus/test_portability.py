@@ -1,9 +1,44 @@
 import unittest
 from copy import deepcopy
-from portability import artifact_classification, capability_diff, exact_stack_identity, oracle_tiers
+import hashlib
+from pathlib import Path
+import tempfile
+from portability import artifact_classification, capability_diff, exact_byte_proof, exact_stack_identity, oracle_tiers
 
 
 class PortabilityControls(unittest.TestCase):
+    def test_byte_proof_requires_executed_semantics_and_exact_runtime(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        log = Path(directory.name) / "oracle.log"
+        text = "".join(f"Tier {tier} identity: PASS\n" for tier in ("1A", "1B", "1C", "2"))
+        text += "Tier 3 identity: DIFFERENT\n"
+        log.write_text(text)
+        prior = {"candidate_stack_identity": "runtime", "differences": [{
+            "fixture": "fixture", "candidate_output_sha256": "bytes",
+            "classification": "SemanticEquivalent", "tiers": {t: "PASS" for t in ("1B", "1C", "2")},
+            "semantic_oracle": {"log_path": str(log), "log_sha256": hashlib.sha256(text.encode()).hexdigest(),
+                                "exit_code": 0, "argv": ["cargo", "test", "compare_portability_pair_from_env"]}}]}
+        self.assertEqual(exact_byte_proof(prior, "fixture", "runtime", "bytes", "bytes")["tiers"]["3"], "MATCH")
+        for name, runtime, reference, candidate in [("other", "runtime", "bytes", "bytes"),
+                ("fixture", "changed-runtime", "bytes", "bytes"), ("fixture", "runtime", "bytes", "changed"),
+                ("fixture", "runtime", "other-bytes", "other-bytes")]:
+            self.assertIsNone(exact_byte_proof(prior, name, runtime, reference, candidate))
+        for classification in ("Regression", "Unresolved"):
+            altered = deepcopy(prior)
+            altered["differences"][0]["classification"] = classification
+            self.assertIsNone(exact_byte_proof(altered, "fixture", "runtime", "bytes", "bytes"))
+        for alteration in ({}, {"exit_code": 1}, {"log_sha256": "changed"}, {"log_path": str(log.parent / "missing.log")}):
+            altered = deepcopy(prior)
+            altered["differences"][0]["semantic_oracle"].update(alteration)
+            if not alteration:
+                altered["differences"][0].pop("semantic_oracle")
+            self.assertIsNone(exact_byte_proof(altered, "fixture", "runtime", "bytes", "bytes"))
+        for state in ("FAIL", None):
+            altered = deepcopy(prior)
+            altered["differences"][0]["tiers"]["1C"] = state
+            self.assertIsNone(exact_byte_proof(altered, "fixture", "runtime", "bytes", "bytes"))
+
     def test_tier3_difference_is_diagnostic_not_missing_semantic_evidence(self):
         log = "".join(f"Tier {tier} identity: PASS\n" for tier in ("1A", "1B", "1C", "2"))
         log += "Tier 3 whole-file SHA-256 bytes (build identity not attested here): DIFFERENT\n"

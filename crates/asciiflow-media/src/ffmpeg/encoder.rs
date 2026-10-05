@@ -1398,6 +1398,19 @@ mod mux_replay;
 #[path = "mux_inbox.rs"]
 mod mux_inbox;
 
+// Flush cadence is a function of written content, never producer scheduling.
+fn mux_flush_threshold_reached(packets: u32, bytes: u64) -> bool {
+    packets >= 64 || bytes >= 8 * 1024 * 1024
+}
+
+#[test]
+fn mux_flush_cadence_does_not_depend_on_queue_occupancy() {
+    assert!(!mux_flush_threshold_reached(0, 0));
+    assert!(!mux_flush_threshold_reached(63, 8 * 1024 * 1024 - 1));
+    assert!(mux_flush_threshold_reached(64, 0));
+    assert!(mux_flush_threshold_reached(0, 8 * 1024 * 1024));
+}
+
 fn run_mux_worker(
     output: MuxOutput,
     inputs: mux_inbox::MuxInputs<'_>,
@@ -1601,7 +1614,7 @@ fn run_mux_worker(
                 let flush_allowed = intermediate_flush;
                 #[cfg(not(all(test, feature = "mux-qualification")))]
                 let flush_allowed = true;
-                if flush_allowed && (buffered_packets >= 64 || buffered_bytes >= 8 * 1024 * 1024) {
+                if flush_allowed && mux_flush_threshold_reached(buffered_packets, buffered_bytes) {
                     #[cfg(feature = "mux-qualification")]
                     if let Some(trace) = &trace {
                         let dts = last_dts

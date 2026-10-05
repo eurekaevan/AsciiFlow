@@ -2,6 +2,27 @@
 
 Toolchain/driver changes use the [stack-scoped portability workflow](portability-testing.md).
 
+## Stage 5.4C2 expanded portability matrix (under construction)
+
+The five-stack matrix is specified in the
+[matrix report](stage5.4c2-expanded-portability-matrix.md) and
+[`c2-matrix.json`](../tests/portability/c2-matrix.json). FFmpeg 8.1.3 is the
+canonical reference; the controlled variants are FFmpeg 8.1.2 and 8.1.1,
+ANV 26.0.3 against 26.2.3, and iHD 25.4.6 against 26.1.5. These runs are
+exploratory until their evidence is reviewed and the
+[qualified-stack registry](../tests/portability/qualified-stacks.json) is
+updated. Native driver probes reporting all capabilities ready are exploratory
+observations, not qualification evidence by themselves.
+
+Use the stack manifest v2 evidence of the actual libraries loaded by the
+calling process, including `LD_DEBUG` loader evidence captured during
+initialization. Alternate toolchains belong under a new target prefix and run
+with a stack-scoped child environment; do not install them into host locations
+or use global loader/driver configuration. Existing canonical artifacts remain
+exact-stack scoped. The kernel edge is `UnavailableSafely`: checking another
+installed kernel requires rebooting the active session, and reboot is not
+authorized. The matrix remains unsealed; no Stage D status is implied.
+
 Stage 5.4C-1A mux closure uses [the unchanged strict packet-order gate](stage5.4c1a-deterministic-mux.md).
 Historical A/B captures are immutable and can be materialized with
 `python3 tests/portability/mux-determinism.py materialize-captures --output target/mux-captures`.

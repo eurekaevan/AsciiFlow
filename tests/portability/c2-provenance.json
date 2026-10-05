@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "host": "Fedora 44 packages; exact RPM NEVRA, actual dependency bytes and kernel are captured per stack",
+  "ffmpeg-8.1.1": {
+    "source_url": "https://ffmpeg.org/releases/ffmpeg-8.1.1.tar.xz",
+    "sha256": "b6863adde98898f42602017462871b5f6333e65aec803fdd7a6308639c52edf3",
+    "signature_url": "https://ffmpeg.org/releases/ffmpeg-8.1.1.tar.xz.asc",
+    "verified_release_key": "FCF986EA15E6E293A5644F10B4322F04D67658D8",
+    "recipe": "tests/portability/prepare-c2-toolchains.sh",
+    "configuration": "Recorded by the selected ffmpeg -version; shared, GPL/libx264/libdav1d/VAAPI/libdrm, disable-autodetect"
+  },
+  "ffmpeg-8.1.2": {"recipe": "tests/portability/build-ffmpeg-8.1.2.sh", "configuration": "Recorded by the selected ffmpeg -version"},
+  "mesa-26.0.3": {
+    "source_url": "https://mirror.cs.princeton.edu/pub/mirrors/fedora/linux/releases/44/Everything/x86_64/os/Packages/m/mesa-vulkan-drivers-26.0.3-4.fc44.x86_64.rpm",
+    "sha256": "5448b45070cf942b1a1abf4e94ac49662bad7e3dabde48c0d48a3f23627e9063",
+    "nevra": "mesa-vulkan-drivers-26.0.3-4.fc44.x86_64",
+    "installation": "rpm2cpio extraction only; rpmkeys digests signatures OK"
+  },
+  "ihd-25.4.6": {
+    "source_url": "https://mirrors.ocf.berkeley.edu/rpmfusion/nonfree/fedora/releases/44/Everything/x86_64/os/Packages/i/intel-media-driver-25.4.6-1.fc44.x86_64.rpm",
+    "sha256": "045d18bf328e17e140e2953c1e6ac38ee595144a642b0cb68e64d2f215ac6527",
+    "nevra": "intel-media-driver-25.4.6-1.fc44.x86_64",
+    "installation": "rpm2cpio extraction only; rpmkeys digests signatures OK"
+  }
+}
