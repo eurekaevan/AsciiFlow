@@ -50,7 +50,7 @@ impl fmt::Display for PipelineStage {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct PipelineError {
     pub stage: PipelineStage,
     pub operation: &'static str,
@@ -83,7 +83,7 @@ impl StdError for PipelineError {
     }
 }
 
-#[derive(Debug, Error)]
+#[derive(Clone, Debug, Error)]
 pub enum Error {
     #[error("color semantics: {0}")]
     Color(#[from] crate::ColorError),

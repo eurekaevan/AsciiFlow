@@ -419,3 +419,30 @@ fn compare_pq_pair_from_env() {
     println!("{}", result.report());
     assert!(result.passes(), "{}", result.report());
 }
+
+/// Portability uses the established comparator, including its narrow H.264
+/// rule. The historical PQ strict test above remains unchanged.
+#[test]
+#[ignore = "explicit same-source portability pair; optional PQ and exact-stack flags"]
+fn compare_portability_pair_from_env() {
+    let reference = std::env::var_os("ASCIIFLOW_REGRESSION_REFERENCE").unwrap();
+    let candidate = std::env::var_os("ASCIIFLOW_REGRESSION_CANDIDATE").unwrap();
+    let pq = std::env::var("ASCIIFLOW_PORTABILITY_PQ").as_deref() == Ok("1");
+    let inspect = if pq {
+        common::media_regression::inspect_pq
+    } else {
+        common::media_regression::inspect
+    };
+    let strict = std::env::var("ASCIIFLOW_REGRESSION_EXACT_BUILD").as_deref() == Ok("attested");
+    let result = compare(
+        &inspect(Path::new(&reference)).unwrap(),
+        &inspect(Path::new(&candidate)).unwrap(),
+        ComparisonPolicy {
+            require_raw_packet_identity: strict,
+            require_whole_file_identity: strict,
+            ..ComparisonPolicy::default()
+        },
+    );
+    println!("{}", result.report());
+    assert!(result.passes(), "{}", result.report());
+}

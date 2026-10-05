@@ -186,10 +186,16 @@ class RealMediaMixin:
         if route == "portable":
             options += ["--backend", "cpu", "--decode", "software", "--encode", "software",
                         "--vaapi-vulkan-input-interop", "off", "--vaapi-vulkan-output-interop", "off"]
-        else:
+        elif route == "hardware":
             options += ["--backend", "vulkan", "--decode", "vaapi", "--encode", "vaapi",
                         "--vulkan-mapping", "gpu", "--vaapi-vulkan-input-interop", "on",
                         "--vaapi-vulkan-output-interop", "on"]
+        elif route == "auto":
+            options += ["--backend", "auto", "--decode", "auto", "--encode", "auto",
+                        "--vulkan-mapping", "gpu", "--vaapi-vulkan-input-interop", "auto",
+                        "--vaapi-vulkan-output-interop", "auto"]
+        else:
+            raise ValueError(f"unknown corpus route: {route}")
         return route, options
 
     @staticmethod
@@ -206,7 +212,7 @@ class RealMediaMixin:
 
     def fixture(self, fixture):
         # Keep established retained fixtures on their existing execution surface.
-        if not fixture["source"].get("generation_group"):
+        if not fixture["source"].get("generation_group") and not getattr(self.args, "stack", None):
             return super().fixture(fixture)
         name, expected = fixture["id"], fixture["expected"]
         command_start = len(self.commands)
@@ -222,7 +228,7 @@ class RealMediaMixin:
         evidence = {"input_sha256": digest(path), "input_probe": source_identity,
                     "candidate_status": expected["status"], "blocker": expected.get("blocker"),
                     "expected_rejection": not positive, "route": route}
-        if route == "hardware" and self.skip_hardware and (positive or execution_failure or expected["failure_stage"] != "InputProbe"):
+        if route in ("hardware", "auto") and self.skip_hardware and (positive or execution_failure or expected["failure_stage"] != "InputProbe"):
             return {**evidence, "skipped": True, "reason": self.skip_hardware,
                     "actual_compatibility_outcome": "SKIPPED",
                     "commands": self.commands[command_start:]}

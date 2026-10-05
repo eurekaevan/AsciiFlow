@@ -2822,6 +2822,48 @@ mod tests {
     }
 
     #[test]
+    fn external_layout_validation_uses_runtime_pitch_offset_and_modifier() {
+        use asciiflow_core::PixelFormat;
+        for (format, bytes, kinds) in [
+            (
+                PixelFormat::Nv12,
+                1,
+                [ExternalPlaneKind::Y, ExternalPlaneKind::Uv],
+            ),
+            (
+                PixelFormat::P010Le,
+                2,
+                [ExternalPlaneKind::P010Y, ExternalPlaneKind::P010Uv],
+            ),
+        ] {
+            let desc = match format {
+                PixelFormat::Nv12 => FrameDesc::host_nv12(64, 64, ColorSpace::default()),
+                PixelFormat::P010Le => FrameDesc::host_p010_le(64, 64, ColorSpace::default()),
+            }
+            .unwrap();
+            for (pitch, offset, modifier) in [(64 * bytes, 0, 9), (256, 512, 1234), (512, 4096, 0)]
+            {
+                let mut images = [
+                    plane(kinds[0], 64, 64, offset, 131_072),
+                    plane(kinds[1], 32, 32, offset + pitch * 64, 131_072),
+                ];
+                for image in &mut images {
+                    image.row_pitch = pitch;
+                    image.modifier = modifier;
+                }
+                validate_external_planes(
+                    &desc,
+                    &images,
+                    ExternalImageAccess::Write,
+                    "output",
+                    format,
+                )
+                .unwrap();
+            }
+        }
+    }
+
+    #[test]
     fn external_nv12_planes_require_exact_geometry_and_bounded_ranges() {
         let desc = FrameDesc::host_nv12(1_920, 1_080, ColorSpace::default()).unwrap();
         let object_size = 3_194_880;

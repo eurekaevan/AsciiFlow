@@ -151,6 +151,7 @@ pub fn run_interop_pipeline_with_cancellation(
                     }
                 }
             }
+            drop(decoded_tx);
             if !cancel.is_cancelled()
                 && let Err(error) = FrameSource::finish(decoder)
             {
@@ -450,6 +451,7 @@ fn run_hardware_output_pipeline(
                     }
                 }
             }
+            drop(decoded_tx);
             if !cancel.is_cancelled()
                 && let Err(error) = FrameSource::finish(decoder)
             {

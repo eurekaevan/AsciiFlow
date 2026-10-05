@@ -10,6 +10,20 @@ use std::{
     time::Duration,
 };
 
+/// Clonable cross-thread diagnostic, without flattening the originating stage.
+#[derive(Clone)]
+pub(crate) struct MuxFailure(Error);
+
+impl MuxFailure {
+    pub(crate) fn capture(error: &Error) -> Self {
+        Self(error.clone())
+    }
+
+    pub(crate) fn error(&self) -> Error {
+        self.0.clone()
+    }
+}
+
 const SEND_POLL: Duration = Duration::from_millis(20);
 
 pub(crate) struct AudioInputStream {
@@ -180,6 +194,10 @@ pub(crate) enum MuxMessage {
     FailVideoAfter(u64),
     #[cfg(test)]
     FailTrailer,
+    #[cfg(all(test, feature = "mux-qualification"))]
+    IntermediateFlush(bool),
+    #[cfg(all(test, feature = "mux-qualification"))]
+    InterleaveDelta(i64),
     Packet {
         packet: Packet,
         input_index: usize,
@@ -199,7 +217,11 @@ pub(crate) enum MuxMessage {
 pub struct AudioPacketSender {
     sender: Sender<MuxMessage>,
     cancellation: CancellationToken,
-    failure: Arc<Mutex<Option<String>>>,
+    failure: Arc<Mutex<Option<MuxFailure>>>,
+    pub(crate) origin_sender: Option<Sender<MuxMessage>>,
+    pub(crate) stop: Option<CancellationToken>,
+    #[cfg(feature = "mux-qualification")]
+    pub(crate) trace: Option<super::mux_trace::MuxTrace>,
 }
 
 impl AudioPacketSender {
@@ -215,6 +237,13 @@ impl AudioPacketSender {
         if self.cancellation.is_cancelled() {
             return Err(Error::Cancelled);
         }
+        if self
+            .stop
+            .as_ref()
+            .is_some_and(CancellationToken::is_cancelled)
+        {
+            return Err(Error::Cancelled);
+        }
         Ok(())
     }
     pub(crate) fn finish(&self) -> Result<()> {
@@ -222,17 +251,24 @@ impl AudioPacketSender {
     }
 
     pub(crate) fn video_origin(&self, pts: i64, time_base: ffi::AVRational) -> Result<()> {
-        self.send_message(MuxMessage::VideoOrigin { pts, time_base })
+        self.send_on(
+            self.origin_sender.as_ref().unwrap_or(&self.sender),
+            MuxMessage::VideoOrigin { pts, time_base },
+        )
     }
     pub(crate) fn new(
         sender: Sender<MuxMessage>,
         cancellation: CancellationToken,
-        failure: Arc<Mutex<Option<String>>>,
+        failure: Arc<Mutex<Option<MuxFailure>>>,
     ) -> Self {
         Self {
             sender,
             cancellation,
             failure,
+            origin_sender: None,
+            stop: None,
+            #[cfg(feature = "mux-qualification")]
+            trace: None,
         }
     }
 
@@ -242,6 +278,7 @@ impl AudioPacketSender {
         input_index: usize,
         input_time_base: ffi::AVRational,
     ) -> Result<()> {
+        self.check_active()?;
         if packet.size() > 16 * 1024 * 1024 {
             return Err(Error::pipeline_message(
                 PipelineStage::MuxRuntime,
@@ -264,6 +301,16 @@ impl AudioPacketSender {
                 format!("audio stream #{input_index} packet has missing PTS or DTS"),
             ));
         }
+        #[cfg(feature = "mux-qualification")]
+        if let Some(trace) = &self.trace {
+            trace.packet(
+                "A-produced",
+                &mut packet,
+                input_index,
+                true,
+                input_time_base,
+            )?;
+        }
         self.send_message(MuxMessage::Packet {
             packet,
             input_index,
@@ -272,29 +319,86 @@ impl AudioPacketSender {
         })
     }
 
-    fn send_message(&self, mut message: MuxMessage) -> Result<()> {
+    fn send_message(&self, message: MuxMessage) -> Result<()> {
+        self.send_on(&self.sender, message)
+    }
+
+    fn send_on(&self, channel: &Sender<MuxMessage>, mut message: MuxMessage) -> Result<()> {
+        #[cfg(feature = "mux-qualification")]
+        let accepted = if self.trace.is_some()
+            && let MuxMessage::Packet {
+                packet,
+                input_index,
+                input_time_base,
+                audio,
+            } = &mut message
+        {
+            Some((
+                *input_index,
+                *audio,
+                super::mux_trace::MuxTrace::snapshot(
+                    packet,
+                    *input_index,
+                    *audio,
+                    *input_time_base,
+                )?,
+            ))
+        } else {
+            None
+        };
+        #[cfg(feature = "mux-qualification")]
+        if let Some(trace) = &self.trace
+            && let MuxMessage::Packet {
+                packet,
+                input_index,
+                input_time_base,
+                audio,
+            } = &mut message
+        {
+            trace.packet("B-enqueue", packet, *input_index, *audio, *input_time_base)?;
+        }
         loop {
             self.check_active()?;
-            match self.sender.send_timeout(message, SEND_POLL) {
-                Ok(()) => return Ok(()),
+            match channel.send_timeout(message, SEND_POLL) {
+                Ok(()) => {
+                    #[cfg(feature = "mux-qualification")]
+                    if let (Some(trace), Some((stream, audio, fields))) = (&self.trace, accepted) {
+                        trace.accepted("B-accepted", stream, audio, fields)?;
+                    }
+                    return Ok(());
+                }
                 Err(SendTimeoutError::Timeout(pending)) => message = pending,
-                Err(SendTimeoutError::Disconnected(_)) => return Err(self.mux_failure()),
+                Err(SendTimeoutError::Disconnected(_)) => {
+                    self.check_active()?;
+                    return Err(self.mux_failure());
+                }
             }
         }
     }
 
     fn mux_failure(&self) -> Error {
-        let message = self
+        let failure = self
             .failure
             .lock()
             .expect("mux failure lock poisoned")
-            .clone()
-            .unwrap_or_else(|| "mux worker stopped before accepting the packet".into());
-        Error::pipeline_message(
-            PipelineStage::MuxRuntime,
-            "write interleaved packet",
-            message,
+            .clone();
+        failure.map_or_else(
+            || {
+                Error::pipeline_message(
+                    PipelineStage::MuxRuntime,
+                    "write interleaved packet",
+                    "mux worker stopped before accepting the packet",
+                )
+            },
+            |failure| failure.error(),
         )
+    }
+
+    pub(crate) fn publish_failure(&self, error: &Error) {
+        let mut failure = self.failure.lock().expect("mux failure lock poisoned");
+        if failure.is_none() && !error.is_cancelled() {
+            *failure = Some(MuxFailure::capture(error));
+        }
     }
 }
 

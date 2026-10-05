@@ -232,6 +232,8 @@ class Run:
                     "packages": query(["rpm", "-q", "ffmpeg", "ffmpeg-libs", "mesa-vulkan-drivers", "intel-media-driver"]),
                     "hardware_skip": self.skip_hardware}
         save(self.out / "environment.json", document)
+        if getattr(self.args, "stack", None):
+            save(self.out / "stack.json", self.args.stack_context)
 
     def validate_source_recipe(self, fixture):
         source = fixture["source"]
@@ -512,9 +514,16 @@ def main():
     parser.add_argument("--generated-inputs", type=Path, help="read-only reuse of already generated inputs, still checked against exact size/SHA and generator identity")
     parser.add_argument("--retained", action="store_true", help="all 17 retained production paths, three runs each; hardware required")
     parser.add_argument("--manifest", type=Path, default=ROOT / "tests/corpus/representative-v1.json")
+    parser.add_argument("--stack", type=Path, help="attested stack manifest; activate its isolated runtime prefix without changing baselines")
+    parser.add_argument("--reference-run", type=Path, help="compare the same corpus on a captured stack; requires --stack")
     parser.add_argument("--watchdog-seconds", type=float, default=600, help="per-command deadline; timeouts never count as expected rejection")
     parser.add_argument("--generation-watchdog-seconds", type=float, default=2400, help="bounded setup deadline for expensive retained lossless generation")
     args = parser.parse_args()
+    if args.reference_run and not args.stack:
+        parser.error("--reference-run requires an attested --stack")
+    if args.stack:
+        from portability import activate
+        args.stack_context = activate(args.stack, args.binary.resolve())
     if args.mode == "quick" and args.retained:
         parser.error("--retained requires full or hardware mode so the C-1/C-2B prerequisites run")
     if args.retained and args.device != "/dev/dri/renderD128":
@@ -522,7 +531,7 @@ def main():
     if any(not math.isfinite(value) or value <= 0 for value in
            (args.watchdog_seconds, args.generation_watchdog_seconds)):
         parser.error("watchdog deadlines must be positive")
-    if args.manifest.name == "real-media-v1.json":
+    if args.manifest.name == "real-media-v1.json" or args.stack:
         from real_media import RealMediaMixin
         class RealRun(RealMediaMixin, Run):
             pass
@@ -546,6 +555,10 @@ def main():
     save(run.out / "pairwise-coverage.json", matrix.coverage(load(ROOT / "tests/support/production-support-v1.json")))
     for fixture in sorted(manifest["fixtures"], key=lambda x: x["id"]):
         run.gate(fixture["id"], "classification", lambda f=fixture: run.fixture(f))
+    if args.reference_run:
+        from portability import compare_corpus
+        run.gate("portability-stack-comparison", "media oracle",
+                 lambda: compare_corpus(run, args.reference_run, manifest))
     run.gate("media-oracle-controls", "media oracle", lambda: run.checked("media-oracle-controls", ["cargo", "test", "-p", "asciiflow-media", "--test", "media_regression"]))
     if args.mode != "quick":
         run.gate("c1-cpu-reference", "runtime", lambda: run.checked("c1", ["bash", "scripts/qualify-tone-map-cpu.sh", run.out / "c1"]))

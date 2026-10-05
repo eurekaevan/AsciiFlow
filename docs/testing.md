@@ -1,5 +1,27 @@
 # Regression testing
 
+Toolchain/driver changes use the [stack-scoped portability workflow](portability-testing.md).
+
+Stage 5.4C-1A mux closure uses [the unchanged strict packet-order gate](stage5.4c1a-deterministic-mux.md).
+Historical A/B captures are immutable and can be materialized with
+`python3 tests/portability/mux-determinism.py materialize-captures --output target/mux-captures`.
+Mux qualification requires 100 arrival-perturbed repetitions, the 30k-packet
+stress, strict Tier 1A/1B/1C/2 and same-stack Tier 3, and 10 full production
+repetitions. Never substitute per-stream equivalence for global packet-order
+identity or remove bounded intermediate flushes. After a fix, rerun the 17×3
+retained pack and both same-source 24-case stacks. The audio reader reopens the
+same immutable local input; no audio decode/transcode is introduced. Report RSS
+separately from compressed-packet bounds and MP4 sample-table growth. Traces
+are opt-in and absent from the normal build. Retain input/generator identity,
+native packet capture, commands, loaded-stack identity, write/flush decision
+hashes, raw traces, output hashes, oracle reports and lifecycle evidence.
+
+Capture both environments against identical source/lockfile/fixtures, run the
+portability core set through the existing corpus runner, and classify every
+difference before promoting stack evidence. Same-stack deterministic gates
+remain strict; cross-stack SHA drift is diagnostic, never sufficient for either
+regression or success. The canonical retained baseline is not overwritten.
+
 ## Stage 5.4B real-media compatibility and evidence retention
 
 Use the [real-media corpus](compatibility-corpus.md), its

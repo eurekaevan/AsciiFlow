@@ -282,7 +282,8 @@ Compressed audio never becomes a Core frame. Core contains only portable audio
 stream facts, policy, plan, and counters. The media crate retains native codec
 parameters, moves reference-counted `AVPacket` ownership out of the demux
 scratch packet, and sends selected packets through a bounded queue to the mux
-owner.
+owner. Selected audio uses an independent demux reader of the same immutable
+local input; video decoding cannot be blocked by audio waiting for a video head.
 Stage 2 downloads/uploads within `asciiflow-media`. Stage 3A uses a specialized
 Media/Interop pipeline carrying `VaapiDecodedFrame` outside Core, then returns
 the processed result through the selected Host NV12 or P010LE contract. The
@@ -604,9 +605,16 @@ that distinction explicit.
   incompatible layer topologies are rejected rather than silently reduced.
 - Compatible compressed audio streams can be copied into MP4. One mux worker
   owns the output `AVFormatContext` and accepts both encoded video packets and
-  passthrough audio packets through a bounded queue. It rescales timestamps
-  with each explicit input/output stream mapping and performs every
-  `av_interleaved_write_frame` call. Audio is never decoded or transcoded.
+  passthrough audio packets through two capacity-16 FIFOs, with one retained
+  head per producer. The owner compares checked, rescaled output DTS, then PTS,
+  then output stream index using exact rational timestamp comparison. Audio
+  retains original demux order across selected tracks; this is not a global
+  per-track sort. Explicit interleaver flush remains at 64 written packets or
+  8 MiB, and at final EOF; arrival time and queue occupancy never choose writes
+  or flushes. Both explicit producer EOFs precede trailer writing. Decoder
+  channels close before audio-reader joins so buffered GPU output can drain.
+  Short polling, AVIO interruption, and first typed failure propagation cover
+  cancellation and producer failure. Audio is never decoded or transcoded.
 - Host NV12 remains the default Core/reference contract. Host P010LE has
   CPU/Vulkan processing parity and explicit production HEVC Main10/AV1 10-bit output;
   qualified full input/output interop remains codec-neutral and does not make
@@ -688,3 +696,10 @@ DMA-BUF import and Stage 3B adds encoder-owned writable DMA-BUF import. Neither
 stage adds a transfer queue, timeline semaphore, sync-file bridge, or direct
 image shader access. Any later work must preserve Host NV12 and the CPU backend
 as usable reference boundaries rather than silently replacing them.
+
+Toolchain portability is a qualification layer, not another production backend.
+[P0/P1/P2/P3](portability-testing.md) distinguish environment identity, actual
+pipeline eligibility, media correctness and exact stack-scoped artifacts.
+The corpus runner activates an attested isolated libav prefix and reuses the
+existing semantic comparators. Runtime descriptor pitches/offsets/modifiers
+remain authoritative; historical layouts are evidence, never configuration.

@@ -206,6 +206,7 @@ impl Pipeline {
                         }
                     }
                 }
+                drop(decoded_tx);
                 if !cancel.is_cancelled()
                     && let Err(error) = source.finish()
                 {

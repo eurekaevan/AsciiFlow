@@ -1,0 +1,33 @@
+#!/usr/bin/env python3
+"""Capture an environment or diff its structured capability evidence, not run media."""
+import argparse
+import json
+from pathlib import Path
+import sys
+
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "corpus"))
+from portability import capability_diff, capture
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    sub = parser.add_subparsers(dest="operation", required=True)
+    current = sub.add_parser("capture")
+    current.add_argument("--stack-id", required=True)
+    current.add_argument("--binary", type=Path, required=True)
+    current.add_argument("--prefix", type=Path)
+    diff = sub.add_parser("diff")
+    diff.add_argument("reference", type=Path)
+    diff.add_argument("candidate", type=Path)
+    args = parser.parse_args()
+    if args.operation == "capture":
+        document = capture(args.stack_id, args.binary, args.prefix)
+    else:
+        document = {"schema_version": 1, "differences": capability_diff(
+            json.loads(args.reference.read_text()), json.loads(args.candidate.read_text()))}
+    print(json.dumps(document, indent=2, sort_keys=True))
+
+
+if __name__ == "__main__":
+    main()

@@ -1,4 +1,5 @@
 mod audio;
+mod audio_reader;
 mod codec;
 mod decoder;
 mod encoder;
@@ -6,6 +7,8 @@ mod ffi;
 mod frame;
 mod hwdevice;
 mod hwframes;
+#[cfg(feature = "mux-qualification")]
+mod mux_trace;
 mod packet;
 mod vaapi;
 

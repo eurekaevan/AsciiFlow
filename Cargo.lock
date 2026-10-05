@@ -126,6 +126,7 @@ dependencies = [
  "crossbeam-channel",
  "ffmpeg-sys-next",
  "libc",
+ "serde_json",
  "tracing",
 ]
 

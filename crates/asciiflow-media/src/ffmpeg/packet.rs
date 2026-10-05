@@ -24,6 +24,10 @@ impl Packet {
     pub(crate) fn size(&self) -> u64 {
         unsafe { (*self.pointer.as_ptr()).size.max(0) as u64 }
     }
+    #[cfg(all(test, feature = "mux-qualification"))]
+    pub(crate) fn pointer_for_replay(&self) -> *const ffi::AVPacket {
+        self.pointer.as_ptr()
+    }
 }
 impl Drop for Packet {
     fn drop(&mut self) {

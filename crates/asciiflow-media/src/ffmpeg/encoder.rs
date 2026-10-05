@@ -1,5 +1,5 @@
 use super::{
-    audio::{AudioOutputTemplate, AudioPacketSender, MuxMessage},
+    audio::{AudioOutputTemplate, AudioPacketSender, MuxFailure, MuxMessage},
     codec::{again, check, ffmpeg_error},
     ffi,
     frame::Frame,
@@ -23,7 +23,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-const MUX_CHANNEL_CAPACITY: usize = 64;
+const MUX_CHANNEL_CAPACITY: usize = 16;
 const MUX_POLL: Duration = Duration::from_millis(20);
 
 #[cfg(test)]
@@ -48,11 +48,14 @@ pub struct Encoder {
     finished: bool,
     finish_attempted: bool,
     mux_sender: Sender<MuxMessage>,
+    audio_sender: Sender<MuxMessage>,
     mux_thread: Option<JoinHandle<Result<()>>>,
-    mux_failure: Arc<Mutex<Option<String>>>,
+    mux_failure: Arc<Mutex<Option<MuxFailure>>>,
     mux_stats: Arc<Mutex<MuxStats>>,
     mux_stop: CancellationToken,
     cancellation: CancellationToken,
+    #[cfg(feature = "mux-qualification")]
+    trace: Option<super::mux_trace::MuxTrace>,
     #[cfg(feature = "encode-characterization")]
     submitted_total: u64,
     #[cfg(feature = "encode-characterization")]
@@ -735,6 +738,7 @@ impl Encoder {
         );
         let format = format_guard.take();
         let (mux_sender, mux_receiver) = bounded(MUX_CHANNEL_CAPACITY);
+        let (audio_sender, audio_receiver) = bounded(MUX_CHANNEL_CAPACITY);
         let mux_failure = Arc::new(Mutex::new(None));
         let mux_stats = Arc::new(Mutex::new(MuxStats::default()));
         let mux_stop = CancellationToken::new();
@@ -748,22 +752,44 @@ impl Encoder {
         let worker_stats = mux_stats.clone();
         let worker_stop = mux_stop.clone();
         let worker_cancellation = cancellation.clone();
+        #[cfg(feature = "mux-qualification")]
+        let trace = super::mux_trace::MuxTrace::open()?;
+        #[cfg(feature = "mux-qualification")]
+        let worker_trace = trace.clone();
         let mux_thread = std::thread::Builder::new()
             .name("asciiflow-mux".into())
             .spawn(move || {
                 let result = run_mux_worker(
                     output,
-                    &mux_receiver,
+                    mux_inbox::MuxInputs {
+                        video: &mux_receiver,
+                        audio: Some(&audio_receiver),
+                    },
                     worker_stats,
                     worker_failure.clone(),
                     worker_stop,
                     worker_cancellation,
-                );
+                    #[cfg(feature = "mux-qualification")]
+                    worker_trace,
+                )
+                .map_err(|error| {
+                    if error.is_cancelled() {
+                        error
+                    } else {
+                        Error::pipeline(
+                            PipelineStage::MuxRuntime,
+                            "write interleaved packet",
+                            error,
+                        )
+                    }
+                });
                 if let Err(error) = &result
                     && !error.is_cancelled()
                 {
-                    *worker_failure.lock().expect("mux failure lock poisoned") =
-                        Some(error.to_string());
+                    worker_failure
+                        .lock()
+                        .expect("mux failure lock poisoned")
+                        .get_or_insert_with(|| MuxFailure::capture(error));
                 }
                 result
             })
@@ -791,11 +817,14 @@ impl Encoder {
             finished: false,
             finish_attempted: false,
             mux_sender,
+            audio_sender,
             mux_thread: Some(mux_thread),
             mux_failure,
             mux_stats,
             mux_stop,
             cancellation,
+            #[cfg(feature = "mux-qualification")]
+            trace,
             #[cfg(feature = "encode-characterization")]
             submitted_total: 0,
             #[cfg(feature = "encode-characterization")]
@@ -809,6 +838,7 @@ impl Encoder {
     fn drain_packets(&mut self) -> Result<usize> {
         let mut received = 0;
         loop {
+            self.check_mux_active()?;
             #[cfg(test)]
             if self.inject_receive_failure {
                 self.inject_receive_failure = false;
@@ -839,13 +869,6 @@ impl Encoder {
                     result,
                 ));
             }
-            if self.packet.size() > 16 * 1024 * 1024 {
-                return Err(Error::pipeline_message(
-                    PipelineStage::MuxRuntime,
-                    "validate video packet size",
-                    "compressed packet exceeds the 16 MiB mux limit",
-                ));
-            }
             received += 1;
             #[cfg(feature = "encode-characterization")]
             {
@@ -869,6 +892,16 @@ impl Encoder {
             }
             let mut packet = Packet::new()?;
             packet.take_from(&mut self.packet);
+            #[cfg(feature = "mux-qualification")]
+            if let Some(trace) = &self.trace {
+                trace.packet(
+                    "A-produced",
+                    &mut packet,
+                    self.video_stream_index as usize,
+                    false,
+                    self.video_time_base,
+                )?;
+            }
             self.send_mux_message(MuxMessage::Packet {
                 packet,
                 input_index: self.video_stream_index as usize,
@@ -879,22 +912,76 @@ impl Encoder {
     }
 
     pub fn audio_packet_sender(&self) -> AudioPacketSender {
-        AudioPacketSender::new(
-            self.mux_sender.clone(),
+        #[allow(unused_mut)]
+        let mut sender = AudioPacketSender::new(
+            self.audio_sender.clone(),
             self.cancellation.clone(),
             self.mux_failure.clone(),
-        )
+        );
+        sender.origin_sender = Some(self.mux_sender.clone());
+        #[cfg(feature = "mux-qualification")]
+        {
+            sender.trace = self.trace.clone();
+        }
+        sender
     }
 
     fn send_mux_message(&self, mut message: MuxMessage) -> Result<()> {
+        self.check_mux_active()?;
+        // Enforce the limit before allocating channel backlog, not merely
+        // when the owner eventually selects this packet for writing.
+        if let MuxMessage::Packet { packet, .. } = &message
+            && packet.size() > 16 * 1024 * 1024
+        {
+            return Err(Error::pipeline_message(
+                PipelineStage::MuxRuntime,
+                "validate packet size",
+                "compressed packet exceeds the 16 MiB mux limit",
+            ));
+        }
+        #[cfg(feature = "mux-qualification")]
+        let accepted = if self.trace.is_some()
+            && let MuxMessage::Packet {
+                packet,
+                input_index,
+                input_time_base,
+                audio,
+            } = &mut message
+        {
+            Some((
+                *input_index,
+                *audio,
+                super::mux_trace::MuxTrace::snapshot(
+                    packet,
+                    *input_index,
+                    *audio,
+                    *input_time_base,
+                )?,
+            ))
+        } else {
+            None
+        };
+        #[cfg(feature = "mux-qualification")]
+        if let Some(trace) = &self.trace
+            && let MuxMessage::Packet {
+                packet,
+                input_index,
+                input_time_base,
+                audio,
+            } = &mut message
+        {
+            trace.packet("B-enqueue", packet, *input_index, *audio, *input_time_base)?;
+        }
         #[cfg(feature = "encode-characterization")]
         let send_started = Instant::now();
         loop {
-            if self.cancellation.is_cancelled() {
-                return Err(Error::Cancelled);
-            }
+            self.check_mux_active()?;
             match self.mux_sender.send_timeout(message, MUX_POLL) {
                 Ok(()) => {
+                    #[cfg(feature = "mux-qualification")]
+                    if let (Some(trace), Some((stream, audio, fields))) = (&self.trace, accepted) {
+                        trace.accepted("B-accepted", stream, audio, fields)?;
+                    }
                     #[cfg(feature = "encode-characterization")]
                     {
                         let send_wall = send_started.elapsed();
@@ -907,22 +994,52 @@ impl Encoder {
                     return Ok(());
                 }
                 Err(SendTimeoutError::Timeout(pending)) => message = pending,
-                Err(SendTimeoutError::Disconnected(_)) => return Err(self.current_mux_failure()),
+                Err(SendTimeoutError::Disconnected(_)) => {
+                    if self
+                        .mux_failure
+                        .lock()
+                        .expect("mux failure lock poisoned")
+                        .is_none()
+                        && self.cancellation.is_cancelled()
+                    {
+                        return Err(Error::Cancelled);
+                    }
+                    return Err(self.current_mux_failure());
+                }
             }
         }
     }
 
-    fn current_mux_failure(&self) -> Error {
-        let message = self
+    fn check_mux_active(&self) -> Result<()> {
+        if self
             .mux_failure
             .lock()
             .expect("mux failure lock poisoned")
-            .clone()
-            .unwrap_or_else(|| "mux worker stopped unexpectedly".into());
-        Error::pipeline_message(
-            PipelineStage::MuxRuntime,
-            "write interleaved packet",
-            message,
+            .is_some()
+        {
+            return Err(self.current_mux_failure());
+        }
+        if self.cancellation.is_cancelled() {
+            return Err(Error::Cancelled);
+        }
+        Ok(())
+    }
+
+    fn current_mux_failure(&self) -> Error {
+        let failure = self
+            .mux_failure
+            .lock()
+            .expect("mux failure lock poisoned")
+            .clone();
+        failure.map_or_else(
+            || {
+                Error::pipeline_message(
+                    PipelineStage::MuxRuntime,
+                    "write interleaved packet",
+                    "mux worker stopped unexpectedly",
+                )
+            },
+            |failure| failure.error(),
         )
     }
 
@@ -931,7 +1048,15 @@ impl Encoder {
             return Ok(());
         };
         match thread.join() {
-            Ok(result) => result,
+            Ok(result) => match self
+                .mux_failure
+                .lock()
+                .expect("mux failure lock poisoned")
+                .as_ref()
+            {
+                Some(error) => Err(error.error()),
+                None => result,
+            },
             Err(_) => Err(Error::pipeline_message(
                 PipelineStage::MuxRuntime,
                 "join mux worker",
@@ -1266,36 +1391,71 @@ impl Drop for Encoder {
 }
 unsafe impl Send for Encoder {}
 
+#[cfg(all(test, feature = "mux-qualification"))]
+#[path = "mux_replay.rs"]
+mod mux_replay;
+
+#[path = "mux_inbox.rs"]
+mod mux_inbox;
+
 fn run_mux_worker(
     output: MuxOutput,
-    receiver: &Receiver<MuxMessage>,
+    inputs: mux_inbox::MuxInputs<'_>,
     stats: Arc<Mutex<MuxStats>>,
-    failure: Arc<Mutex<Option<String>>>,
+    failure: Arc<Mutex<Option<MuxFailure>>>,
     stop: CancellationToken,
     cancellation: CancellationToken,
+    #[cfg(feature = "mux-qualification")] trace: Option<super::mux_trace::MuxTrace>,
 ) -> Result<()> {
+    let mux_inbox::MuxInputs {
+        video: receiver,
+        audio: audio_receiver,
+    } = inputs;
     let mut audio_done = output.audio_routes.is_empty();
     let mut video_offset = 0_i64;
+    let mut inbox = mux_inbox::MuxInbox::new(receiver, audio_receiver, &output);
+    #[cfg(feature = "mux-qualification")]
+    inbox.set_trace(trace.clone());
     let mut buffered_packets = 0_u32;
     let mut buffered_bytes = 0_u64;
+    #[cfg(feature = "mux-qualification")]
+    let mut written_packets = 0_u64;
+    #[cfg(feature = "mux-qualification")]
+    let mut last_dts = std::collections::BTreeMap::<i32, i64>::new();
+    #[cfg(feature = "mux-qualification")]
+    if let Some(trace) = &trace {
+        let context = unsafe { &*output.format.as_ptr() };
+        trace.event("mux-options", format!("\"max_interleave_delta\":{},\"avoid_negative_ts\":{},\"flush_packets\":{},\"video_tb\":[{},{}]",context.max_interleave_delta,context.avoid_negative_ts,context.flush_packets,output.video_time_base.num,output.video_time_base.den))?;
+    }
     #[cfg(test)]
     let mut fail_audio_after: Option<u64> = None;
     #[cfg(test)]
     let mut fail_video_after: Option<u64> = None;
     #[cfg(test)]
     let mut fail_trailer = false;
+    #[cfg(all(test, feature = "mux-qualification"))]
+    let mut intermediate_flush = true;
     loop {
+        if let Some(error) = failure.lock().expect("mux failure lock poisoned").as_ref() {
+            return Err(error.error());
+        }
         if stop.is_cancelled() || cancellation.is_cancelled() {
             return Err(Error::Cancelled);
         }
-        let message = match receiver.recv_timeout(MUX_POLL) {
-            Ok(message) => message,
-            Err(crossbeam_channel::RecvTimeoutError::Timeout) => continue,
-            Err(crossbeam_channel::RecvTimeoutError::Disconnected) => {
-                return Err(Error::pipeline_message(
+        let message = match inbox.receive(video_offset) {
+            Ok(Some(message)) => message,
+            Ok(None) => continue,
+            Err(error) => {
+                if let Some(error) = failure.lock().expect("mux failure lock poisoned").as_ref() {
+                    return Err(error.error());
+                }
+                if stop.is_cancelled() || cancellation.is_cancelled() {
+                    return Err(Error::Cancelled);
+                }
+                return Err(Error::pipeline(
                     PipelineStage::MuxRuntime,
-                    "receive mux packet",
-                    "all mux producers disconnected before finalization",
+                    "merge producer heads",
+                    error,
                 ));
             }
         };
@@ -1306,6 +1466,12 @@ fn run_mux_worker(
             MuxMessage::FailVideoAfter(count) => fail_video_after = Some(count),
             #[cfg(test)]
             MuxMessage::FailTrailer => fail_trailer = true,
+            #[cfg(all(test, feature = "mux-qualification"))]
+            MuxMessage::IntermediateFlush(enabled) => intermediate_flush = enabled,
+            #[cfg(all(test, feature = "mux-qualification"))]
+            MuxMessage::InterleaveDelta(delta) => unsafe {
+                (*output.format.as_ptr()).max_interleave_delta = delta
+            },
             MuxMessage::Packet {
                 mut packet,
                 input_index,
@@ -1334,23 +1500,23 @@ fn run_mux_worker(
                     }
                     *remaining -= 1;
                 }
-                let (output_index, output_time_base) = if audio {
-                    let route = output
-                        .audio_routes
-                        .iter()
-                        .find(|route| route.input_index == input_index)
-                        .ok_or_else(|| {
-                            Error::pipeline_message(
-                                PipelineStage::MuxRuntime,
-                                "map passthrough audio packet",
-                                format!("no output mapping exists for audio stream #{input_index}"),
-                            )
-                        })?;
-                    (route.output_index, route.output_time_base)
-                } else {
-                    (output.video_stream_index, output.video_time_base)
-                };
+                let (dts, pts, output_time_base, output_index) = mux_inbox::normalized_timestamps(
+                    &output,
+                    &mut packet,
+                    input_index,
+                    input_time_base,
+                    audio,
+                    video_offset,
+                )?;
                 let bytes = packet.size();
+                let native = unsafe { &*packet.as_mut_ptr() };
+                if native.pts == ffi::AV_NOPTS_VALUE || native.dts == ffi::AV_NOPTS_VALUE {
+                    return Err(Error::pipeline_message(
+                        PipelineStage::MuxRuntime,
+                        "validate mux timestamps",
+                        "packet has missing PTS or DTS",
+                    ));
+                }
                 if bytes > 16 * 1024 * 1024 {
                     return Err(Error::pipeline_message(
                         PipelineStage::MuxRuntime,
@@ -1366,20 +1532,30 @@ fn run_mux_worker(
                         output_time_base,
                     );
                     (*packet.as_mut_ptr()).stream_index = output_index;
-                    if !audio {
-                        let native = &mut *packet.as_mut_ptr();
-                        native.pts = native
-                            .pts
-                            .checked_add(video_offset)
-                            .ok_or_else(|| Error::Media("video PTS offset overflow".into()))?;
-                        native.dts = native
-                            .dts
-                            .checked_add(video_offset)
-                            .ok_or_else(|| Error::Media("video DTS offset overflow".into()))?;
-                    }
+                    (*packet.as_mut_ptr()).pts = pts;
+                    (*packet.as_mut_ptr()).dts = dts;
                 }
                 #[cfg(feature = "encode-characterization")]
                 let write_started = Instant::now();
+                #[cfg(feature = "mux-qualification")]
+                if let Some(trace) = &trace {
+                    trace.packet(
+                        "D-rescaled",
+                        &mut packet,
+                        output_index as usize,
+                        audio,
+                        output_time_base,
+                    )?;
+                    trace.packet(
+                        "E-write",
+                        &mut packet,
+                        output_index as usize,
+                        audio,
+                        output_time_base,
+                    )?;
+                    last_dts.insert(output_index, unsafe { (*packet.as_mut_ptr()).dts });
+                    written_packets += 1;
+                }
                 let written = unsafe {
                     ffi::av_interleaved_write_frame(output.format.as_ptr(), packet.as_mut_ptr())
                 };
@@ -1394,7 +1570,16 @@ fn run_mux_worker(
                 }
                 if let Err(error) = check(written, "failed to mux interleaved packet") {
                     let message = error.to_string();
-                    *failure.lock().expect("mux failure lock poisoned") = Some(message.clone());
+                    failure
+                        .lock()
+                        .expect("mux failure lock poisoned")
+                        .get_or_insert_with(|| {
+                            MuxFailure::capture(&Error::pipeline_message(
+                                PipelineStage::MuxRuntime,
+                                "write interleaved packet",
+                                message.clone(),
+                            ))
+                        });
                     return Err(Error::pipeline_message(
                         PipelineStage::MuxRuntime,
                         "write interleaved packet",
@@ -1412,7 +1597,20 @@ fn run_mux_worker(
                 // arriving in different streams' timestamp order.
                 buffered_packets += 1;
                 buffered_bytes += bytes;
-                if buffered_packets >= 64 || buffered_bytes >= 8 * 1024 * 1024 {
+                #[cfg(all(test, feature = "mux-qualification"))]
+                let flush_allowed = intermediate_flush;
+                #[cfg(not(all(test, feature = "mux-qualification")))]
+                let flush_allowed = true;
+                if flush_allowed && (buffered_packets >= 64 || buffered_bytes >= 8 * 1024 * 1024) {
+                    #[cfg(feature = "mux-qualification")]
+                    if let Some(trace) = &trace {
+                        let dts = last_dts
+                            .iter()
+                            .map(|(k, v)| format!("\"{k}\":{v}"))
+                            .collect::<Vec<_>>()
+                            .join(",");
+                        trace.event("F-flush", format!("\"reason\":\"{}\",\"queue_len\":{},\"written\":{written_packets},\"buffered_packets\":{buffered_packets},\"buffered_bytes\":{buffered_bytes},\"last_dts\":{{{dts}}}",if buffered_packets>=64 {"packet-threshold"} else {"byte-threshold"},receiver.len()))?;
+                    }
                     #[cfg(feature = "encode-characterization")]
                     let flush_started = Instant::now();
                     check(
@@ -1439,6 +1637,20 @@ fn run_mux_worker(
                 video_offset = unsafe { ffi::av_rescale_q(pts, time_base, output.video_time_base) };
             }
             MuxMessage::Finish => {
+                #[cfg(feature = "mux-qualification")]
+                if let Some(trace) = &trace {
+                    trace.event("F-flush", format!("\"reason\":\"final-eof\",\"written\":{written_packets},\"buffered_packets\":{buffered_packets},\"buffered_bytes\":{buffered_bytes}"))?;
+                }
+                check(
+                    unsafe {
+                        ffi::av_interleaved_write_frame(output.format.as_ptr(), ptr::null_mut())
+                    },
+                    "flush final mux interleaver",
+                )?;
+                #[cfg(feature = "mux-qualification")]
+                if let Some(trace) = &trace {
+                    trace.event("G-trailer", format!("\"written\":{written_packets}"))?;
+                }
                 if !audio_done {
                     return Err(Error::pipeline_message(
                         PipelineStage::Finalization,
@@ -1462,7 +1674,16 @@ fn run_mux_worker(
                 )
                 .map_err(|error| {
                     let message = error.to_string();
-                    *failure.lock().expect("mux failure lock poisoned") = Some(message);
+                    failure
+                        .lock()
+                        .expect("mux failure lock poisoned")
+                        .get_or_insert_with(|| {
+                            MuxFailure::capture(&Error::pipeline_message(
+                                PipelineStage::Finalization,
+                                "write MP4 container trailer",
+                                message,
+                            ))
+                        });
                     Error::pipeline(
                         PipelineStage::Finalization,
                         "write MP4 container trailer",
@@ -1974,6 +2195,54 @@ mod audio_regression_tests {
     }
 
     #[test]
+    fn oversized_video_packet_is_rejected_before_enqueue() {
+        let output = OutputPath(std::env::temp_dir().join(format!(
+            "asciiflow-oversized-mux-{}.mp4",
+            std::process::id()
+        )));
+        let mut encoder = Encoder::create_with_audio(
+            &output.0,
+            FrameDesc::host_nv12(128, 96, ColorSpace::default()).unwrap(),
+            Rational::new(25, 1).unwrap(),
+            EncodeMode::Software,
+            VaapiOptions::default(),
+            Vec::new(),
+            CancellationToken::new(),
+        )
+        .unwrap();
+        let mut packet = Packet::new().unwrap();
+        check(
+            unsafe { ffi::av_new_packet(packet.as_mut_ptr(), 16 * 1024 * 1024 + 1) },
+            "allocate oversized control packet",
+        )
+        .unwrap();
+        let error = encoder
+            .send_mux_message(MuxMessage::Packet {
+                packet,
+                input_index: 0,
+                input_time_base: ffi::AVRational { num: 1, den: 25 },
+                audio: false,
+            })
+            .unwrap_err();
+        assert_eq!(error.stage(), Some(PipelineStage::MuxRuntime));
+        assert!(error.to_string().contains("16 MiB mux limit"));
+        assert!(encoder.mux_sender.is_empty());
+        assert!(encoder.mux_failure.lock().unwrap().is_none());
+
+        let root = Error::pipeline_message(
+            PipelineStage::MuxRuntime,
+            "write interleaved packet",
+            "stored root must precede receive failure and cancellation",
+        );
+        *encoder.mux_failure.lock().unwrap() = Some(MuxFailure::capture(&root));
+        encoder.inject_receive_failure = true;
+        encoder.cancellation.cancel();
+        let observed = encoder.drain_packets().unwrap_err();
+        assert_eq!(observed.to_string(), root.to_string());
+        assert!(encoder.inject_receive_failure);
+    }
+
+    #[test]
     fn injected_audio_mux_failure_is_the_pipeline_root_cause() {
         let input =
             Path::new(env!("CARGO_MANIFEST_DIR")).join("../../tests/fixtures/media/single.mp4");
@@ -1997,7 +2266,9 @@ mod audio_regression_tests {
         encoder
             .send_mux_message(MuxMessage::FailAudioAfter(2))
             .unwrap();
-        decoder.attach_audio_passthrough(&plan, encoder.audio_packet_sender());
+        decoder
+            .attach_audio_passthrough(&plan, encoder.audio_packet_sender())
+            .unwrap();
         let error = Pipeline::new(2)
             .unwrap()
             .run_with_cancellation(
@@ -2057,7 +2328,9 @@ mod audio_regression_tests {
         encoder
             .send_mux_message(MuxMessage::FailAudioAfter(2))
             .unwrap();
-        decoder.attach_audio_passthrough(&plan, encoder.audio_packet_sender());
+        decoder
+            .attach_audio_passthrough(&plan, encoder.audio_packet_sender())
+            .unwrap();
         let error = Pipeline::new(2)
             .unwrap()
             .run_with_cancellation(

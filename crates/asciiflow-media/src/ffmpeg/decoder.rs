@@ -35,6 +35,8 @@ pub struct MediaInfo {
 }
 
 pub struct Decoder {
+    input_path: CString,
+    audio_reader: Option<super::audio_reader::AudioReader>,
     format: NonNull<ffi::AVFormatContext>,
     codec: NonNull<ffi::AVCodecContext>,
     scaler: Option<NonNull<ffi::SwsContext>>,
@@ -329,6 +331,8 @@ impl Decoder {
         let format = guard.take();
         let codec = codec_guard.take();
         Ok(Self {
+            input_path: native,
+            audio_reader: None,
             format,
             codec,
             scaler: scaler_guard.take_optional(),
@@ -373,13 +377,34 @@ impl Decoder {
         selected_templates(&self.audio_streams, plan)
     }
 
-    pub fn attach_audio_passthrough(&mut self, plan: &AudioPlan, sender: AudioPacketSender) {
+    pub fn attach_audio_passthrough(
+        &mut self,
+        plan: &AudioPlan,
+        sender: AudioPacketSender,
+    ) -> Result<()> {
         self.selected_audio_streams = plan
             .selected
             .iter()
             .map(|stream| stream.input_index)
             .collect();
-        self.audio_sender = (!self.selected_audio_streams.is_empty()).then_some(sender);
+        if !self.selected_audio_streams.is_empty() {
+            let streams = self
+                .audio_streams
+                .iter()
+                .filter(|stream| {
+                    self.selected_audio_streams
+                        .contains(&stream.info.input_index)
+                })
+                .map(|stream| stream.info.clone())
+                .collect();
+            self.audio_reader = Some(super::audio_reader::AudioReader::start(
+                self.input_path.clone(),
+                streams,
+                sender.clone(),
+            )?);
+            self.audio_sender = Some(sender);
+        }
+        Ok(())
     }
     fn receive_native(&mut self) -> Result<ReceiveResult> {
         let receive_started = Instant::now();
@@ -719,6 +744,10 @@ impl Decoder {
     }
 
     fn route_audio_packet(&mut self, packet_stream_index: i32) -> Result<()> {
+        if self.audio_reader.is_some() {
+            self.packet.unref();
+            return Ok(());
+        }
         if packet_stream_index >= 0
             && self
                 .selected_audio_streams
@@ -1305,6 +1334,11 @@ fn map_chroma_location(value: ffi::AVChromaLocation) -> ChromaLocation {
 
 impl FrameSource for Decoder {
     fn finish(&mut self) -> Result<()> {
+        if let Some(reader) = &mut self.audio_reader {
+            reader.finish()?;
+            self.audio_sender.take();
+            return Ok(());
+        }
         if self.audio_sender.is_none() {
             return Ok(());
         }
@@ -1343,6 +1377,7 @@ impl FrameSource for Decoder {
 
 impl Drop for Decoder {
     fn drop(&mut self) {
+        self.audio_reader.take();
         unsafe {
             if let Some(scaler) = self.scaler {
                 ffi::sws_freeContext(scaler.as_ptr());

@@ -1,0 +1,2299 @@
+{
+  "schema_version": 1,
+  "fixtures": [
+    {
+      "id": "canonical-h2648",
+      "description": "Generated canonical 1920x1080 50 fps SDR H.264 8-bit source.",
+      "categories": [
+        "basic",
+        "container",
+        "color",
+        "stress"
+      ],
+      "source": {
+        "kind": "generated",
+        "path": "generated/canonical-h2648.mp4",
+        "sha256": "6e5c214b813dca3e1db65629b1241cfb663166eb565cda1c48b5ee74ed0dce6b",
+        "byte_size": 19672925,
+        "generator": "tests/fixtures/codecs/generate-8bit-production-baseline.sh",
+        "generator_sha256": "7962394e54915e6db67c55018a4cfd27562d65f3c5bff81c4b6f2f3c876bbe3c",
+        "tool_identity": "FFmpeg 8.1.3; ffmpeg -version SHA-256 87e52642589a2ffec4fd56da1eeb8d36810c3ba81cac81a4a71039041b89331e",
+        "exact_command": [
+          "bash",
+          "tests/fixtures/codecs/generate-8bit-production-baseline.sh",
+          "{output}"
+        ],
+        "probe_sha256": "f082c44d5204ce63ded6e7a347f040bf94da2f734fa4de6513e96c57f1d7e148"
+      },
+      "media": {
+        "container": "mp4",
+        "codec": "h264",
+        "profile": "Constrained Baseline",
+        "width": 1920,
+        "height": 1080,
+        "pixel_format": "yuv420p",
+        "bit_depth": 8,
+        "chroma_420": true,
+        "timing": {
+          "model": "CFR",
+          "frame_rate": "50/1",
+          "frame_count": 300,
+          "time_base": "1/90000",
+          "start_pts": 0,
+          "negative_dts": false,
+          "reorder": false,
+          "odd_durations": false
+        },
+        "gop": {
+          "model": "observed key-frame cadence; encoder open-GOP state unknown",
+          "keyint": 250,
+          "b_frames": 0,
+          "open_gop": null,
+          "key_cadence": "decoded frame indices 0,250"
+        },
+        "audio": [],
+        "subtitles": [],
+        "metadata": {
+          "color_primaries": "bt709",
+          "color_transfer": "bt709",
+          "color_matrix": "bt709",
+          "color_range": "tv",
+          "chroma_location": "left",
+          "side_data": [
+            "H.26[45] User Data Unregistered SEI message"
+          ],
+          "title": null,
+          "language": "und",
+          "rotation_degrees": null,
+          "orientation": null,
+          "sample_aspect_ratio": "1:1",
+          "mastering_display": null,
+          "content_light": null
+        }
+      },
+      "request": {
+        "dynamic_range": "sdr",
+        "codec": "h264",
+        "bit_depth": 8,
+        "route": "hardware"
+      },
+      "expected": {
+        "classification": "Sdr",
+        "status": "Supported",
+        "planner": "accept",
+        "runtime": "Pass",
+        "failure_stage": null,
+        "root_cause": null,
+        "mutation": null,
+        "corruption": null,
+        "evidence": "Expected by the corpus contract from the probed fixture properties; runtime outcome not yet verified."
+      },
+      "performance_fixture": true
+    },
+    {
+      "id": "portability-hevc-sdr8-1080",
+      "description": "Retained Stage 5.4B 1920x1080 300-frame HEVC SDR8 output, used only for this exact hardware tuple.",
+      "categories": [
+        "basic",
+        "timing",
+        "gop",
+        "container",
+        "color"
+      ],
+      "source": {
+        "kind": "retained_binary",
+        "path": "target/stage54b-evidence/post-title-retained/retained-sdr/hevc-8-run1.mp4",
+        "sha256": "294a1b63ac5b0e440dcf60c4c60f975594c6e944829478b69f09f981d268ff71",
+        "byte_size": 4064735,
+        "generator": "tests/baselines/media/generate-post-polarity-v2.sh",
+        "generator_sha256": "284728fd7b53328c3ae89065484ba399f770c328aad5712fd0ea36cd261f4f7e",
+        "tool_identity": "Stage 5.4B AsciiFlow Release producer binary SHA-256 7cd7e997cae8975b0f030030e2c08333728cde0614d7c9fb1d3409e421dc17c4; FFmpeg 8.1.3, libavcodec 62.28.103, libavformat 62.12.103",
+        "exact_command": [
+          "bash",
+          "/home/eureka/Documents/AsciiFlow/tests/baselines/media/generate-post-polarity-v2.sh",
+          "/home/eureka/Documents/AsciiFlow/target/stage54b-evidence/retained-final/generated/canonical-h2648.mp4",
+          "/home/eureka/Documents/AsciiFlow/tests/fixtures/codecs/hevc-main10-canonical-v1.mp4",
+          "/home/eureka/Documents/AsciiFlow/target/stage54b-evidence/post-title-retained/retained-sdr"
+        ],
+        "reference_manifest": {
+          "path": "tests/corpus/stage54b-closure.json",
+          "sha256": "4187637303860cddfd6185679978a61d84fd770033e2a1a52ff46768338e3bc5"
+        },
+        "probe_sha256": "41c8d5548e7f16ca126320684badb8bc41348f8459a0f7f7eb363fa746a5bee6"
+      },
+      "media": {
+        "container": "mp4",
+        "codec": "hevc",
+        "profile": "Main",
+        "width": 1920,
+        "height": 1080,
+        "pixel_format": "yuv420p",
+        "bit_depth": 8,
+        "chroma_420": true,
+        "timing": {
+          "model": "CFR",
+          "frame_rate": "50/1",
+          "frame_count": 300,
+          "time_base": "1/12800",
+          "start_pts": 0,
+          "negative_dts": false,
+          "reorder": true,
+          "odd_durations": false
+        },
+        "gop": {
+          "model": "observed key-frame cadence; encoder open-GOP state unknown",
+          "keyint": 250,
+          "b_frames": 249,
+          "open_gop": null,
+          "key_cadence": "decoded frame indices 0,250"
+        },
+        "audio": [],
+        "subtitles": [],
+        "metadata": {
+          "color_primaries": "bt709",
+          "color_transfer": "bt709",
+          "color_matrix": "bt709",
+          "color_range": "tv",
+          "chroma_location": "left",
+          "side_data": [],
+          "title": null,
+          "language": "und",
+          "rotation_degrees": null,
+          "orientation": null,
+          "sample_aspect_ratio": null,
+          "mastering_display": null,
+          "content_light": null
+        }
+      },
+      "request": {
+        "dynamic_range": "sdr",
+        "codec": "hevc",
+        "bit_depth": 8,
+        "route": "hardware"
+      },
+      "expected": {
+        "classification": "Sdr",
+        "status": "ConditionallySupported",
+        "planner": "accept",
+        "runtime": "Pass",
+        "failure_stage": null,
+        "root_cause": null,
+        "mutation": null,
+        "corruption": null,
+        "evidence": "Exact Stage 5.4B retained 1920x1080/300-frame HEVC SDR8 output and hardware request tuple; no 64x64 encoder or blanket-resolution qualification is implied."
+      },
+      "performance_fixture": false
+    },
+    {
+      "id": "portability-av1-sdr8-1080",
+      "description": "Retained Stage 5.4B 1920x1080 300-frame AV1 SDR8 output, used only for this exact hardware tuple.",
+      "categories": [
+        "basic",
+        "timing",
+        "gop",
+        "container",
+        "color"
+      ],
+      "source": {
+        "kind": "retained_binary",
+        "path": "target/stage54b-evidence/post-title-retained/retained-sdr/av1-8-run1.mp4",
+        "sha256": "1531e29f52ae4e747251cf1889003dfd420303c523fb0ddc55cc9140e3bf2a4c",
+        "byte_size": 5228408,
+        "generator": "tests/baselines/media/generate-post-polarity-v2.sh",
+        "generator_sha256": "284728fd7b53328c3ae89065484ba399f770c328aad5712fd0ea36cd261f4f7e",
+        "tool_identity": "Stage 5.4B AsciiFlow Release producer binary SHA-256 7cd7e997cae8975b0f030030e2c08333728cde0614d7c9fb1d3409e421dc17c4; FFmpeg 8.1.3, libavcodec 62.28.103, libavformat 62.12.103",
+        "exact_command": [
+          "bash",
+          "/home/eureka/Documents/AsciiFlow/tests/baselines/media/generate-post-polarity-v2.sh",
+          "/home/eureka/Documents/AsciiFlow/target/stage54b-evidence/retained-final/generated/canonical-h2648.mp4",
+          "/home/eureka/Documents/AsciiFlow/tests/fixtures/codecs/hevc-main10-canonical-v1.mp4",
+          "/home/eureka/Documents/AsciiFlow/target/stage54b-evidence/post-title-retained/retained-sdr"
+        ],
+        "reference_manifest": {
+          "path": "tests/corpus/stage54b-closure.json",
+          "sha256": "4187637303860cddfd6185679978a61d84fd770033e2a1a52ff46768338e3bc5"
+        },
+        "probe_sha256": "da9f92567e87f5f3d335d5bfe14009930e5b94d5421ba7827e34a2a713cc0ef2"
+      },
+      "media": {
+        "container": "mp4",
+        "codec": "av1",
+        "profile": "Main",
+        "width": 1920,
+        "height": 1080,
+        "pixel_format": "yuv420p",
+        "bit_depth": 8,
+        "chroma_420": true,
+        "timing": {
+          "model": "CFR",
+          "frame_rate": "50/1",
+          "frame_count": 300,
+          "time_base": "1/12800",
+          "start_pts": 0,
+          "negative_dts": false,
+          "reorder": false,
+          "odd_durations": false
+        },
+        "gop": {
+          "model": "observed key-frame cadence; encoder open-GOP state unknown",
+          "keyint": 250,
+          "b_frames": 0,
+          "open_gop": null,
+          "key_cadence": "decoded frame indices 0,250"
+        },
+        "audio": [],
+        "subtitles": [],
+        "metadata": {
+          "color_primaries": "bt709",
+          "color_transfer": "bt709",
+          "color_matrix": "bt709",
+          "color_range": "tv",
+          "chroma_location": "left",
+          "side_data": [],
+          "title": null,
+          "language": "und",
+          "rotation_degrees": null,
+          "orientation": null,
+          "sample_aspect_ratio": "1:1",
+          "mastering_display": null,
+          "content_light": null
+        }
+      },
+      "request": {
+        "dynamic_range": "sdr",
+        "codec": "av1",
+        "bit_depth": 8,
+        "route": "hardware"
+      },
+      "expected": {
+        "classification": "Sdr",
+        "status": "ConditionallySupported",
+        "planner": "accept",
+        "runtime": "Pass",
+        "failure_stage": null,
+        "root_cause": null,
+        "mutation": null,
+        "corruption": null,
+        "evidence": "Exact Stage 5.4B retained 1920x1080/300-frame AV1 SDR8 output and hardware request tuple; no 64x64 encoder or blanket-resolution qualification is implied."
+      },
+      "performance_fixture": false
+    },
+    {
+      "id": "hevc-sdr10",
+      "description": "Retained canonical 1920x1080 300-frame HEVC Main 10 BT.709 limited SDR source.",
+      "categories": [
+        "basic",
+        "container",
+        "color"
+      ],
+      "source": {
+        "kind": "retained_binary",
+        "path": "tests/fixtures/codecs/hevc-main10-canonical-v1.mp4",
+        "sha256": "df69c98ca6592b08c6bc34127b2bb5cf4125c759fd852b830e5426d5818fccda",
+        "byte_size": 6733222,
+        "generator": "tests/fixtures/codecs/generate-10bit-baseline.sh",
+        "generator_sha256": "8162c4764b27810d9cd35107be9d534b1e619fb29abda5cb0ffcabea45f5f026",
+        "tool_identity": "FFmpeg 8.1.3; generator environment is tests/fixtures/codecs/canonical-generator-version.txt (SHA-256 be0ecc351965ef4c69e765da6545e1fc455e68eb5ab926261b75245e664384a0)",
+        "exact_command": [
+          "bash",
+          "tests/fixtures/codecs/generate-10bit-baseline.sh",
+          "{output}"
+        ],
+        "reference_manifest": {
+          "path": "tests/fixtures/codecs/canonical-generator-version.txt",
+          "sha256": "be0ecc351965ef4c69e765da6545e1fc455e68eb5ab926261b75245e664384a0"
+        },
+        "probe_sha256": "c366728045ff02075986f325a94f49650aa0a0a3d0337570ee52d5956a7e43d9"
+      },
+      "media": {
+        "container": "mp4",
+        "codec": "hevc",
+        "profile": "Main 10",
+        "width": 1920,
+        "height": 1080,
+        "pixel_format": "yuv420p10le",
+        "bit_depth": 10,
+        "chroma_420": true,
+        "timing": {
+          "model": "CFR",
+          "frame_rate": "50/1",
+          "frame_count": 300,
+          "time_base": "1/50000",
+          "start_pts": 0,
+          "negative_dts": false,
+          "reorder": false,
+          "odd_durations": false
+        },
+        "gop": {
+          "model": "observed key-frame cadence; encoder open-GOP state unknown",
+          "keyint": 50,
+          "b_frames": 0,
+          "open_gop": null,
+          "key_cadence": "decoded frame indices 0,50,100,150,200,250"
+        },
+        "audio": [],
+        "subtitles": [],
+        "metadata": {
+          "color_primaries": "bt709",
+          "color_transfer": "bt709",
+          "color_matrix": "bt709",
+          "color_range": "tv",
+          "chroma_location": "left",
+          "side_data": [
+            "H.26[45] User Data Unregistered SEI message"
+          ],
+          "title": null,
+          "language": "und",
+          "rotation_degrees": null,
+          "orientation": null,
+          "sample_aspect_ratio": null,
+          "mastering_display": null,
+          "content_light": null
+        }
+      },
+      "request": {
+        "dynamic_range": "sdr",
+        "codec": "hevc",
+        "bit_depth": 10,
+        "route": "hardware"
+      },
+      "expected": {
+        "classification": "Sdr",
+        "status": "Supported",
+        "planner": "accept",
+        "runtime": "Pass",
+        "failure_stage": null,
+        "root_cause": null,
+        "mutation": null,
+        "corruption": null,
+        "evidence": "Retained canonical HEVC source ffprobe matches the requested 10-bit limited-SDR production profile; local CLI reached Planning but cannot confirm selection without a render node."
+      },
+      "performance_fixture": false
+    },
+    {
+      "id": "av1-sdr10",
+      "description": "Generated canonical 1920x1080 300-frame AV1 Main 10 BT.709 SDR fixture with explicit left chroma siting, transcoded losslessly from the retained canonical HEVC Main 10 SDR source.",
+      "categories": [
+        "basic",
+        "container",
+        "color"
+      ],
+      "source": {
+        "kind": "generated",
+        "path": "generated/av1-sdr10-canonical-v1.mp4",
+        "sha256": "900216775400e6af237ed93b6dffde6fe76aacd88d9529507b8d720de3d800ee",
+        "byte_size": 228530990,
+        "generator": "tests/corpus/generate-av1-sdr10.sh",
+        "generator_sha256": "a40e53440305d75d46d14c0b92fccd6643ad5b334c58e9ab4868d27fd5b2f86d",
+        "tool_identity": "FFmpeg 8.1.3; ffmpeg -version SHA-256 87e52642589a2ffec4fd56da1eeb8d36810c3ba81cac81a4a71039041b89331e; shared libaom AV1 encoder",
+        "exact_command": [
+          "bash",
+          "tests/corpus/generate-av1-sdr10.sh",
+          "{output}"
+        ],
+        "reference_manifest": {
+          "path": "tests/fixtures/codecs/hevc-main10-canonical-v1.mp4",
+          "sha256": "df69c98ca6592b08c6bc34127b2bb5cf4125c759fd852b830e5426d5818fccda"
+        },
+        "probe_sha256": "3ccda6ed6e6e40179eb012970032585613f70f0075905ea01533a01c8a0948d6"
+      },
+      "media": {
+        "container": "mp4",
+        "codec": "av1",
+        "profile": "Main",
+        "width": 1920,
+        "height": 1080,
+        "pixel_format": "yuv420p10le",
+        "bit_depth": 10,
+        "chroma_420": true,
+        "timing": {
+          "model": "CFR",
+          "frame_rate": "50/1",
+          "frame_count": 300,
+          "time_base": "1/50000",
+          "start_pts": 0,
+          "negative_dts": false,
+          "reorder": false,
+          "odd_durations": false
+        },
+        "gop": {
+          "model": "observed key-frame cadence; encoder open-GOP state unknown",
+          "keyint": 50,
+          "b_frames": 0,
+          "open_gop": null,
+          "key_cadence": "decoded frame indices 0,50,100,150,200,250"
+        },
+        "audio": [],
+        "subtitles": [],
+        "metadata": {
+          "chroma_location": "left",
+          "color_matrix": "bt709",
+          "color_primaries": "bt709",
+          "color_range": "tv",
+          "color_transfer": "bt709",
+          "content_light": null,
+          "language": "und",
+          "mastering_display": null,
+          "orientation": null,
+          "rotation_degrees": null,
+          "sample_aspect_ratio": "1:1",
+          "side_data": [],
+          "title": null
+        }
+      },
+      "request": {
+        "dynamic_range": "sdr",
+        "codec": "av1",
+        "bit_depth": 10,
+        "route": "hardware"
+      },
+      "expected": {
+        "classification": "Sdr",
+        "status": "Supported",
+        "planner": "accept",
+        "runtime": "Pass",
+        "failure_stage": null,
+        "root_cause": null,
+        "mutation": null,
+        "corruption": null,
+        "evidence": "Two fresh 1080p/300 generations matched SHA-256; ffprobe confirms AV1 Main, true 10-bit 4:2:0, BT.709 limited, left-sited. Local CLI reached Planning but cannot confirm selection without a render node."
+      },
+      "performance_fixture": false
+    },
+    {
+      "id": "hevc-pq10",
+      "description": "Retained legal-domain 300-frame HEVC Main 10 BT.2020/PQ source.",
+      "categories": [
+        "basic",
+        "container",
+        "color",
+        "stress"
+      ],
+      "source": {
+        "kind": "retained_binary",
+        "path": "tests/fixtures/codecs/hevc-main10-pq-c3-legal-v1.mp4",
+        "sha256": "eb8d8c42cd99369b99031900e8861c08f611bfcc662b8d0eb741eb695a0c366a",
+        "byte_size": 1927266,
+        "generator": "tests/fixtures/codecs/generate-c3-pq-legal-v1.sh",
+        "generator_sha256": "b264d019ad7406dfd0c7ce7f4102c59679dae482bf46469a71ee68ae1abd41bd",
+        "tool_identity": "FFmpeg 8.1.3 with libx265 4.1; toolchain and library identities in tests/fixtures/codecs/c3-pq-legal-v1-generator-version.txt (SHA-256 87e52642589a2ffec4fd56da1eeb8d36810c3ba81cac81a4a71039041b89331e)",
+        "exact_command": [
+          "bash",
+          "tests/fixtures/codecs/generate-c3-pq-legal-v1.sh",
+          "{output}"
+        ],
+        "reference_manifest": {
+          "path": "tests/fixtures/codecs/c3-pq-legal-v1-identity.json",
+          "sha256": "557357f31a16b7f68f8c3a4407f02edba5f949c391f9630f5fff31f39ffa375a"
+        },
+        "probe_sha256": "e9d0f07f4429fd15a274c7b024fae35a310357a9470b8d8bfdc201f79580e162"
+      },
+      "media": {
+        "container": "mp4",
+        "codec": "hevc",
+        "profile": "Main 10",
+        "width": 1920,
+        "height": 1080,
+        "pixel_format": "yuv420p10le",
+        "bit_depth": 10,
+        "chroma_420": true,
+        "timing": {
+          "model": "CFR",
+          "frame_rate": "50/1",
+          "frame_count": 300,
+          "time_base": "1/50000",
+          "start_pts": 0,
+          "negative_dts": false,
+          "reorder": false,
+          "odd_durations": false
+        },
+        "gop": {
+          "model": "observed key-frame cadence; encoder open-GOP state unknown",
+          "keyint": 50,
+          "b_frames": 0,
+          "open_gop": null,
+          "key_cadence": "decoded frame indices 0,50,100,150,200,250"
+        },
+        "audio": [],
+        "subtitles": [],
+        "metadata": {
+          "color_primaries": "bt2020",
+          "color_transfer": "smpte2084",
+          "color_matrix": "bt2020nc",
+          "color_range": "tv",
+          "chroma_location": "left",
+          "side_data": [
+            "H.26[45] User Data Unregistered SEI message"
+          ],
+          "title": null,
+          "language": "und",
+          "rotation_degrees": null,
+          "orientation": null,
+          "sample_aspect_ratio": null,
+          "mastering_display": null,
+          "content_light": null
+        }
+      },
+      "request": {
+        "dynamic_range": "preserve",
+        "codec": "hevc",
+        "bit_depth": 10,
+        "route": "hardware"
+      },
+      "expected": {
+        "classification": "HdrPq",
+        "status": "Supported",
+        "planner": "accept",
+        "runtime": "Pass",
+        "failure_stage": null,
+        "root_cause": null,
+        "mutation": null,
+        "corruption": null,
+        "evidence": "Expected by the retained PQ preservation contract; hardware execution not yet verified."
+      },
+      "performance_fixture": true
+    },
+    {
+      "id": "av1-pq10",
+      "description": "Retained legal-domain 300-frame AV1 Main 10 BT.2020/PQ source.",
+      "categories": [
+        "basic",
+        "container",
+        "color",
+        "stress"
+      ],
+      "source": {
+        "kind": "retained_binary",
+        "path": "tests/fixtures/codecs/av1-main10-pq-c3-legal-v1.mp4",
+        "sha256": "7eb4fd7e7513fc181ad8489e13edbac10a88a8f3a7947d2f958d36a0ce08e7c4",
+        "byte_size": 8502612,
+        "generator": "tests/fixtures/codecs/generate-c3-pq-legal-v1.sh",
+        "generator_sha256": "b264d019ad7406dfd0c7ce7f4102c59679dae482bf46469a71ee68ae1abd41bd",
+        "tool_identity": "FFmpeg 8.1.3 with libaom 3.13.3; toolchain and library identities in tests/fixtures/codecs/c3-pq-legal-v1-generator-version.txt (SHA-256 87e52642589a2ffec4fd56da1eeb8d36810c3ba81cac81a4a71039041b89331e)",
+        "exact_command": [
+          "bash",
+          "tests/fixtures/codecs/generate-c3-pq-legal-v1.sh",
+          "{output}"
+        ],
+        "reference_manifest": {
+          "path": "tests/fixtures/codecs/c3-pq-legal-v1-identity.json",
+          "sha256": "557357f31a16b7f68f8c3a4407f02edba5f949c391f9630f5fff31f39ffa375a"
+        },
+        "probe_sha256": "85f81a7aca3483cb98f6174b8be7692a6b5c2a53a7010ed3876150ce98434d59"
+      },
+      "media": {
+        "container": "mp4",
+        "codec": "av1",
+        "profile": "Main",
+        "width": 1920,
+        "height": 1080,
+        "pixel_format": "yuv420p10le",
+        "bit_depth": 10,
+        "chroma_420": true,
+        "timing": {
+          "model": "CFR",
+          "frame_rate": "50/1",
+          "frame_count": 300,
+          "time_base": "1/50000",
+          "start_pts": 0,
+          "negative_dts": false,
+          "reorder": false,
+          "odd_durations": false
+        },
+        "gop": {
+          "model": "observed key-frame cadence; encoder open-GOP state unknown",
+          "keyint": 50,
+          "b_frames": 0,
+          "open_gop": null,
+          "key_cadence": "decoded frame indices 0,50,100,150,200,250"
+        },
+        "audio": [],
+        "subtitles": [],
+        "metadata": {
+          "color_primaries": "bt2020",
+          "color_transfer": "smpte2084",
+          "color_matrix": "bt2020nc",
+          "color_range": "tv",
+          "chroma_location": "left",
+          "side_data": [],
+          "title": null,
+          "language": "und",
+          "rotation_degrees": null,
+          "orientation": null,
+          "sample_aspect_ratio": "1:1",
+          "mastering_display": null,
+          "content_light": null
+        }
+      },
+      "request": {
+        "dynamic_range": "preserve",
+        "codec": "av1",
+        "bit_depth": 10,
+        "route": "hardware"
+      },
+      "expected": {
+        "classification": "HdrPq",
+        "status": "Supported",
+        "planner": "accept",
+        "runtime": "Pass",
+        "failure_stage": null,
+        "root_cause": null,
+        "mutation": null,
+        "corruption": null,
+        "evidence": "Expected by the retained PQ preservation contract; hardware execution not yet verified."
+      },
+      "performance_fixture": true
+    },
+    {
+      "id": "negative-hlg",
+      "description": "HEVC Main 10 HLG source; distinguishes HLG transfer from PQ.",
+      "categories": [
+        "error",
+        "color",
+        "container"
+      ],
+      "source": {
+        "kind": "retained_binary",
+        "path": "tests/fixtures/codecs/hevc-main10-hlg.mp4",
+        "sha256": "822ba58834bc47d08761a7150061acd1f8d2e2bca4d69e4528f158cee75d0116",
+        "byte_size": 172530,
+        "generator": "tests/fixtures/codecs/generate.sh",
+        "generator_sha256": "1f83995e42a5fe141c13a07930a2e4204660fb2f7328bd41d167efda4662f1dd",
+        "tool_identity": "FFmpeg 8.1.2 fixture generator; identity recorded in tests/fixtures/codecs/generator-version.txt (SHA-256 5e3a6aaa244885912b2efc30d7ace100d979cd1721da8815f72cb3426deec5da)",
+        "exact_command": [
+          "bash",
+          "tests/fixtures/codecs/generate.sh"
+        ],
+        "probe_sha256": "8dfc02b125a421af65895b9fcd3f9dbf6377701f3b244123f7f14e8f1304fa77"
+      },
+      "media": {
+        "container": "mp4",
+        "codec": "hevc",
+        "profile": "Main 10",
+        "width": 64,
+        "height": 64,
+        "pixel_format": "yuv420p10le",
+        "bit_depth": 10,
+        "chroma_420": true,
+        "timing": {
+          "model": "CFR",
+          "frame_rate": "30/1",
+          "frame_count": 36,
+          "time_base": "1/15360",
+          "start_pts": 0,
+          "negative_dts": false,
+          "reorder": false,
+          "odd_durations": false
+        },
+        "gop": {
+          "model": "observed key-frame cadence; encoder open-GOP state unknown",
+          "keyint": 30,
+          "b_frames": 0,
+          "open_gop": null,
+          "key_cadence": "decoded frame indices 0,30"
+        },
+        "audio": [],
+        "subtitles": [],
+        "metadata": {
+          "color_primaries": "bt2020",
+          "color_transfer": "arib-std-b67",
+          "color_matrix": "bt2020nc",
+          "color_range": "tv",
+          "chroma_location": "left",
+          "side_data": [
+            "H.26[45] User Data Unregistered SEI message"
+          ],
+          "title": null,
+          "language": "und",
+          "rotation_degrees": null,
+          "orientation": null,
+          "sample_aspect_ratio": null,
+          "mastering_display": null,
+          "content_light": null
+        }
+      },
+      "request": {
+        "dynamic_range": "sdr",
+        "codec": "h264",
+        "bit_depth": 8
+      },
+      "expected": {
+        "classification": "HdrHlg",
+        "status": "Unsupported",
+        "planner": "reject",
+        "runtime": "RejectAtClassification",
+        "failure_stage": "InputProbe",
+        "root_cause": "UnsupportedColor",
+        "mutation": null,
+        "corruption": null,
+        "evidence": "Expected by the supported output profile contract; runtime outcome not yet verified."
+      },
+      "performance_fixture": false
+    },
+    {
+      "id": "negative-full-range-pq",
+      "description": "Generated full-range HEVC Main 10 BT.2020/PQ remux from the canonical limited-range PQ source; full-range PQ is rejected by the processing contract.",
+      "categories": [
+        "error",
+        "color",
+        "container"
+      ],
+      "source": {
+        "kind": "generated",
+        "path": "generated/full-range-pq.mp4",
+        "sha256": "f99c5a77113468edb2a24fc3339eb7f65f2d624f38ff2b47815638082c0529dd",
+        "byte_size": 1927303,
+        "generator": "tests/corpus/generate-full-range-pq.sh",
+        "generator_sha256": "9ee6d1e91367d4951ea982a3d7479b0e077b65ac67f336a5ea486d67d6ed0ea9",
+        "tool_identity": "FFmpeg 8.1.3; ffmpeg -version SHA-256 87e52642589a2ffec4fd56da1eeb8d36810c3ba81cac81a4a71039041b89331e",
+        "exact_command": [
+          "bash",
+          "tests/corpus/generate-full-range-pq.sh",
+          "{output}"
+        ],
+        "reference_manifest": {
+          "path": "tests/fixtures/codecs/c3-pq-legal-v1-identity.json",
+          "sha256": "557357f31a16b7f68f8c3a4407f02edba5f949c391f9630f5fff31f39ffa375a"
+        },
+        "probe_sha256": "f76d3989a0c11e10edc91a903120d7d286900f1ea377dbd545416a8d8d67dd43"
+      },
+      "media": {
+        "container": "mp4",
+        "codec": "hevc",
+        "profile": "Main 10",
+        "width": 1920,
+        "height": 1080,
+        "pixel_format": "yuv420p10le",
+        "bit_depth": 10,
+        "chroma_420": true,
+        "timing": {
+          "model": "CFR",
+          "frame_rate": "50/1",
+          "frame_count": 300,
+          "time_base": "1/50000",
+          "start_pts": 0,
+          "negative_dts": false,
+          "reorder": false,
+          "odd_durations": false
+        },
+        "gop": {
+          "model": "observed key-frame cadence; encoder open-GOP state unknown",
+          "keyint": 50,
+          "b_frames": 0,
+          "open_gop": null,
+          "key_cadence": "decoded frame indices 0,50,100,150,200,250"
+        },
+        "audio": [],
+        "subtitles": [],
+        "metadata": {
+          "chroma_location": "left",
+          "color_matrix": "bt2020nc",
+          "color_primaries": "bt2020",
+          "color_range": "pc",
+          "color_transfer": "smpte2084",
+          "content_light": null,
+          "language": "und",
+          "mastering_display": null,
+          "orientation": null,
+          "rotation_degrees": null,
+          "sample_aspect_ratio": null,
+          "side_data": [
+            "H.26[45] User Data Unregistered SEI message"
+          ],
+          "title": null
+        }
+      },
+      "request": {
+        "dynamic_range": "sdr",
+        "codec": "h264",
+        "bit_depth": 8
+      },
+      "expected": {
+        "classification": "HdrPq",
+        "status": "Unsupported",
+        "planner": "reject",
+        "runtime": "RejectAtClassification",
+        "failure_stage": "InputProbe",
+        "root_cause": "Media",
+        "mutation": null,
+        "corruption": null,
+        "evidence": "Two fresh remuxes matched SHA-256; actual CLI rejected full-range PQ at input probe. The retained static-metadata PQ fixture remains a valid limited-range source and is not catalogued as negative."
+      },
+      "performance_fixture": false
+    },
+    {
+      "id": "negative-color-conflict",
+      "description": "HEVC Main 10 combines PQ transfer with BT.709 primaries and matrix.",
+      "categories": [
+        "error",
+        "color",
+        "metadata"
+      ],
+      "source": {
+        "kind": "retained_binary",
+        "path": "tests/fixtures/codecs/hevc-main10-pq-bt709-conflict.mp4",
+        "sha256": "3356bf8527db8e039c8b4c7afd4711aee6e629f5620a8c5eec22971a9dd32d07",
+        "byte_size": 172530,
+        "generator": "tests/fixtures/codecs/generate.sh",
+        "generator_sha256": "1f83995e42a5fe141c13a07930a2e4204660fb2f7328bd41d167efda4662f1dd",
+        "tool_identity": "FFmpeg 8.1.2 fixture generator; identity recorded in tests/fixtures/codecs/generator-version.txt (SHA-256 5e3a6aaa244885912b2efc30d7ace100d979cd1721da8815f72cb3426deec5da)",
+        "exact_command": [
+          "bash",
+          "tests/fixtures/codecs/generate.sh"
+        ],
+        "probe_sha256": "f5af7627e8b5d0ba2144ea44a6b3a7bf7b883bf08748f7e06a745d8a60b065af"
+      },
+      "media": {
+        "container": "mp4",
+        "codec": "hevc",
+        "profile": "Main 10",
+        "width": 64,
+        "height": 64,
+        "pixel_format": "yuv420p10le",
+        "bit_depth": 10,
+        "chroma_420": true,
+        "timing": {
+          "model": "CFR",
+          "frame_rate": "30/1",
+          "frame_count": 36,
+          "time_base": "1/15360",
+          "start_pts": 0,
+          "negative_dts": false,
+          "reorder": false,
+          "odd_durations": false
+        },
+        "gop": {
+          "model": "observed key-frame cadence; encoder open-GOP state unknown",
+          "keyint": 30,
+          "b_frames": 0,
+          "open_gop": null,
+          "key_cadence": "decoded frame indices 0,30"
+        },
+        "audio": [],
+        "subtitles": [],
+        "metadata": {
+          "color_primaries": "bt709",
+          "color_transfer": "smpte2084",
+          "color_matrix": "bt709",
+          "color_range": "tv",
+          "chroma_location": "left",
+          "side_data": [
+            "H.26[45] User Data Unregistered SEI message"
+          ],
+          "title": null,
+          "language": "und",
+          "rotation_degrees": null,
+          "orientation": null,
+          "sample_aspect_ratio": null,
+          "mastering_display": null,
+          "content_light": null
+        }
+      },
+      "request": {
+        "dynamic_range": "sdr",
+        "codec": "h264",
+        "bit_depth": 8
+      },
+      "expected": {
+        "classification": "Conflicting",
+        "status": "Unsupported",
+        "planner": "reject",
+        "runtime": "RejectAtClassification",
+        "failure_stage": "InputProbe",
+        "root_cause": "UnsupportedColor",
+        "mutation": null,
+        "corruption": null,
+        "evidence": "Expected from probed color metadata; CLI outcome not yet verified."
+      },
+      "performance_fixture": false
+    },
+    {
+      "id": "hevc-pq-to-sdr10",
+      "description": "PQ to SDR request using Retained legal-domain 300-frame HEVC Main 10 BT.2020/PQ source.",
+      "categories": [
+        "basic",
+        "container",
+        "color",
+        "stress"
+      ],
+      "source": {
+        "kind": "retained_binary",
+        "path": "tests/fixtures/codecs/hevc-main10-pq-c3-legal-v1.mp4",
+        "sha256": "eb8d8c42cd99369b99031900e8861c08f611bfcc662b8d0eb741eb695a0c366a",
+        "byte_size": 1927266,
+        "generator": "tests/fixtures/codecs/generate-c3-pq-legal-v1.sh",
+        "generator_sha256": "b264d019ad7406dfd0c7ce7f4102c59679dae482bf46469a71ee68ae1abd41bd",
+        "tool_identity": "FFmpeg 8.1.3 with libx265 4.1; toolchain and library identities in tests/fixtures/codecs/c3-pq-legal-v1-generator-version.txt (SHA-256 87e52642589a2ffec4fd56da1eeb8d36810c3ba81cac81a4a71039041b89331e)",
+        "exact_command": [
+          "bash",
+          "tests/fixtures/codecs/generate-c3-pq-legal-v1.sh",
+          "{output}"
+        ],
+        "reference_manifest": {
+          "path": "tests/fixtures/codecs/c3-pq-legal-v1-identity.json",
+          "sha256": "557357f31a16b7f68f8c3a4407f02edba5f949c391f9630f5fff31f39ffa375a"
+        },
+        "probe_sha256": "e9d0f07f4429fd15a274c7b024fae35a310357a9470b8d8bfdc201f79580e162"
+      },
+      "media": {
+        "container": "mp4",
+        "codec": "hevc",
+        "profile": "Main 10",
+        "width": 1920,
+        "height": 1080,
+        "pixel_format": "yuv420p10le",
+        "bit_depth": 10,
+        "chroma_420": true,
+        "timing": {
+          "model": "CFR",
+          "frame_rate": "50/1",
+          "frame_count": 300,
+          "time_base": "1/50000",
+          "start_pts": 0,
+          "negative_dts": false,
+          "reorder": false,
+          "odd_durations": false
+        },
+        "gop": {
+          "model": "observed key-frame cadence; encoder open-GOP state unknown",
+          "keyint": 50,
+          "b_frames": 0,
+          "open_gop": null,
+          "key_cadence": "decoded frame indices 0,50,100,150,200,250"
+        },
+        "audio": [],
+        "subtitles": [],
+        "metadata": {
+          "color_primaries": "bt2020",
+          "color_transfer": "smpte2084",
+          "color_matrix": "bt2020nc",
+          "color_range": "tv",
+          "chroma_location": "left",
+          "side_data": [
+            "H.26[45] User Data Unregistered SEI message"
+          ],
+          "title": null,
+          "language": "und",
+          "rotation_degrees": null,
+          "orientation": null,
+          "sample_aspect_ratio": null,
+          "mastering_display": null,
+          "content_light": null
+        }
+      },
+      "request": {
+        "dynamic_range": "sdr",
+        "codec": "h264",
+        "bit_depth": 8,
+        "route": "hardware"
+      },
+      "expected": {
+        "classification": "HdrPq",
+        "status": "Supported",
+        "planner": "accept",
+        "runtime": "Pass",
+        "failure_stage": null,
+        "root_cause": null,
+        "mutation": null,
+        "corruption": null,
+        "evidence": "Expected by the retained PQ preservation contract; hardware execution not yet verified."
+      },
+      "performance_fixture": true
+    },
+    {
+      "id": "av1-pq-to-sdr10",
+      "description": "PQ to SDR request using Retained legal-domain 300-frame AV1 Main 10 BT.2020/PQ source.",
+      "categories": [
+        "basic",
+        "container",
+        "color",
+        "stress"
+      ],
+      "source": {
+        "kind": "retained_binary",
+        "path": "tests/fixtures/codecs/av1-main10-pq-c3-legal-v1.mp4",
+        "sha256": "7eb4fd7e7513fc181ad8489e13edbac10a88a8f3a7947d2f958d36a0ce08e7c4",
+        "byte_size": 8502612,
+        "generator": "tests/fixtures/codecs/generate-c3-pq-legal-v1.sh",
+        "generator_sha256": "b264d019ad7406dfd0c7ce7f4102c59679dae482bf46469a71ee68ae1abd41bd",
+        "tool_identity": "FFmpeg 8.1.3 with libaom 3.13.3; toolchain and library identities in tests/fixtures/codecs/c3-pq-legal-v1-generator-version.txt (SHA-256 87e52642589a2ffec4fd56da1eeb8d36810c3ba81cac81a4a71039041b89331e)",
+        "exact_command": [
+          "bash",
+          "tests/fixtures/codecs/generate-c3-pq-legal-v1.sh",
+          "{output}"
+        ],
+        "reference_manifest": {
+          "path": "tests/fixtures/codecs/c3-pq-legal-v1-identity.json",
+          "sha256": "557357f31a16b7f68f8c3a4407f02edba5f949c391f9630f5fff31f39ffa375a"
+        },
+        "probe_sha256": "85f81a7aca3483cb98f6174b8be7692a6b5c2a53a7010ed3876150ce98434d59"
+      },
+      "media": {
+        "container": "mp4",
+        "codec": "av1",
+        "profile": "Main",
+        "width": 1920,
+        "height": 1080,
+        "pixel_format": "yuv420p10le",
+        "bit_depth": 10,
+        "chroma_420": true,
+        "timing": {
+          "model": "CFR",
+          "frame_rate": "50/1",
+          "frame_count": 300,
+          "time_base": "1/50000",
+          "start_pts": 0,
+          "negative_dts": false,
+          "reorder": false,
+          "odd_durations": false
+        },
+        "gop": {
+          "model": "observed key-frame cadence; encoder open-GOP state unknown",
+          "keyint": 50,
+          "b_frames": 0,
+          "open_gop": null,
+          "key_cadence": "decoded frame indices 0,50,100,150,200,250"
+        },
+        "audio": [],
+        "subtitles": [],
+        "metadata": {
+          "color_primaries": "bt2020",
+          "color_transfer": "smpte2084",
+          "color_matrix": "bt2020nc",
+          "color_range": "tv",
+          "chroma_location": "left",
+          "side_data": [],
+          "title": null,
+          "language": "und",
+          "rotation_degrees": null,
+          "orientation": null,
+          "sample_aspect_ratio": "1:1",
+          "mastering_display": null,
+          "content_light": null
+        }
+      },
+      "request": {
+        "dynamic_range": "sdr",
+        "codec": "hevc",
+        "bit_depth": 10,
+        "route": "hardware"
+      },
+      "expected": {
+        "classification": "HdrPq",
+        "status": "Supported",
+        "planner": "accept",
+        "runtime": "Pass",
+        "failure_stage": null,
+        "root_cause": null,
+        "mutation": null,
+        "corruption": null,
+        "evidence": "Expected by the retained PQ preservation contract; hardware execution not yet verified."
+      },
+      "performance_fixture": true
+    },
+    {
+      "categories": [
+        "basic",
+        "timing",
+        "gop",
+        "container",
+        "color"
+      ],
+      "description": "Observed generated candidate cfr-24000-1001.mp4.",
+      "expected": {
+        "classification": "Sdr",
+        "corruption": null,
+        "evidence": "Explicitly reviewed qualification of this exact retained source SHA/probe and request tuple after complete conversion, timing/color/decode-back and (where present) unchanged strict audio oracle. No Cartesian-product or container-wide support claim.",
+        "failure_stage": null,
+        "mutation": null,
+        "planner": "accept",
+        "root_cause": null,
+        "runtime": "Pass",
+        "status": "ConditionallySupported",
+        "video_timing": "cfr_zero"
+      },
+      "id": "real-cfr-24000-1001-mp4",
+      "media": {
+        "container": "mp4",
+        "codec": "h264",
+        "profile": "Constrained Baseline",
+        "width": 128,
+        "height": 96,
+        "pixel_format": "yuv420p",
+        "bit_depth": 8,
+        "chroma_420": true,
+        "timing": {
+          "model": "CFR",
+          "frame_rate": "24000/1001",
+          "frame_count": 16,
+          "time_base": "1/24000",
+          "start_pts": 0,
+          "negative_dts": false,
+          "reorder": false,
+          "odd_durations": false
+        },
+        "gop": {
+          "model": "observed key-frame cadence; encoder open-GOP state unknown",
+          "keyint": null,
+          "b_frames": 0,
+          "open_gop": null,
+          "key_cadence": "decoded frame indices 0"
+        },
+        "audio": [],
+        "subtitles": [],
+        "metadata": {
+          "color_primaries": null,
+          "color_transfer": null,
+          "color_matrix": "bt709",
+          "color_range": "tv",
+          "chroma_location": "left",
+          "side_data": [
+            "H.26[45] User Data Unregistered SEI message"
+          ],
+          "title": null,
+          "language": "und",
+          "rotation_degrees": null,
+          "orientation": null,
+          "sample_aspect_ratio": "1:1",
+          "mastering_display": null,
+          "content_light": null
+        }
+      },
+      "performance_fixture": false,
+      "request": {
+        "audio": "none",
+        "bit_depth": 8,
+        "codec": "h264",
+        "dynamic_range": "preserve",
+        "route": "portable"
+      },
+      "source": {
+        "byte_size": 15793,
+        "exact_command": [
+          "python3",
+          "tests/corpus/generate-real-video.py",
+          "{output_directory}"
+        ],
+        "generation_group": "real-video",
+        "generator": "tests/corpus/generate-real-video.py",
+        "generator_sha256": "b448a6b7ad61ceec3cc22c362f2592f53fd6e9764106224d2031855545a60673",
+        "kind": "generated",
+        "path": "generated/cfr-24000-1001.mp4",
+        "sha256": "e913650b0c6d044163ce559bab75c5137e28de2d35ff78bb3783ae46e8953e79",
+        "tool_identity": "ffmpeg version 8.1.3 Copyright (c) 2000-2026 the FFmpeg developers; ffmpeg -version SHA256 87e52642589a2ffec4fd56da1eeb8d36810c3ba81cac81a4a71039041b89331e",
+        "probe_sha256": "508df4009df7b0033d1786c51d99c459dac6e60df28bc192a25573a78a97a822"
+      }
+    },
+    {
+      "categories": [
+        "basic",
+        "timing",
+        "gop",
+        "container",
+        "color"
+      ],
+      "description": "Observed generated candidate h264-bframes-2.mp4.",
+      "expected": {
+        "classification": "Sdr",
+        "corruption": null,
+        "evidence": "Explicitly reviewed qualification of this exact retained source SHA/probe and request tuple after complete conversion, timing/color/decode-back and (where present) unchanged strict audio oracle. No Cartesian-product or container-wide support claim.",
+        "failure_stage": null,
+        "mutation": null,
+        "planner": "accept",
+        "root_cause": null,
+        "runtime": "Pass",
+        "status": "ConditionallySupported",
+        "video_timing": "cfr_zero"
+      },
+      "id": "real-h264-bframes-2-mp4",
+      "media": {
+        "container": "mp4",
+        "codec": "h264",
+        "profile": "Main",
+        "width": 128,
+        "height": 96,
+        "pixel_format": "yuv420p",
+        "bit_depth": 8,
+        "chroma_420": true,
+        "timing": {
+          "model": "CFR",
+          "frame_rate": "24/1",
+          "frame_count": 24,
+          "time_base": "1/12288",
+          "start_pts": 0,
+          "negative_dts": true,
+          "reorder": true,
+          "odd_durations": false
+        },
+        "gop": {
+          "model": "observed key-frame cadence; encoder open-GOP state unknown",
+          "keyint": null,
+          "b_frames": 2,
+          "open_gop": null,
+          "key_cadence": "decoded frame indices 0"
+        },
+        "audio": [],
+        "subtitles": [],
+        "metadata": {
+          "color_primaries": null,
+          "color_transfer": null,
+          "color_matrix": "bt709",
+          "color_range": "tv",
+          "chroma_location": "left",
+          "side_data": [
+            "H.26[45] User Data Unregistered SEI message"
+          ],
+          "title": null,
+          "language": "und",
+          "rotation_degrees": null,
+          "orientation": null,
+          "sample_aspect_ratio": "1:1",
+          "mastering_display": null,
+          "content_light": null
+        }
+      },
+      "performance_fixture": false,
+      "request": {
+        "audio": "none",
+        "bit_depth": 8,
+        "codec": "h264",
+        "dynamic_range": "preserve",
+        "route": "portable"
+      },
+      "source": {
+        "byte_size": 20718,
+        "exact_command": [
+          "python3",
+          "tests/corpus/generate-real-video.py",
+          "{output_directory}"
+        ],
+        "generation_group": "real-video",
+        "generator": "tests/corpus/generate-real-video.py",
+        "generator_sha256": "b448a6b7ad61ceec3cc22c362f2592f53fd6e9764106224d2031855545a60673",
+        "kind": "generated",
+        "path": "generated/h264-bframes-2.mp4",
+        "sha256": "2c9c90eede8cfd4222d53476356ffe91f39a85aebc3ba64e5241c936d08f62fa",
+        "tool_identity": "ffmpeg version 8.1.3 Copyright (c) 2000-2026 the FFmpeg developers; ffmpeg -version SHA256 87e52642589a2ffec4fd56da1eeb8d36810c3ba81cac81a4a71039041b89331e",
+        "probe_sha256": "bc797dfa4965b2deca1aa965d1b4348ccb17f61af35efdaf17322d93ba28fc89"
+      }
+    },
+    {
+      "categories": [
+        "basic",
+        "timing",
+        "gop",
+        "container",
+        "color"
+      ],
+      "description": "Observed generated candidate start-pts-plus-two-seconds.mp4.",
+      "expected": {
+        "classification": "Sdr",
+        "corruption": null,
+        "evidence": "Explicitly reviewed qualification of this exact retained source SHA/probe and request tuple after complete conversion, timing/color/decode-back and (where present) unchanged strict audio oracle. No Cartesian-product or container-wide support claim.",
+        "failure_stage": null,
+        "mutation": null,
+        "planner": "accept",
+        "root_cause": null,
+        "runtime": "Pass",
+        "status": "ConditionallySupported",
+        "video_timing": "cfr_zero"
+      },
+      "id": "real-start-pts-plus-two-seconds-mp4",
+      "media": {
+        "container": "mp4",
+        "codec": "h264",
+        "profile": "Constrained Baseline",
+        "width": 128,
+        "height": 96,
+        "pixel_format": "yuv420p",
+        "bit_depth": 8,
+        "chroma_420": true,
+        "timing": {
+          "model": "CFR",
+          "frame_rate": "24/1",
+          "frame_count": 12,
+          "time_base": "1/1000",
+          "start_pts": 2000,
+          "negative_dts": false,
+          "reorder": false,
+          "odd_durations": true
+        },
+        "gop": {
+          "model": "observed key-frame cadence; encoder open-GOP state unknown",
+          "keyint": null,
+          "b_frames": 0,
+          "open_gop": null,
+          "key_cadence": "decoded frame indices 0"
+        },
+        "audio": [],
+        "subtitles": [],
+        "metadata": {
+          "color_primaries": null,
+          "color_transfer": null,
+          "color_matrix": null,
+          "color_range": null,
+          "chroma_location": "left",
+          "side_data": [
+            "H.26[45] User Data Unregistered SEI message"
+          ],
+          "title": null,
+          "language": "und",
+          "rotation_degrees": null,
+          "orientation": null,
+          "sample_aspect_ratio": "1:1",
+          "mastering_display": null,
+          "content_light": null
+        }
+      },
+      "performance_fixture": false,
+      "request": {
+        "audio": "none",
+        "bit_depth": 8,
+        "codec": "h264",
+        "dynamic_range": "preserve",
+        "route": "portable"
+      },
+      "source": {
+        "byte_size": 12734,
+        "exact_command": [
+          "python3",
+          "tests/corpus/generate-real-video.py",
+          "{output_directory}"
+        ],
+        "generation_group": "real-video",
+        "generator": "tests/corpus/generate-real-video.py",
+        "generator_sha256": "b448a6b7ad61ceec3cc22c362f2592f53fd6e9764106224d2031855545a60673",
+        "kind": "generated",
+        "path": "generated/start-pts-plus-two-seconds.mp4",
+        "sha256": "5af85e5950acb9628a6d7ca6316178486c9068ba70ad4cf42b8a4d3194fe8b63",
+        "tool_identity": "ffmpeg version 8.1.3 Copyright (c) 2000-2026 the FFmpeg developers; ffmpeg -version SHA256 87e52642589a2ffec4fd56da1eeb8d36810c3ba81cac81a4a71039041b89331e",
+        "probe_sha256": "05f9cfe3751cdc21ecf9302230446450793e07aa55a76e59a14eff3ad792ef42"
+      }
+    },
+    {
+      "categories": [
+        "basic",
+        "timing",
+        "gop",
+        "container",
+        "color",
+        "mutation"
+      ],
+      "description": "Observed generated candidate same-dimension-changed-sps.h264.",
+      "expected": {
+        "classification": "Conflicting",
+        "corruption": null,
+        "evidence": "Observed exact typed failure and preserved destination/no staging in the final fixed-binary real-media corpus. This is an input-policy rejection, not a successful conversion.",
+        "failure_stage": "InputProbe",
+        "mutation": {
+          "event": "native geometry, layout or color semantics change",
+          "frame_index": 4,
+          "expected_failure": "InputProbe/UnsupportedColor"
+        },
+        "planner": "reject",
+        "root_cause": "UnsupportedColor",
+        "runtime": "RejectAtClassification",
+        "status": "Unsupported",
+        "video_timing": "retimed_unqualified"
+      },
+      "id": "real-same-dimension-changed-sps-h264",
+      "media": {
+        "container": "h264",
+        "codec": "h264",
+        "profile": "Constrained Baseline",
+        "width": 128,
+        "height": 96,
+        "pixel_format": "yuv420p",
+        "bit_depth": 8,
+        "chroma_420": true,
+        "timing": {
+          "model": "Unknown",
+          "frame_rate": "25/1",
+          "frame_count": 8,
+          "time_base": "1/1200000",
+          "start_pts": null,
+          "negative_dts": false,
+          "reorder": false,
+          "odd_durations": false
+        },
+        "gop": {
+          "model": "observed key-frame cadence; encoder open-GOP state unknown",
+          "keyint": 1,
+          "b_frames": 0,
+          "open_gop": null,
+          "key_cadence": "decoded frame indices 0,1,2,3,4,5,6,7"
+        },
+        "audio": [],
+        "subtitles": [],
+        "metadata": {
+          "color_primaries": null,
+          "color_transfer": null,
+          "color_matrix": "bt709",
+          "color_range": "tv",
+          "chroma_location": "left",
+          "side_data": [
+            "H.26[45] User Data Unregistered SEI message"
+          ],
+          "title": null,
+          "language": null,
+          "rotation_degrees": null,
+          "orientation": null,
+          "sample_aspect_ratio": "1:1",
+          "mastering_display": null,
+          "content_light": null
+        }
+      },
+      "performance_fixture": false,
+      "request": {
+        "audio": "none",
+        "bit_depth": 8,
+        "codec": "h264",
+        "dynamic_range": "preserve",
+        "route": "portable"
+      },
+      "source": {
+        "byte_size": 17405,
+        "exact_command": [
+          "python3",
+          "tests/corpus/generate-real-video.py",
+          "{output_directory}"
+        ],
+        "generation_group": "real-video",
+        "generator": "tests/corpus/generate-real-video.py",
+        "generator_sha256": "b448a6b7ad61ceec3cc22c362f2592f53fd6e9764106224d2031855545a60673",
+        "kind": "generated",
+        "path": "generated/same-dimension-changed-sps.h264",
+        "sha256": "14e0b6d73e7ca40c3c2474763635609558f126aea2e49972ce831d4c852a78d1",
+        "tool_identity": "ffmpeg version 8.1.3 Copyright (c) 2000-2026 the FFmpeg developers; ffmpeg -version SHA256 87e52642589a2ffec4fd56da1eeb8d36810c3ba81cac81a4a71039041b89331e",
+        "probe_sha256": "4ef31e8dc0c6d4a3e00dc2ddd8d5b0838a3ae0954f5009e44b7a450f1b46628b"
+      }
+    },
+    {
+      "categories": [
+        "basic",
+        "timing",
+        "gop",
+        "container",
+        "color",
+        "mutation"
+      ],
+      "description": "Observed generated candidate midstream-resolution-change.h264.",
+      "expected": {
+        "classification": "Sdr",
+        "corruption": null,
+        "evidence": "Observed exact typed failure and preserved destination/no staging in the final fixed-binary real-media corpus. This is an input-policy rejection, not a successful conversion.",
+        "failure_stage": "InputProbe",
+        "mutation": {
+          "event": "native geometry, layout or color semantics change",
+          "frame_index": 4,
+          "expected_failure": "InputProbe/UnsupportedFrame"
+        },
+        "planner": "reject",
+        "root_cause": "UnsupportedFrame",
+        "runtime": "RejectAtClassification",
+        "status": "Unsupported",
+        "video_timing": "retimed_unqualified"
+      },
+      "id": "real-midstream-resolution-change-h264",
+      "media": {
+        "container": "h264",
+        "codec": "h264",
+        "profile": "Constrained Baseline",
+        "width": 128,
+        "height": 96,
+        "pixel_format": "yuv420p",
+        "bit_depth": 8,
+        "chroma_420": true,
+        "timing": {
+          "model": "Unknown",
+          "frame_rate": "25/1",
+          "frame_count": 8,
+          "time_base": "1/1200000",
+          "start_pts": null,
+          "negative_dts": false,
+          "reorder": false,
+          "odd_durations": false
+        },
+        "gop": {
+          "model": "observed key-frame cadence; encoder open-GOP state unknown",
+          "keyint": 1,
+          "b_frames": 0,
+          "open_gop": null,
+          "key_cadence": "decoded frame indices 0,1,2,3,4,5,6,7"
+        },
+        "audio": [],
+        "subtitles": [],
+        "metadata": {
+          "color_primaries": null,
+          "color_transfer": null,
+          "color_matrix": "bt709",
+          "color_range": "tv",
+          "chroma_location": "left",
+          "side_data": [
+            "H.26[45] User Data Unregistered SEI message"
+          ],
+          "title": null,
+          "language": null,
+          "rotation_degrees": null,
+          "orientation": null,
+          "sample_aspect_ratio": "1:1",
+          "mastering_display": null,
+          "content_light": null
+        }
+      },
+      "performance_fixture": false,
+      "request": {
+        "audio": "none",
+        "bit_depth": 8,
+        "codec": "h264",
+        "dynamic_range": "preserve",
+        "route": "portable"
+      },
+      "source": {
+        "byte_size": 19180,
+        "exact_command": [
+          "python3",
+          "tests/corpus/generate-real-video.py",
+          "{output_directory}"
+        ],
+        "generation_group": "real-video",
+        "generator": "tests/corpus/generate-real-video.py",
+        "generator_sha256": "b448a6b7ad61ceec3cc22c362f2592f53fd6e9764106224d2031855545a60673",
+        "kind": "generated",
+        "path": "generated/midstream-resolution-change.h264",
+        "sha256": "6286c35bfd687a81eb63a5fb94ce130f9491f01d8047c41ce47c94e4c9637232",
+        "tool_identity": "ffmpeg version 8.1.3 Copyright (c) 2000-2026 the FFmpeg developers; ffmpeg -version SHA256 87e52642589a2ffec4fd56da1eeb8d36810c3ba81cac81a4a71039041b89331e",
+        "probe_sha256": "575dc87b54b7e22f774ab4c93a9a50aa2f370c02db8f7e336a8ce494c3f46bf7"
+      }
+    },
+    {
+      "categories": [
+        "basic",
+        "timing",
+        "gop",
+        "container",
+        "color",
+        "audio"
+      ],
+      "description": "Observed generated candidate aac-44100-mono.mp4.",
+      "expected": {
+        "classification": "Sdr",
+        "corruption": null,
+        "evidence": "Explicitly reviewed qualification of this exact retained source SHA/probe and request tuple after complete conversion, timing/color/decode-back and (where present) unchanged strict audio oracle. No Cartesian-product or container-wide support claim.",
+        "failure_stage": null,
+        "mutation": null,
+        "planner": "accept",
+        "root_cause": null,
+        "runtime": "Pass",
+        "status": "ConditionallySupported",
+        "video_timing": "cfr_origin"
+      },
+      "id": "real-aac-44100-mono-mp4",
+      "media": {
+        "container": "mp4",
+        "codec": "h264",
+        "profile": "High",
+        "width": 128,
+        "height": 96,
+        "pixel_format": "yuv420p",
+        "bit_depth": 8,
+        "chroma_420": true,
+        "timing": {
+          "model": "CFR",
+          "frame_rate": "25/1",
+          "frame_count": 50,
+          "time_base": "1/12800",
+          "start_pts": 0,
+          "negative_dts": true,
+          "reorder": true,
+          "odd_durations": false
+        },
+        "gop": {
+          "model": "observed key-frame cadence; encoder open-GOP state unknown",
+          "keyint": 25,
+          "b_frames": 2,
+          "open_gop": null,
+          "key_cadence": "decoded frame indices 0,25"
+        },
+        "audio": [
+          {
+            "codec": "aac",
+            "channels": 1,
+            "sample_rate": 44100,
+            "time_base": "1/44100",
+            "language": "und",
+            "default": true
+          }
+        ],
+        "subtitles": [],
+        "metadata": {
+          "color_primaries": null,
+          "color_transfer": null,
+          "color_matrix": "bt709",
+          "color_range": "tv",
+          "chroma_location": "left",
+          "side_data": [
+            "H.26[45] User Data Unregistered SEI message"
+          ],
+          "title": null,
+          "language": "und",
+          "rotation_degrees": null,
+          "orientation": null,
+          "sample_aspect_ratio": "1:1",
+          "mastering_display": null,
+          "content_light": null
+        }
+      },
+      "performance_fixture": false,
+      "request": {
+        "audio": "copy",
+        "bit_depth": 8,
+        "codec": "h264",
+        "dynamic_range": "preserve",
+        "route": "portable"
+      },
+      "source": {
+        "byte_size": 56941,
+        "exact_command": [
+          "python3",
+          "tests/corpus/generate-real-audio-metadata.py",
+          "{output_directory}"
+        ],
+        "generation_group": "real-audio-metadata",
+        "generator": "tests/corpus/generate-real-audio-metadata.py",
+        "generator_sha256": "df2ac21d478b487236e308c2111f0020973c045dec579ec8bbecf5025d974fbb",
+        "kind": "generated",
+        "path": "generated/aac-44100-mono.mp4",
+        "sha256": "204ed8174c3c13d12dbcdb08b87d7ee97b016575e2cf8c176cd94c9c51c692ea",
+        "tool_identity": "ffmpeg version 8.1.3 Copyright (c) 2000-2026 the FFmpeg developers; ffmpeg -version SHA256 87e52642589a2ffec4fd56da1eeb8d36810c3ba81cac81a4a71039041b89331e",
+        "probe_sha256": "4e720ef4c6a27d60d91b47a2841814793825f29f2282db87ac4081bdb05adbef"
+      }
+    },
+    {
+      "categories": [
+        "basic",
+        "timing",
+        "gop",
+        "container",
+        "color",
+        "audio"
+      ],
+      "description": "Observed generated candidate dual-aac.mp4.",
+      "expected": {
+        "classification": "Sdr",
+        "corruption": null,
+        "evidence": "Explicitly reviewed qualification of this exact retained source SHA/probe and request tuple after complete conversion, timing/color/decode-back and (where present) unchanged strict audio oracle. No Cartesian-product or container-wide support claim.",
+        "failure_stage": null,
+        "mutation": null,
+        "planner": "accept",
+        "root_cause": null,
+        "runtime": "Pass",
+        "status": "ConditionallySupported",
+        "video_timing": "cfr_origin"
+      },
+      "id": "real-dual-aac-mp4",
+      "media": {
+        "container": "mp4",
+        "codec": "h264",
+        "profile": "High",
+        "width": 128,
+        "height": 96,
+        "pixel_format": "yuv420p",
+        "bit_depth": 8,
+        "chroma_420": true,
+        "timing": {
+          "model": "CFR",
+          "frame_rate": "25/1",
+          "frame_count": 50,
+          "time_base": "1/12800",
+          "start_pts": 0,
+          "negative_dts": true,
+          "reorder": true,
+          "odd_durations": false
+        },
+        "gop": {
+          "model": "observed key-frame cadence; encoder open-GOP state unknown",
+          "keyint": 25,
+          "b_frames": 2,
+          "open_gop": null,
+          "key_cadence": "decoded frame indices 0,25"
+        },
+        "audio": [
+          {
+            "codec": "aac",
+            "channels": 2,
+            "sample_rate": 48000,
+            "time_base": "1/48000",
+            "language": "eng",
+            "default": true
+          },
+          {
+            "codec": "aac",
+            "channels": 2,
+            "sample_rate": 48000,
+            "time_base": "1/48000",
+            "language": "jpn",
+            "default": false
+          }
+        ],
+        "subtitles": [],
+        "metadata": {
+          "color_primaries": null,
+          "color_transfer": null,
+          "color_matrix": "bt709",
+          "color_range": "tv",
+          "chroma_location": "left",
+          "side_data": [
+            "H.26[45] User Data Unregistered SEI message"
+          ],
+          "title": null,
+          "language": "und",
+          "rotation_degrees": null,
+          "orientation": null,
+          "sample_aspect_ratio": "1:1",
+          "mastering_display": null,
+          "content_light": null
+        }
+      },
+      "performance_fixture": false,
+      "request": {
+        "audio": "copy",
+        "bit_depth": 8,
+        "codec": "h264",
+        "dynamic_range": "preserve",
+        "route": "portable"
+      },
+      "source": {
+        "byte_size": 82336,
+        "exact_command": [
+          "python3",
+          "tests/corpus/generate-real-audio-metadata.py",
+          "{output_directory}"
+        ],
+        "generation_group": "real-audio-metadata",
+        "generator": "tests/corpus/generate-real-audio-metadata.py",
+        "generator_sha256": "df2ac21d478b487236e308c2111f0020973c045dec579ec8bbecf5025d974fbb",
+        "kind": "generated",
+        "path": "generated/dual-aac.mp4",
+        "sha256": "e71f10d3808692232a8bdc3eb1b26fc163360433d62f78f3749a3b1513a0187c",
+        "tool_identity": "ffmpeg version 8.1.3 Copyright (c) 2000-2026 the FFmpeg developers; ffmpeg -version SHA256 87e52642589a2ffec4fd56da1eeb8d36810c3ba81cac81a4a71039041b89331e",
+        "probe_sha256": "3f5a8cb034fa154041059b663070fe9df07e567ecaf881adcc6ab7eee021882b"
+      }
+    },
+    {
+      "categories": [
+        "basic",
+        "timing",
+        "gop",
+        "container",
+        "color"
+      ],
+      "description": "Observed generated candidate sdr-with-hdr-sei.mp4.",
+      "expected": {
+        "classification": "Conflicting",
+        "corruption": null,
+        "evidence": "Observed exact typed failure and preserved destination/no staging in the final fixed-binary real-media corpus. This is an input-policy rejection, not a successful conversion.",
+        "failure_stage": "InputProbe",
+        "mutation": null,
+        "planner": "reject",
+        "root_cause": "UnsupportedColor",
+        "runtime": "RejectAtClassification",
+        "status": "Unsupported",
+        "video_timing": "cfr_zero"
+      },
+      "id": "real-sdr-with-hdr-sei-mp4",
+      "media": {
+        "container": "mp4",
+        "codec": "hevc",
+        "profile": "Main 10",
+        "width": 64,
+        "height": 64,
+        "pixel_format": "yuv420p10le",
+        "bit_depth": 10,
+        "chroma_420": true,
+        "timing": {
+          "model": "CFR",
+          "frame_rate": "30/1",
+          "frame_count": 6,
+          "time_base": "1/15360",
+          "start_pts": 0,
+          "negative_dts": false,
+          "reorder": false,
+          "odd_durations": false
+        },
+        "gop": {
+          "model": "observed key-frame cadence; encoder open-GOP state unknown",
+          "keyint": null,
+          "b_frames": 0,
+          "open_gop": null,
+          "key_cadence": "decoded frame indices 0"
+        },
+        "audio": [],
+        "subtitles": [],
+        "metadata": {
+          "color_primaries": "bt709",
+          "color_transfer": "bt709",
+          "color_matrix": "bt709",
+          "color_range": "tv",
+          "chroma_location": "left",
+          "side_data": [
+            "Content light level metadata",
+            "H.26[45] User Data Unregistered SEI message",
+            "Mastering display metadata"
+          ],
+          "title": null,
+          "language": "und",
+          "rotation_degrees": null,
+          "orientation": null,
+          "sample_aspect_ratio": null,
+          "mastering_display": {
+            "primaries_xy": [
+              [
+                "34000/50000",
+                "16000/50000"
+              ],
+              [
+                "13250/50000",
+                "34500/50000"
+              ],
+              [
+                "7500/50000",
+                "3000/50000"
+              ]
+            ],
+            "white_point_xy": [
+              "15635/50000",
+              "16450/50000"
+            ],
+            "min_luminance": "50/10000",
+            "max_luminance": "10000000/10000"
+          },
+          "content_light": {
+            "max_cll": 1000,
+            "max_fall": 400
+          }
+        }
+      },
+      "performance_fixture": false,
+      "request": {
+        "audio": "none",
+        "bit_depth": 8,
+        "codec": "h264",
+        "dynamic_range": "preserve",
+        "route": "portable"
+      },
+      "source": {
+        "byte_size": 42828,
+        "exact_command": [
+          "python3",
+          "tests/corpus/generate-real-audio-metadata.py",
+          "{output_directory}"
+        ],
+        "generation_group": "real-audio-metadata",
+        "generator": "tests/corpus/generate-real-audio-metadata.py",
+        "generator_sha256": "df2ac21d478b487236e308c2111f0020973c045dec579ec8bbecf5025d974fbb",
+        "kind": "generated",
+        "path": "generated/sdr-with-hdr-sei.mp4",
+        "sha256": "7f71752618a50c618a50e81c116c1e48ca29f6ad928d338c10b1fa6a7495c299",
+        "tool_identity": "ffmpeg version 8.1.3 Copyright (c) 2000-2026 the FFmpeg developers; ffmpeg -version SHA256 87e52642589a2ffec4fd56da1eeb8d36810c3ba81cac81a4a71039041b89331e",
+        "probe_sha256": "f230c9ac8b4e31a14057ae38530208eccc5aadc6a3cbc58b0350d82be7662dea"
+      }
+    },
+    {
+      "categories": [
+        "basic",
+        "timing",
+        "gop",
+        "container",
+        "color",
+        "audio",
+        "negative"
+      ],
+      "description": "Observed generated candidate truncated-end.mp4.",
+      "expected": {
+        "classification": "Sdr",
+        "corruption": {
+          "description": "{\"keep_bytes\": 57456, \"kind\": \"truncate\", \"removed_bytes\": 128, \"source\": \"negative-source.mp4\"}",
+          "kind": "truncated_file",
+          "offset": 57456
+        },
+        "evidence": "Observed exact typed failure and preserved destination/no staging in the final fixed-binary real-media corpus. This is an input-policy rejection, not a successful conversion.",
+        "failure_stage": "MuxRuntime",
+        "mutation": null,
+        "planner": "accept",
+        "root_cause": "Media",
+        "runtime": "RuntimeFailureExpected",
+        "status": "Unsupported",
+        "video_timing": "cfr_origin",
+        "safe_output": true
+      },
+      "id": "real-truncated-end-mp4",
+      "media": {
+        "container": "mp4",
+        "codec": "h264",
+        "profile": "High",
+        "width": 128,
+        "height": 96,
+        "pixel_format": "yuv420p",
+        "bit_depth": 8,
+        "chroma_420": true,
+        "timing": {
+          "model": "CFR",
+          "frame_rate": "25/1",
+          "frame_count": 50,
+          "time_base": "1/12800",
+          "start_pts": 0,
+          "negative_dts": false,
+          "reorder": false,
+          "odd_durations": false
+        },
+        "gop": {
+          "model": "observed key-frame cadence; encoder open-GOP state unknown",
+          "keyint": 25,
+          "b_frames": 0,
+          "open_gop": null,
+          "key_cadence": "decoded frame indices 0,25"
+        },
+        "audio": [
+          {
+            "codec": "aac",
+            "channels": 2,
+            "sample_rate": 48000,
+            "time_base": "1/48000",
+            "language": "eng",
+            "default": true
+          }
+        ],
+        "subtitles": [],
+        "metadata": {
+          "color_primaries": null,
+          "color_transfer": null,
+          "color_matrix": "bt709",
+          "color_range": "tv",
+          "chroma_location": "left",
+          "side_data": [
+            "H.26[45] User Data Unregistered SEI message"
+          ],
+          "title": null,
+          "language": "und",
+          "rotation_degrees": null,
+          "orientation": null,
+          "sample_aspect_ratio": "1:1",
+          "mastering_display": null,
+          "content_light": null
+        }
+      },
+      "performance_fixture": false,
+      "request": {
+        "audio": "copy",
+        "bit_depth": 8,
+        "codec": "h264",
+        "dynamic_range": "preserve",
+        "route": "portable"
+      },
+      "source": {
+        "byte_size": 57456,
+        "exact_command": [
+          "python3",
+          "tests/corpus/generate-real-negative.py",
+          "{output_directory}"
+        ],
+        "generation_group": "real-negative",
+        "generator": "tests/corpus/generate-real-negative.py",
+        "generator_sha256": "541496ea28a5ea7f9a3cc076a1d6def4153f604d157b32c7adc94400d6947628",
+        "kind": "generated",
+        "path": "generated/truncated-end.mp4",
+        "sha256": "bc7c29f0030dc9387a84581175718cfb97b8949ce19fcec580e46878d6c7ef80",
+        "tool_identity": "ffmpeg version 8.1.3 Copyright (c) 2000-2026 the FFmpeg developers; ffmpeg -version SHA256 87e52642589a2ffec4fd56da1eeb8d36810c3ba81cac81a4a71039041b89331e",
+        "probe_sha256": "7944d5fd0669e1cffc07deefdae20bb6da7ceb6bfc7de0b85ddd254cc7fa68f0"
+      }
+    },
+    {
+      "categories": [
+        "basic",
+        "timing",
+        "gop",
+        "container",
+        "color",
+        "audio",
+        "metadata"
+      ],
+      "description": "Observed generated candidate rotation-90.mp4.",
+      "expected": {
+        "classification": "Sdr",
+        "corruption": null,
+        "evidence": "Observed exact typed failure and preserved destination/no staging in the final fixed-binary real-media corpus. This is an input-policy rejection, not a successful conversion.",
+        "failure_stage": "InputProbe",
+        "mutation": null,
+        "planner": "reject",
+        "root_cause": "UnsupportedFrame",
+        "runtime": "RejectAtClassification",
+        "status": "Unsupported",
+        "video_timing": "cfr_origin"
+      },
+      "id": "real-rotation-90-mp4",
+      "media": {
+        "container": "mp4",
+        "codec": "h264",
+        "profile": "High",
+        "width": 128,
+        "height": 96,
+        "pixel_format": "yuv420p",
+        "bit_depth": 8,
+        "chroma_420": true,
+        "timing": {
+          "model": "CFR",
+          "frame_rate": "25/1",
+          "frame_count": 50,
+          "time_base": "1/12800",
+          "start_pts": 0,
+          "negative_dts": true,
+          "reorder": true,
+          "odd_durations": false
+        },
+        "gop": {
+          "model": "observed key-frame cadence; encoder open-GOP state unknown",
+          "keyint": 25,
+          "b_frames": 2,
+          "open_gop": null,
+          "key_cadence": "decoded frame indices 0,25"
+        },
+        "audio": [
+          {
+            "codec": "aac",
+            "channels": 1,
+            "sample_rate": 44100,
+            "time_base": "1/44100",
+            "language": "und",
+            "default": true
+          }
+        ],
+        "subtitles": [],
+        "metadata": {
+          "color_primaries": null,
+          "color_transfer": null,
+          "color_matrix": "bt709",
+          "color_range": "tv",
+          "chroma_location": "left",
+          "side_data": [
+            "3x3 displaymatrix",
+            "Display Matrix",
+            "H.26[45] User Data Unregistered SEI message"
+          ],
+          "title": null,
+          "language": "und",
+          "rotation_degrees": 90,
+          "orientation": null,
+          "sample_aspect_ratio": "1:1",
+          "mastering_display": null,
+          "content_light": null
+        }
+      },
+      "performance_fixture": false,
+      "request": {
+        "audio": "copy",
+        "bit_depth": 8,
+        "codec": "h264",
+        "dynamic_range": "preserve",
+        "route": "portable"
+      },
+      "source": {
+        "byte_size": 56941,
+        "exact_command": [
+          "python3",
+          "tests/corpus/generate-real-audio-metadata.py",
+          "{output_directory}"
+        ],
+        "generation_group": "real-audio-metadata",
+        "generator": "tests/corpus/generate-real-audio-metadata.py",
+        "generator_sha256": "df2ac21d478b487236e308c2111f0020973c045dec579ec8bbecf5025d974fbb",
+        "kind": "generated",
+        "path": "generated/rotation-90.mp4",
+        "sha256": "92613197e0d51dc657716234bcb24bbf8d4ffa37fed3da4d90eb4541e24f9ee7",
+        "tool_identity": "ffmpeg version 8.1.3 Copyright (c) 2000-2026 the FFmpeg developers; ffmpeg -version SHA256 87e52642589a2ffec4fd56da1eeb8d36810c3ba81cac81a4a71039041b89331e",
+        "probe_sha256": "e6310f3541ccc44c583140cdaa55c1ed95fe85a84a479748e7defd5274291892"
+      }
+    },
+    {
+      "id": "canonical-h2648-auto",
+      "description": "Generated canonical 1920x1080 50 fps SDR H.264 8-bit source. Automatic hardware route.",
+      "categories": [
+        "basic",
+        "container",
+        "color",
+        "stress"
+      ],
+      "source": {
+        "kind": "generated",
+        "path": "generated/canonical-h2648.mp4",
+        "sha256": "6e5c214b813dca3e1db65629b1241cfb663166eb565cda1c48b5ee74ed0dce6b",
+        "byte_size": 19672925,
+        "generator": "tests/fixtures/codecs/generate-8bit-production-baseline.sh",
+        "generator_sha256": "7962394e54915e6db67c55018a4cfd27562d65f3c5bff81c4b6f2f3c876bbe3c",
+        "tool_identity": "FFmpeg 8.1.3; ffmpeg -version SHA-256 87e52642589a2ffec4fd56da1eeb8d36810c3ba81cac81a4a71039041b89331e",
+        "exact_command": [
+          "bash",
+          "tests/fixtures/codecs/generate-8bit-production-baseline.sh",
+          "{output}"
+        ],
+        "probe_sha256": "f082c44d5204ce63ded6e7a347f040bf94da2f734fa4de6513e96c57f1d7e148"
+      },
+      "media": {
+        "container": "mp4",
+        "codec": "h264",
+        "profile": "Constrained Baseline",
+        "width": 1920,
+        "height": 1080,
+        "pixel_format": "yuv420p",
+        "bit_depth": 8,
+        "chroma_420": true,
+        "timing": {
+          "model": "CFR",
+          "frame_rate": "50/1",
+          "frame_count": 300,
+          "time_base": "1/90000",
+          "start_pts": 0,
+          "negative_dts": false,
+          "reorder": false,
+          "odd_durations": false
+        },
+        "gop": {
+          "model": "observed key-frame cadence; encoder open-GOP state unknown",
+          "keyint": 250,
+          "b_frames": 0,
+          "open_gop": null,
+          "key_cadence": "decoded frame indices 0,250"
+        },
+        "audio": [],
+        "subtitles": [],
+        "metadata": {
+          "color_primaries": "bt709",
+          "color_transfer": "bt709",
+          "color_matrix": "bt709",
+          "color_range": "tv",
+          "chroma_location": "left",
+          "side_data": [
+            "H.26[45] User Data Unregistered SEI message"
+          ],
+          "title": null,
+          "language": "und",
+          "rotation_degrees": null,
+          "orientation": null,
+          "sample_aspect_ratio": "1:1",
+          "mastering_display": null,
+          "content_light": null
+        }
+      },
+      "request": {
+        "dynamic_range": "sdr",
+        "codec": "h264",
+        "bit_depth": 8,
+        "route": "auto"
+      },
+      "expected": {
+        "classification": "Sdr",
+        "status": "Supported",
+        "planner": "accept",
+        "runtime": "Pass",
+        "failure_stage": null,
+        "root_cause": null,
+        "mutation": null,
+        "corruption": null,
+        "evidence": "Expected by the corpus contract from the probed fixture properties; runtime outcome not yet verified."
+      },
+      "performance_fixture": true
+    },
+    {
+      "id": "hevc-sdr10-auto",
+      "description": "Retained canonical 1920x1080 300-frame HEVC Main 10 BT.709 limited SDR source. Automatic hardware route.",
+      "categories": [
+        "basic",
+        "container",
+        "color"
+      ],
+      "source": {
+        "kind": "retained_binary",
+        "path": "tests/fixtures/codecs/hevc-main10-canonical-v1.mp4",
+        "sha256": "df69c98ca6592b08c6bc34127b2bb5cf4125c759fd852b830e5426d5818fccda",
+        "byte_size": 6733222,
+        "generator": "tests/fixtures/codecs/generate-10bit-baseline.sh",
+        "generator_sha256": "8162c4764b27810d9cd35107be9d534b1e619fb29abda5cb0ffcabea45f5f026",
+        "tool_identity": "FFmpeg 8.1.3; generator environment is tests/fixtures/codecs/canonical-generator-version.txt (SHA-256 be0ecc351965ef4c69e765da6545e1fc455e68eb5ab926261b75245e664384a0)",
+        "exact_command": [
+          "bash",
+          "tests/fixtures/codecs/generate-10bit-baseline.sh",
+          "{output}"
+        ],
+        "reference_manifest": {
+          "path": "tests/fixtures/codecs/canonical-generator-version.txt",
+          "sha256": "be0ecc351965ef4c69e765da6545e1fc455e68eb5ab926261b75245e664384a0"
+        },
+        "probe_sha256": "c366728045ff02075986f325a94f49650aa0a0a3d0337570ee52d5956a7e43d9"
+      },
+      "media": {
+        "container": "mp4",
+        "codec": "hevc",
+        "profile": "Main 10",
+        "width": 1920,
+        "height": 1080,
+        "pixel_format": "yuv420p10le",
+        "bit_depth": 10,
+        "chroma_420": true,
+        "timing": {
+          "model": "CFR",
+          "frame_rate": "50/1",
+          "frame_count": 300,
+          "time_base": "1/50000",
+          "start_pts": 0,
+          "negative_dts": false,
+          "reorder": false,
+          "odd_durations": false
+        },
+        "gop": {
+          "model": "observed key-frame cadence; encoder open-GOP state unknown",
+          "keyint": 50,
+          "b_frames": 0,
+          "open_gop": null,
+          "key_cadence": "decoded frame indices 0,50,100,150,200,250"
+        },
+        "audio": [],
+        "subtitles": [],
+        "metadata": {
+          "color_primaries": "bt709",
+          "color_transfer": "bt709",
+          "color_matrix": "bt709",
+          "color_range": "tv",
+          "chroma_location": "left",
+          "side_data": [
+            "H.26[45] User Data Unregistered SEI message"
+          ],
+          "title": null,
+          "language": "und",
+          "rotation_degrees": null,
+          "orientation": null,
+          "sample_aspect_ratio": null,
+          "mastering_display": null,
+          "content_light": null
+        }
+      },
+      "request": {
+        "dynamic_range": "sdr",
+        "codec": "hevc",
+        "bit_depth": 10,
+        "route": "auto"
+      },
+      "expected": {
+        "classification": "Sdr",
+        "status": "Supported",
+        "planner": "accept",
+        "runtime": "Pass",
+        "failure_stage": null,
+        "root_cause": null,
+        "mutation": null,
+        "corruption": null,
+        "evidence": "Retained canonical HEVC source ffprobe matches the requested 10-bit limited-SDR production profile; local CLI reached Planning but cannot confirm selection without a render node."
+      },
+      "performance_fixture": false
+    }
+  ]
+}

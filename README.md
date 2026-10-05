@@ -8,6 +8,11 @@ remaining feature gaps are recorded in the [Rust follow-up inventory](docs/legac
 
 ## Current support
 
+Qualification applies to the recorded Intel/Mesa/iHD/FFmpeg stacks, not all
+driver versions. [Stack-scoped portability testing](docs/portability-testing.md)
+separates media correctness from exact-build artifact identity; alternate
+stacks do not automatically broaden this support contract.
+
 <!-- production-support-contract:begin -->
 Support contract `1.1.0`. Hardware conditions and evidence: [production support contract](docs/production-support.md).
 

@@ -1,5 +1,12 @@
 # Compatibility corpus
 
+For toolchain/driver comparisons, the existing runner supports `--stack` and
+`--reference-run`; see [portability testing](portability-testing.md). The stack
+context attests actual tools and loaded libraries, not just a descriptive name.
+Inputs retain their canonical generation identity. The portability core set
+includes actual full decode/timing/audio checks and keeps historical oracles
+unchanged; alternate results are separate stack-scoped evidence.
+
 Stage 5.4A packages the existing production support contract and regression
 evidence into a reproducible runner. It enables no additional codec, color,
 container, backend or interop path. [The stage record](stage5.4a-support-contract.md)

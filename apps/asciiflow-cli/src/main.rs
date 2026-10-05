@@ -1089,7 +1089,9 @@ impl PipelineFactory {
             };
             InitializationFailure::new(capability, error)
         })?;
-        decoder.attach_audio_passthrough(audio_plan, encoder.audio_packet_sender());
+        decoder
+            .attach_audio_passthrough(audio_plan, encoder.audio_packet_sender())
+            .map_err(|error| InitializationFailure::new(InitCapability::Muxer, error))?;
 
         let selection = match vulkan {
             Some(backend) if plan.hardware_output_interop && plan.hardware_input_interop => {

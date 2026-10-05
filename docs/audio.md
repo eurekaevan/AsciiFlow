@@ -30,25 +30,29 @@ errors when the detailed stream configuration is not acceptable.
 ## Ownership and bounded flow
 
 ```text
-input AVFormatContext (decoder/demux owner)
-  ├─ selected video packet -> decoder -> ASCII -> video encoder ─┐
-  └─ selected audio packet -> move-ref, no payload copy ─────────┤
-                                                                 v
-                                               bounded mux queue (64 packets)
-                                                                 |
-                                              one mux worker / one AVFormatContext
-                                                                 |
-                                              av_interleaved_write_frame -> MP4
+video demux -> decoder -> ASCII -> video encoder -> FIFO (16) ─┐
+audio demux -> selected audio packets, move-ref -> FIFO (16) ──┤
+                                                              v
+                                           deterministic two-head merge
+                                                              |
+                                       one mux worker / one AVFormatContext
+                                                              |
+                                       av_interleaved_write_frame -> MP4
 ```
 
-The decoder remains the only input demux owner. A selected audio packet is
-moved into its own RAII `AVPacket` and sent through a bounded channel. The
-encoder moves each produced video packet into the same channel. The mux worker
-is the only code that touches the output format context, so audio and video can
-never concurrently call FFmpeg's mux API.
+Video and audio each have an independent demux owner of the same immutable local
+input. Selected audio packets retain their original demux order and move into
+RAII `AVPacket` references without decoding or transcoding. A single mux worker
+waits for each producer's head or EOF and merges by checked output DTS, output
+PTS, then output stream index using rational comparisons. Only that worker
+touches the output format context; audio and video never concurrently call
+FFmpeg's mux API. The additional audio demux pass avoids blocking video lookahead
+behind audio backpressure; mutable and one-shot inputs are not qualified here.
 
-The queue has a fixed 64-packet bound, each packet is limited to 16 MiB, and both producers use timed sends
-that observe cooperative cancellation. This prevents a non-interleaved input
+The two FIFOs and two retained heads hold at most 34 packet references, excluding
+one pending send per producer and demux scratch packets. Each enqueued packet is
+limited to 16 MiB. Timed sends observe cooperative cancellation and the stored
+first failure. This prevents a non-interleaved input
 or an audio-dense region from accumulating the whole compressed track in
 memory. The worker also flushes FFmpeg's interleaving queue after 64 packets or
 8 MiB, whichever comes first, so sparse or non-interleaved streams cannot

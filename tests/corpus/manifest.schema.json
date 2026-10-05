@@ -112,7 +112,7 @@
         "codec": { "type": "string", "minLength": 1 },
         "bit_depth": { "type": "integer", "enum": [8, 10] },
         "audio": { "enum": ["none", "copy", "auto"] },
-        "route": { "enum": ["portable", "hardware"] }
+        "route": { "enum": ["portable", "hardware", "auto"] }
       }
     },
     "outcome": {
