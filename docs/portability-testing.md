@@ -2,7 +2,9 @@
 
 Stage 5.4C-2 uses `tests/portability/c2-matrix.json` as a canonical-centered
 star matrix. `run-expanded-matrix.py` orchestrates the existing corpus and media
-oracles; it does not invent a relaxed comparison engine. Schema-v2 stack capture
+oracles. The separate [C-2A contract](stage5.4c2a-h264-ihd2546.md) adds a narrow
+cross-driver Tier 1B-P without changing the retained legacy comparator.
+Schema-v2 stack capture
 attests initialized ANV/iHD modules and their native dependency closure. Child
 selectors are cleared and explicitly reconstructed for each stack; requested
 driver paths alone are not evidence. Opt-in `/proc` samples additionally retain
@@ -36,7 +38,7 @@ retained/static/lifecycle/timing/portability gates using the existing oracles.
 |---|---|---|
 | P0 Environment/capability identity | Source HEAD/diff/files, lockfile, binary, actual loaded libav paths/SHA/version, FFmpeg tools/config, Rust, kernel, GPU/driver, Mesa/ANV, libva/iHD, structured Vulkan profile | Identify changed variables; never infer hardware qualification from lavapipe |
 | P1 Pipeline eligibility | Per-input CapabilitySnapshot, actual initialized PipelinePlan, codec/profile/format and NV12/P010 interop | Added/removed/changed capability is recorded separately; unexpected fallback or probe/init disagreement is a blocker |
-| P2 Media correctness | Existing Tier 1B/1C/2, full decode, color, HDR side-data policy, frame/packet timestamps, audio payload/routing/title | Primary cross-stack gate; unexplained coded changes, pixel changes, or timing/color/audio regressions block qualification |
+| P2 Media correctness | Existing Tier 1B/1C/2; separately attested H.264 Tier 1B-P where applicable; full decode, color, HDR side-data policy, frame/packet timestamps, audio payload/routing/title | Primary cross-stack gate; unexplained coded changes, pixel changes, or timing/color/audio regressions block qualification |
 | P3 Exact artifact identity | Tier 1A packets, extradata, container metadata, Tier 3 whole-file SHA | Strict for an independently attested identical stack and deterministic baseline; diagnostic across stacks |
 
 P layers do not rename the retained media tiers. In particular a changed SHA
@@ -81,6 +83,19 @@ VAAPI suffix and Lavc62.28 patch-token SEI rule: SPS/PPS/VCL/unknown SEI
 differences are not automatically approved. HEVC/AV1 do not borrow that rule.
 Only the established narrow Lavf/Lavc patch metadata policy applies; new
 metadata differences require explicit evidence, never generic tag removal.
+
+The additive H.264 Tier 1B-P is a different contract, not an expansion of that
+historical allowlist. A schema-v2 loader-attested single-iHD edge with identical
+libav/ANV/source may compare the complete known encoder-identifier SEI against
+each driver's independently recorded version. Its type, UUID, Lavc/VAAPI prefix,
+payload syntax and trailing bits are exact. It admits no unknown SEI, new NAL,
+SPS/PPS/VCL change, pixel change, AU/GOP/timestamp/color/stream metadata drift,
+or unrelated container bytes. The legacy Tier 1A/1B failure and raw hash drift
+remain in the same receipt beside the additional Tier 1B-P result. Same-stack
+checks never invoke it. This currently characterizes only the tested 1080p/300
+frame/50 fps limited BT.709 H.264 output routes; it is not a general H.264 parser
+or a blanket VCL equivalence policy. Full field inventories use fixed FFmpeg
+`trace_headers` independently of software decode-back.
 
 Every difference is classified as ExpectedExact, ApprovedVolatileDifference,
 SemanticEquivalent, CapabilityDrift, PerformanceDrift, Regression or Unresolved.

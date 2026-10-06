@@ -26,6 +26,10 @@ use std::{
 const MUX_CHANNEL_CAPACITY: usize = 16;
 const MUX_POLL: Duration = Duration::from_millis(20);
 
+#[cfg(all(test, feature = "encode-characterization"))]
+#[path = "encoder_replay.rs"]
+mod encoder_replay;
+
 #[cfg(test)]
 thread_local! {
     static INJECT_MUX_HEADER_FAILURE: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
@@ -60,6 +64,8 @@ pub struct Encoder {
     submitted_total: u64,
     #[cfg(feature = "encode-characterization")]
     packets_total: u64,
+    #[cfg(feature = "encode-characterization")]
+    capture: Option<super::encoder_capture::EncoderCapture>,
     #[cfg(test)]
     inject_send_failure: bool,
     #[cfg(test)]
@@ -568,6 +574,9 @@ impl Encoder {
         } else {
             (None, None)
         };
+        #[cfg(feature = "encode-characterization")]
+        let capture =
+            super::encoder_capture::EncoderCapture::from_environment(unsafe { &*codec.as_ptr() })?;
         let mut options = ptr::null_mut();
         let codec_options: &[(&str, &str)] = if mode == EncodeMode::Vaapi {
             vaapi_codec_options(&output_codec)
@@ -602,6 +611,10 @@ impl Encoder {
             return Err(asciiflow_core::Error::Media(format!(
                 "{output_codec} encoder rejected {unused_options} configuration option(s)"
             )));
+        }
+        #[cfg(feature = "encode-characterization")]
+        if let Some(capture) = &capture {
+            capture.context("after", unsafe { &*codec.as_ptr() })?;
         }
         check(
             unsafe {
@@ -829,6 +842,8 @@ impl Encoder {
             submitted_total: 0,
             #[cfg(feature = "encode-characterization")]
             packets_total: 0,
+            #[cfg(feature = "encode-characterization")]
+            capture,
             #[cfg(test)]
             inject_send_failure: false,
             #[cfg(test)]
@@ -1130,6 +1145,10 @@ impl Encoder {
             );
         }
         let encode_started = Instant::now();
+        #[cfg(feature = "encode-characterization")]
+        if let Some(capture) = &mut self.capture {
+            capture.frame(frame)?;
+        }
         #[cfg(test)]
         if self.inject_send_failure {
             self.inject_send_failure = false;

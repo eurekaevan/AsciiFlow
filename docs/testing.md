@@ -2,7 +2,7 @@
 
 Toolchain/driver changes use the [stack-scoped portability workflow](portability-testing.md).
 
-## Stage 5.4C2 expanded portability matrix (under construction)
+## Stage 5.4C2 expanded portability matrix
 
 The five-stack matrix is specified in the
 [matrix report](stage5.4c2-expanded-portability-matrix.md) and
@@ -21,7 +21,28 @@ with a stack-scoped child environment; do not install them into host locations
 or use global loader/driver configuration. Existing canonical artifacts remain
 exact-stack scoped. The kernel edge is `UnavailableSafely`: checking another
 installed kernel requires rebooting the active session, and reboot is not
-authorized. The matrix remains unsealed; no Stage D status is implied.
+authorized. Current sealing and qualification decisions are recorded in the
+[C-2A forensic report](stage5.4c2a-h264-ihd2546.md), not inferred from a runner's
+exit status. No Stage D implementation is implied.
+
+H.264 cross-driver investigation first freezes the historical oracle and media.
+`tests/portability/h264-ihd-forensic.py` records ten conversions per driver/route,
+actual initialized driver files, and opt-in measurement-build encoder-boundary
+NV12 Y/UV SHA-256 and AVFrame/configuration evidence. `encode-characterization`
+with `ASCIIFLOW_ENCODER_CAPTURE_DIRECTORY` downloads the actual submitted surface
+for evidence only: it never replaces it and fails explicitly on evidence errors.
+The encoder-only ignored test replays the retained NV12 without decoding,
+ASCII/Vulkan processing, audio or muxing. Preserve both raw captures and their
+durable hashes; a missing raw capture is not a reconstructed historical input.
+
+The independent `h264_driver_portability` test adds Tier 1B-P only for an
+attested single-iHD edge with unchanged libav/ANV/source. Its exact known SEI
+fingerprint permits only the matched driver identifier, not a Lavc change,
+unknown SEI, new NAL or any SPS/PPS/VCL difference. All AU/GOP/timing/color and
+container bytes outside the one proven packet remain exact. Legacy Tier 1B
+FAIL remains visible; same-stack Tier 1A/1B/1C/2/3 stays strict. Negative tests
+must reject color, timing, SPS/PPS/VCL and unrelated container mutations without
+depending on decoded pixels to detect coded semantic changes.
 
 Stage 5.4C-1A mux closure uses [the unchanged strict packet-order gate](stage5.4c1a-deterministic-mux.md).
 Historical A/B captures are immutable and can be materialized with

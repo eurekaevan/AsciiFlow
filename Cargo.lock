@@ -139,6 +139,7 @@ dependencies = [
  "ffmpeg-sys-next",
  "libc",
  "libloading",
+ "serde_json",
  "tracing",
 ]
 

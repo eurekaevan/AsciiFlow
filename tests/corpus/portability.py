@@ -84,8 +84,10 @@ def source_identity():
                            ":(exclude)tests/portability/stage54c1.json",
                            ":(exclude)tests/portability/stage54c1a.json",
                            ":(exclude)tests/portability/stage54c2.json",
+                           ":(exclude)tests/portability/stage54c2a-h264-ihd2546.json",
                            ":(exclude)tests/portability/qualified-stacks.json",
                            ":(exclude)docs/stage5.4c2-expanded-portability-matrix.md",
+                           ":(exclude)docs/stage5.4c2a-h264-ihd2546.md",
                            ":(exclude)docs/stage5.4c1a-deterministic-mux.md",
                            ":(exclude)docs/stage5.4c1-portability-baseline.md"], cwd=ROOT,
                           capture_output=True, check=True).stdout
@@ -95,7 +97,7 @@ def source_identity():
     # self-referential identity when the second manifest records the first one.
     files = {p: digest(ROOT / p) for p in sorted(set(paths))
              if (ROOT / p).is_file() and not p.startswith("tests/portability/stacks/")
-             and p not in {"tests/portability/stage54c1.json", "tests/portability/stage54c1a.json", "tests/portability/stage54c2.json", "tests/portability/qualified-stacks.json", "docs/stage5.4c2-expanded-portability-matrix.md", "docs/stage5.4c1a-deterministic-mux.md", "docs/stage5.4c1-portability-baseline.md"}}
+             and p not in {"tests/portability/stage54c1.json", "tests/portability/stage54c1a.json", "tests/portability/stage54c2.json", "tests/portability/stage54c2a-h264-ihd2546.json", "tests/portability/qualified-stacks.json", "docs/stage5.4c2-expanded-portability-matrix.md", "docs/stage5.4c2a-h264-ihd2546.md", "docs/stage5.4c1a-deterministic-mux.md", "docs/stage5.4c1-portability-baseline.md"}}
     return {"head": query(["git", "rev-parse", "HEAD"])["stdout"].strip(),
             "dirty_diff_sha256": hashlib.sha256(diff).hexdigest(),
             "cargo_lock_sha256": digest(ROOT / "Cargo.lock"), "files_sha256": files}
@@ -308,6 +310,34 @@ def exact_byte_proof(prior, fixture, stack_identity, reference_sha256, candidate
             "semantic_oracle": evidence}
 
 
+def attested_ihd_edge(reference, candidate):
+    """Only an actually loaded, single-driver edge may invoke Tier 1B-P."""
+    for key in ("source", "binary", "kernel", "rustc", "cargo", "gpu", "render_node",
+                "libraries", "ffmpeg", "ffprobe"):
+        if reference[key] != candidate[key]:
+            return None
+    if reference["driver_files"]["anv"] != candidate["driver_files"]["anv"]:
+        return None
+    versions = []
+    for stack in (reference, candidate):
+        actual = stack["driver_files"]["ihd"]
+        probe = stack["native_loader_probes"]["ihd"]
+        if probe["exit_code"] or probe["loaded_modules"].get("iHD_drv_video.so") != actual:
+            return None
+        match = re.search(r"Driver version: Intel iHD driver for Intel\(R\) Gen Graphics - (\d+\.\d+\.\d+) \(\)",
+                          probe["stdout"])
+        if not match or not Path(actual["path"]).is_file() or digest(actual["path"]) != actual["sha256"]:
+            return None
+        versions.append(match.group(1))
+    if versions[0] == versions[1] or reference["driver_files"]["ihd"]["sha256"] == candidate["driver_files"]["ihd"]["sha256"]:
+        return None
+    closures = [{p: value for p, value in stack["native_dependencies"].items()
+                 if p != stack["driver_files"]["ihd"]["path"]} for stack in (reference, candidate)]
+    if closures[0] != closures[1]:
+        return None
+    return versions
+
+
 def compare_corpus(run, reference_directory, manifest):
     """Compare actual execution evidence; use the existing Rust media oracle."""
     from run import load, save
@@ -384,6 +414,27 @@ def compare_corpus(run, reference_directory, manifest):
                       semantic_oracle={"log_path": str(run.out / command["log"]), "log_sha256": digest(run.out / command["log"]),
                                        "exit_code": command["exit_code"], "argv": command["argv"]},
                       classification=artifact_classification(same_stack, exact, semantic, passed))
+        # Add a distinct portability contract; never relabel the frozen legacy
+        # Tier 1B failure, and never invoke it for a same-stack regression.
+        edge = attested_ihd_edge(reference_stack, candidate_stack) if not same_stack else None
+        if (edge and not passed and tiers.get("1A") == "FAIL" and tiers.get("1B") == "FAIL"
+                and tiers.get("1C") == "PASS" and tiers.get("2") == "PASS"):
+            portability_env = dict(env, ASCIIFLOW_PORTABILITY_REFERENCE_IHD_VERSION=edge[0],
+                                   ASCIIFLOW_PORTABILITY_CANDIDATE_IHD_VERSION=edge[1])
+            portability_passed = run.command(f"h264-driver-portability-{name}", [
+                "cargo", "test", "--offline", "--release", "-p", "asciiflow-media", "--test",
+                "h264_driver_portability", "compare_h264_driver_pair_from_env", "--", "--ignored", "--exact", "--nocapture"],
+                portability_env)
+            portability_command = run.commands[-1]
+            portability_log = run.out / portability_command["log"]
+            proof = portability_log.read_text()
+            tier_pass = portability_passed and "Tier 1B-P cross-driver portability: PASS" in proof
+            record["tiers"]["1B-P"] = "PASS" if tier_pass else "FAIL"
+            record["driver_portability_oracle"] = {"argv": portability_command["argv"],
+                "exit_code": portability_command["exit_code"], "log_path": str(portability_log),
+                "log_sha256": digest(portability_log), "attested_ihd_versions": edge}
+            if tier_pass:
+                record["classification"] = "SemanticEquivalent"
         if record["planner_diff"]:
             record["classification"] = "Unresolved"
         records.append(record)

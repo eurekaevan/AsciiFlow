@@ -1,5 +1,22 @@
 # Stage 5.4C-2 — Expanded portability matrix
 
+**SEALED after Stage 5.4C-2A closure.** See the
+[forensic closure report](stage5.4c2a-h264-ihd2546.md) and
+[current closure receipt](../tests/portability/stage54c2a-h264-ihd2546.json).
+Five exact stacks are now qualified: the isolated iHD edge uses the separately
+attested Tier 1B-P contract for its three identifier-only H.264 differences.
+Legacy Tier 1A/1B failures remain FAIL, and the historical Lavc-only allowlist
+and same-stack byte-exact gates are unchanged. Final-source five-stack core ×3,
+17 retained paths ×3, lifecycle and static checks pass. Overall Stage 5.4C is
+SEALED. Stage 5.4D is justified but NOT STARTED.
+
+## Historical pre-C2A report — preserved decision and evidence
+
+The remainder records the original C-2 decision on its original source.
+Its receipt, source hashes, four-qualified/one-failed registry snapshot,
+classification failures and execution history are preserved, not reinterpreted
+as current PASS evidence. The current registry retains this snapshot separately.
+
 **NOT SEALED.** The expanded matrix and its final-source evidence are complete,
 but the isolated iHD 25.4.6 edge fails the existing strict H.264 Tier 1B gate.
 Three failures are retained as `Regression`, not waived as volatile metadata:

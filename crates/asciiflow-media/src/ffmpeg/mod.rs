@@ -3,6 +3,8 @@ mod audio_reader;
 mod codec;
 mod decoder;
 mod encoder;
+#[cfg(feature = "encode-characterization")]
+mod encoder_capture;
 mod ffi;
 mod frame;
 mod hwdevice;
