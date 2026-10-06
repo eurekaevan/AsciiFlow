@@ -1449,7 +1449,7 @@ fn create_scaler(
             width as i32,
             height as i32,
             ffi::AVPixelFormat::AV_PIX_FMT_NV12,
-            ffi::SwsFlags::SWS_BILINEAR as i32,
+            ffi::SWS_BILINEAR_FLAG,
             ptr::null_mut(),
             ptr::null_mut(),
             ptr::null(),
