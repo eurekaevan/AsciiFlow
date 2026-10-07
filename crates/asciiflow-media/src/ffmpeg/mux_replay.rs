@@ -1,6 +1,11 @@
 //! Mux-only diagnostics using native captured codec parameters and packet refs.
 use super::*;
-use std::{ffi::CString, path::PathBuf};
+use std::{
+    ffi::CString,
+    fs::{self, OpenOptions},
+    io::{BufWriter, Write},
+    path::PathBuf,
+};
 
 struct Capture {
     format: NonNull<ffi::AVFormatContext>,
@@ -449,6 +454,154 @@ fn deterministic_producer_merge_replay() {
         capture.deterministic_replay(&directory.join(format!("fixed-{run:03}.mp4")), run, 1);
     }
     capture.deterministic_replay(&directory.join("stress-30084.mp4"), 0, 218);
+}
+
+#[test]
+#[ignore = "1000 deterministic dual-producer mux replays across dual-audio and early-audio-EOF fixtures"]
+fn soak_dual_and_sparse_producer_merge_replay() {
+    const RUNS_PER_FIXTURE: usize = 500;
+
+    let directory = PathBuf::from(std::env::var_os("ASCIIFLOW_MUX_REPLAY_DIRECTORY").unwrap());
+    fs::create_dir(&directory).expect("replay evidence directory must be new");
+    let report_path = directory.join("soak.jsonl");
+    let report = OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&report_path)
+        .expect("soak report must be new");
+    let mut report = BufWriter::new(report);
+    let mut completed = 0;
+
+    for (fixture, source) in [
+        (
+            "dual-audio",
+            PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .join("../../tests/fixtures/media/multiple.mp4"),
+        ),
+        (
+            "early-audio-eof",
+            PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .join("../../tests/fixtures/media/video-longer.mp4"),
+        ),
+    ] {
+        let fd_before_capture = fd_count();
+        let capture = Capture::read(&source);
+        let initial_fd_count = fd_count();
+        let reference_path = directory.join(format!("{fixture}-reference.mp4"));
+        let reference_trace = reference_path.with_extension("jsonl");
+        capture.deterministic_replay(&reference_path, 0, 1);
+        let reference = fs::read(&reference_path).expect("read first replay reference");
+        let fd_after_reference = fd_count();
+        let rss_after_reference_kib = rss_kib();
+        assert_eq!(
+            fd_after_reference, initial_fd_count,
+            "{fixture} reference replay must restore the post-capture FD count"
+        );
+        writeln!(
+            report,
+            "{}",
+            serde_json::json!({
+                "fixture": fixture,
+                "run": 0,
+                "reference": true,
+                "fd_before_capture": fd_before_capture,
+                "fd_before": initial_fd_count,
+                "fd_after": fd_after_reference,
+                "matched": true,
+                "rss_kib": rss_after_reference_kib,
+                "output_bytes": reference.len(),
+            })
+        )
+        .unwrap();
+        report.flush().unwrap();
+        completed += 1;
+
+        for run in 1..RUNS_PER_FIXTURE {
+            let output_path = directory.join(format!("{fixture}-{run:03}.mp4"));
+            let trace_path = output_path.with_extension("jsonl");
+            capture.deterministic_replay(&output_path, run, 1);
+            let output = fs::read(&output_path).expect("read replay output");
+            let fd_after = fd_count();
+            let rss_after_kib = rss_kib();
+            let matched = output == reference;
+            writeln!(
+                report,
+                "{}",
+                serde_json::json!({
+                    "fixture": fixture,
+                    "run": run,
+                    "reference": false,
+                    "fd_before": initial_fd_count,
+                    "fd_after": fd_after,
+                    "matched": matched,
+                    "rss_kib": rss_after_kib,
+                    "output_bytes": output.len(),
+                })
+            )
+            .unwrap();
+            report.flush().unwrap();
+            assert_eq!(
+                fd_after, initial_fd_count,
+                "{fixture} run {run} must restore the post-capture FD count"
+            );
+            assert!(
+                matched,
+                "{fixture} run {run} differs byte-for-byte from its first replay"
+            );
+
+            // Keep only each fixture's reference MP4 and trace; all other
+            // outputs are deleted only after FD and byte-identity checks pass.
+            fs::remove_file(output_path).unwrap();
+            fs::remove_file(trace_path).unwrap();
+            completed += 1;
+        }
+        assert!(reference_path.is_file());
+        assert!(reference_trace.is_file());
+        drop(capture);
+        let fd_after_capture_drop = fd_count();
+        writeln!(
+            report,
+            "{}",
+            serde_json::json!({
+                "fixture": fixture,
+                "capture_dropped": true,
+                "fd_before_capture": fd_before_capture,
+                "fd_after_capture_drop": fd_after_capture_drop,
+            })
+        )
+        .unwrap();
+        report.flush().unwrap();
+        assert_eq!(
+            fd_after_capture_drop, fd_before_capture,
+            "{fixture} capture drop must restore the pre-capture FD count"
+        );
+    }
+
+    assert_eq!(completed, 2 * RUNS_PER_FIXTURE);
+    writeln!(
+        report,
+        "{}",
+        serde_json::json!({ "summary": true, "runs": completed })
+    )
+    .unwrap();
+    report.flush().unwrap();
+}
+
+fn fd_count() -> usize {
+    fs::read_dir("/proc/self/fd").unwrap().count()
+}
+
+fn rss_kib() -> u64 {
+    fs::read_to_string("/proc/self/status")
+        .unwrap()
+        .lines()
+        .find(|line| line.starts_with("VmRSS:"))
+        .unwrap()
+        .split_whitespace()
+        .nth(1)
+        .unwrap()
+        .parse()
+        .unwrap()
 }
 
 #[test]

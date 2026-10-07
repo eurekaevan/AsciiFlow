@@ -2,6 +2,15 @@
 
 Toolchain/driver changes use the [stack-scoped portability workflow](portability-testing.md).
 
+## Stage 5.4D-1 reliability hardening (NOT SEALED)
+
+The [reliability contract](reliability-testing.md),
+[D-1 ledger](stage5.4d1-soak-failure-hardening.md) and
+[`stage54d1.json`](../tests/soak/stage54d1.json) distinguish native mux replay,
+portable failure-model tests and unexecuted production long-run gates. Generated
+inputs, short GPU preflights and historical C receipts are not D-1 qualification.
+Stage 5.4D-2 is not started.
+
 ## Stage 5.4C2 expanded portability matrix
 
 The five-stack matrix is specified in the
@@ -23,7 +32,7 @@ exact-stack scoped. The kernel edge is `UnavailableSafely`: checking another
 installed kernel requires rebooting the active session, and reboot is not
 authorized. Current sealing and qualification decisions are recorded in the
 [C-2A forensic report](stage5.4c2a-h264-ihd2546.md), not inferred from a runner's
-exit status. No Stage D implementation is implied.
+exit status. C evidence does not imply D-1 reliability qualification.
 
 H.264 cross-driver investigation first freezes the historical oracle and media.
 `tests/portability/h264-ihd-forensic.py` records ten conversions per driver/route,

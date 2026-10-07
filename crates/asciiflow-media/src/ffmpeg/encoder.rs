@@ -772,19 +772,30 @@ impl Encoder {
         let mux_thread = std::thread::Builder::new()
             .name("asciiflow-mux".into())
             .spawn(move || {
-                let result = run_mux_worker(
-                    output,
-                    mux_inbox::MuxInputs {
-                        video: &mux_receiver,
-                        audio: Some(&audio_receiver),
-                    },
-                    worker_stats,
-                    worker_failure.clone(),
-                    worker_stop,
-                    worker_cancellation,
-                    #[cfg(feature = "mux-qualification")]
-                    worker_trace,
-                )
+                // Keep receivers alive outside the unwind boundary. Publish the
+                // root before their disconnect wakes blocked producers.
+                let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                    run_mux_worker(
+                        output,
+                        mux_inbox::MuxInputs {
+                            video: &mux_receiver,
+                            audio: Some(&audio_receiver),
+                        },
+                        worker_stats,
+                        worker_failure.clone(),
+                        worker_stop,
+                        worker_cancellation,
+                        #[cfg(feature = "mux-qualification")]
+                        worker_trace,
+                    )
+                }))
+                .unwrap_or_else(|_| {
+                    Err(Error::pipeline_message(
+                        PipelineStage::MuxRuntime,
+                        "run mux worker",
+                        "mux worker panicked",
+                    ))
+                })
                 .map_err(|error| {
                     if error.is_cancelled() {
                         error
@@ -1492,6 +1503,8 @@ fn run_mux_worker(
             }
         };
         match message {
+            #[cfg(test)]
+            MuxMessage::Panic => panic!("injected mux worker panic"),
             #[cfg(test)]
             MuxMessage::FailAudioAfter(count) => fail_audio_after = Some(count),
             #[cfg(test)]
@@ -2272,6 +2285,35 @@ mod audio_regression_tests {
         let observed = encoder.drain_packets().unwrap_err();
         assert_eq!(observed.to_string(), root.to_string());
         assert!(encoder.inject_receive_failure);
+    }
+
+    #[test]
+    fn mux_panic_is_published_before_receiver_disconnect() {
+        let output = OutputPath(
+            std::env::temp_dir().join(format!("asciiflow-mux-panic-{}.mp4", std::process::id())),
+        );
+        let mut encoder = Encoder::create_with_audio(
+            &output.0,
+            FrameDesc::host_nv12(128, 96, ColorSpace::default()).unwrap(),
+            Rational::new(25, 1).unwrap(),
+            EncodeMode::Software,
+            VaapiOptions::default(),
+            Vec::new(),
+            CancellationToken::new(),
+        )
+        .unwrap();
+        encoder.send_mux_message(MuxMessage::Panic).unwrap();
+        let root = encoder.join_mux().unwrap_err();
+        assert_eq!(root.stage(), Some(PipelineStage::MuxRuntime));
+        assert!(root.to_string().contains("mux worker panicked"));
+        assert_eq!(
+            encoder.check_mux_active().unwrap_err().to_string(),
+            root.to_string()
+        );
+        assert!(matches!(
+            encoder.mux_sender.try_send(MuxMessage::Abort),
+            Err(crossbeam_channel::TrySendError::Disconnected(_))
+        ));
     }
 
     #[test]

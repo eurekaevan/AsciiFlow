@@ -1,15 +1,25 @@
 # AsciiFlow architecture
 
-Stage 5.4C2's expanded five-stack portability matrix is under construction,
-not sealed. See the [matrix report](stage5.4c2-expanded-portability-matrix.md)
+[Stage 5.4D-1](stage5.4d1-soak-failure-hardening.md) starts reliability hardening
+without changing the media feature matrix. Worker unwind now publishes root
+failure/cancellation before ordered joins; owned worker objects are destroyed
+inside the guard lifetime, while native decoder/encoder contexts still outlive
+interop teardown. Mux panic is latched before channel disconnect. The
+[reliability contract](reliability-testing.md) retains bounded queues, single
+mux ownership, no runtime fallback and same-directory atomic output commit.
+D-1 is NOT SEALED; long-run GPU/resource qualification remains open.
+
+Stage 5.4C2's five-stack portability matrix and H.264 closure are recorded in
+the [C-2A closure report](stage5.4c2a-h264-ihd2546.md),
+the [matrix report](stage5.4c2-expanded-portability-matrix.md)
 and [qualified-stack registry](../tests/portability/qualified-stacks.json).
-Its alternate FFmpeg/Mesa/iHD stacks are exploratory evidence only; native
-all-ready probes do not qualify a stack. Qualification remains scoped to exact
+Qualification requires reviewed evidence; native all-ready probes alone do
+not qualify a stack. Qualification remains scoped to exact
 artifacts and actual loaded-library evidence from stack manifest v2, captured
 with loader diagnostics during initialization and a scoped child environment.
 Toolchains stay under new target prefixes, without host installation. The
 alternate-kernel edge is `UnavailableSafely` because checking it would require
-an unauthorized reboot. This matrix does not imply sealing or Stage D.
+an unauthorized reboot. C qualification does not imply D-1 reliability closure.
 
 Stage 5.4A adds the [versioned support contract](production-support.md),
 [structured diagnostics and corpus runner](compatibility-corpus.md), and a

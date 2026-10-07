@@ -21,7 +21,9 @@ the [matrix report](docs/stage5.4c2-expanded-portability-matrix.md) and the
 changes this support contract without reviewed qualification. The additive
 Tier 1B-P gate permits only an attested iHD build identifier in one known SEI;
 it does not relax same-stack packet identity or admit SPS/PPS/VCL/color/timing
-changes. No universal driver portability or Stage 5.4D implementation is implied.
+changes. No universal driver portability is implied. [Stage 5.4D-1 reliability
+hardening](docs/stage5.4d1-soak-failure-hardening.md) is now in progress and
+NOT SEALED; long-run resource qualification remains open.
 
 <!-- production-support-contract:begin -->
 Support contract `1.1.0`. Hardware conditions and evidence: [production support contract](docs/production-support.md).

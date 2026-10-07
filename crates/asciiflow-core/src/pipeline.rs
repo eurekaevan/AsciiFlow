@@ -11,6 +11,30 @@ use std::{
 
 const POLL: Duration = Duration::from_millis(20);
 
+// Publish a panic while unwinding the worker, not when the coordinator eventually
+// joins it. An earlier join may be waiting for this worker's cancellation.
+struct WorkerPanicGuard {
+    failure: Arc<Mutex<Option<Error>>>,
+    cancellation: CancellationToken,
+    stage: PipelineStage,
+}
+
+impl Drop for WorkerPanicGuard {
+    fn drop(&mut self) {
+        if std::thread::panicking() {
+            record_failure(
+                &self.failure,
+                &self.cancellation,
+                Error::pipeline_message(
+                    self.stage,
+                    "run pipeline worker",
+                    "worker thread panicked",
+                ),
+            );
+        }
+    }
+}
+
 struct DecodedFrame {
     frame: VideoFrame,
     started_at: Instant,
@@ -144,9 +168,9 @@ impl Pipeline {
 
     pub fn run_with_cancellation<S, B, E>(
         &self,
-        mut source: S,
-        mut backend: B,
-        mut sink: E,
+        source: S,
+        backend: B,
+        sink: E,
         config: AsciiConfig,
         cancellation: CancellationToken,
     ) -> Result<PipelineReport>
@@ -166,6 +190,12 @@ impl Pipeline {
             let failure = first_failure.clone();
             let m = metrics.clone();
             let decoder_thread = scope.spawn(move || {
+                let _panic_guard = WorkerPanicGuard {
+                    failure: failure.clone(),
+                    cancellation: cancel.clone(),
+                    stage: PipelineStage::DecodeRuntime,
+                };
+                let mut source = source;
                 while !cancel.is_cancelled() {
                     let begin = Instant::now();
                     match source.next_frame() {
@@ -222,6 +252,12 @@ impl Pipeline {
             let failure = first_failure.clone();
             let m = metrics.clone();
             let processor_thread = scope.spawn(move || {
+                let _panic_guard = WorkerPanicGuard {
+                    failure: failure.clone(),
+                    cancellation: cancel.clone(),
+                    stage: PipelineStage::ProcessingRuntime,
+                };
+                let mut backend = backend;
                 let mut pending_started = VecDeque::new();
                 loop {
                     match decoded_rx.recv_timeout(POLL) {
@@ -291,6 +327,12 @@ impl Pipeline {
             let failure = first_failure.clone();
             let m = metrics.clone();
             let encoder_thread = scope.spawn(move || {
+                let _panic_guard = WorkerPanicGuard {
+                    failure: failure.clone(),
+                    cancellation: cancel.clone(),
+                    stage: PipelineStage::EncodeRuntime,
+                };
+                let mut sink = sink;
                 loop {
                     match processed_rx.recv_timeout(POLL) {
                         Ok(frame) => {
@@ -469,6 +511,123 @@ mod tests {
         fn finish(&mut self) -> Result<()> {
             Ok(())
         }
+    }
+
+    #[test]
+    fn encoder_panic_cancels_source_finish_before_ordered_join() {
+        struct FinishingSource {
+            source: Source,
+            entered: Sender<()>,
+            cancellation: CancellationToken,
+            cancelled_before_timeout: Arc<AtomicBool>,
+        }
+        impl FrameSource for FinishingSource {
+            fn next_frame(&mut self) -> Result<Option<VideoFrame>> {
+                self.source.next_frame()
+            }
+            fn finish(&mut self) -> Result<()> {
+                self.entered.send(()).unwrap();
+                let deadline = Instant::now() + Duration::from_secs(2);
+                while !self.cancellation.is_cancelled() && Instant::now() < deadline {
+                    std::thread::sleep(Duration::from_millis(1));
+                }
+                self.cancelled_before_timeout.store(
+                    self.cancellation.is_cancelled() && Instant::now() < deadline,
+                    Ordering::SeqCst,
+                );
+                Ok(())
+            }
+        }
+        struct PanickingSink {
+            wait_for_finish: crossbeam_channel::Receiver<()>,
+            panic_on_drop: bool,
+            finalized: bool,
+        }
+        impl FrameSink for PanickingSink {
+            fn encode(&mut self, _: VideoFrame) -> Result<()> {
+                self.wait_for_finish
+                    .recv_timeout(Duration::from_secs(2))
+                    .unwrap();
+                if !self.panic_on_drop {
+                    panic!("injected encoder worker panic");
+                }
+                Ok(())
+            }
+            fn finish(&mut self) -> Result<()> {
+                assert!(self.panic_on_drop, "panicking encoder must not finalize");
+                self.finalized = true;
+                Ok(())
+            }
+        }
+        impl Drop for PanickingSink {
+            fn drop(&mut self) {
+                if self.panic_on_drop && !std::thread::panicking() {
+                    assert!(
+                        self.finalized,
+                        "sink must finish before the injected drop panic"
+                    );
+                    panic!("injected encoder resource drop panic");
+                }
+            }
+        }
+        for panic_on_drop in [false, true] {
+            let cancellation = CancellationToken::new();
+            let observed = Arc::new(AtomicBool::new(false));
+            let (entered, wait_for_finish) = bounded(1);
+            let error = Pipeline::new(1)
+                .unwrap()
+                .run_with_cancellation(
+                    FinishingSource {
+                        source: Source { next: 0, end: 1 },
+                        entered,
+                        cancellation: cancellation.clone(),
+                        cancelled_before_timeout: observed.clone(),
+                    },
+                    Backend,
+                    PanickingSink {
+                        wait_for_finish,
+                        panic_on_drop,
+                        finalized: false,
+                    },
+                    AsciiConfig::default(),
+                    cancellation,
+                )
+                .unwrap_err();
+            assert!(
+                observed.load(Ordering::SeqCst),
+                "source finish timed out before panic cancellation (panic_on_drop={panic_on_drop})"
+            );
+            assert_eq!(error.stage(), Some(PipelineStage::EncodeRuntime));
+            assert!(error.to_string().contains("run pipeline worker"));
+            assert!(error.to_string().contains("worker thread panicked"));
+        }
+    }
+
+    #[test]
+    fn worker_panic_preserves_an_existing_substantive_failure() {
+        let failure = Arc::new(Mutex::new(None));
+        let cancellation = CancellationToken::new();
+        record_failure(
+            &failure,
+            &cancellation,
+            Error::pipeline_message(
+                PipelineStage::DecodeRuntime,
+                "read fixture",
+                "primary failure",
+            ),
+        );
+        let unwind = std::panic::catch_unwind(|| {
+            let _guard = WorkerPanicGuard {
+                failure: failure.clone(),
+                cancellation: cancellation.clone(),
+                stage: PipelineStage::EncodeRuntime,
+            };
+            panic!("secondary worker panic");
+        });
+        assert!(unwind.is_err());
+        let error = take_failure(&failure).unwrap();
+        assert_eq!(error.stage(), Some(PipelineStage::DecodeRuntime));
+        assert!(error.to_string().contains("primary failure"));
     }
 
     #[test]
@@ -1002,6 +1161,45 @@ mod tests {
             );
             assert!(matches!(result, Err(Error::Cancelled)));
             assert!(dropped.load(Ordering::Acquire));
+        }
+    }
+
+    #[test]
+    fn late_worker_failures_preserve_root_at_frame_one_hundred_and_ten_thousand() {
+        for fail_at in [100, 10_000] {
+            let error = Pipeline::new(3)
+                .unwrap()
+                .run(
+                    IndexedFailSource {
+                        next: 0,
+                        end: fail_at + 1,
+                        fail_at,
+                    },
+                    Backend,
+                    Sink(Arc::new(Mutex::new(Vec::new()))),
+                    AsciiConfig::default(),
+                )
+                .unwrap_err();
+            assert_eq!(error.stage(), Some(PipelineStage::DecodeRuntime));
+            assert!(error.to_string().contains(&format!("frame {fail_at}")));
+            let error = Pipeline::new(3)
+                .unwrap()
+                .run(
+                    Source {
+                        next: 0,
+                        end: fail_at + 1,
+                    },
+                    Backend,
+                    IndexedFailSink {
+                        next: 0,
+                        fail_at: Some(fail_at as usize),
+                        fail_finish: false,
+                    },
+                    AsciiConfig::default(),
+                )
+                .unwrap_err();
+            assert_eq!(error.stage(), Some(PipelineStage::EncodeRuntime));
+            assert!(error.to_string().contains(&format!("frame {fail_at}")));
         }
     }
 

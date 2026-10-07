@@ -1,5 +1,10 @@
 # Stack-scoped portability qualification
 
+[Stage 5.4D-1 reliability hardening](reliability-testing.md) is in progress,
+not sealed. Native panic fixes require final-source retained/core reruns and
+alternate-stack smoke. Historical C evidence is source-scoped, not automatic
+D-1 PASS. Tier 1B-P and all same-stack strict oracles remain unchanged.
+
 Stage 5.4C-2 uses `tests/portability/c2-matrix.json` as a canonical-centered
 star matrix. `run-expanded-matrix.py` orchestrates the existing corpus and media
 oracles. The separate [C-2A contract](stage5.4c2a-h264-ihd2546.md) adds a narrow

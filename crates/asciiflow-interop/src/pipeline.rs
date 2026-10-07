@@ -15,6 +15,37 @@ use std::{
 
 const POLL: Duration = Duration::from_millis(20);
 
+// The borrowed decoder/encoder owners outlive their worker threads. Publish
+// cancellation on unwind so an earlier join cannot wait forever on audio/mux.
+struct WorkerPanicGuard {
+    errors: Sender<Error>,
+    cancellation: CancellationToken,
+    stage: PipelineStage,
+}
+
+impl WorkerPanicGuard {
+    fn new(errors: &Sender<Error>, cancellation: &CancellationToken, stage: PipelineStage) -> Self {
+        Self {
+            errors: errors.clone(),
+            cancellation: cancellation.clone(),
+            stage,
+        }
+    }
+}
+
+impl Drop for WorkerPanicGuard {
+    fn drop(&mut self) {
+        if std::thread::panicking() {
+            let _ = self.errors.send(Error::pipeline_message(
+                self.stage,
+                "run interop worker",
+                "worker thread panicked",
+            ));
+            self.cancellation.cancel();
+        }
+    }
+}
+
 struct DecodedFrame {
     frame: VaapiDecodedFrame,
     started_at: Instant,
@@ -87,7 +118,7 @@ pub fn run_interop_pipeline(
 
 pub fn run_interop_pipeline_with_cancellation(
     mut decoder: Decoder,
-    mut processor: VaapiVulkanInteropProcessor,
+    processor: VaapiVulkanInteropProcessor,
     mut encoder: Encoder,
     max_frames: Option<u64>,
     capacity: usize,
@@ -113,6 +144,8 @@ pub fn run_interop_pipeline_with_cancellation(
         // processor workers have released those surfaces.
         let decoder = &mut decoder;
         let decoder_thread = scope.spawn(move || {
+            let _panic_guard =
+                WorkerPanicGuard::new(&errors, &cancel, PipelineStage::DecodeRuntime);
             let mut remaining = max_frames;
             while !cancel.is_cancelled() && remaining != Some(0) {
                 let begin = Instant::now();
@@ -168,6 +201,9 @@ pub fn run_interop_pipeline_with_cancellation(
         let errors = error_tx.clone();
         let m = metrics.clone();
         let processor_thread = scope.spawn(move || {
+            let _panic_guard =
+                WorkerPanicGuard::new(&errors, &cancel, PipelineStage::ProcessingRuntime);
+            let mut processor = processor;
             let mut pending_started = VecDeque::new();
             loop {
                 match decoded_rx.recv_timeout(POLL) {
@@ -248,6 +284,8 @@ pub fn run_interop_pipeline_with_cancellation(
         // teardown on cancellation.
         let encoder = &mut encoder;
         let encoder_thread = scope.spawn(move || {
+            let _panic_guard =
+                WorkerPanicGuard::new(&errors, &cancel, PipelineStage::EncodeRuntime);
             loop {
                 match processed_rx.recv_timeout(POLL) {
                     Ok(frame) => {
@@ -377,7 +415,7 @@ pub fn run_output_interop_pipeline_with_cancellation(
 
 fn run_hardware_output_pipeline(
     mut decoder: Decoder,
-    mut processor: HardwareOutputProcessor,
+    processor: HardwareOutputProcessor,
     mut encoder: Encoder,
     max_frames: Option<u64>,
     capacity: usize,
@@ -404,6 +442,8 @@ fn run_hardware_output_pipeline(
         // downstream interop workers have released every frame.
         let decoder = &mut decoder;
         let decoder_thread = scope.spawn(move || {
+            let _panic_guard =
+                WorkerPanicGuard::new(&errors, &cancel, PipelineStage::DecodeRuntime);
             let mut remaining = max_frames;
             while !cancel.is_cancelled() && remaining != Some(0) {
                 let begin = Instant::now();
@@ -468,6 +508,9 @@ fn run_hardware_output_pipeline(
         let errors = error_tx.clone();
         let m = metrics.clone();
         let processor_thread = scope.spawn(move || {
+            let _panic_guard =
+                WorkerPanicGuard::new(&errors, &cancel, PipelineStage::ProcessingRuntime);
+            let mut processor = processor;
             let mut pending_started = VecDeque::new();
             loop {
                 match decoded_rx.recv_timeout(POLL) {
@@ -555,6 +598,8 @@ fn run_hardware_output_pipeline(
         // pool. Keep the encoder context alive through processor teardown.
         let encoder = &mut encoder;
         let encoder_thread = scope.spawn(move || {
+            let _panic_guard =
+                WorkerPanicGuard::new(&errors, &cancel, PipelineStage::EncodeRuntime);
             loop {
                 match processed_rx.recv_timeout(POLL) {
                     Ok(processed) => {
@@ -765,4 +810,53 @@ fn record_sink_timings(metrics: &Metrics, timings: asciiflow_core::SinkTimings) 
     metrics.record_encode_diagnostics(timings.encode_diagnostics);
     metrics.record(MetricStage::AudioPassthrough, timings.audio_passthrough);
     metrics.record_audio(timings.audio_packets, timings.audio_bytes);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn borrowed_encoder_panic_cancels_before_waiting_for_decoder_join() {
+        let cancellation = CancellationToken::new();
+        let (errors, received_errors) = unbounded();
+        let (entered, wait_for_decoder) = bounded(1);
+        // Like native contexts, these owners remain alive outside the workers.
+        let mut decoder_observed_cancellation = false;
+        let mut encoder_owner = ();
+        std::thread::scope(|scope| {
+            let cancel = cancellation.clone();
+            let observed = &mut decoder_observed_cancellation;
+            let decoder = scope.spawn(move || {
+                entered.send(()).unwrap();
+                let deadline = Instant::now() + Duration::from_secs(2);
+                while !cancel.is_cancelled() && Instant::now() < deadline {
+                    std::thread::sleep(Duration::from_millis(1));
+                }
+                *observed = cancel.is_cancelled() && Instant::now() < deadline;
+            });
+            let processor = scope.spawn(|| {});
+            let cancel = cancellation.clone();
+            let worker_errors = errors.clone();
+            let owner = &mut encoder_owner;
+            let encoder = scope.spawn(move || {
+                let _borrowed_owner = owner;
+                let _guard =
+                    WorkerPanicGuard::new(&worker_errors, &cancel, PipelineStage::EncodeRuntime);
+                wait_for_decoder
+                    .recv_timeout(Duration::from_secs(2))
+                    .unwrap();
+                panic!("injected borrowed encoder panic");
+            });
+            join_workers(decoder, processor, encoder, &cancellation, &errors);
+        });
+        assert!(
+            decoder_observed_cancellation,
+            "decoder join timed out before panic cancellation"
+        );
+        let error = received_errors.try_recv().unwrap();
+        assert_eq!(error.stage(), Some(PipelineStage::EncodeRuntime));
+        assert!(error.to_string().contains("run interop worker"));
+        assert!(error.to_string().contains("worker thread panicked"));
+    }
 }
