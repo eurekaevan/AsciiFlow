@@ -6,7 +6,7 @@ C-1 identity and `SHA256SUMS` below are unchanged. C-2B consumes its raw output
 immutably and adds explicit signed display power, D65 primary conversion,
 observable unbounded BT.709, **target-only** component clipping and inverse
 display power. This is neither Annex5 nor production HDR→SDR. Full contract:
-[C-2B closure](../../../docs/stage5.3c2b-target-volume-cpu.md).
+[conversion reference](../../../docs/gamut-mapping.md).
 
 ```sh
 python3 tests/fixtures/tone-map/generate-c2b-vectors.py > /tmp/c2b-vectors.json
@@ -47,7 +47,7 @@ the reproducible results and unavailable primary formulas explicitly;
 `c2a-qualification.json` retains current unchanged production regression hashes
 and verification scope, not a new gamut output baseline.
 Signed power is a sensitivity experiment, not a new C-1 contract; derived
-Bézier is NOT normative. [C-2A](../../../docs/stage5.3c2a-domain-standard-clarification.md)
+Bézier is NOT normative. The [conversion reference](../../../docs/gamut-mapping.md)
 seals method rejection/reselection, not a gamut implementation. Regenerate
 these audit JSON files with the commands in that report; keep C-1 SHA256SUMS
 and identity unchanged. Python3.14.7 / Decimal70 are used for this audit.
@@ -55,7 +55,7 @@ and identity unchanged. Python3.14.7 / Decimal70 are used for this audit.
 C-2 entry audit: `audit-c2-domain.py` accepts only this sealed output SHA and
 records NOT SEALED in `c2-domain-audit.json`. It does not clamp, reinterpret
 negative signals or gamut-map pixels. See the
-[C-2 report](../../../docs/stage5.3c2-gamut-map-cpu.md) for the source/Y and
+[conversion reference](../../../docs/gamut-mapping.md) for the source/Y and
 printed-equation blockers. C-1 identity/SHA256SUMS remain unchanged.
 
 Run from the repository root with the recorded Rust/native math environment:
@@ -93,4 +93,4 @@ claimed. Separate P010 integration tests reuse the B-1 CPU renderer with builtin
 and FreeType atlases, including moderate chroma. No production feature is enabled.
 
 See [semantics](../../../docs/tone-mapping.md) and
-[closure](../../../docs/stage5.3c1-tone-map-cpu.md).
+[reference policy](../../../docs/tone-mapping.md).

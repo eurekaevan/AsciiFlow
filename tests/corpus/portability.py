@@ -81,10 +81,10 @@ def driver_identity():
 def source_identity():
     diff = subprocess.run(["git", "diff", "--binary", "HEAD", "--", ".",
                            ":(exclude)tests/portability/stacks/**",
-                           ":(exclude)tests/portability/stage54c1.json",
-                           ":(exclude)tests/portability/stage54c1a.json",
-                           ":(exclude)tests/portability/stage54c2.json",
-                           ":(exclude)tests/portability/stage54c2a-h264-ihd2546.json",
+                           ":(exclude)tests/portability/baseline.json",
+                           ":(exclude)tests/portability/mux-qualification.json",
+                           ":(exclude)tests/portability/stack-qualification.json",
+                           ":(exclude)tests/portability/h264-driver-qualification.json",
                            ":(exclude)tests/portability/qualified-stacks.json",
                            ":(exclude)docs/stage5.4c2-expanded-portability-matrix.md",
                            ":(exclude)docs/stage5.4c2a-h264-ihd2546.md",
@@ -97,7 +97,7 @@ def source_identity():
     # self-referential identity when the second manifest records the first one.
     files = {p: digest(ROOT / p) for p in sorted(set(paths))
              if (ROOT / p).is_file() and not p.startswith("tests/portability/stacks/")
-             and p not in {"tests/portability/stage54c1.json", "tests/portability/stage54c1a.json", "tests/portability/stage54c2.json", "tests/portability/stage54c2a-h264-ihd2546.json", "tests/portability/qualified-stacks.json", "docs/stage5.4c2-expanded-portability-matrix.md", "docs/stage5.4c2a-h264-ihd2546.md", "docs/stage5.4c1a-deterministic-mux.md", "docs/stage5.4c1-portability-baseline.md"}}
+             and p not in {"tests/portability/baseline.json", "tests/portability/mux-qualification.json", "tests/portability/stack-qualification.json", "tests/portability/h264-driver-qualification.json", "tests/portability/qualified-stacks.json", "docs/stage5.4c2-expanded-portability-matrix.md", "docs/stage5.4c2a-h264-ihd2546.md", "docs/stage5.4c1a-deterministic-mux.md", "docs/stage5.4c1-portability-baseline.md"}}
     return {"head": query(["git", "rev-parse", "HEAD"])["stdout"].strip(),
             "dirty_diff_sha256": hashlib.sha256(diff).hexdigest(),
             "cargo_lock_sha256": digest(ROOT / "Cargo.lock"), "files_sha256": files}

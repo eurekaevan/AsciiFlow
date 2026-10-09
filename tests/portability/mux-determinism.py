@@ -71,7 +71,7 @@ def main():
         if not args.binary or args.runs < 1:
             parser.error("production requires --binary and positive --runs")
         args.output.mkdir(parents=True, exist_ok=False)
-        baseline = json.loads(Path("tests/portability/stage54c1.json").read_text())
+        baseline = json.loads(Path("tests/portability/baseline.json").read_text())
         original = next(c["argv"] for c in baseline["runs"]["canonical-verified"]["commands"]
                         if c["id"] == "runtime-real-aac-44100-mono-mp4")
         records = []

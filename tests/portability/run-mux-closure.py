@@ -40,7 +40,7 @@ def main():
                               watchdog_seconds=1200, mode=args.gate, stack=None)
     run = Run(context)
     run.environment()
-    evidence = json.loads(Path("tests/portability/stage54c1.json").read_text())
+    evidence = json.loads(Path("tests/portability/baseline.json").read_text())
     source = source_identity()
     (run.out / "source.json").write_text(json.dumps(source, indent=2) + "\n")
     if args.gate == "retained":

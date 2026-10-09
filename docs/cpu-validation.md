@@ -1,4 +1,4 @@
-# Stage 2 VAAPI hardware-media baseline
+# Host-transfer hardware-media baseline
 
 This record captures the 2026-09-14 Stage 2 baseline on the real Intel Arc
 Meteor Lake GPU. Stage 2 deliberately keeps Host NV12 between FFmpeg VAAPI and
@@ -138,13 +138,8 @@ software fallback.
 
 Hardware H.264 encode is already useful for CPU load while throughput is tied.
 Hardware decode is useful only before its explicit Host download; at the
-current Host NV12 boundary, download more than erases the codec gain. The data
-therefore satisfies the Stage 3 evidence gate for a focused VAAPI-to-Vulkan
-decode interop investigation: a real hardware codec is active and hwdownload
-is the dominant remaining cost. Upload interop is secondary because hardware
-encode is already throughput-neutral while substantially reducing CPU use,
-despite its upload. Stage 3 is not implemented here.
-
-Stage 3A was subsequently implemented and is recorded separately in
-[`stage3a-validation.md`](stage3a-validation.md); this file remains the frozen
-Stage 2 Host-transfer baseline.
+historical Host NV12 boundary, download more than erases the codec gain.
+This identifies hwdownload as the dominant remaining cost in that measurement.
+Hardware encoding was throughput-neutral while substantially reducing CPU use.
+Current production also has DMA-BUF interop; this retained baseline does not
+describe that path or prescribe another development stage.

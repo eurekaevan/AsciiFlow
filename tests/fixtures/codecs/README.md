@@ -186,6 +186,6 @@ Actual decoded nonzero low-two-bit samples are 585270960 / 933120000
 (62.721939%); Y=513990960, U=32400000, V=38880000. This is every-sample
 decoded evidence, not an assumption from the source recipe. See
 [pq-canonical-v1.md](pq-canonical-v1.md), the retained identity/version files,
-and [Stage 5.3B-3](../../../docs/stage5.3b3-hdr-production.md) for exact commands,
+and [HDR reference semantics](../../../docs/hdr-pq-semantics.md) for the pixel contract,
 tool identity and output closure gates. Existing SDR and negative PQ fixtures
 remain unchanged.

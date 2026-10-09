@@ -1,15 +1,14 @@
 # Stack-scoped portability qualification
 
-[Stage 5.4D-1 reliability hardening](reliability-testing.md) is in progress,
-not sealed. Final-source retained/core reruns and alternate-stack A/B evidence
-are recorded in the [D-1A report](stage5.4d1a-resource-failure.md); its RSS decision
-remains separate. Historical C evidence is source-scoped, not automatic D-1 PASS.
+[Reliability testing](reliability-testing.md) covers the recorded single-job
+workloads. Historical evidence remains source/stack scoped; it does not
+automatically qualify another build or hardware stack.
 All historical and same-stack strict oracles remain unchanged; the separate
 Tier 1B-P semantic rule is described below.
 
-Stage 5.4C-2 uses `tests/portability/c2-matrix.json` as a canonical-centered
+`tests/portability/c2-matrix.json` defines a canonical-centered
 star matrix. `run-expanded-matrix.py` orchestrates the existing corpus and media
-oracles. The separate [C-2A contract](stage5.4c2a-h264-ihd2546.md) adds a narrow
+oracles. The H.264 driver comparator adds a narrow
 cross-driver Tier 1B-P without changing the retained legacy comparator.
 Schema-v2 stack capture
 attests initialized ANV/iHD modules and their native dependency closure. Child
@@ -26,17 +25,16 @@ Rust invocation. Missing/failed semantic evidence or any byte/runtime drift
 still invokes the unchanged oracle. Cross-stack comparisons never take this
 shortcut.
 
-The [C-2 report](stage5.4c2-expanded-portability-matrix.md) records the current
-qualification outcome. `tests/portability/qualified-stacks.json` distinguishes
+`tests/portability/stack-qualification.json` records the tested outcomes.
+`tests/portability/qualified-stacks.json` distinguishes
 qualified, failed and incomplete stacks; exploration never promotes canonical.
 
 Qualified support is scoped to the recorded Intel/Mesa/iHD/FFmpeg stacks, not
 a claim about every release or a minimum supported version. A second passing
 stack does not broaden the support contract or overwrite canonical artifacts.
 
-The [Stage 5.4C-1A closure](stage5.4c1a-deterministic-mux.md) preserves strict
-same-stack global packet order. Its report/receipt, like the C-1 report/receipt
-and stack registry, are excluded only to avoid self-referential source hashes;
+The mux comparator preserves strict same-stack global packet order.
+Its receipt and stack registry are excluded only to avoid self-referential source hashes;
 its generator, immutable captures, tests, production source, recipes and other
 documentation remain in the source identity. `run-mux-closure.py` executes
 retained/static/lifecycle/timing/portability gates using the existing oracles.

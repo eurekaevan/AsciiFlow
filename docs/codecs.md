@@ -4,10 +4,10 @@ The [versioned production support contract](production-support.md) separates
 measured qualification, architectural representability, unsupported behavior
 and absent probe evidence. Its [corpus runner](compatibility-corpus.md) checks
 complete scenarios; independent dimension rows are not a Cartesian-product
-support promise. The [Stage 5.4A record](stage5.4a-support-contract.md) is
+support promise. The Stage 5.4A record is
 SEALED and enables no additional codec path.
 
-The [Stage 5.4B real-media record](stage5.4b-real-media-compatibility.md)
+The [Stage 5.4B real-media record](media-compatibility-results.md)
 extends qualification only to exact source/request tuples, not arbitrary
 containers or profiles. Ordinary, fast-start and fragmented MP4 cases exercise
 real demux/mux with strict AAC packet/timestamp/language/default checks.
@@ -57,10 +57,10 @@ decode qualification now accepts HEVC Main10 and AV1 Main 10-bit 4:2:0 with
 explicit BT.709 SDR tags and yields P010LE; the production CLI accepts those
 inputs only when HEVC Main10 or AV1 10-bit output is explicitly selected. Unsupported chroma,
 HLG and BT.2020 SDR fail rather than convert silently. Canonical PQ has a
-separate full-hardware preserve plan under [Stage B-3 closure](stage5.3b3-hdr-production.md),
+separate full-hardware preserve plan under Stage B-3 closure,
 never software production decode or implicit SDR conversion. Intel P010 VAAPI/DRM
 interop is qualified internally on the observed Intel Arc host; see
-[Stage 5.2B](stage5.2b-p010-decode-validation.md).
+Stage 5.2B.
 
 Capabilities retain Supported/Unsupported/NotProbed states. Native probing checks
 FFmpeg configuration and driver profile + VLD for H.264, HEVC Main and AV1
@@ -94,7 +94,7 @@ Lake qualification passed on 2026-09-16: byte-exact decode/import/ASCII parity,
 FreeType plus AAC full conversion, and 3000-frame full-interop reuse per new
 codec with zero validation errors and FD counts returning to baseline. This is
 not a blanket guarantee for other devices, profiles or AV1 film grain. See
-[stage5.0-codec-validation.md](stage5.0-codec-validation.md) for measurements.
+the [support contract](production-support.md) for the qualified scope.
 
 Run regular tests with `cargo test --workspace`. On a qualified Intel host:
 
@@ -108,14 +108,11 @@ commands and SHA-256 under `tests/fixtures/codecs`. Normal tests need decoders,
 not HEVC/AV1 encoders. AV1 baseline has no film grain; HEVC exercises B-frame
 reordering. Film-grain equivalence is not claimed.
 
-HEVC output qualification is recorded in
-[stage5.1a-hevc-encode-validation.md](stage5.1a-hevc-encode-validation.md).
-It covers HEVC Main via VAAPI only. AV1 output qualification is recorded in
-[stage5.1b-av1-encode-validation.md](stage5.1b-av1-encode-validation.md).
+HEVC Main output is qualified via VAAPI only.
 AV1 output is Profile0, NV12, 8-bit 4:2:0 and VAAPI-only. HEVC Main10
-qualification is recorded in [Stage 5.2C-2](stage5.2c2-hevc-main10-encode.md).
+qualification is recorded in Stage 5.2C-2.
 AV1 Profile0/Main 10-bit P010 VAAPI output is qualified in
-[Stage 5.2C-3](stage5.2c3-av1-10bit-encode.md). Both 10-bit outputs require
+Stage 5.2C-3. Both 10-bit outputs require
 explicit `--output-bit-depth 10` and qualified VAAPI hardware; their codecs
 remain independent of the 10-bit HEVC/AV1 input codec. There is no software
 HEVC/AV1 encoder, generalized tone mapping, 4:2:2/4:4:4 output,
@@ -141,9 +138,9 @@ enables HDR output by itself. Source mastering-display/CLL is never propagated
 or recomputed for ASCII output; PQ preserve is not HDR10 mastering validation.
 Details and the hardware-validation gates are in
 [color-semantics.md](color-semantics.md) and
-[Stage 5.3A report](stage5.3a-color-metadata.md).
+Stage 5.3A report.
 
-[Stage 5.3C-4B](stage5.3c4b-hdr-to-sdr-production.md) is **SEALED** on the recorded
+[Stage 5.3C-4B](hdr-to-sdr-validation.md) is **SEALED** on the recorded
 Intel scope. Default dynamic-range policy is `preserve`; explicit `sdr` admits
 the same resolved PQ P010 input through actual VAAPI decode, Vulkan input
 interop, unchanged HDR ASCII/Method A/BT.709 limiter, sealed SDR pack, output

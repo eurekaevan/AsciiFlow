@@ -6,7 +6,7 @@ commit was created by this finalization.
 
 ## Identity and change boundary
 
-The final artifact inherits the [sealed rc.2 qualification](stage5.4d2-lgpl-release-qualification.md):
+The final artifact inherits the [sealed rc.2 qualification](lgpl-release-qualification.md):
 qualified source semantics + version/finalization-only changes + final artifact
 smoke. This is not a new full media qualification.
 

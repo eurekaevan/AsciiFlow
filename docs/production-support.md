@@ -13,7 +13,7 @@ Version: 1.1.0. Generated from `tests/support/production-support-v1.json`; do no
 
 - ffmpeg: FFmpeg 8.1.3
 - gpu: Intel Arc Meteor Lake, PCI vendor/device 8086:7d55
-- limitations: ['Production qualification is tied to the sealed Stage 5.3C-4B source, binary and host manifest.', 'The per-source-pixel 1000 cd/m2 ceiling applies only to explicit HDR PQ to SDR conversion; it does not apply to PQ preservation.', 'PQ preservation passes PQ code values through. The HDR-to-SDR source-domain gate is not evidence of PQ-preserve luminance limits.', 'Stage 5.3C-4B reports CPU and software/staged HDR paths as unqualified.', 'Planner acceptance and synthetic capability facts never promote a dimension to a production support state.', 'Stage 5.4B extensions qualify only the exact source SHA/probe and request tuples in real-media-v1.json. Portable and hardware cases are distinct; no Cartesian-product or general container/profile promotion.']
+- limitations: ['Production qualification is tied to the retained HDR-to-SDR source, binary and host manifest.', 'The per-source-pixel 1000 cd/m2 ceiling applies only to explicit HDR PQ to SDR conversion; it does not apply to PQ preservation.', 'PQ preservation passes PQ code values through. The HDR-to-SDR source-domain gate is not evidence of PQ-preserve luminance limits.', 'CPU and software/staged HDR paths remain unqualified.', 'Planner acceptance and synthetic capability facts never promote a dimension to a production support state.', 'The real-media corpus qualifies only the exact source SHA/probe and request tuples in real-media-v1.json. Portable and hardware cases are distinct; no Cartesian-product or general container/profile promotion.']
 - media_device: /dev/dri/renderD128
 - vaapi: Intel iHD 26.1.5
 - vulkan: Mesa ANV 26.2.3
@@ -120,7 +120,7 @@ Rows classify individual dimensions, not their Cartesian product. Conditions and
 | input_color | wide_sdr | Unsupported |  | stage53c4b |
 | input_container | matroska | Unqualified | Video-only H.264 sample converts, but AAC/FLAC Matroska-to-MP4 strict oracles fail: unspecified language becomes und, absent default becomes true, millisecond packet duration and missing first duration differ. Not a supported Matroska/audio preservation claim. |  |
 | input_container | mov | Unqualified | H.264/AAC sample converts but the unchanged strict audio oracle rejects undefined language becoming und. No MOV support promotion. |  |
-| input_container | mp4 | ConditionallySupported | Sealed retained matrix plus exact Stage 5.4B MP4 tuples (ordinary/fast-start/fragmented) only. AAC payload/timing/default/language are strictly checked where copied. Subtitles and video display titles are explicitly not copied. | stage53b1, stage53c4b, stage54b-corpus |
+| input_container | mp4 | ConditionallySupported | Retained matrix plus exact reviewed MP4 tuples (ordinary/fast-start/fragmented) only. AAC payload/timing/default/language are strictly checked where copied. Subtitles and video display titles are explicitly not copied. | stage53b1, stage53c4b, stage54b-corpus |
 | input_gop | benign-elementary-stream-parameter-update | Unqualified | Level-only SPS change drains eight frames, but original Annex B PTS/DTS are absent; timeline preservation is unqualified. |  |
 | input_gop | reviewed-b-frames-long-gop-all-intra | ConditionallySupported | Exact H.264 B0/B2/B4, HEVC B2, 250-frame GOP and all-intra portable sources plus the H.264 B2 hardware clone. Packet DTS monotonicity/reorder and decoded presentation spans checked; no open-GOP blanket claim. | stage54b-corpus, stage54b-report |
 | input_interop | auto | ConditionallySupported | Only for sealed automatic-path smokes. | stage53c4b |
@@ -250,11 +250,11 @@ Availability is a distribution overlay, not a fifth base support state. Eligible
 ## Evidence
 
 - `current-cli`: [apps/asciiflow-cli/src/main.rs](../apps/asciiflow-cli/src/main.rs) — current checkout, output-container-guard, CURRENT.
-- `stage2`: [docs/stage2-validation.md](../docs/stage2-validation.md) — Stage 2, validation-report, QUALIFIED.
+- `stage2`: [docs/cpu-validation.md](../docs/cpu-validation.md) — Stage 2, validation-report, QUALIFIED.
 - `stage53b1`: [tests/baselines/media/post-polarity-v2.json](../tests/baselines/media/post-polarity-v2.json) — Stage 5.3B-1, qualified-baseline-manifest, QUALIFIED.
-- `stage53c4b`: [tests/baselines/media/stage53c4b.json](../tests/baselines/media/stage53c4b.json) — Stage 5.3C-4B, sealed-manifest, SEALED.
+- `stage53c4b`: [tests/baselines/media/hdr-to-sdr-production.json](../tests/baselines/media/hdr-to-sdr-production.json) — Stage 5.3C-4B, sealed-manifest, SEALED.
 - `stage53c4b-device`: [tests/baselines/media/c4b-static-and-device-evidence.txt](../tests/baselines/media/c4b-static-and-device-evidence.txt) — Stage 5.3C-4B, device-and-runtime-evidence, SEALED.
-- `stage53c4b-report`: [docs/stage5.3c4b-hdr-to-sdr-production.md](../docs/stage5.3c4b-hdr-to-sdr-production.md) — Stage 5.3C-4B, production-report, SEALED.
+- `stage53c4b-report`: [docs/hdr-to-sdr-validation.md](../docs/hdr-to-sdr-validation.md) — Stage 5.3C-4B, production-report, SEALED.
 - `stage53c4b-runtime`: [tests/baselines/media/c4b-system-evidence.txt](../tests/baselines/media/c4b-system-evidence.txt) — Stage 5.3C-4B, observed-system-evidence, SEALED.
 - `stage54b-corpus`: [tests/corpus/real-media-v1.json](../tests/corpus/real-media-v1.json) — Stage 5.4B, reviewed-real-media-corpus, QUALIFIED.
-- `stage54b-report`: [docs/stage5.4b-real-media-compatibility.md](../docs/stage5.4b-real-media-compatibility.md) — Stage 5.4B, compatibility-report, QUALIFIED.
+- `stage54b-report`: [docs/media-compatibility-results.md](../docs/media-compatibility-results.md) — Stage 5.4B, compatibility-report, QUALIFIED.

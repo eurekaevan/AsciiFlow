@@ -1,4 +1,4 @@
-# Color semantics (Stage 5.3A)
+# Color semantics
 
 Color is independent of codec, NV12/P010 storage, depth and chroma. In
 particular, P010 and BT.2020 do not imply HDR. Core owns portable primaries,
@@ -22,9 +22,9 @@ before selecting a plan or creating an output.
 For canonical PQ it still records `UnsupportedHdrPq`. Stage B-3 separately
 validates the complete signal and selects `ColorProcessing::HdrPqPreserve`
 only with probed Vulkan PQ + VAAPI decode/encode + both P010 import facts.
-The [production closure report](stage5.3b3-hdr-production.md) records its status.
+The production closure report records its status.
 The default request remains `preserve`. Explicit `sdr` may instead select
-`HdrPqToSdrBt709` under [C-4B's sealed hardware contract](stage5.3c4b-hdr-to-sdr-production.md):
+`HdrPqToSdrBt709` under [C-4B's sealed hardware contract](hdr-to-sdr-validation.md):
 same strict PQ input signal, actual per-source-pixel 0–1000-nit domain check,
 VAAPI/Vulkan input/output interop and explicit BT.709 limited output metadata.
 This does not relabel PQ as SDR, broaden the SDR support assessment or authorize

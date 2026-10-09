@@ -1,8 +1,8 @@
-# Stage 5.3C-4B — HDR→SDR production integration
+# HDR→SDR production validation
 
-Status: **SEALED**, 2026-09-30, on the recorded Intel hardware/toolchain scope.
-Stage 5.3C overall is **SEALED**. No next-stage feature work is started.
-The [closure ledger](../tests/baselines/media/stage53c4b.json),
+Status: **Completed**, 2026-09-30, on the recorded Intel hardware/toolchain scope.
+This is a historical validation record, not a development-stage plan.
+The [closure ledger](../tests/baselines/media/hdr-to-sdr-production.json),
 [encoded-output baseline](../tests/baselines/media/hdr-to-sdr-production-v1.json)
 and [observed system output](../tests/baselines/media/c4b-system-evidence.txt)
 separate production, reference, historical and measurement evidence.

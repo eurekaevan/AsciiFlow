@@ -1,14 +1,15 @@
-# Stage 5.4D-2 — LGPL prebuilt release qualification
+# LGPL prebuilt release qualification
 
 ## Decision
 
-**SEALED.** Stage 5.4D-2, Stage 5.4D and Stage 5.4 are SEALED for the recorded
-LGPL prebuilt candidate. D-1 remains SEALED. This is a RedistributableCandidate,
+**Completed.** This records the qualified 2.0.0-rc.2 LGPL prebuilt candidate
+and inherited reliability results. It is historical release provenance, not
+a future development plan. This is a RedistributableCandidate,
 not a universal legal/patent/compatibility guarantee. Nothing was published,
 committed or tagged; no feature stage or GPL Full flavor was started.
 
 This supersedes the public-release strategy, not the historical
-[rc.1 qualification report](stage5.4d2-release-qualification.md). Its original
+rc.1 qualification report. Its original
 NOT SEALED/source-provision limitation and all earlier FAIL evidence remain.
 
 ## Profile and contract (final report items 1–6, 18)
@@ -229,8 +230,8 @@ caches were removed; logs and all historical artifacts are preserved.
 
 ## Evidence and limitations (items 40–44)
 
-Full machine report: `tests/release/stage54d2-lgpl-qualification.json`.
-Internal proof archive: `tests/release/evidence/stage54d2-rc2-evidence.tar.gz`.
+Full machine report: `tests/release/lgpl-qualification.json`.
+Internal proof archive: `tests/release/evidence/lgpl-rc2-evidence.tar.gz`.
 It preserves exact patch/source identity, both clean build logs/features,
 validated shaders, actual library licenses/closure/maps, hardware receipts,
 all relevant smokes, retained oracles, mux tiers and failed attempt logs.

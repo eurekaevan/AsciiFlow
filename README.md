@@ -1,11 +1,13 @@
 # AsciiFlow
 
-AsciiFlow **2.0.0** is the final qualified v2 engineering milestone. Stage 5.4
-is SEALED; the [final milestone receipt](docs/asciiflow-2.0.0-final.md) records
+AsciiFlow **2.0.0** is the completed release milestone. The
+[final release receipt](docs/asciiflow-2.0.0-final.md) records
 the artifact identity, inherited qualification and unchanged limitations.
 
-Current source development is **2.1.0-dev**, Stage 6A (system font discovery
-and terminal UX). It does not replace or modify the frozen 2.0.0 artifact.
+Current source development is **2.1.0-dev**, including system font discovery
+and terminal UX. It does not replace or modify the frozen 2.0.0 artifact.
+Maintenance is change-driven; numbered development stages and sealing plans
+are no longer used.
 
 AsciiFlow is a Rust CLI that converts video into color or monochrome ASCII
 video. It has a portable CPU path and, on qualified Linux hardware, a Vulkan
@@ -26,17 +28,13 @@ driver versions. [Stack-scoped portability testing](docs/portability-testing.md)
 separates media correctness from exact-build artifact identity; alternate
 stacks do not automatically broaden this support contract.
 
-Stage 5.4C2's expanded portability matrix and its H.264 cross-driver closure
-are tracked in the [forensic closure report](docs/stage5.4c2a-h264-ihd2546.md).
-Its five stack definitions and qualification boundaries are tracked in
-the [matrix report](docs/stage5.4c2-expanded-portability-matrix.md) and the
-[qualified-stack registry](tests/portability/qualified-stacks.json); neither
-changes this support contract without reviewed qualification. The additive
+The [qualified-stack registry](tests/portability/qualified-stacks.json) records
+tested stack definitions and qualification boundaries; it does not broaden
+this support contract without reviewed qualification. The additive
 Tier 1B-P gate permits only an attested iHD build identifier in one known SEI;
 it does not relax same-stack packet identity or admit SPS/PPS/VCL/color/timing
-changes. No universal driver portability is implied. [Stage 5.4D-1 reliability
-hardening](docs/stage5.4d1-soak-failure-hardening.md) is SEALED for the recorded
-single-job CLI workloads. Ordinary MP4 sample indexes and bounded allocator
+changes. No universal driver portability is implied. [Reliability testing](docs/reliability-testing.md)
+covers the recorded single-job CLI workloads. Ordinary MP4 sample indexes and bounded allocator
 retention can grow its working set; constant memory is not promised.
 
 <!-- production-support-contract:begin -->
@@ -44,7 +42,7 @@ Support contract `1.1.0`. Hardware conditions and evidence: [production support 
 
 | Dimension | Value | Support state | Conditions |
 |---|---|---|---|
-| input_container | mp4 | ConditionallySupported | Sealed retained matrix plus exact Stage 5.4B MP4 tuples (ordinary/fast-start/fragmented) only. AAC payload/timing/default/language are strictly checked where copied. Subtitles and video display titles are explicitly not copied. |
+| input_container | mp4 | ConditionallySupported | Retained matrix plus exact reviewed MP4 tuples (ordinary/fast-start/fragmented) only. AAC payload/timing/default/language are strictly checked where copied. Subtitles and video display titles are explicitly not copied. |
 | input_container | matroska | Unqualified | Video-only H.264 sample converts, but AAC/FLAC Matroska-to-MP4 strict oracles fail: unspecified language becomes und, absent default becomes true, millisecond packet duration and missing first duration differ. Not a supported Matroska/audio preservation claim. |
 | input_container | mov | Unqualified | H.264/AAC sample converts but the unchanged strict audio oracle rejects undefined language becoming und. No MOV support promotion. |
 | output_container | mp4 | Supported |  |
@@ -87,7 +85,7 @@ is strict and none produces video-only output. Explicit hardware requests
 fail rather than silently falling back.
 
 PQ hardware qualification currently covers Intel Arc Meteor Lake with the
-specific iHD/ANV/toolchain in the [Stage 5.3B-3 report](docs/stage5.3b3-hdr-production.md),
+specific iHD/ANV/toolchain in the [support contract](docs/production-support.md),
 not universal HDR support. Source mastering-display and MaxCLL/MaxFALL are not
 propagated or recomputed because ASCII rendering changes the image; this is
 not HDR10 static/mastering qualification.
@@ -150,7 +148,7 @@ include `--width`, `--height`, `--charset`, `--font`, `--font-face-index`,
 positional except for capability/plan inspection. Run `asciiflow --help`
 for the exact installed CLI.
 
-Stage 6A source builds accept `--font "Liberation Mono:style=Bold"` as well as
+Current source builds accept `--font "Liberation Mono:style=Bold"` as well as
 explicit files and `builtin-8x8`. A system match must still pass the existing
 FreeType monospaced/scalable/glyph checks; discovery does not promise fallback.
 
@@ -162,12 +160,12 @@ information. `--verbose` retains grouped diagnostic metrics instead. Progress
 uses accepted encoded frames, not a termination condition; inputs without a
 trusted frame count show elapsed progress without a percentage or invented ETA.
 Capability/plan inspection does not start this conversion UI. See the
-[Stage 6A qualification report](docs/stage6a-font-terminal-ux.md).
+[font and terminal validation report](docs/font-terminal-validation.md).
 
 ## Installing the qualified Linux release
 
 The instructions below concern frozen **2.0.0**, not a newly qualified package
-of the Stage 6A development source. New font-name discovery needs runtime
+of the current development source. New font-name discovery needs runtime
 Fontconfig on Linux; builtin/explicit-file selection does not need it.
 
 The qualified 2.0.0 milestone is a dynamically linked Linux x86-64 package,
@@ -192,7 +190,7 @@ asciiflow input.mp4 --capabilities
 
 See the [final milestone and installation receipt](docs/asciiflow-2.0.0-final.md), the
 [generated scenario matrix](docs/production-support.md#complete-scenario-inventory)
-and the [inherited LGPL qualification report](docs/stage5.4d2-lgpl-release-qualification.md).
+and the [inherited LGPL qualification report](docs/lgpl-release-qualification.md).
 AsciiFlow source is MIT; the executable's distribution also has obligations
 from its actual native FFmpeg configuration. Do not describe a GPL-enabled
 FFmpeg-linked executable as an MIT-only or LGPL-only distribution.
@@ -234,21 +232,17 @@ crates/asciiflow-vulkan/  Vulkan processing and resource ownership
 crates/asciiflow-interop/ DRM PRIME / DMA-BUF bridge
 shaders/src/              build-time GLSL compute sources
 tests/                    media, font and regression fixtures
-docs/                     contracts, test policy and stage evidence
+docs/                     usage, contracts and verification policy
 ```
 
 The [architecture](docs/architecture.md) explains ownership and native
 boundaries. [Testing](docs/testing.md) distinguishes portable checks from
 opt-in Intel `/dev/dri` gates and records the current post-polarity media
-baseline. Historical stage reports and baseline revision numbers identify
-evidence, not separate application versions. The permanent PQ CPU reference
-and internal Vulkan numeric qualification remain documented in
-[Stage 5.3B-1](docs/stage5.3b1-pq-cpu-reference.md) and
-[Stage 5.3B-2](docs/stage5.3b2-vulkan-pq.md). The
-[sealed Stage 5.3B-3 report](docs/stage5.3b3-hdr-production.md) establishes the
-qualified BT.2020/PQ HDR-preserving production path and reproducible retained
-baseline. The [sealed Stage 5.3C-4B report](docs/stage5.3c4b-hdr-to-sdr-production.md)
-establishes explicit, fixed-policy PQ→SDR production; Stage 5.3C overall is sealed.
+baseline. Baseline revisions identify evidence, not separate application
+versions or future development stages. The permanent [PQ reference](docs/hdr-pq-semantics.md)
+and [tone-mapping contract](docs/tone-mapping.md) describe the numeric policies;
+[production validation](docs/hdr-to-sdr-validation.md) retains the tested
+fixed-policy PQ→SDR path and regression identities.
 CPU HDR reference remains non-production. HLG, full-range HDR and generalized
 above-1000-nit conversion remain unsupported.
 

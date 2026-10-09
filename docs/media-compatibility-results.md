@@ -1,8 +1,9 @@
-# Stage 5.4B — Real-Media Compatibility Corpus
+# Real-media compatibility results
 
-Status: **SEALED**. Final evidence reviewed on 2026-10-04; no Stage 5.4C work started.
+Status: **Completed**. Final evidence reviewed on 2026-10-04.
+This retains tested compatibility boundaries, not a future development plan.
 
-The [durable closure receipt](../tests/corpus/stage54b-closure.json) records the
+The [durable closure receipt](../tests/corpus/compatibility-qualification.json) records the
 fixed binary, production source inventory, tools/device, exact commands, source
 and output identities, timing records, strict-oracle decisions and validation
 census. Full logs/media are retained under `target/stage54b-evidence`; these
@@ -155,7 +156,6 @@ registered Unqualified limit cannot mask their loss.
 | 61 | SPIR-V | All 995 actual debug/release cache modules validate under Vulkan1.3 after final qualification builds; exact paths/SHA and aggregate census in receipt. Prior 964 census also passed; newly compiled diagnostic modules included, no fixed count shortcut. |
 | 62 | Static checks | Release workspace/tests and encode-characterization build; clippy all targets -D warnings with/without encode-characterization; fmt; generated-document consistency; diff; 52 offline corpus controls pass. Real C1/C2B/C3/C4A references and eight Validation/FD/fault/FreeType hardware gates pass. |
 | 63 | Exact limitations | Scoped Intel Arc Meteor Lake 8086:7d55 / Mesa ANV26.2.3 / iHD26.1.5 / kernel7.2.8 / FFmpeg8.1.3 only. No hardware/software/profile Cartesian product, no faithful VFR, no MOV/Matroska audio support, no missing-range/valid-zero-frame fixture proof, no new features. A preexisting unused-variable warning in optional p010-output-diagnostic-only build is recorded; production and required characterization clippy gates are clean. |
-| 64 | 5.4C justification | Stage 5.4C Toolchain / Driver Portability Baseline is justified. No Stage5.4C implementation started. |
 | 65 | Final Stage5.4B status | SEALED: all 47 conditional tuples pass, all 24 Unsupported cases reject as expected, 11 Unqualified blockers are explicit, zero unexplained failures/skips, retained and static/hardware gates green. |
 
 ## Remaining Unqualified cases — not PASS
@@ -206,6 +206,4 @@ The explicit Unqualified boundaries are allowed by this stage's definition of
 done and are retained as such; they are not failed Supported cases hidden by
 demotion. Timing, audio, color, safe-output, hang prevention, repeatability and
 the existing production matrix have no remaining unexplained gate.
-**Stage 5.4B = SEALED.**
-
-Stage 5.4C Toolchain / Driver Portability Baseline is justified.
+**Recorded compatibility qualification completed.**

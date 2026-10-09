@@ -116,7 +116,7 @@
           "/home/eureka/Documents/AsciiFlow/target/stage54b-evidence/post-title-retained/retained-sdr"
         ],
         "reference_manifest": {
-          "path": "tests/corpus/stage54b-closure.json",
+          "path": "tests/corpus/compatibility-qualification.json",
           "sha256": "4187637303860cddfd6185679978a61d84fd770033e2a1a52ff46768338e3bc5"
         },
         "probe_sha256": "41c8d5548e7f16ca126320684badb8bc41348f8459a0f7f7eb363fa746a5bee6"
@@ -210,7 +210,7 @@
           "/home/eureka/Documents/AsciiFlow/target/stage54b-evidence/post-title-retained/retained-sdr"
         ],
         "reference_manifest": {
-          "path": "tests/corpus/stage54b-closure.json",
+          "path": "tests/corpus/compatibility-qualification.json",
           "sha256": "4187637303860cddfd6185679978a61d84fd770033e2a1a52ff46768338e3bc5"
         },
         "probe_sha256": "da9f92567e87f5f3d335d5bfe14009930e5b94d5421ba7827e34a2a713cc0ef2"

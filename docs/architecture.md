@@ -1,6 +1,6 @@
 # AsciiFlow architecture
 
-[Stage 5.4D-1](stage5.4d1-soak-failure-hardening.md) starts reliability hardening
+Stage 5.4D-1 starts reliability hardening
 without changing the media feature matrix. Worker unwind now publishes root
 failure/cancellation before ordered joins; owned worker objects are destroyed
 inside the guard lifetime, while native decoder/encoder contexts still outlive
@@ -12,7 +12,7 @@ Path C's audio-enabled residual is classified bounded allocator retention;
 persistent multi-job memory remains unqualified. The current release boundary
 is tracked separately in Stage5.4D-2, not by rewriting historical stage evidence.
 
-[D-1A](stage5.4d1a-resource-failure.md) adds opt-in, process-scoped ownership
+D-1A adds opt-in, process-scoped ownership
 observations behind `reliability-measurement`, compiled out of default builds.
 Tokens release only after native release; abandoned resources stay active.
 Measured buffer bindings/imports/AVFrame references are not a driver-memory or
@@ -23,8 +23,8 @@ Reports cannot alias media/diagnostic paths, and diagnostic failures never
 remove committed output or mask a primary media/cancellation failure.
 
 Stage 5.4C2's five-stack portability matrix and H.264 closure are recorded in
-the [C-2A closure report](stage5.4c2a-h264-ihd2546.md),
-the [matrix report](stage5.4c2-expanded-portability-matrix.md)
+the C-2A closure report,
+the matrix report
 and [qualified-stack registry](../tests/portability/qualified-stacks.json).
 Qualification requires reviewed evidence; native all-ready probes alone do
 not qualify a stack. Qualification remains scoped to exact
@@ -36,11 +36,11 @@ an unauthorized reboot. C qualification does not imply D-1 reliability closure.
 
 Stage 5.4A adds the [versioned support contract](production-support.md),
 [structured diagnostics and corpus runner](compatibility-corpus.md), and a
-[sealed closure record](stage5.4a-support-contract.md). It changes neither
+sealed closure record. It changes neither
 planner selection nor the production pixel/media contract. Runtime probe facts
 remain scoped to the input/device; architectural plans and historical qualified
 hardware evidence are separate. Stage 5.4B adds the
-[real-media compatibility corpus](stage5.4b-real-media-compatibility.md),
+[real-media compatibility corpus](media-compatibility-results.md),
 not new processing algorithms or media formats. Native decoded dimensions,
 pixel format, SAR and display matrices are admitted before cached scaler or
 interop use; independent stream codec parameters retain first-frame color
@@ -64,19 +64,19 @@ are tracked in [legacy-feature-parity.md](legacy-feature-parity.md), not treated
 as a second execution path. Stage 5.3B-1 is sealed on the qualified Intel
 hardware. Stage 5.3B-2 adds the independent internal Vulkan PQ qualification;
 Stage 5.3B-3 integrates the strictly planned HDR-preserve path. Its
-[hardware closure status](stage5.3b3-hdr-production.md) is the release authority.
+hardware closure status is the release authority.
 
 Stage 5.3C-1 adds only a permanent f64 post-ASCII Method A reference;
-its [closure record](stage5.3c1-tone-map-cpu.md) does not enable production HDR→SDR.
-The historical [C-2 entry audit](stage5.3c2-gamut-map-cpu.md) remains NOT SEALED
-for its abandoned Annex5 implementation. [C-2A clarification](stage5.3c2a-domain-standard-clarification.md)
+its closure record does not enable production HDR→SDR.
+The historical C-2 entry audit remains NOT SEALED
+for its abandoned Annex5 implementation. C-2A clarification
 is SEALED as an explicit method rejection: Annex5 has no defensible verified
 formula correction, and raw C-1 has source/Y excursions.
-[C-2B](stage5.3c2b-target-volume-cpu.md) qualifies the replacement CPU f64
+C-2B qualifies the replacement CPU f64
 reference: §2 primary conversion + explicit target-volume limiting (D5+D6),
 not a strict-Y mapper or a production fallback. No production feature is enabled.
 
-[C-3](stage5.3c3-vulkan-hdr-to-sdr.md) adds an independent feature-gated Vulkan
+C-3 adds an independent feature-gated Vulkan
 f32 reference: existing HDR map → linear render → Method A → primary conversion /
 target clip. It is **SEALED** under C3B's independently derived N3 contract,
 with real full-frame parity, dual-codec 3000-frame stress/resource and performance
@@ -87,12 +87,12 @@ PASS. A new identity-preserved legal source replaces the unsuitable B-3 input
 for C3 qualification, without changing the B-3 production baseline.
 That isolated stage does not itself enable a production planner or encoder.
 
-[C-4A](stage5.3c4a-sdr-output-signal.md), **SEALED** on the qualified Intel hardware, adds only a
+C-4A, **SEALED** on the qualified Intel hardware, adds only a
 qualification consumer: C-3 nonlinear BT.709 RGB → BT.709 NCL limited NV12/P010
 → FFmpeg-owned encoder-style writable VAAPI surface. No native color metadata
 is assigned and no encoding occurs in that qualification stage.
 
-[C-4B](stage5.3c4b-hdr-to-sdr-production.md) is **SEALED** on the recorded Intel
+[C-4B](hdr-to-sdr-validation.md) is **SEALED** on the recorded Intel
 scope and completes Stage 5.3C. Explicit `--output-dynamic-range sdr` selects
 `HdrPqToSdrBt709`: actual VAAPI P010 input → resident Vulkan HDR ASCII/Method A/
 BT.709 limiting → sealed NV12/P010 pack → encoder-owned output interop → VAAPI
@@ -157,9 +157,9 @@ production unsupported: HLG, wide-gamut SDR, full/unknown/conflicting color,
 ```
 
 See [HDR PQ pixel semantics](hdr-pq-semantics.md) and the
-[Stage 5.3B-1 report](stage5.3b1-pq-cpu-reference.md) and
-[Stage 5.3B-2 hardware report](stage5.3b2-vulkan-pq.md).
-Current production closure: [Stage 5.3B-3](stage5.3b3-hdr-production.md).
+Stage 5.3B-1 report and
+Stage 5.3B-2 hardware report.
+Current production closure: Stage 5.3B-3.
 
 The [C-1 tone mapper](tone-mapping.md) consumes the shared B-1 renderer's
 post-blend linear BT.2020 RGB in absolute nits, not re-encoded PQ. Its fixed
@@ -206,7 +206,7 @@ codec parameters / decoded AVFrame metadata
 ```
 
 See [color semantics](color-semantics.md) and the
-[Stage 5.3A status](stage5.3a-color-metadata.md).
+Stage 5.3A status.
 
 ## Workspace and dependency direction
 
@@ -241,7 +241,7 @@ by codec; initialization replan changes only the failing codec's fact. The DRM
 importer is reused. Stage 5.1A separates portable output requirements from the
 encoder backend. Stages 5.1A and 5.1B qualify HEVC Main and AV1 Profile0
 VAAPI encoder-owned surfaces through the same output interop as H.264 on Intel
-Arc Meteor Lake; see [input codec validation](stage5.0-codec-validation.md) and
+Arc Meteor Lake; see input codec validation and
 the output reports below.
 
 The output selection boundary is:
@@ -261,10 +261,10 @@ VAProfileHEVCMain, VAProfileHEVCMain10 and VAProfileAV1Profile0 EncSlice qualifi
 and AVHWFramesContext stay
 in media. The interop crate receives an encoder-owned NV12 or P010 frames context;
 it contains no H.264/HEVC/AV1 branch. See the
-[Stage 5.1A validation](stage5.1a-hevc-encode-validation.md) and
-[Stage 5.1B validation](stage5.1b-av1-encode-validation.md) and
-[Stage 5.2C-2 HEVC Main10 validation](stage5.2c2-hevc-main10-encode.md) and
-[Stage 5.2C-3 AV1 10-bit validation](stage5.2c3-av1-10bit-encode.md).
+Stage 5.1A validation and
+Stage 5.1B validation and
+Stage 5.2C-2 HEVC Main10 validation and
+Stage 5.2C-3 AV1 10-bit validation.
 
 Stage 4.3 adds initialization-only `Font specification -> FreeType -> GlyphAtlas`.
 The CLI builds one owned atlas before staging/mux initialization and passes
@@ -272,7 +272,7 @@ identical pixels to CPU/Vulkan. FreeType objects never enter core, frames or
 workers; atlas data has no native types. Vulkan forks preserve atlas identity
 and initialize their own static upload and coordinate LUT. Font validity is
 render configuration, not a hardware capability or a replan opportunity.
-See [fonts.md](fonts.md) and [validation](stage4.3-font-validation.md).
+See [fonts.md](fonts.md) and validation.
 
 The media crate uses the raw `ffmpeg-sys-next` binding and wraps it in internal
 RAII types for `AVFrame`, `AVPacket`, decoder/format/scaler state, and
@@ -703,16 +703,13 @@ ordered ownership, failure cancellation, and allocation through FFmpeg RAII wrap
 smoke run plus independent `ffprobe` is still required before claiming a given
 FFmpeg build or target platform is supported.
 
-Current Intel Arc compute evidence is recorded in
-[`stage1-validation.md`](stage1-validation.md). VAAPI capability, correctness,
-and the Host-transfer baseline are recorded in
-[`stage2-validation.md`](stage2-validation.md). DMA-BUF descriptor, parity,
-stress, validation, and benchmark evidence is in
-[`stage3a-validation.md`](stage3a-validation.md). Encoder descriptor, writable
-import, parity, lifetime, validation, and benchmark evidence is in
-[`stage3b-validation.md`](stage3b-validation.md).
+Intel Arc qualification boundaries are recorded in the
+[support contract](production-support.md). The historical Host-transfer
+baseline is in [media validation](cpu-validation.md); retained DMA-BUF,
+output, timing and lifecycle evidence is described in
+[testing](testing.md) and [reliability](reliability-testing.md).
 
-Stage 4.0 planning facts and policy details are recorded in
+Automatic planning facts and policy details are recorded in
 [`auto-planner.md`](auto-planner.md). The implementation performs one
 capability probe per invocation and reports its duration separately from video
 processing metrics. An auto-selected capability that fails while the unified

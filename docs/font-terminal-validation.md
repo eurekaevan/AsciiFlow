@@ -1,6 +1,6 @@
-# Stage 6A — System Font Discovery & Terminal UX
+# System font and terminal validation
 
-Status: **SEALED**. Post-2.0 source version: **2.1.0-dev**. Stage 6B is not started.
+Status: **Completed**. Post-2.0 source version: **2.1.0-dev**.
 This is a development qualification, not a new redistributable package.
 AsciiFlow 2.0.0 remains FINALIZED; its release artifacts and historical reports
 are unchanged.
@@ -64,7 +64,7 @@ cargo build --release --locked --workspace --features asciiflow-cli/lgpl-prebuil
 
 ## Verification
 
-The [machine-readable receipt](../tests/ux/stage6a-font-terminal-ux.json)
+The [machine-readable receipt](../tests/ux/font-terminal-validation.json)
 retains exact commands, output hashes, probes, terminal transcripts, control
 recipes, source hashes and intentionally failed diagnostic controls.
 
@@ -123,4 +123,5 @@ full soak/portability campaign. System font availability and acceptance depend
 on local configuration and FreeType. Raster identity is stack/font scoped.
 The frozen 2.0.0 package does not contain Stage 6A features.
 
-No Stage 6A production blocker remains. No Stage 6B work is started.
+No production blocker remains for the recorded font/terminal checks. Future
+changes use targeted regression testing, not another numbered stage.

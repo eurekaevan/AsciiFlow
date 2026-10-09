@@ -1,7 +1,8 @@
 # C3 numerical precision contract review
 
-Stage 5.3C-3B, 2026-09-30. Production HDR→SDR remains disabled. C-4 is not
-started. The sealed C1/C2B CPU f64 implementations and retained digests are the
+This precision review originated on 2026-09-30; it is not a current production
+enablement decision. Explicit HDR→SDR is now supported under the
+[production contract](production-support.md). The C1/C2B CPU f64 implementations and retained digests are the
 scientific references; a shader arithmetic estimate cannot replace them.
 
 ## Historical diagnostic and provenance

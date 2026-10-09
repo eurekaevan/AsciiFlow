@@ -29,12 +29,12 @@
     "ffmpeg": "FFmpeg 8.1.3",
     "media_device": "/dev/dri/renderD128",
     "limitations": [
-      "Production qualification is tied to the sealed Stage 5.3C-4B source, binary and host manifest.",
+      "Production qualification is tied to the retained HDR-to-SDR source, binary and host manifest.",
       "The per-source-pixel 1000 cd/m2 ceiling applies only to explicit HDR PQ to SDR conversion; it does not apply to PQ preservation.",
       "PQ preservation passes PQ code values through. The HDR-to-SDR source-domain gate is not evidence of PQ-preserve luminance limits.",
-      "Stage 5.3C-4B reports CPU and software/staged HDR paths as unqualified.",
+      "CPU and software/staged HDR paths remain unqualified.",
       "Planner acceptance and synthetic capability facts never promote a dimension to a production support state.",
-      "Stage 5.4B extensions qualify only the exact source SHA/probe and request tuples in real-media-v1.json. Portable and hardware cases are distinct; no Cartesian-product or general container/profile promotion."
+      "The real-media corpus qualifies only the exact source SHA/probe and request tuples in real-media-v1.json. Portable and hardware cases are distinct; no Cartesian-product or general container/profile promotion."
     ]
   },
   "production_limits": {
@@ -48,15 +48,15 @@
     }
   },
   "evidence": [
-    { "id": "stage53c4b", "stage": "Stage 5.3C-4B", "kind": "sealed-manifest", "artifact": "tests/baselines/media/stage53c4b.json", "status": "SEALED" },
-    { "id": "stage53c4b-report", "stage": "Stage 5.3C-4B", "kind": "production-report", "artifact": "docs/stage5.3c4b-hdr-to-sdr-production.md", "status": "SEALED" },
+    { "id": "stage53c4b", "stage": "Stage 5.3C-4B", "kind": "sealed-manifest", "artifact": "tests/baselines/media/hdr-to-sdr-production.json", "status": "SEALED" },
+    { "id": "stage53c4b-report", "stage": "Stage 5.3C-4B", "kind": "production-report", "artifact": "docs/hdr-to-sdr-validation.md", "status": "SEALED" },
     { "id": "stage53c4b-runtime", "stage": "Stage 5.3C-4B", "kind": "observed-system-evidence", "artifact": "tests/baselines/media/c4b-system-evidence.txt", "status": "SEALED" },
     { "id": "stage53c4b-device", "stage": "Stage 5.3C-4B", "kind": "device-and-runtime-evidence", "artifact": "tests/baselines/media/c4b-static-and-device-evidence.txt", "status": "SEALED" },
     { "id": "stage53b1", "stage": "Stage 5.3B-1", "kind": "qualified-baseline-manifest", "artifact": "tests/baselines/media/post-polarity-v2.json", "status": "QUALIFIED" },
-    { "id": "stage2", "stage": "Stage 2", "kind": "validation-report", "artifact": "docs/stage2-validation.md", "status": "QUALIFIED" },
+    { "id": "stage2", "stage": "Stage 2", "kind": "validation-report", "artifact": "docs/cpu-validation.md", "status": "QUALIFIED" },
     { "id": "current-cli", "stage": "current checkout", "kind": "output-container-guard", "artifact": "apps/asciiflow-cli/src/main.rs", "status": "CURRENT" },
     { "id": "stage54b-corpus", "stage": "Stage 5.4B", "kind": "reviewed-real-media-corpus", "artifact": "tests/corpus/real-media-v1.json", "status": "QUALIFIED" },
-    { "id": "stage54b-report", "stage": "Stage 5.4B", "kind": "compatibility-report", "artifact": "docs/stage5.4b-real-media-compatibility.md", "status": "QUALIFIED" }
+    { "id": "stage54b-report", "stage": "Stage 5.4B", "kind": "compatibility-report", "artifact": "docs/media-compatibility-results.md", "status": "QUALIFIED" }
   ],
   "dimensions": {
     "input_resolution": [
@@ -68,7 +68,7 @@
       { "value": "1280x720", "status": "ConditionallySupported", "evidence": ["stage54b-corpus", "stage54b-report"], "conditions": "Only exact Stage 5.4B portable software H.264 8-bit video-only tuple; no VAAPI/profiles/10-bit resolution generalization." }
     ],
     "input_container": [
-      { "value": "mp4", "status": "ConditionallySupported", "evidence": ["stage53b1", "stage53c4b", "stage54b-corpus"], "conditions": "Sealed retained matrix plus exact Stage 5.4B MP4 tuples (ordinary/fast-start/fragmented) only. AAC payload/timing/default/language are strictly checked where copied. Subtitles and video display titles are explicitly not copied." },
+      { "value": "mp4", "status": "ConditionallySupported", "evidence": ["stage53b1", "stage53c4b", "stage54b-corpus"], "conditions": "Retained matrix plus exact reviewed MP4 tuples (ordinary/fast-start/fragmented) only. AAC payload/timing/default/language are strictly checked where copied. Subtitles and video display titles are explicitly not copied." },
       { "value": "matroska", "status": "Unqualified", "evidence": [], "conditions": "Video-only H.264 sample converts, but AAC/FLAC Matroska-to-MP4 strict oracles fail: unspecified language becomes und, absent default becomes true, millisecond packet duration and missing first duration differ. Not a supported Matroska/audio preservation claim." },
       { "value": "mov", "status": "Unqualified", "evidence": [], "conditions": "H.264/AAC sample converts but the unchanged strict audio oracle rejects undefined language becoming und. No MOV support promotion." }
     ],

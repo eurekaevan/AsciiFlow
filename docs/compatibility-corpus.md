@@ -7,15 +7,14 @@ Inputs retain their canonical generation identity. The portability core set
 includes actual full decode/timing/audio checks and keeps historical oracles
 unchanged; alternate results are separate stack-scoped evidence.
 
-Stage 5.4A packages the existing production support contract and regression
+The corpus packages the existing production support contract and regression
 evidence into a reproducible runner. It enables no additional codec, color,
-container, backend or interop path. [The stage record](stage5.4a-support-contract.md)
-records the observed gates and final qualification decision.
+container, backend or interop path.
 
-Stage 5.4B adds [`real-media-v1.json`](../tests/corpus/real-media-v1.json):
+[`real-media-v1.json`](../tests/corpus/real-media-v1.json) contains
 79 deterministic encoded/muxed sources and three separately requested hardware
-tuples. Its [closure report](stage5.4b-real-media-compatibility.md) and
-[durable receipt](../tests/corpus/stage54b-closure.json) distinguish qualified
+tuples. Its [closure report](media-compatibility-results.md) and
+[durable receipt](../tests/corpus/compatibility-qualification.json) distinguish qualified
 tuples, expected rejections and explicit Unqualified limitations. Generated
 compatibility media is not a new benchmark source or a blanket container claim.
 

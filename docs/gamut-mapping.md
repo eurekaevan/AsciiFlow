@@ -1,18 +1,14 @@
 # BT.2020→BT.709 SDR conversion reference
 
-Permanent f64 reference: [Stage 5.3C-2B](stage5.3c2b-target-volume-cpu.md).
-C-2A selected D5+D6; C-2B implements two **separate** operations:
+The permanent f64 reference implements two **separate** operations:
 standards-derived colorimetric primary conversion and explicit project
 target-capability limiting. This is not Annex5 or a CPU production fallback.
 
-[C-3](stage5.3c3-vulkan-hdr-to-sdr.md) is an isolated Vulkan f32 reference,
-**SEALED** under P2/N3; historical two-code UNORM16 failures are preserved.
-This does not qualify gamut quality, change the CPU oracle, repair Annex5 or
-enable production by itself. Downstream [C-4A signal packing](stage5.3c4a-sdr-output-signal.md)
-is qualification-only and **SEALED** on the qualified Intel hardware; it consumes the final bounded signal
-without another gamut/target limiting pass.
+The Vulkan f32 reference follows the [numeric precision contract](numerical-qualification.md);
+historical two-code UNORM16 failures are preserved. Output packing consumes
+the final bounded signal without another gamut/target limiting pass.
 
-[C-4B](stage5.3c4b-hdr-to-sdr-production.md) is **SEALED** and consumes this
+[Production validation](hdr-to-sdr-validation.md) records this
 unchanged GPU policy for explicitly requested PQ→SDR production. It does not
 qualify perceptual gamut quality, repair Annex5 or restore clipped luminance.
 The fixed source domain is checked per pixel before HDR cell averaging;
@@ -56,7 +52,7 @@ and its rounded-weight Y numbers below remain unchanged as historical evidence.
 ## Historical Annex5 rejection and original entry audit
 
 **C-2A decision (2026-09-29): SEALED, Outcome C / F3.** See
-[domain/standard clarification](stage5.3c2a-domain-standard-clarification.md).
+domain/standard clarification.
 The former **BLOCKED pending C-2A decision** state is resolved by abandoning
 Annex5 as an executable project reference, not by passing its old gates.
 The new CPU-reference basis is BT.2407 §2 primary-matrix conversion with an
@@ -68,7 +64,7 @@ The original audit below is retained as historical evidence of that decision.
 The original Annex5 Stage 5.3C-2 is **NOT SEALED / ABANDONED**. At that audit
 no gamut mapper, hard-clip converter or C-1→C-2 path had been added. The entry-domain and official-formula
 audits found two blockers before coding an oracle. See
-[the stage record](stage5.3c2-gamut-map-cpu.md) and
+the stage record and
 [machine-readable audit](../tests/fixtures/tone-map/c2-domain-audit.json).
 
 ## Previously requested reference and original audit status

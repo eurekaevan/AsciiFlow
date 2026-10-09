@@ -90,10 +90,10 @@ The ignored `system_monospace_matches_explicit_atlas` test exercises local
 Fontconfig discovery and proves name/path atlas equality for the resolved face.
 Default tests use pinned repository fonts rather than installed family names.
 
-The Stage 6A host used Fontconfig 2.17.0. Its default `monospace` alias selected
+The recorded validation host used Fontconfig 2.17.0. Its default `monospace` alias selected
 `NotoSansMono[wght].ttf`, which failed the unchanged FreeType fixed-width check.
 That is an expected rejection, not permission to choose another font silently.
 Installed Liberation Mono passed family/file equivalence; an isolated Fontconfig
 configuration mapping `monospace` to that same face passed the local alias test.
 This is a host-specific observation, not a universal font blacklist. See the
-[qualification report](stage6a-font-terminal-ux.md) and its recorded controls.
+[qualification report](font-terminal-validation.md) and its recorded controls.

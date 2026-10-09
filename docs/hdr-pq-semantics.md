@@ -1,12 +1,12 @@
 # Internal BT.2020/PQ P010 pixel reference
 
-Stage 5.3B-1 is a CPU-only qualification oracle, **not production HDR support**.
-The SDR color assessment still rejects PQ; Stage 5.3B-3 now adds a separate
-pipeline-aware `HdrPqPreserve` admission path under hardware closure. See its
-[status and exact production gates](stage5.3b3-hdr-production.md).
+The CPU pixel reference is a qualification oracle, **not a production HDR backend**.
+The SDR color assessment rejects PQ; hardware production uses a separate
+pipeline-aware `HdrPqPreserve` admission path. See the
+[production contract](production-support.md) for exact support conditions.
 HLG, BT.2020 SDR, full-range and unknown/conflicting inputs remain rejected.
-There is no HDR CLI switch, tone mapping or gamut mapping, and the CPU oracle
-is never a production HDR fallback.
+The CPU oracle is never a production HDR fallback. Explicit hardware PQ-to-SDR
+conversion is documented separately in [tone mapping](tone-mapping.md).
 
 The only accepted oracle descriptor is host P010LE 4:2:0, limited range,
 BT.2020 primaries, BT.2020 non-constant-luminance matrix, PQ transfer, and
@@ -89,7 +89,7 @@ error is undefined. These bounds were fixed after characterization, with
 roughly twice the observed maximum as margin; they are not a universal GPU
 precision guarantee. Exact glyph equality and final per-plane error ≤1 active
 ten-bit code remain independent hard gates. See the
-[hardware report](stage5.3b2-vulkan-pq.md) for measured errors, fixtures,
+hardware report for measured errors, fixtures,
 FD/failure evidence and performance. Stage B-3 reuses these equations unchanged
 for the explicitly planned full-P010 hardware path; source mastering-display,
 MaxCLL and MaxFALL are removed, not copied or recomputed. HDR10 static mastering
