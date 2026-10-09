@@ -140,7 +140,7 @@ fn legal_pq_to_both_sdr_surfaces() {
                         println!("mismatch byte={index} cpu={cpu} gpu={gpu}");
                     }
                     if format == PixelFormat::P010Le {
-                        for word in packed.bytes.chunks_exact(2) {
+                        for word in packed.bytes.as_chunks::<2>().0 {
                             assert_eq!(u16::from_le_bytes([word[0], word[1]]) & 63, 0);
                         }
                     }
@@ -262,10 +262,10 @@ fn alternating_black_saturated_slots_do_not_contaminate() {
                 .unwrap();
         let mut host = HostFrame::new_zeroed(&desc);
         let (y, uv) = host.planes_mut(&desc);
-        for sample in y.chunks_exact_mut(2) {
+        for sample in y.as_chunks_mut::<2>().0 {
             sample.copy_from_slice(&(codes.y << 6).to_le_bytes());
         }
-        for sample in uv.chunks_exact_mut(4) {
+        for sample in uv.as_chunks_mut::<4>().0 {
             sample[..2].copy_from_slice(&(codes.cb << 6).to_le_bytes());
             sample[2..].copy_from_slice(&(codes.cr << 6).to_le_bytes());
         }

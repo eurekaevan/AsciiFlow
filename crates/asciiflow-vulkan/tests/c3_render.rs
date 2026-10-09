@@ -11,7 +11,7 @@ fn frame(bright: bool, pts: i64) -> VideoFrame {
     let desc = FrameDesc::host_p010_le(66, 50, ColorSpace::pq_bt2020()).unwrap();
     let mut storage = HostFrame::new_zeroed(&desc);
     let (y, uv) = storage.planes_mut(&desc);
-    for (i, sample) in y.chunks_exact_mut(2).enumerate() {
+    for (i, sample) in y.as_chunks_mut::<2>().0.iter_mut().enumerate() {
         let code = if bright {
             450 + (i % 4) as u16
         } else {
@@ -19,7 +19,7 @@ fn frame(bright: bool, pts: i64) -> VideoFrame {
         };
         sample.copy_from_slice(&(code << 6).to_le_bytes());
     }
-    for (i, sample) in uv.chunks_exact_mut(2).enumerate() {
+    for (i, sample) in uv.as_chunks_mut::<2>().0.iter_mut().enumerate() {
         let code = if bright {
             if i % 2 == 0 { 540u16 } else { 480u16 }
         } else {
@@ -92,7 +92,9 @@ fn render_and_two_slot_contamination() {
                 let low_bits = input
                     .host()
                     .as_slice()
-                    .chunks_exact(2)
+                    .as_chunks::<2>()
+                    .0
+                    .iter()
                     .filter(|bytes| (u16::from_le_bytes([bytes[0], bytes[1]]) >> 6) & 3 != 0)
                     .count();
                 assert_eq!(low_bits, 2475);

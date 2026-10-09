@@ -245,7 +245,7 @@ fn ten_bit_sdr_decodes_to_canonical_p010_and_drains() {
             assert_eq!(frame.desc().byte_len(), 64 * 64 * 3);
             assert_eq!(frame.desc().color_space.matrix, ColorMatrix::Bt709);
             pts.push(frame.pts().unwrap());
-            for word in frame.host().as_slice().chunks_exact(2) {
+            for word in frame.host().as_slice().as_chunks::<2>().0 {
                 let packed = u16::from_le_bytes([word[0], word[1]]);
                 assert_eq!(packed & 0x3f, 0, "{name} has non-zero P010 padding");
                 low_bits_seen[((packed >> 6) & 3) as usize] = true;

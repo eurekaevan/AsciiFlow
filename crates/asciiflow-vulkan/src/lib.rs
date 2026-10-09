@@ -48,7 +48,7 @@ mod tests {
         for (index, value) in bytes[..y_len].iter_mut().enumerate() {
             *value = 16 + ((index * 37 + index / 64 * 11) % 220) as u8;
         }
-        for (index, pair) in bytes[y_len..].chunks_exact_mut(2).enumerate() {
+        for (index, pair) in bytes[y_len..].as_chunks_mut::<2>().0.iter_mut().enumerate() {
             pair[0] = 48 + (index * 13 % 160) as u8;
             pair[1] = 48 + (index * 29 % 160) as u8;
         }
@@ -191,7 +191,9 @@ mod tests {
             frame
                 .host()
                 .as_slice()
-                .chunks_exact(2)
+                .as_chunks::<2>()
+                .0
+                .iter()
                 .all(|bytes| { u16::from_le_bytes([bytes[0], bytes[1]]) & 0x3f == 0 })
         );
     }

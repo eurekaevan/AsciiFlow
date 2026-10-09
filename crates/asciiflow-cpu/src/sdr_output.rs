@@ -140,7 +140,9 @@ mod tests {
         match format {
             PixelFormat::Nv12 => bytes.into_iter().map(u16::from).collect(),
             PixelFormat::P010Le => bytes
-                .chunks_exact(2)
+                .as_chunks::<2>()
+                .0
+                .iter()
                 .map(|v| {
                     let word = u16::from_le_bytes([v[0], v[1]]);
                     assert_eq!(word & 63, 0);

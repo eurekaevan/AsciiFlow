@@ -458,7 +458,9 @@ mod tests {
         assert!(
             out.host()
                 .as_slice()
-                .chunks_exact(2)
+                .as_chunks::<2>()
+                .0
+                .iter()
                 .all(|v| u16::from_le_bytes([v[0], v[1]]) & 63 == 0)
         );
         let (out_y, out_uv) = out.host().planes(out.desc());
@@ -636,7 +638,9 @@ mod tests {
                 .0
                 .host()
                 .as_slice()
-                .chunks_exact(2)
+                .as_chunks::<2>()
+                .0
+                .iter()
                 .all(|word| u16::from_le_bytes([word[0], word[1]]) & 63 == 0)
         );
     }

@@ -31,7 +31,9 @@ fn unchanged_c3_canonical_signal_to_both_formats() {
         offset + 8 + width as usize * height as usize * 24
     );
     let input: Vec<[f32; 3]> = bytes[offset + 8..]
-        .chunks_exact(24)
+        .as_chunks::<24>()
+        .0
+        .iter()
         .map(|p| {
             std::array::from_fn(|c| {
                 f64::from_le_bytes(p[c * 8..c * 8 + 8].try_into().unwrap()) as f32

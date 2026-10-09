@@ -136,8 +136,10 @@ fn assert_codes(actual: &VideoFrame, expected: &VideoFrame, context: &str) -> Di
     for (index, (a, e)) in actual
         .host()
         .as_slice()
-        .chunks_exact(2)
-        .zip(expected.host().as_slice().chunks_exact(2))
+        .as_chunks::<2>()
+        .0
+        .iter()
+        .zip(expected.host().as_slice().as_chunks::<2>().0.iter())
         .enumerate()
     {
         let a = u16::from_le_bytes([a[0], a[1]]);
@@ -189,7 +191,7 @@ fn pq_real_decoder_one_slot_import_and_output_parity() {
         let mut nonzero_low_two_bits = 0usize;
         while let Some(frame) = next.take() {
             let host = downloaded(&frame);
-            for sample in host.host().as_slice().chunks_exact(2) {
+            for sample in host.host().as_slice().as_chunks::<2>().0 {
                 active_samples += 1;
                 nonzero_low_two_bits +=
                     usize::from((u16::from_le_bytes([sample[0], sample[1]]) >> 6) & 3 != 0);

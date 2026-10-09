@@ -112,7 +112,7 @@ fn assert_codes(bytes: &[u8], format: PixelFormat) {
             assert!(bytes[y_samples..].iter().all(|v| (16..=240).contains(v)));
         }
         PixelFormat::P010Le => {
-            for (index, word) in bytes.chunks_exact(2).enumerate() {
+            for (index, word) in bytes.as_chunks::<2>().0.iter().enumerate() {
                 let word = u16::from_le_bytes([word[0], word[1]]);
                 assert_eq!(word & 63, 0, "P010 low six bits at sample {index}");
                 assert!(

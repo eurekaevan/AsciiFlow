@@ -196,12 +196,12 @@ mod tests {
         let desc = FrameDesc::host_p010_le(96, 64, ColorSpace::pq_bt2020()).unwrap();
         let mut host = HostFrame::new_zeroed(&desc);
         let (y, uv) = host.planes_mut(&desc);
-        for (index, sample) in y.chunks_exact_mut(2).enumerate() {
+        for (index, sample) in y.as_chunks_mut::<2>().0.iter_mut().enumerate() {
             // Codes <=722 decode below 1000 nits (723 is slightly above).
             let code = 64 + (index % 659) as u16;
             sample.copy_from_slice(&(code << 6).to_le_bytes());
         }
-        for sample in uv.chunks_exact_mut(2) {
+        for sample in uv.as_chunks_mut::<2>().0 {
             sample.copy_from_slice(&(512u16 << 6).to_le_bytes());
         }
         // A moderate skin-like color tile exercises non-neutral post-ASCII

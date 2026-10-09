@@ -89,7 +89,9 @@ fn store(plane: &mut [u8], index: usize, code: u16) {
 
 fn codes(plane: &[u8]) -> Vec<u16> {
     plane
-        .chunks_exact(2)
+        .as_chunks::<2>()
+        .0
+        .iter()
         .map(|sample| {
             let value = u16::from_le_bytes([sample[0], sample[1]]);
             assert_eq!(value & 63, 0, "P010 low six bits must be zero");
@@ -672,8 +674,10 @@ fn assert_benchmark_output(actual: &VideoFrame, expected: &VideoFrame) {
     for (index, (actual, expected)) in actual
         .host()
         .as_slice()
-        .chunks_exact(2)
-        .zip(expected.host().as_slice().chunks_exact(2))
+        .as_chunks::<2>()
+        .0
+        .iter()
+        .zip(expected.host().as_slice().as_chunks::<2>().0.iter())
         .enumerate()
     {
         let actual = u16::from_le_bytes([actual[0], actual[1]]);

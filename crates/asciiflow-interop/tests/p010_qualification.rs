@@ -38,7 +38,9 @@ fn software_main10_and_av1_decode_process_with_cpu_without_output_encoder() {
                 output
                     .host()
                     .as_slice()
-                    .chunks_exact(2)
+                    .as_chunks::<2>()
+                    .0
+                    .iter()
                     .all(|word| word[0] & 0x3f == 0)
             );
             count += 1;

@@ -1077,11 +1077,11 @@ fn validate_display_matrix(data: *const u8, size: usize) -> Result<()> {
     let bytes = unsafe { std::slice::from_raw_parts(data, size) };
     let identity = [1 << 16, 0, 0, 0, 1 << 16, 0, 0, 0, 1 << 30];
     if bytes
-        .chunks_exact(4)
+        .as_chunks::<4>()
+        .0
+        .iter()
         .zip(identity)
-        .any(|(bytes, expected)| {
-            i32::from_ne_bytes(bytes.try_into().expect("four-byte matrix entry")) != expected
-        })
+        .any(|(bytes, expected)| i32::from_ne_bytes(*bytes) != expected)
     {
         return Err(asciiflow_core::Error::UnsupportedFrame(
             "rotation or display transform is not supported; orientation cannot be silently discarded".into(),
@@ -1258,14 +1258,24 @@ fn planar_code(bytes: &[u8]) -> Result<u16> {
 }
 
 fn repack_planar_row(input: &[u8], output: &mut [u8]) -> Result<()> {
-    for (source, destination) in input.chunks_exact(2).zip(output.chunks_exact_mut(2)) {
+    for (source, destination) in input
+        .as_chunks::<2>()
+        .0
+        .iter()
+        .zip(output.as_chunks_mut::<2>().0.iter_mut())
+    {
         destination.copy_from_slice(&(planar_code(source)? << 6).to_le_bytes());
     }
     Ok(())
 }
 
 fn validate_p010_words(input: &[u8]) -> Result<()> {
-    if input.chunks_exact(2).any(|sample| sample[0] & 0x3f != 0) {
+    if input
+        .as_chunks::<2>()
+        .0
+        .iter()
+        .any(|sample| sample[0] & 0x3f != 0)
+    {
         return Err(asciiflow_core::Error::UnsupportedFrame(
             "P010LE sample has non-zero low padding bits".into(),
         ));
@@ -1560,7 +1570,12 @@ mod p010_tests {
 
         let identity: [i32; 9] = [1 << 16, 0, 0, 0, 1 << 16, 0, 0, 0, 1 << 30];
         let mut storage = AlignedBytes([0; 37]);
-        for (bytes, value) in storage.0[1..].chunks_exact_mut(4).zip(identity) {
+        for (bytes, value) in storage.0[1..]
+            .as_chunks_mut::<4>()
+            .0
+            .iter_mut()
+            .zip(identity)
+        {
             bytes.copy_from_slice(&value.to_ne_bytes());
         }
         let sliced = &storage.0;
@@ -1583,7 +1598,7 @@ mod p010_tests {
             [2 << 16, 0, 0, 0, 1 << 16, 0, 0, 0, 1 << 30],
         ];
         for matrix in transforms {
-            for (bytes, value) in storage.0[1..].chunks_exact_mut(4).zip(matrix) {
+            for (bytes, value) in storage.0[1..].as_chunks_mut::<4>().0.iter_mut().zip(matrix) {
                 bytes.copy_from_slice(&value.to_ne_bytes());
             }
             let error = validate_display_matrix(storage.0[1..].as_ptr(), 36).unwrap_err();
@@ -1680,7 +1695,9 @@ mod p010_tests {
         let codes: Vec<u16> = output
             .host()
             .as_slice()
-            .chunks_exact(2)
+            .as_chunks::<2>()
+            .0
+            .iter()
             .map(|word| u16::from_le_bytes([word[0], word[1]]) >> 6)
             .collect();
         assert_eq!(codes, [1, 513, 1023, 2, 514, 515]);
@@ -1688,7 +1705,9 @@ mod p010_tests {
             output
                 .host()
                 .as_slice()
-                .chunks_exact(2)
+                .as_chunks::<2>()
+                .0
+                .iter()
                 .all(|word| word[0] & 0x3f == 0)
         );
     }

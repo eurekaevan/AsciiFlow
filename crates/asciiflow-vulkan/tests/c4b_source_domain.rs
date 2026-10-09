@@ -9,10 +9,10 @@ fn diluted_highlight(nits: f64) -> VideoFrame {
     let desc = FrameDesc::host_p010_le(8, 8, ColorSpace::pq_bt2020()).unwrap();
     let mut host = HostFrame::new_zeroed(&desc);
     let (y, uv) = host.planes_mut(&desc);
-    for sample in y.chunks_exact_mut(2) {
+    for sample in y.as_chunks_mut::<2>().0 {
         sample.copy_from_slice(&(64u16 << 6).to_le_bytes());
     }
-    for sample in uv.chunks_exact_mut(2) {
+    for sample in uv.as_chunks_mut::<2>().0 {
         sample.copy_from_slice(&(512u16 << 6).to_le_bytes());
     }
     let (code, _) = hdr_pq::encode_limited(hdr_pq::pq_to_ycbcr(

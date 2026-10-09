@@ -234,7 +234,7 @@ fn p010_packed_output_is_bit_exact() {
     for pattern in 0..4 {
         let mut bytes = vec![0_u8; desc.byte_len()];
         let mut random = 0x1234_5678_u32;
-        for (index, word) in bytes.chunks_exact_mut(2).enumerate() {
+        for (index, word) in bytes.as_chunks_mut::<2>().0.iter_mut().enumerate() {
             random ^= random << 13;
             random ^= random >> 17;
             random ^= random << 5;
@@ -272,7 +272,7 @@ fn p010_packed_output_is_bit_exact() {
             source.host().as_slice(),
             "pattern {pattern}"
         );
-        for word in output.host().as_slice().chunks_exact(2) {
+        for word in output.host().as_slice().as_chunks::<2>().0 {
             assert_eq!(u16::from_le_bytes([word[0], word[1]]) & 0x003f, 0);
         }
     }
@@ -282,7 +282,7 @@ fn p010_packed_output_is_bit_exact() {
 #[cfg(feature = "p010-output-diagnostic")]
 fn synthetic_p010(desc: &FrameDesc, pts: i64) -> VideoFrame {
     let mut bytes = vec![0_u8; desc.byte_len()];
-    for (index, word) in bytes.chunks_exact_mut(2).enumerate() {
+    for (index, word) in bytes.as_chunks_mut::<2>().0.iter_mut().enumerate() {
         let value = (((index * 997 + pts as usize * 73 + 37) % 1024) as u16) << 6;
         word.copy_from_slice(&value.to_le_bytes());
     }
@@ -1844,7 +1844,9 @@ fn compare_output_interop_format(
                         .frame
                         .host()
                         .as_slice()
-                        .chunks_exact(2)
+                        .as_chunks::<2>()
+                        .0
+                        .iter()
                         .filter(|bytes| (u16::from_le_bytes([bytes[0], bytes[1]]) >> 6) & 3 != 0)
                         .count();
                 }
@@ -1905,7 +1907,9 @@ fn compare_output_interop_format(
                     .frame
                     .host()
                     .as_slice()
-                    .chunks_exact(2)
+                    .as_chunks::<2>()
+                    .0
+                    .iter()
                     .filter(|bytes| (u16::from_le_bytes([bytes[0], bytes[1]]) >> 6) & 3 != 0)
                     .count();
             }

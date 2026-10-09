@@ -123,7 +123,7 @@ mod tests {
             if format == PixelFormat::Nv12 {
                 uv_plane.fill(neutral as u8);
             } else {
-                for sample in uv_plane.chunks_exact_mut(2) {
+                for sample in uv_plane.as_chunks_mut::<2>().0 {
                     sample.copy_from_slice(&(neutral << 6).to_le_bytes());
                 }
             }
@@ -154,17 +154,23 @@ mod tests {
                     y_plane.iter().map(|&y| y as u16).collect()
                 } else {
                     y_plane
-                        .chunks_exact(2)
+                        .as_chunks::<2>()
+                        .0
+                        .iter()
                         .map(|bytes| u16::from_le_bytes([bytes[0], bytes[1]]) >> 6)
                         .collect()
                 };
                 let left: u32 = samples
-                    .chunks_exact(16)
+                    .as_chunks::<16>()
+                    .0
+                    .iter()
                     .flat_map(|row| &row[..8])
                     .map(|&v| v as u32)
                     .sum();
                 let right: u32 = samples
-                    .chunks_exact(16)
+                    .as_chunks::<16>()
+                    .0
+                    .iter()
                     .flat_map(|row| &row[8..])
                     .map(|&v| v as u32)
                     .sum();
@@ -191,27 +197,35 @@ mod tests {
                 let (legacy_y, _) = legacy_frame.host().planes(&desc);
                 let legacy_black: u32 = if format == PixelFormat::Nv12 {
                     legacy_y
-                        .chunks_exact(16)
+                        .as_chunks::<16>()
+                        .0
+                        .iter()
                         .flat_map(|row| &row[..8])
                         .map(|&v| u32::from(v))
                         .sum()
                 } else {
                     legacy_y
-                        .chunks_exact(32)
-                        .flat_map(|row| row[..16].chunks_exact(2))
+                        .as_chunks::<32>()
+                        .0
+                        .iter()
+                        .flat_map(|row| row[..16].as_chunks::<2>().0.iter())
                         .map(|bytes| u32::from(u16::from_le_bytes([bytes[0], bytes[1]]) >> 6))
                         .sum()
                 };
                 let legacy_white: u32 = if format == PixelFormat::Nv12 {
                     legacy_y
-                        .chunks_exact(16)
+                        .as_chunks::<16>()
+                        .0
+                        .iter()
                         .flat_map(|row| &row[8..])
                         .map(|&v| u32::from(v))
                         .sum()
                 } else {
                     legacy_y
-                        .chunks_exact(32)
-                        .flat_map(|row| row[16..].chunks_exact(2))
+                        .as_chunks::<32>()
+                        .0
+                        .iter()
+                        .flat_map(|row| row[16..].as_chunks::<2>().0.iter())
                         .map(|bytes| u32::from(u16::from_le_bytes([bytes[0], bytes[1]]) >> 6))
                         .sum()
                 };

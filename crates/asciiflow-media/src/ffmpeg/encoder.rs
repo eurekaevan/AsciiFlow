@@ -1978,10 +1978,10 @@ mod sdr_hardware_fault_tests {
                 uv.fill(128);
             }
             PixelFormat::P010Le => {
-                for sample in y.chunks_exact_mut(2) {
+                for sample in y.as_chunks_mut::<2>().0 {
                     sample.copy_from_slice(&(64u16 << 6).to_le_bytes());
                 }
-                for sample in uv.chunks_exact_mut(2) {
+                for sample in uv.as_chunks_mut::<2>().0 {
                     sample.copy_from_slice(&(512u16 << 6).to_le_bytes());
                 }
             }
@@ -2881,10 +2881,10 @@ mod audio_regression_tests {
                     for pts in 0..6 {
                         let mut host = HostFrame::new_zeroed(&desc);
                         let (y, uv) = host.planes_mut(&desc);
-                        for sample in y.chunks_exact_mut(2) {
+                        for sample in y.as_chunks_mut::<2>().0 {
                             sample.copy_from_slice(&(64u16 << 6).to_le_bytes());
                         }
-                        for sample in uv.chunks_exact_mut(2) {
+                        for sample in uv.as_chunks_mut::<2>().0 {
                             sample.copy_from_slice(&(512u16 << 6).to_le_bytes());
                         }
                         let frame = VideoFrame::new_host(desc.clone(), Some(pts), host).unwrap();

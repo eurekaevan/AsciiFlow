@@ -63,7 +63,7 @@ fn sdr_pack_matches_f64_oracle_at_y_and_reachable_chroma_boundaries() {
             .unwrap();
         rgb_diagnostics[format_index] = output.diagnostics;
         if format == PixelFormat::P010Le {
-            for word in output.bytes.chunks_exact(2) {
+            for word in output.bytes.as_chunks::<2>().0 {
                 p010_nonzero_padding +=
                     usize::from(u16::from_le_bytes([word[0], word[1]]) & 63 != 0);
             }

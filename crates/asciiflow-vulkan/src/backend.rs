@@ -2620,8 +2620,10 @@ impl Resources {
         let data = self.download_cell_bytes(context)?;
         // Byte allocations do not promise struct alignment.
         let cells: Vec<crate::pq::GpuPqCell> = data
-            .chunks_exact(size_of::<crate::pq::GpuPqCell>())
-            .map(bytemuck::pod_read_unaligned)
+            .as_chunks::<{ size_of::<crate::pq::GpuPqCell>() }>()
+            .0
+            .iter()
+            .map(|bytes| bytemuck::pod_read_unaligned(bytes))
             .collect();
         if cells
             .iter()

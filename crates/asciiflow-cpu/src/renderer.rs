@@ -145,7 +145,7 @@ fn write_sample<const P010: bool>(plane: &mut [u8], index: usize, code: u32) {
 fn fill_samples<const P010: bool>(plane: &mut [u8], code: u32) {
     if P010 {
         let word = ((code as u16) << 6).to_le_bytes();
-        for sample in plane.chunks_exact_mut(2) {
+        for sample in plane.as_chunks_mut::<2>().0 {
             sample.copy_from_slice(&word);
         }
     } else {
@@ -218,7 +218,7 @@ mod tests {
             assert_eq!(frame.desc().color_space, ColorSpace::default());
             assert_eq!(frame.pts(), Some(7));
             let (y_plane, uv_plane) = frame.host().planes(&desc);
-            for bytes in y_plane.chunks_exact(2) {
+            for bytes in y_plane.as_chunks::<2>().0 {
                 let word = u16::from_le_bytes([bytes[0], bytes[1]]);
                 assert_eq!(word >> 6, y);
                 assert_eq!(word & 0x3f, 0);
@@ -227,7 +227,9 @@ mod tests {
             assert_eq!(u16::from_le_bytes([uv_plane[2], uv_plane[3]]) >> 6, v);
             assert!(
                 uv_plane
-                    .chunks_exact(2)
+                    .as_chunks::<2>()
+                    .0
+                    .iter()
                     .all(|bytes| u16::from_le_bytes([bytes[0], bytes[1]]) & 0x3f == 0)
             );
         }
@@ -263,7 +265,9 @@ mod tests {
         assert!(
             b.host()
                 .as_slice()
-                .chunks_exact(2)
+                .as_chunks::<2>()
+                .0
+                .iter()
                 .all(|bytes| { u16::from_le_bytes([bytes[0], bytes[1]]) & 0x3f == 0 })
         );
     }

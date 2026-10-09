@@ -268,7 +268,9 @@ fn unpack_p010_words(bytes: &[u8]) -> (Vec<u16>, u64) {
     assert_eq!(bytes.len() % 2, 0);
     let mut malformed = 0;
     let codes = bytes
-        .chunks_exact(2)
+        .as_chunks::<2>()
+        .0
+        .iter()
         .map(|value| {
             let word = u16::from_le_bytes([value[0], value[1]]);
             // Match the actual map shader's packing contract before discarding bits.
@@ -303,7 +305,7 @@ fn audit_frame(
     for code in y_codes.iter().copied() {
         report.low_two_bits[0].add(code);
     }
-    for pair in uv_codes.chunks_exact(2) {
+    for pair in uv_codes.as_chunks::<2>().0 {
         report.low_two_bits[1].add(pair[0]);
         report.low_two_bits[2].add(pair[1]);
     }
