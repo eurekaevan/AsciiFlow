@@ -269,7 +269,7 @@ fn run_inner(
     {
         bail!("hardware interop cannot be combined with diagnostic CPU Vulkan mapping");
     }
-    let config = AsciiConfig {
+    let mut config = AsciiConfig {
         grid_width: args.width,
         grid_height: args.height,
         charset: args.resolved_charset(),
@@ -383,6 +383,38 @@ fn run_inner(
         "resolved_path": resolved_font.path,
         "face_index": resolved_font.face_index,
     });
+    let aspect = match resolved_font.path.as_deref() {
+        Some(path) => asciiflow_font::natural_cell_aspect(path, resolved_font.face_index)
+            .with_context(|| {
+                format!(
+                    "font request {:?}, resolved file {} face {}",
+                    args.font,
+                    path.display(),
+                    resolved_font.face_index
+                )
+            })?,
+        None => asciiflow_font::CellAspect::BUILTIN,
+    };
+    let (columns, rows) = config.resolved_grid_with_aspect(
+        info.frame_desc.width,
+        info.frame_desc.height,
+        aspect.width,
+        aspect.height,
+    )?;
+    // Resolve once for every backend, without adding font policy to the renderer.
+    // Builtin keeps the original automatic config; explicit heights are untouched.
+    if resolved_font.path.is_some() && config.grid_height.is_none() {
+        config.grid_height = Some(rows);
+        config.validate().context(
+            "automatic font grid exceeds the supported row range; reduce --width or set --height",
+        )?;
+    }
+    report["font"]["natural_cell"] = serde_json::json!([aspect.width, aspect.height]);
+    report["font"]["grid"] = serde_json::json!([columns, rows]);
+    report["font"]["cell_pixels"] = serde_json::json!([
+        info.frame_desc.width.div_ceil(columns),
+        info.frame_desc.height.div_ceil(rows),
+    ]);
     let mut font_name = resolved_font.name.clone();
     let atlas = if resolved_font.path.is_none() {
         if args.verbose {
@@ -393,8 +425,6 @@ fn run_inner(
         }
         asciiflow_font::GlyphAtlas::builtin(&args.font, &config.charset)?
     } else {
-        let (columns, rows) =
-            config.resolved_grid(info.frame_desc.width, info.frame_desc.height)?;
         let (atlas, diagnostics) = asciiflow_font::build_font_atlas(
             resolved_font.path.as_deref().expect("resolved font file"),
             resolved_font.face_index,
@@ -442,6 +472,19 @@ fn run_inner(
         }
         atlas
     };
+    if args.verbose {
+        // Float is display-only; grid geometry above uses one integer division.
+        println!(
+            "  natural cell : {}:{} ({:.3})\n  grid         : {} x {}\n  cell         : {} x {} px",
+            aspect.width,
+            aspect.height,
+            f64::from(aspect.width) / f64::from(aspect.height),
+            columns,
+            rows,
+            info.frame_desc.width.div_ceil(columns),
+            info.frame_desc.height.div_ceil(rows),
+        );
+    }
     // No name-keyed atlas cache: this job owns its bytes. Retain the actual
     // resolved identity and raster geometry, not merely the requested family.
     report["font"]["charset"] = serde_json::json!(config.charset);

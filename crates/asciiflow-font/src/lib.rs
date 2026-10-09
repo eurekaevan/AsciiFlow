@@ -3,7 +3,7 @@ use thiserror::Error;
 mod resolve;
 mod scalable;
 pub use resolve::{FontSource, ResolvedFont, resolve_font};
-pub use scalable::{FontDiagnostics, build_font_atlas};
+pub use scalable::{CellAspect, FontDiagnostics, build_font_atlas, natural_cell_aspect};
 
 #[derive(Debug, Error)]
 pub enum FontError {

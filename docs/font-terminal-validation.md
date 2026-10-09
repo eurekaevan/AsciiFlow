@@ -1,6 +1,9 @@
 # System font and terminal validation
 
 Status: **Completed**. Post-2.0 source version: **2.1.0-dev**.
+This is the historical font-discovery/terminal result before font-aware automatic
+row selection. Current scalable-font automatic geometry is described in
+[fonts](fonts.md); explicit grids retain the existing raster policy.
 This is a development qualification, not a new redistributable package.
 AsciiFlow 2.0.0 remains FINALIZED; its release artifacts and historical reports
 are unchanged.

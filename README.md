@@ -79,6 +79,10 @@ FreeType validation and rasterization remain authoritative. A system match
 that fails those checks rejects; there is no automatic font/glyph fallback.
 `--font-face-index` applies only to explicit files. Color/monochrome rendering
 and standard/detailed/literal character ramps remain unchanged.
+When `--height` is omitted, scalable fonts use their natural cell width/height
+ratio to choose automatic rows. Builtin keeps its square-cell layout; an
+explicit `--height` preserves the requested grid. Glyphs are not stretched or
+cropped to simulate tighter spacing. `--verbose` reports the ratio and geometry.
 The default ramps run sparse to dense on black, so black remains dark and
 white renders brighter. Audio auto copies eligible compressed tracks; copy
 is strict and none produces video-only output. Explicit hardware requests

@@ -416,6 +416,29 @@ fn pq_freetype_mapping_and_render_match_cpu() {
             .any(|&coverage| coverage > 0 && coverage < 255)
     );
     exercise_atlas(atlas, config, "FreeType");
+
+    // Exercise the same resolved natural grid consumed by the production CLI.
+    let aspect = asciiflow_font::natural_cell_aspect(&path, 0).unwrap();
+    let input = frame(96, 48, Pattern::ColorBoundary, 0);
+    let mut config = AsciiConfig {
+        grid_width: 12,
+        font: path.to_string_lossy().into_owned(),
+        ..AsciiConfig::default()
+    };
+    let (columns, rows) = config
+        .resolved_grid_with_aspect(96, 48, aspect.width, aspect.height)
+        .unwrap();
+    assert_eq!((columns, rows), (12, 3));
+    config.grid_height = Some(rows);
+    let (atlas, _) = asciiflow_font::build_font_atlas(&path, 0, &config.charset, 8, 16).unwrap();
+    let reference = HdrPqReference::new(&atlas, &config.charset).unwrap();
+    let expected = reference.process(&input, columns, rows, true).unwrap().0;
+    let mut gpu = VulkanPqQualification::new()
+        .unwrap()
+        .with_atlas(atlas, &config)
+        .unwrap();
+    let actual = gpu.process(&input, &config).unwrap();
+    compare_output("FreeType/natural-grid", &actual.frame, &expected, false);
 }
 
 #[test]

@@ -34,9 +34,29 @@ Capability-only reports do not open fonts. Font choice does not affect planning.
 
 The font crate owns freetype-rs 0.38.0, linked to system FreeType through
 freetype-sys/pkg-config (no bundled feature). The CLI resolves the existing grid
-first; tile dimensions are ceil(frame width/columns), ceil(frame height/rows).
-Grid, resolution, mapping and timing do not change. There is no font-size/DPI
-option. Cells too small for a common valid raster fail explicitly.
+using integer geometry; tile dimensions are ceil(frame width/columns),
+ceil(frame height/rows). When `--height` is omitted, rows are rounded half-up
+from `columns * frame_height * natural_width / (frame_width * natural_height)`
+and clamped to at least one row and at most the frame height. Explicit height
+keeps the existing grid unchanged. Builtin uses 8:8 and retains the old automatic
+grid. Resolved scalable-font rows must fit the existing CLI 1..=8192 row bound;
+an excessively tall grid rejects before staging, with an explicit diagnostic.
+Scalable fonts use an unscaled ASCII M advance (global advance if M is
+absent) and global ascender minus descender; some monospaced fonts have much
+wider non-ASCII glyphs, so global maximum advance alone is unsuitable. This
+lookup performs no rasterization. The integer ratio is independent of ppem.
+
+Only automatic sampling/grid geometry changes, not output resolution, timing,
+CPU/Vulkan algorithms or glyph fitting. There is no font-size/DPI, letter-spacing,
+stretching or horizontal-compression option. Cells too small for a common valid
+raster fail explicitly. To reproduce an older scalable-font layout, supply its
+explicit `--height`. Verbose/JSON diagnostics retain natural ratio, grid and
+pixel-cell dimensions; the decimal ratio is display-only.
+
+For the tested Liberation Mono Regular face, the natural ratio is 1229:2320
+(about 0.530), not a hardcoded 0.6. At 1920x1080 with `--width 160`, automatic
+geometry is 160x48 with 12x23-pixel cells; explicit `--height 54` remains
+160x54 with 12x20-pixel cells.
 
 One common pixel size fits the face ascender/descender and entire ramp's bitmap
 extents into the tile. The horizontal origin centers the common advance/extents
@@ -89,6 +109,19 @@ calibration, or full Unicode typography is promised.
 The ignored `system_monospace_matches_explicit_atlas` test exercises local
 Fontconfig discovery and proves name/path atlas equality for the resolved face.
 Default tests use pinned repository fonts rather than installed family names.
+
+The font-aspect change was also checked on Intel Arc Meteor Lake with actual
+VAAPI decode, Vulkan processing, input/output interop and VAAPI encode. Short
+SDR/H.264 (90 frames, single AAC), PQ-preserve/HEVC10 (300 frames, no audio),
+and legal-domain PQ-to-SDR/HEVC10 (300 frames, dual AAC copied from the retained
+audio fixture) outputs fully decoded with correct frame counts, timestamps,
+color metadata and AAC packet/metadata preservation. Their builtin outputs
+matched the saved pre-change binary byte-for-byte. On the latter path,
+Liberation Mono family-name/file requests produced identical automatic-grid
+outputs, and explicit 160x54 output matched the pre-change binary byte-for-byte.
+The existing real-device PQ FreeType CPU/Vulkan comparison additionally covers
+the fixture font's new automatic grid, using its unchanged pixel-error oracle.
+These are short geometry regressions, not a new long-soak or release qualification.
 
 The recorded validation host used Fontconfig 2.17.0. Its default `monospace` alias selected
 `NotoSansMono[wght].ttf`, which failed the unchanged FreeType fixed-width check.

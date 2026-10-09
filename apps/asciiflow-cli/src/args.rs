@@ -194,6 +194,7 @@ pub struct Args {
     #[arg(long,default_value_t=160,value_parser=clap::value_parser!(u32).range(1..=8192))]
     pub width: u32,
     #[arg(long,value_parser=clap::value_parser!(u32).range(1..=8192))]
+    /// Explicit ASCII rows; omitted height uses the font's natural cell aspect.
     pub height: Option<u32>,
     #[arg(long, default_value = "standard")]
     pub charset: String,

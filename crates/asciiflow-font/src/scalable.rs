@@ -24,6 +24,79 @@ pub struct FontDiagnostics {
     pub build_wall: Duration,
 }
 
+/// Unscaled face units, not pixel geometry or a glyph-stretch instruction.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct CellAspect {
+    pub width: u32,
+    pub height: u32,
+}
+
+impl CellAspect {
+    pub const BUILTIN: Self = Self {
+        width: 8,
+        height: 8,
+    };
+}
+
+fn font_bytes(path: &Path) -> Result<Vec<u8>, FontError> {
+    use std::io::Read;
+    const MAX_FONT_BYTES: u64 = 32 * 1024 * 1024;
+    let error = |detail: String| FontError::Font {
+        path: path.display().to_string(),
+        operation: "read font file",
+        detail,
+    };
+    let file = std::fs::File::open(path).map_err(|e| error(e.to_string()))?;
+    let mut bytes = Vec::new();
+    file.take(MAX_FONT_BYTES + 1)
+        .read_to_end(&mut bytes)
+        .map_err(|e| error(e.to_string()))?;
+    if bytes.len() as u64 > MAX_FONT_BYTES {
+        return Err(error("font exceeds 32 MiB limit".into()));
+    }
+    Ok(bytes)
+}
+
+/// Initialization-only metrics lookup, with no pixel sizing or rasterization.
+pub fn natural_cell_aspect(path: &Path, face_index: isize) -> Result<CellAspect, FontError> {
+    let error = |detail: &str| FontError::Font {
+        path: path.display().to_string(),
+        operation: "read natural cell metrics",
+        detail: format!("face {face_index}: {detail}"),
+    };
+    let library = Library::init().map_err(|e| error(&e.to_string()))?;
+    let face = library
+        .new_memory_face(font_bytes(path)?, face_index)
+        .map_err(|e| error(&e.to_string()))?;
+    if !face.is_scalable() || !face.is_fixed_width() {
+        return Err(error("a scalable monospaced face is required"));
+    }
+    // max_advance_width may include wide non-ASCII glyphs even on a fixed-width
+    // face (e.g. Inconsolata). Read the unscaled normal ASCII advance instead.
+    // Symbol-only faces without M retain the global advance; atlas glyph checks
+    // remain authoritative for the actual ramp.
+    let width = if let Some(index) = face.get_char_index('M' as usize) {
+        face.load_glyph(
+            index,
+            LoadFlag::NO_SCALE | LoadFlag::NO_HINTING | LoadFlag::NO_BITMAP,
+        )
+        .map_err(|e| error(&e.to_string()))?;
+        face.glyph().advance().x
+    } else {
+        face.max_advance_width().into()
+    };
+    let height = i32::from(face.ascender()) - i32::from(face.descender());
+    if width <= 0 || height <= 0 {
+        return Err(error(
+            "advance and ascender-minus-descender must be positive",
+        ));
+    }
+    Ok(CellAspect {
+        width: u32::try_from(width).map_err(|_| error("advance exceeds u32"))?,
+        height: height as u32,
+    })
+}
+
 /// Initialization-only: all native objects are dropped before returning owned bytes.
 pub fn build_font_atlas(
     path: &Path,
@@ -43,16 +116,7 @@ pub fn build_font_atlas(
         return Err(FontError::AtlasTooLarge);
     }
     let started = Instant::now();
-    use std::io::Read;
-    const MAX_FONT_BYTES: u64 = 32 * 1024 * 1024;
-    let file = std::fs::File::open(path).map_err(|e| error("read font file", e.to_string()))?;
-    let mut bytes = Vec::new();
-    file.take(MAX_FONT_BYTES + 1)
-        .read_to_end(&mut bytes)
-        .map_err(|e| error("read font file", e.to_string()))?;
-    if bytes.len() as u64 > MAX_FONT_BYTES {
-        return Err(error("read font file", "font exceeds 32 MiB limit".into()));
-    }
+    let bytes = font_bytes(path)?;
     let library = Library::init().map_err(|e| error("initialize FreeType", e.to_string()))?;
     let face = library
         .new_memory_face(bytes, face_index)
@@ -245,6 +309,30 @@ mod tests {
     fn font() -> std::path::PathBuf {
         Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("../../tests/fixtures/fonts/Inconsolata-Regular.ttf")
+    }
+    #[test]
+    fn natural_cell_uses_ascii_advance_not_the_widest_unicode_glyph() {
+        assert_eq!(
+            natural_cell_aspect(&font(), 0).unwrap(),
+            CellAspect {
+                width: 500,
+                height: 1049
+            }
+        );
+        assert_eq!(
+            CellAspect::BUILTIN,
+            CellAspect {
+                width: 8,
+                height: 8
+            }
+        );
+        assert!(natural_cell_aspect(&font(), 999).is_err());
+        assert!(natural_cell_aspect(&font().with_file_name("Abel-Regular.ttf"), 0).is_err());
+        // A metrics lookup does not change the common-ppem atlas construction.
+        let (before, _) = build_font_atlas(&font(), 0, "Ag#._ A", 12, 20).unwrap();
+        natural_cell_aspect(&font(), 0).unwrap();
+        let (after, _) = build_font_atlas(&font(), 0, "Ag#._ A", 12, 20).unwrap();
+        assert_eq!(before.as_r8_slice(), after.as_r8_slice());
     }
     #[test]
     fn scalable_monospaced_atlas_has_uniform_baseline_grayscale_and_duplicate_identity() {

@@ -2,6 +2,38 @@ mod audio_support;
 use asciiflow_core::FrameSource;
 
 #[test]
+fn natural_font_aspect_changes_only_automatic_grid_geometry() {
+    let font = fixture("no-audio.mp4")
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .join("fonts/Inconsolata-Regular.ttf");
+    for (height, expected_rows) in [(None, 8), (Some("12"), 12)] {
+        let ws = Workspace::new();
+        let report = ws.0.join("report.json");
+        let mut cmd = command(&fixture("no-audio.mp4"), &ws.output(), "none");
+        cmd.arg("--font")
+            .arg(&font)
+            .arg("--diagnostic-report")
+            .arg(&report);
+        if let Some(height) = height {
+            cmd.args(["--height", height]);
+        }
+        success(&Process::start(&mut cmd).finish());
+        let data: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(report).unwrap()).unwrap();
+        assert_eq!(data["font"]["natural_cell"], serde_json::json!([500, 1049]));
+        assert_eq!(data["font"]["grid"], serde_json::json!([16, expected_rows]));
+        assert_eq!(
+            data["font"]["cell_pixels"],
+            serde_json::json!([4, 64u32.div_ceil(expected_rows)])
+        );
+        ws.assert_no_staging();
+    }
+}
+
+#[test]
 fn terminal_output_is_stable_when_redirected_or_progress_disabled() {
     for flags in [&[][..], &["--no-progress"][..], &["--verbose"][..]] {
         let ws = Workspace::new();

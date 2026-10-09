@@ -341,6 +341,11 @@ mod tests {
             Some(system.face_index.try_into().unwrap()),
         )
         .unwrap();
+        assert_eq!(
+            crate::natural_cell_aspect(path, system.face_index).unwrap(),
+            crate::natural_cell_aspect(explicit.path.as_ref().unwrap(), explicit.face_index)
+                .unwrap(),
+        );
         let (system_atlas, _) = build_font_atlas(path, system.face_index, "@Ag ", 12, 20).unwrap();
         let (file_atlas, _) = build_font_atlas(
             explicit.path.as_ref().unwrap(),
