@@ -27,6 +27,7 @@ asciiflow-vulkan = { path = "../../crates/asciiflow-vulkan" }
 clap.workspace = true
 ctrlc.workspace = true
 ffmpeg-sys-next.workspace = true
+indicatif = { version = "0.18", default-features = false }
 serde_json = "1.0"
 tracing.workspace = true
 tracing-subscriber.workspace = true

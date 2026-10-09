@@ -4,6 +4,9 @@ AsciiFlow **2.0.0** is the final qualified v2 engineering milestone. Stage 5.4
 is SEALED; the [final milestone receipt](docs/asciiflow-2.0.0-final.md) records
 the artifact identity, inherited qualification and unchanged limitations.
 
+Current source development is **2.1.0-dev**, Stage 6A (system font discovery
+and terminal UX). It does not replace or modify the frozen 2.0.0 artifact.
+
 AsciiFlow is a Rust CLI that converts video into color or monochrome ASCII
 video. It has a portable CPU path and, on qualified Linux hardware, a Vulkan
 processing path with VAAPI decode/encode and optional DMA-BUF interop. The
@@ -71,8 +74,13 @@ existing CFR timeline; failure/cancellation preserves the destination. The
 default `preserve` never requests tone mapping. Explicit `sdr` uses the sealed
 1000→100-nit C pipeline; source pixels above its decoded domain reject.
 
-Rendering supports the built-in 8×8 font or an explicit monospaced FreeType
-font, color or monochrome, and standard/detailed/literal character ramps.
+Rendering supports the built-in 8×8 font, an explicit monospaced FreeType file,
+or a Linux Fontconfig family/pattern such as `--font "Liberation Mono"` or
+`--font monospace`. Fontconfig selects one file/collection face; existing
+FreeType validation and rasterization remain authoritative. A system match
+that fails those checks rejects; there is no automatic font/glyph fallback.
+`--font-face-index` applies only to explicit files. Color/monochrome rendering
+and standard/detailed/literal character ramps remain unchanged.
 The default ramps run sparse to dense on black, so black remains dark and
 white renders brighter. Audio auto copies eligible compressed tracks; copy
 is strict and none produces video-only output. Explicit hardware requests
@@ -142,15 +150,35 @@ include `--width`, `--height`, `--charset`, `--font`, `--font-face-index`,
 positional except for capability/plan inspection. Run `asciiflow --help`
 for the exact installed CLI.
 
-## Installing the Linux release candidate
+Stage 6A source builds accept `--font "Liberation Mono:style=Bold"` as well as
+explicit files and `builtin-8x8`. A system match must still pass the existing
+FreeType monospaced/scalable/glyph checks; discovery does not promise fallback.
 
-The RC is a dynamically linked Linux x86-64 executable, not a universal Linux
-bundle. Extract the archive and put `asciiflow` in a directory on your `PATH`
-(or invoke its absolute path). Keep its license/notice and release-note files
-when redistributing it. Shaders and the builtin font are embedded; no source
-checkout, shader cache or fixture directory is needed at runtime. Native
-FFmpeg, FreeType, Vulkan loader and VAAPI/driver libraries are system
-prerequisites, not bundled libraries. Use the recorded release dependency and
+Normal runs write a short input/plan/font/audio/output overview to stderr and
+two English completion lines to stdout. Interactive stderr terminals show one
+monochrome progress line; redirected output, `TERM=dumb`, `--no-progress`, and
+`--verbose` never show a live bar. `--no-progress` retains startup/completion
+information. `--verbose` retains grouped diagnostic metrics instead. Progress
+uses accepted encoded frames, not a termination condition; inputs without a
+trusted frame count show elapsed progress without a percentage or invented ETA.
+Capability/plan inspection does not start this conversion UI. See the
+[Stage 6A qualification report](docs/stage6a-font-terminal-ux.md).
+
+## Installing the qualified Linux release
+
+The instructions below concern frozen **2.0.0**, not a newly qualified package
+of the Stage 6A development source. New font-name discovery needs runtime
+Fontconfig on Linux; builtin/explicit-file selection does not need it.
+
+The qualified 2.0.0 milestone is a dynamically linked Linux x86-64 package,
+not a universal Linux bundle. Extract the archive and add its directory to
+your `PATH` (or invoke `asciiflow` by absolute path). Keep the executable next
+to its bundled `lib/` directory; moving only the executable loses the qualified
+LGPL FFmpeg dependency set. Keep the accompanying licenses, notices and
+`sources/` when redistributing the package. Shaders and the builtin font are
+embedded; no source checkout, shader cache or fixture directory is needed at
+runtime. FreeType, libdav1d, Vulkan loader and VAAPI/driver libraries remain
+system prerequisites. Use the recorded release dependency and
 hardware receipts rather than assuming another FFmpeg major or driver is
 compatible. The tested build toolchain is Rust1.97.1; the manifest's1.88 floor
 reflects language features and is not a separately qualified minimum-toolchain
@@ -162,9 +190,9 @@ asciiflow input.mp4 output.mp4 --width 160 --audio auto
 asciiflow input.mp4 --capabilities
 ```
 
-See [RC notes and installation boundaries](docs/release-notes-v2-rc1.md), the
+See the [final milestone and installation receipt](docs/asciiflow-2.0.0-final.md), the
 [generated scenario matrix](docs/production-support.md#complete-scenario-inventory)
-and the [release qualification report](docs/stage5.4d2-release-qualification.md).
+and the [inherited LGPL qualification report](docs/stage5.4d2-lgpl-release-qualification.md).
 AsciiFlow source is MIT; the executable's distribution also has obligations
 from its actual native FFmpeg configuration. Do not describe a GPL-enabled
 FFmpeg-linked executable as an MIT-only or LGPL-only distribution.
@@ -227,6 +255,27 @@ above-1000-nit conversion remain unsupported.
 The repository CI runs Rust format, strict Clippy, workspace tests, and Vulkan
 1.3 validation on generated SPIR-V. Hardware gates require an Intel host and
 are deliberately separate from portable CI.
+
+### Local artifacts and cleanup
+
+Source belongs in `apps/`, `crates/` and `shaders/`; regression fixtures and
+durable qualification evidence belong in `tests/`, with their contracts in
+`docs/`. `third_party/ffmpeg/scripts/` contains the release dependency recipe.
+
+`target/` also holds locally retained release packages, exact source snapshots,
+raw qualification measurements and inputs—not just disposable Cargo output.
+**Do not remove the whole directory or run an unrestricted `cargo clean` here.**
+Final 2.0.0 artifacts are under `target/releases/asciiflow-2.0.0/`; historical
+rc.1/rc.2 artifacts remain in their original release directories. Archive these
+with their receipts before moving them off this machine.
+
+When no build/test is running, Cargo `incremental/`, `deps/` and `.fingerprint/`
+directories under build profiles and Python `__pycache__/` are regenerable.
+Removing them makes subsequent builds slower, but does not invalidate retained
+packages or evidence. Keep build-script outputs/generated shaders, standalone
+binaries, native dependency sysroots, logs, fixture generators and checksums.
+User media such as root-level `input.mp4`, `output.mp4` and `output/` is not
+automatically treated as disposable.
 
 ## License
 

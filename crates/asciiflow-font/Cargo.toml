@@ -9,3 +9,6 @@ rust-version.workspace = true
 freetype-rs = "=0.38.0"
 font8x8.workspace = true
 thiserror.workspace = true
+
+[target.'cfg(target_os = "linux")'.dependencies]
+yeslogic-fontconfig-sys = { version = "6", features = ["dlopen"] }

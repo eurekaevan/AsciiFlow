@@ -198,16 +198,18 @@ pub struct Args {
     #[arg(long, default_value = "standard")]
     pub charset: String,
     #[arg(long, default_value = "builtin-8x8")]
-    /// builtin-8x8 or an explicit scalable monospaced FreeType font file.
+    /// builtin-8x8, an explicit monospaced font file, or a Fontconfig family/pattern.
     pub font: String,
-    #[arg(long, default_value_t = 0, value_parser = clap::value_parser!(u32).range(0..=i32::MAX as i64))]
-    pub font_face_index: u32,
+    #[arg(long, value_parser = clap::value_parser!(u32).range(0..=i32::MAX as i64))]
+    /// Collection face for an explicit font file (default 0); not valid with font names.
+    pub font_face_index: Option<u32>,
     #[arg(long,default_value_t=true,action=clap::ArgAction::Set)]
     pub color: bool,
     #[arg(long, default_value_t = 0)]
     /// Limit video frames (0 means unlimited); selected audio is still fully drained.
     pub max_frames: u64,
     #[arg(long)]
+    /// Disable live terminal progress; startup and final summaries remain visible.
     pub no_progress: bool,
     #[arg(short, long)]
     /// Show detailed device and aggregate performance diagnostics.

@@ -49,6 +49,7 @@ pub struct Encoder {
     timings: SinkTimings,
     desc: FrameDesc,
     next_pts: i64,
+    progress_observer: Option<Box<dyn Fn(u64) + Send>>,
     finished: bool,
     finish_attempted: bool,
     mux_sender: Sender<MuxMessage>,
@@ -300,6 +301,12 @@ fn probe_av1_10bit_submission(
 }
 
 impl Encoder {
+    /// Initialization-only observer of successfully encoded/queued video frames.
+    /// It does not participate in ordering, cancellation or media termination.
+    pub fn set_progress_observer(&mut self, observer: impl Fn(u64) + Send + 'static) {
+        self.progress_observer = Some(Box::new(observer));
+    }
+
     pub fn create(path: impl AsRef<Path>, desc: FrameDesc, frame_rate: Rational) -> Result<Self> {
         Self::create_with(
             path,
@@ -840,6 +847,7 @@ impl Encoder {
             timings: SinkTimings::default(),
             desc,
             next_pts: 0,
+            progress_observer: None,
             finished: false,
             finish_attempted: false,
             mux_sender,
@@ -1225,6 +1233,11 @@ impl Encoder {
         self.next_pts += 1;
         let result = self.drain_packets().map(|_| ());
         self.timings.submit_receive += encode_started.elapsed();
+        if result.is_ok()
+            && let Some(observer) = &self.progress_observer
+        {
+            observer(self.next_pts as u64);
+        }
         result
     }
 }

@@ -1,6 +1,7 @@
 mod args;
 mod capabilities;
 mod display;
+mod progress;
 
 use anyhow::{Context, Result, bail};
 use args::{Args, VulkanMappingArg};
@@ -30,6 +31,9 @@ use std::{
 use tracing_subscriber::EnvFilter;
 
 fn main() -> ExitCode {
+    // This is before native initialization or worker/signal threads. Keep native
+    // diagnostics monochrome too, including verbose/no-progress stderr on a TTY.
+    unsafe { std::env::set_var("AV_LOG_FORCE_NOCOLOR", "1") };
     let args = Args::parse();
     // Keep native warnings/errors visible without default encoder debug summaries.
     unsafe {
@@ -42,13 +46,15 @@ fn main() -> ExitCode {
     let filter = if args.verbose {
         "asciiflow=debug"
     } else {
-        "asciiflow=info"
+        "asciiflow=warn"
     };
     tracing_subscriber::fmt()
         .with_env_filter(
             EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(filter)),
         )
         .with_target(false)
+        .with_writer(std::io::stderr)
+        .with_ansi(false)
         .init();
     let cancellation = CancellationToken::new();
     let signal_token = cancellation.clone();
@@ -369,28 +375,61 @@ fn run_inner(
         .context("output path is required unless --capabilities is used")?;
     let info = probe.media_info;
     ensure_not_cancelled(&cancellation)?;
-    let atlas = if args.font == "builtin-8x8" {
-        if args.font_face_index != 0 {
-            bail!("--font-face-index requires a font file");
+    let resolved_font = asciiflow_font::resolve_font(&args.font, args.font_face_index)?;
+    report["font"] = serde_json::json!({
+        "requested": resolved_font.requested,
+        "source": resolved_font.source.as_str(),
+        "resolved_name": resolved_font.name,
+        "resolved_path": resolved_font.path,
+        "face_index": resolved_font.face_index,
+    });
+    let mut font_name = resolved_font.name.clone();
+    let atlas = if resolved_font.path.is_none() {
+        if args.verbose {
+            println!(
+                "Font\n  requested : {}\n  source    : builtin\n  tile      : 8x8",
+                args.font
+            );
         }
         asciiflow_font::GlyphAtlas::builtin(&args.font, &config.charset)?
     } else {
         let (columns, rows) =
             config.resolved_grid(info.frame_desc.width, info.frame_desc.height)?;
         let (atlas, diagnostics) = asciiflow_font::build_font_atlas(
-            Path::new(&args.font),
-            args.font_face_index as isize,
+            resolved_font.path.as_deref().expect("resolved font file"),
+            resolved_font.face_index,
             &config.charset,
             info.frame_desc.width.div_ceil(columns),
             info.frame_desc.height.div_ceil(rows),
-        )?;
+        )
+        .map_err(|error| {
+            let context = format!(
+                "font request {:?}, resolved file {} face {}: {error}",
+                args.font,
+                resolved_font
+                    .path
+                    .as_deref()
+                    .expect("resolved font file")
+                    .display(),
+                resolved_font.face_index
+            );
+            anyhow::Error::new(error).context(context)
+        })?;
+        font_name = format!("{} {}", diagnostics.family, diagnostics.style);
+        report["font"]["resolved_name"] = serde_json::json!(font_name);
         if args.verbose {
             println!(
-                "Font: FreeType {:?} · {} {} · face {} · {} glyphs · {}x{} R8 tiles · {} bytes · ppem {} · baseline {} · load {:.3} ms · build {:.3} ms",
+                "Font\n  requested : {}\n  resolved  : {}\n  file      : {}\n  face      : {}\n  source    : {}\n  FreeType  : {:?} · {} glyphs · {}x{} R8 tiles · {} bytes · ppem {} · baseline {} · load {:.3} ms · build {:.3} ms",
+                args.font,
+                font_name,
+                resolved_font
+                    .path
+                    .as_deref()
+                    .expect("resolved font file")
+                    .display(),
+                resolved_font.face_index,
+                resolved_font.source.as_str(),
                 diagnostics.version,
-                diagnostics.family,
-                diagnostics.style,
-                args.font_face_index,
                 atlas.glyph_count(),
                 atlas.width(),
                 atlas.height(),
@@ -403,6 +442,11 @@ fn run_inner(
         }
         atlas
     };
+    // No name-keyed atlas cache: this job owns its bytes. Retain the actual
+    // resolved identity and raster geometry, not merely the requested family.
+    report["font"]["charset"] = serde_json::json!(config.charset);
+    report["font"]["tile"] = serde_json::json!([atlas.width(), atlas.height()]);
+    report["font"]["glyph_count"] = serde_json::json!(atlas.glyph_count());
     let temporary = temporary_output_path(output)?;
     prepare_temporary_output(&temporary)?;
     let mut temporary_guard = TemporaryOutputGuard::new(temporary.clone());
@@ -468,7 +512,7 @@ fn run_inner(
     }
     let BuiltExecution {
         decoder,
-        encoder,
+        mut encoder,
         selection,
     } = built;
     let BackendSelection {
@@ -482,125 +526,172 @@ fn run_inner(
         asciiflow_core::PixelFormat::Nv12 => "Host NV12",
         asciiflow_core::PixelFormat::P010Le => "Host P010LE",
     };
-    println!(
-        "输入 {}x{} · {:.3} FPS · {} · {:?} backend · {} 槽",
-        info.frame_desc.width,
-        info.frame_desc.height,
-        info.frame_rate.numerator as f64 / info.frame_rate.denominator as f64,
-        if plan.hardware_input_interop {
-            "VAAPI DRM PRIME input"
-        } else {
-            host_format
-        },
-        plan.backend,
-        plan.buffer_capacity
-    );
-    let mut media_plan = vec![match plan.decode {
-        MediaImplementation::Software => "software decode",
-        MediaImplementation::Hardware => "VAAPI decode",
-    }];
-    if plan.hardware_input_interop {
-        media_plan.extend([
-            "DRM PRIME direct map",
-            "DMA-BUF external image",
-            "GPU image→buffer copy",
-            "Vulkan ASCII",
-        ]);
-    } else {
-        if plan.hardware_download {
-            media_plan.push("hwdownload");
-        }
-        media_plan.push(host_format);
-        media_plan.push(match plan.backend {
-            ProcessingBackend::Cpu => "CPU ASCII",
-            ProcessingBackend::Vulkan => "Vulkan ASCII",
-            ProcessingBackend::Auto => unreachable!("planner must resolve Auto"),
-        });
-    }
-    if plan.hardware_output_interop {
-        media_plan.extend([
-            "DRM PRIME WRITE direct map",
-            "DMA-BUF writable external image",
-            "GPU buffer→image copy",
-            "VAAPI encode",
-        ]);
-    } else {
-        media_plan.push(host_format);
-        if plan.hardware_upload {
-            media_plan.push("hwupload");
-        }
-        media_plan.push(match plan.encode {
-            MediaImplementation::Software => "software encode",
-            MediaImplementation::Hardware => "VAAPI encode",
-        });
-    }
-    println!("Media plan：{}", media_plan.join(" → "));
-    if audio_plan.selected.is_empty() {
-        println!("Audio：none");
-    } else {
+    if args.verbose {
         println!(
-            "Audio：{} compressed stream(s) → packet passthrough → MP4 mux",
+            "Input {}x{} · {:.3} fps · {} · {:?} backend · {} slots",
+            info.frame_desc.width,
+            info.frame_desc.height,
+            info.frame_rate.numerator as f64 / info.frame_rate.denominator as f64,
+            if plan.hardware_input_interop {
+                "VAAPI DRM PRIME input"
+            } else {
+                host_format
+            },
+            plan.backend,
+            plan.buffer_capacity
+        );
+        let mut media_plan = vec![match plan.decode {
+            MediaImplementation::Software => "software decode",
+            MediaImplementation::Hardware => "VAAPI decode",
+        }];
+        if plan.hardware_input_interop {
+            media_plan.extend([
+                "DRM PRIME direct map",
+                "DMA-BUF external image",
+                "GPU image→buffer copy",
+                "Vulkan ASCII",
+            ]);
+        } else {
+            if plan.hardware_download {
+                media_plan.push("hwdownload");
+            }
+            media_plan.push(host_format);
+            media_plan.push(match plan.backend {
+                ProcessingBackend::Cpu => "CPU ASCII",
+                ProcessingBackend::Vulkan => "Vulkan ASCII",
+                ProcessingBackend::Auto => unreachable!("planner must resolve Auto"),
+            });
+        }
+        if plan.hardware_output_interop {
+            media_plan.extend([
+                "DRM PRIME WRITE direct map",
+                "DMA-BUF writable external image",
+                "GPU buffer→image copy",
+                "VAAPI encode",
+            ]);
+        } else {
+            media_plan.push(host_format);
+            if plan.hardware_upload {
+                media_plan.push("hwupload");
+            }
+            media_plan.push(match plan.encode {
+                MediaImplementation::Software => "software encode",
+                MediaImplementation::Hardware => "VAAPI encode",
+            });
+        }
+        println!("Media plan: {}", media_plan.join(" -> "));
+        if audio_plan.selected.is_empty() {
+            println!("Audio: none");
+        } else {
+            println!(
+                "Audio：{} compressed stream(s) → packet passthrough → MP4 mux",
+                audio_plan.selected.len()
+            );
+        }
+        if plan.hardware_download
+            || plan.hardware_upload
+            || plan.hardware_input_interop
+            || plan.hardware_output_interop
+        {
+            println!("Media HW backend: VAAPI");
+            println!("Device: {}", vaapi.display_device());
+        }
+        if let Some(info) = device_info {
+            println!("Vulkan device: {}", info.name);
+            println!(
+                "Vulkan mapping: {}{}",
+                mapping_strategy.expect("Vulkan mapping strategy missing"),
+                if args.vulkan_mapping == VulkanMappingArg::Auto {
+                    " (auto)"
+                } else {
+                    ""
+                }
+            );
+            println!(
+                "Vulkan frame slots: {}",
+                gpu_slots.expect("Vulkan slot count missing")
+            );
+            if args.verbose {
+                println!(
+                    "GPU vendor/device {:#06x}/{:#06x} · {:?} · Vulkan {} · driver {} · compute queue {}",
+                    info.vendor_id,
+                    info.device_id,
+                    info.device_type,
+                    info.api_version_string(),
+                    info.driver_version,
+                    info.queue_family,
+                );
+                for heap in &info.memory_heaps {
+                    println!(
+                        "Vulkan memory heap {}: {} bytes · {:?}",
+                        heap.index, heap.size, heap.flags
+                    );
+                }
+                for memory_type in &info.memory_types {
+                    println!(
+                        "Vulkan memory type {}: heap {} · {:?}",
+                        memory_type.index, memory_type.heap_index, memory_type.property_flags
+                    );
+                }
+                for allocation in &memory_allocations {
+                    println!(
+                        "Vulkan allocation {}: type {} · heap {} · {:?}",
+                        allocation.name,
+                        allocation.memory_type_index,
+                        allocation.heap_index,
+                        allocation.property_flags
+                    );
+                }
+            }
+        }
+        if let Some(frames) = info.frame_count {
+            println!("Source frames: {frames}");
+        }
+    } else {
+        let implementation = |kind| match kind {
+            MediaImplementation::Hardware => "VAAPI",
+            MediaImplementation::Software => "software",
+        };
+        let range =
+            if info.frame_desc.color_space.transfer == asciiflow_core::TransferCharacteristic::Pq {
+                "PQ"
+            } else {
+                "SDR"
+            };
+        eprintln!(
+            "Input   {} · {} {}x{} {:.2} fps · {range}",
+            args.input.display(),
+            info.requirements.codec,
+            info.frame_desc.width,
+            info.frame_desc.height,
+            info.frame_rate.numerator as f64 / info.frame_rate.denominator as f64
+        );
+        eprintln!(
+            "Plan    {} decode -> {:?} -> {} {}",
+            implementation(plan.decode),
+            plan.backend,
+            implementation(plan.encode),
+            plan.output.codec
+        );
+        eprintln!("Font    {font_name} · {}", resolved_font.source.as_str());
+        eprintln!(
+            "Audio   {} · {} tracks",
+            if audio_plan.selected.is_empty() {
+                "none"
+            } else {
+                "copy"
+            },
             audio_plan.selected.len()
         );
+        eprintln!("Output  {}", output.display());
     }
-    if plan.hardware_download
-        || plan.hardware_upload
-        || plan.hardware_input_interop
-        || plan.hardware_output_interop
-    {
-        println!("Media HW backend：VAAPI");
-        println!("Device：{}", vaapi.display_device());
-    }
-    if let Some(info) = device_info {
-        println!("Vulkan 设备：{}", info.name);
-        println!(
-            "Vulkan mapping：{}{}",
-            mapping_strategy.expect("Vulkan mapping strategy missing"),
-            if args.vulkan_mapping == VulkanMappingArg::Auto {
-                " (auto)"
-            } else {
-                ""
-            }
-        );
-        println!(
-            "Vulkan frame slots：{}",
-            gpu_slots.expect("Vulkan slot count missing")
-        );
-        if args.verbose {
-            println!(
-                "GPU vendor/device {:#06x}/{:#06x} · {:?} · Vulkan {} · driver {} · compute queue {}",
-                info.vendor_id,
-                info.device_id,
-                info.device_type,
-                info.api_version_string(),
-                info.driver_version,
-                info.queue_family,
-            );
-            for heap in &info.memory_heaps {
-                println!(
-                    "Vulkan memory heap {}: {} bytes · {:?}",
-                    heap.index, heap.size, heap.flags
-                );
-            }
-            for memory_type in &info.memory_types {
-                println!(
-                    "Vulkan memory type {}: heap {} · {:?}",
-                    memory_type.index, memory_type.heap_index, memory_type.property_flags
-                );
-            }
-            for allocation in &memory_allocations {
-                println!(
-                    "Vulkan allocation {}: type {} · heap {} · {:?}",
-                    allocation.name,
-                    allocation.memory_type_index,
-                    allocation.heap_index,
-                    allocation.property_flags
-                );
-            }
-        }
-    }
-    if let Some(frames) = info.frame_count {
-        println!("源视频帧数：{frames}");
+    let progress = progress::TerminalProgress::new(
+        args.no_progress,
+        args.verbose,
+        progress::total(info.frame_count, args.max_frames),
+    )?;
+    if let Some(observer) = progress.observer() {
+        encoder.set_progress_observer(observer);
     }
     let max_frames = (args.max_frames != 0).then_some(args.max_frames);
     let result = match processor {
@@ -648,7 +739,8 @@ fn run_inner(
             temporary_guard.disarm();
             #[cfg(feature = "native-reliability")]
             asciiflow_core::reliability_hooks::checkpoint("AfterCommit");
-            display::print_summary(&metrics, args.verbose);
+            progress.clear();
+            display::print_summary(&metrics, args.verbose, output);
             Ok(())
         }
         Err(error) => Err(error.into()),

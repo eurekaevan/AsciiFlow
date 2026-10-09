@@ -2,6 +2,68 @@ mod audio_support;
 use asciiflow_core::FrameSource;
 
 #[test]
+fn terminal_output_is_stable_when_redirected_or_progress_disabled() {
+    for flags in [&[][..], &["--no-progress"][..], &["--verbose"][..]] {
+        let ws = Workspace::new();
+        let result = std::process::Command::new(env!("CARGO_BIN_EXE_asciiflow"))
+            .arg(fixture("no-audio.mp4"))
+            .arg(ws.output())
+            .args([
+                "--backend",
+                "cpu",
+                "--decode",
+                "software",
+                "--encode",
+                "software",
+                "--audio",
+                "none",
+                "--width",
+                "16",
+            ])
+            .args(flags)
+            .output()
+            .unwrap();
+        success(&result);
+        for bytes in [&result.stdout, &result.stderr] {
+            assert!(
+                !bytes.contains(&b'\r') && !bytes.contains(&0x1b),
+                "control output: {bytes:?}"
+            );
+        }
+        let stdout = String::from_utf8_lossy(&result.stdout);
+        assert!(stdout.contains("Output"), "{stdout}");
+        if flags.contains(&"--verbose") {
+            assert!(stdout.contains("Summary") && stdout.contains("Pipeline"));
+        } else {
+            assert!(stdout.starts_with("Done  ") && stdout.lines().count() == 2);
+            let stderr = String::from_utf8_lossy(&result.stderr);
+            assert!(stderr.contains("Input   ") && stderr.contains("Font    "));
+            assert!(!stderr.contains("Processing"));
+        }
+    }
+}
+
+#[test]
+fn font_name_face_override_rejects_without_output_and_inspection_has_no_ui() {
+    let ws = Workspace::new();
+    let result = command(&fixture("no-audio.mp4"), &ws.output(), "none")
+        .args(["--font", "monospace", "--font-face-index", "0"])
+        .output()
+        .unwrap();
+    assert!(!result.status.success());
+    assert!(String::from_utf8_lossy(&result.stderr).contains("--font-face-index is only valid"));
+    assert!(!ws.output().exists());
+    ws.assert_no_staging();
+    let result = command(&fixture("no-audio.mp4"), &ws.output(), "none")
+        .arg("--capabilities")
+        .output()
+        .unwrap();
+    success(&result);
+    assert!(!String::from_utf8_lossy(&result.stderr).contains("Input   "));
+    assert!(!String::from_utf8_lossy(&result.stderr).contains("Processing"));
+}
+
+#[test]
 #[ignore = "set ASCIIFLOW_AUDIO_REFERENCE and ASCIIFLOW_AUDIO_CANDIDATE to retained files"]
 fn retained_audio_pair_from_env() {
     let reference = std::path::PathBuf::from(

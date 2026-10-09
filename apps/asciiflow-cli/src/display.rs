@@ -1,79 +1,123 @@
 use asciiflow_core::MetricsSnapshot;
+use std::{fmt::Display, path::Path, time::Duration};
 
-pub fn print_summary(metrics: &MetricsSnapshot, verbose: bool) {
-    println!(
-        "完成：{} 帧，{:.3} 秒，{:.2} FPS",
+fn normal_summary(metrics: &MetricsSnapshot, output: &Path) -> String {
+    format!(
+        "Done  {} frames · {:.2} s · {:.2} fps\nOutput  {}",
         metrics.frames,
         metrics.total.as_secs_f64(),
-        metrics.fps()
-    );
+        metrics.fps(),
+        output.display(),
+    )
+}
+
+fn row(label: &str, value: impl Display) {
+    println!("  {label:<27} {value}");
+}
+
+fn timing_section(title: &str, note: &str, frames: u64, values: &[(&str, Duration)]) {
+    println!("\n{title} ({note})");
+    for (label, duration) in values {
+        row(
+            label,
+            format_args!(
+                "{:.3} ms/frame",
+                MetricsSnapshot::ms_per_frame(*duration, frames)
+            ),
+        );
+    }
+}
+
+pub fn print_summary(metrics: &MetricsSnapshot, verbose: bool, output: &Path) {
     if !verbose {
+        println!("{}", normal_summary(metrics, output));
         return;
     }
-    println!(
-        "decode {:.3} · mapping {:.3} · render {:.3} · encode {:.3} · backend wall {:.3} ms/frame",
-        MetricsSnapshot::ms_per_frame(metrics.decode, metrics.frames),
-        MetricsSnapshot::ms_per_frame(metrics.mapping, metrics.frames),
-        MetricsSnapshot::ms_per_frame(metrics.render, metrics.frames),
-        MetricsSnapshot::ms_per_frame(metrics.encode, metrics.frames),
-        MetricsSnapshot::ms_per_frame(metrics.backend_wall, metrics.frames),
-    );
-    println!(
-        "Pipeline latency {:.3} ms/frame average (decode-call start to encode acceptance; throughput remains {:.2} FPS)",
-        MetricsSnapshot::ms_per_frame(metrics.pipeline_latency, metrics.frames),
-        metrics.fps(),
+    println!("Summary");
+    row("Frames", metrics.frames);
+    row("Wall", format_args!("{:.2} s", metrics.total.as_secs_f64()));
+    row("Throughput", format_args!("{:.2} fps", metrics.fps()));
+    row("Output", output.display());
+    timing_section(
+        "Pipeline",
+        "CPU wall; latency is decode-call start to encode acceptance, not throughput",
+        metrics.frames,
+        &[
+            ("Decode", metrics.decode),
+            ("Mapping", metrics.mapping),
+            ("Render", metrics.render),
+            ("Encode", metrics.encode),
+            ("Backend wall", metrics.backend_wall),
+            ("Latency", metrics.pipeline_latency),
+        ],
     );
     if metrics.audio_packets != 0 {
-        println!(
-            "Audio passthrough: {} packets · {} bytes · {:.3} ms mux CPU wall (not part of video FPS)",
-            metrics.audio_packets,
-            metrics.audio_bytes,
-            metrics.audio_passthrough.as_secs_f64() * 1e3,
+        println!("\nAudio (passthrough; mux CPU wall is not part of video fps)");
+        row("Packets", metrics.audio_packets);
+        row("Bytes", metrics.audio_bytes);
+        row(
+            "Mux CPU wall",
+            format_args!("{:.3} ms", metrics.audio_passthrough.as_secs_f64() * 1e3),
         );
     }
     if !(metrics.decode_packet_submit + metrics.decode_frame_receive + metrics.hardware_download)
         .is_zero()
     {
-        println!(
-            "Media decode CPU wall: packet submit {:.3} · frame receive {:.3} · hw download {:.3} ms/frame (not device timestamps)",
-            MetricsSnapshot::ms_per_frame(metrics.decode_packet_submit, metrics.frames),
-            MetricsSnapshot::ms_per_frame(metrics.decode_frame_receive, metrics.frames),
-            MetricsSnapshot::ms_per_frame(metrics.hardware_download, metrics.frames),
+        timing_section(
+            "Media decode",
+            "CPU wall, not device timestamps",
+            metrics.frames,
+            &[
+                ("Packet submit", metrics.decode_packet_submit),
+                ("Frame receive", metrics.decode_frame_receive),
+                ("Hardware download", metrics.hardware_download),
+            ],
         );
     }
     if !(metrics.hardware_upload + metrics.encode_submit_receive).is_zero() {
-        println!(
-            "Media encode CPU wall: hw upload {:.3} · submit/receive {:.3} ms/frame (not device timestamps)",
-            MetricsSnapshot::ms_per_frame(metrics.hardware_upload, metrics.frames),
-            MetricsSnapshot::ms_per_frame(metrics.encode_submit_receive, metrics.frames),
+        timing_section(
+            "Media encode",
+            "CPU wall, not device timestamps",
+            metrics.frames,
+            &[
+                ("Hardware upload", metrics.hardware_upload),
+                ("Submit/receive", metrics.encode_submit_receive),
+            ],
         );
     }
     #[cfg(feature = "encode-characterization")]
     {
         let encode = metrics.encode_diagnostics;
-        println!(
-            "Encode characterization CPU wall: send_frame {:.3} · receive_packet {:.3} · encoder drain {:.3} (drain overlaps send/receive) ms/frame",
-            MetricsSnapshot::ms_per_frame(encode.send_wall, metrics.frames),
-            MetricsSnapshot::ms_per_frame(encode.receive_wall, metrics.frames),
-            MetricsSnapshot::ms_per_frame(encode.drain_wall, metrics.frames),
+        timing_section(
+            "Encode characterization",
+            "CPU wall; drain overlaps send/receive",
+            metrics.frames,
+            &[
+                ("Send frame", encode.send_wall),
+                ("Receive packet", encode.receive_wall),
+                ("Encoder drain", encode.drain_wall),
+            ],
         );
-        println!(
-            "Mux characterization CPU wall: video packet write {:.3} · interleaver flush {:.3} · trailer {:.3} · queue send API {:.3} ms/frame (asynchronous; not additive)",
-            MetricsSnapshot::ms_per_frame(encode.mux_video_write_wall, metrics.frames),
-            MetricsSnapshot::ms_per_frame(encode.mux_interleave_flush_wall, metrics.frames),
-            MetricsSnapshot::ms_per_frame(encode.mux_trailer_wall, metrics.frames),
-            MetricsSnapshot::ms_per_frame(encode.mux_queue_send_wall, metrics.frames),
+        timing_section(
+            "Mux characterization",
+            "CPU wall; asynchronous, not additive",
+            metrics.frames,
+            &[
+                ("Video packet write", encode.mux_video_write_wall),
+                ("Interleaver flush", encode.mux_interleave_flush_wall),
+                ("Trailer", encode.mux_trailer_wall),
+                ("Queue send API", encode.mux_queue_send_wall),
+            ],
         );
-        println!(
-            "Encode characterization counts: submitted frames {} · received packets {} · packet bytes {} · send EAGAIN {} · receive EAGAIN {} · max send retries/frame {} · peak submitted-minus-packets {} (proxy, not internal queue depth)",
-            encode.submitted_frames,
-            encode.received_packets,
-            encode.received_packet_bytes,
-            encode.send_eagain,
-            encode.receive_eagain,
-            encode.max_send_retries,
-            encode.peak_frame_packet_delta,
-        );
+        println!("\nEncode counts");
+        row("Submitted frames", encode.submitted_frames);
+        row("Received packets", encode.received_packets);
+        row("Packet bytes", encode.received_packet_bytes);
+        row("Send EAGAIN", encode.send_eagain);
+        row("Receive EAGAIN", encode.receive_eagain);
+        row("Max send retries/frame", encode.max_send_retries);
+        row("Peak frames-minus-packets", encode.peak_frame_packet_delta);
+        println!("  Frames-minus-packets is a proxy, not internal queue depth.");
     }
     if !(metrics.drm_prime_map
         + metrics.external_image_create
@@ -81,19 +125,25 @@ pub fn print_summary(metrics: &MetricsSnapshot, verbose: bool) {
         + metrics.gpu_external_copy)
         .is_zero()
     {
-        println!(
-            "VAAPI/Vulkan interop CPU wall: DRM map {:.3} · capability query {:.3} · image create {:.3} · DMA-BUF import {:.3} · bind {:.3} · ownership command record {:.3} · destroy {:.3} ms/frame",
-            MetricsSnapshot::ms_per_frame(metrics.drm_prime_map, metrics.frames),
-            MetricsSnapshot::ms_per_frame(metrics.external_capability_query, metrics.frames),
-            MetricsSnapshot::ms_per_frame(metrics.external_image_create, metrics.frames),
-            MetricsSnapshot::ms_per_frame(metrics.external_memory_import, metrics.frames),
-            MetricsSnapshot::ms_per_frame(metrics.external_memory_bind, metrics.frames),
-            MetricsSnapshot::ms_per_frame(metrics.external_ownership, metrics.frames),
-            MetricsSnapshot::ms_per_frame(metrics.external_image_destroy, metrics.frames),
+        timing_section(
+            "Input interop: VAAPI → Vulkan",
+            "CPU wall",
+            metrics.frames,
+            &[
+                ("DRM map", metrics.drm_prime_map),
+                ("Capability query", metrics.external_capability_query),
+                ("Image create", metrics.external_image_create),
+                ("DMA-BUF import", metrics.external_memory_import),
+                ("Memory bind", metrics.external_memory_bind),
+                ("Ownership command record", metrics.external_ownership),
+                ("Image destroy", metrics.external_image_destroy),
+            ],
         );
-        println!(
-            "VAAPI/Vulkan interop GPU timestamp: external image→buffer {:.3} ms/frame",
-            MetricsSnapshot::ms_per_frame(metrics.gpu_external_copy, metrics.frames),
+        timing_section(
+            "Input interop GPU",
+            "GPU timestamps",
+            metrics.frames,
+            &[("External image → buffer", metrics.gpu_external_copy)],
         );
     }
     if !(metrics.encoder_surface_acquire
@@ -102,23 +152,29 @@ pub fn print_summary(metrics: &MetricsSnapshot, verbose: bool) {
         + metrics.gpu_external_output_copy)
         .is_zero()
     {
-        println!(
-            "Vulkan/VAAPI output interop CPU wall: surface acquire {:.3} · DRM map {:.3} · capability query {:.3} · image create {:.3} · DMA-BUF import {:.3} · bind {:.3} · ownership acquire record {:.3} · release record {:.3} · destroy {:.3} ms/frame",
-            MetricsSnapshot::ms_per_frame(metrics.encoder_surface_acquire, metrics.frames),
-            MetricsSnapshot::ms_per_frame(metrics.output_drm_prime_map, metrics.frames),
-            MetricsSnapshot::ms_per_frame(metrics.output_external_capability_query, metrics.frames),
-            MetricsSnapshot::ms_per_frame(metrics.output_external_image_create, metrics.frames),
-            MetricsSnapshot::ms_per_frame(metrics.output_external_memory_import, metrics.frames),
-            MetricsSnapshot::ms_per_frame(metrics.output_external_memory_bind, metrics.frames),
-            MetricsSnapshot::ms_per_frame(metrics.output_ownership_acquire, metrics.frames),
-            MetricsSnapshot::ms_per_frame(metrics.output_ownership_release, metrics.frames),
-            MetricsSnapshot::ms_per_frame(metrics.output_external_image_destroy, metrics.frames),
+        timing_section(
+            "Output interop: Vulkan → VAAPI",
+            "CPU wall",
+            metrics.frames,
+            &[
+                ("Surface acquire", metrics.encoder_surface_acquire),
+                ("DRM map", metrics.output_drm_prime_map),
+                ("Capability query", metrics.output_external_capability_query),
+                ("Image create", metrics.output_external_image_create),
+                ("DMA-BUF import", metrics.output_external_memory_import),
+                ("Memory bind", metrics.output_external_memory_bind),
+                ("Ownership acquire record", metrics.output_ownership_acquire),
+                ("Ownership release record", metrics.output_ownership_release),
+                ("Image destroy", metrics.output_external_image_destroy),
+                ("Queue submit", metrics.output_queue_submit),
+                ("Fence wait", metrics.output_gpu_wait),
+            ],
         );
-        println!(
-            "Vulkan/VAAPI output interop GPU timestamp: buffer→external image {:.3} ms/frame; output submit {:.3} · fence wait {:.3} ms/frame CPU wall",
-            MetricsSnapshot::ms_per_frame(metrics.gpu_external_output_copy, metrics.frames),
-            MetricsSnapshot::ms_per_frame(metrics.output_queue_submit, metrics.frames),
-            MetricsSnapshot::ms_per_frame(metrics.output_gpu_wait, metrics.frames),
+        timing_section(
+            "Output interop GPU",
+            "GPU timestamps",
+            metrics.frames,
+            &[("Buffer → external image", metrics.gpu_external_output_copy)],
         );
     }
     if !(metrics.host_upload
@@ -130,21 +186,47 @@ pub fn print_summary(metrics: &MetricsSnapshot, verbose: bool) {
         + metrics.gpu_download)
         .is_zero()
     {
-        println!(
-            "Vulkan GPU timestamp: upload/copy {:.3} · mapping {:.3} · render {:.3} · download/copy {:.3} · busy span {:.3} ms/frame",
-            MetricsSnapshot::ms_per_frame(metrics.gpu_upload, metrics.frames),
-            MetricsSnapshot::ms_per_frame(metrics.gpu_mapping, metrics.frames),
-            MetricsSnapshot::ms_per_frame(metrics.gpu_render, metrics.frames),
-            MetricsSnapshot::ms_per_frame(metrics.gpu_download, metrics.frames),
-            MetricsSnapshot::ms_per_frame(metrics.gpu_busy, metrics.frames),
+        timing_section(
+            "Vulkan GPU",
+            "GPU timestamps",
+            metrics.frames,
+            &[
+                ("Upload/copy", metrics.gpu_upload),
+                ("Mapping", metrics.gpu_mapping),
+                ("Render", metrics.gpu_render),
+                ("Download/copy", metrics.gpu_download),
+                ("Busy span", metrics.gpu_busy),
+            ],
         );
-        println!(
-            "Vulkan CPU wall: host upload {:.3} · queue submit {:.3} · GPU wait {:.3} · host invalidate {:.3} · host memcpy {:.3} ms/frame (not additive with GPU timestamps)",
-            MetricsSnapshot::ms_per_frame(metrics.host_upload, metrics.frames),
-            MetricsSnapshot::ms_per_frame(metrics.queue_submit, metrics.frames),
-            MetricsSnapshot::ms_per_frame(metrics.gpu_wait, metrics.frames),
-            MetricsSnapshot::ms_per_frame(metrics.host_invalidate, metrics.frames),
-            MetricsSnapshot::ms_per_frame(metrics.host_readback, metrics.frames),
+        timing_section(
+            "Vulkan CPU",
+            "CPU wall, not additive with GPU timestamps",
+            metrics.frames,
+            &[
+                ("Host upload", metrics.host_upload),
+                ("Queue submit", metrics.queue_submit),
+                ("GPU wait", metrics.gpu_wait),
+                ("Host invalidate", metrics.host_invalidate),
+                ("Host memcpy", metrics.host_readback),
+            ],
+        );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn normal_final_summary_is_stable_english_text() {
+        let metrics = MetricsSnapshot {
+            frames: 100,
+            total: Duration::from_secs(2),
+            ..MetricsSnapshot::default()
+        };
+        assert_eq!(
+            normal_summary(&metrics, Path::new("output.mp4")),
+            "Done  100 frames · 2.00 s · 50.00 fps\nOutput  output.mp4"
         );
     }
 }

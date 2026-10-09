@@ -2,7 +2,14 @@
 
 Toolchain/driver changes use the [stack-scoped portability workflow](portability-testing.md).
 
-## Stage 5.4D-1 reliability hardening (NOT SEALED)
+Current milestone: [AsciiFlow 2.0.0 FINALIZED](asciiflow-2.0.0-final.md).
+Stage 5.4, including D-1 and D-2, is SEALED. The sections below preserve staged
+qualification history; older NOT SEALED/NOT STARTED statements describe those
+recorded runs, not the current milestone. Historical failures are not rewritten
+as passes. See the final receipt and its linked closure reports for current
+decisions.
+
+## Historical Stage 5.4D-1 reliability hardening (NOT SEALED at that point)
 
 The user accepted the unresolved default-memory plateau limitation on 2026-10-08
 and authorized [D-1B long-run work](stage5.4d1b-long-run.md). This prospectively
