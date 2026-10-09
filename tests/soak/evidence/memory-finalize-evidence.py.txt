@@ -1,0 +1,120 @@
+"""Mechanical final evidence checks; never changes the qualification decision."""
+import collections
+import hashlib
+import json
+from pathlib import Path
+import subprocess
+import sys
+import tarfile
+
+ROOT = Path('/home/eureka/Documents/AsciiFlow')
+FROZEN = ROOT / 'target/stage54d1a-memory-v2'
+BASE = FROZEN / 'target/memory-plateau'
+DEST = ROOT / 'tests/soak/evidence'
+
+def load(path):
+    return json.loads(path.read_text())
+
+def sha(path):
+    with path.open('rb') as stream:
+        return hashlib.file_digest(stream, 'sha256').hexdigest()
+
+def identity(path):
+    return {'path': str(path.relative_to(ROOT)), 'bytes': path.stat().st_size, 'sha256': sha(path)}
+
+def save(path, value):
+    with path.open('x') as stream:
+        json.dump(value, stream, indent=2)
+        stream.write('\n')
+
+sys.path.insert(0, str(FROZEN / 'tests/corpus'))
+from portability import source_identity
+source = load(BASE / 'source-before.json')
+assert source_identity() == source == load(BASE / 'source-after.json')
+execution = load(BASE / 'execution.json')
+observations = load(BASE / 'observations.json')
+assert execution['source_unchanged'] and execution['processes_completed'] == 10
+assert len(execution['commands']) == 10 and all(c['exit_code'] == 0 for c in execution['commands'])
+drivers = [c['loaded_driver_files'] for c in execution['commands']]
+assert len(drivers[0]) == 2 and all(d == drivers[0] for d in drivers)
+
+archives = []
+for index in range(10):
+    label = f'process-{index:02d}'
+    directory = BASE / label
+    archive = DEST / f'memory-{label}.tar.gz'
+    expected = {str(p.relative_to(BASE)): {'bytes': p.stat().st_size, 'sha256': sha(p)}
+                for p in directory.rglob('*') if p.is_file()}
+    actual = {}
+    with tarfile.open(archive) as stream:
+        for member in stream.getmembers():
+            assert member.isdir() or member.isfile()
+            assert member.uid == member.gid == member.mtime == 0
+            if member.isfile():
+                with stream.extractfile(member) as contents:
+                    actual[member.name] = {'bytes': member.size,
+                                          'sha256': hashlib.file_digest(contents, 'sha256').hexdigest()}
+    assert actual == expected
+    archives.append({**identity(archive), 'all_file_bytes_verified': True, 'files': actual})
+save(DEST / 'memory-archive-manifests.json', archives)
+
+common_names = sorted(p.name for p in BASE.iterdir() if p.is_file() and p.suffix in ('.json', '.log'))
+common = DEST / 'memory-campaign-common.tar.gz'
+assert not common.exists()
+subprocess.run(['tar', '--sort=name', '--mtime=UTC 1970-01-01', '--owner=0', '--group=0',
+                '--numeric-owner', '-czf', str(common), '-C', str(BASE), *common_names], check=True)
+with tarfile.open(common) as stream:
+    assert sorted(m.name for m in stream.getmembers()) == common_names
+    for member in stream.getmembers():
+        with stream.extractfile(member) as contents:
+            assert hashlib.file_digest(contents, 'sha256').hexdigest() == sha(BASE / member.name)
+
+previous = ROOT / 'target/stage54d1a-ab-final-v1/target/ab-canonical-regression'
+current = FROZEN / 'target/memory-canonical-regression'
+retained = []
+for folder in ('retained-sdr', 'retained-pq', 'retained-c'):
+    for path in sorted((current / folder).glob('*-run[123].mp4')):
+        old = previous / folder / path.name
+        assert path.stat().st_size == old.stat().st_size and sha(path) == sha(old)
+        retained.append({**identity(path), 'previous_same_driver': identity(old), 'byte_exact': True})
+assert len(retained) == 51
+results = load(current / 'results.json')
+assert len(results['results']) == 27 and all(r['result'] == 'PASS' for r in results['results'])
+assert {c['id'] for c in results['commands'] if c['exit_code']} == {
+    'plan-negative-' + n for n in ('color-conflict', 'full-range-pq', 'h264-high10', 'hlg', 'unknown-color', 'wide-sdr')}
+
+targets = [FROZEN / 'target/clean-default', FROZEN / 'target/clean-measurement',
+           ROOT / 'target/stage54d1a-native-snapshot/target/qualification']
+modules = sorted(p for target in targets for p in target.rglob('*.spv')
+                 if 'build' in p.parts and any(v.startswith('asciiflow-vulkan-') for v in p.parts))
+before = [identity(p) for p in modules]
+commands = []
+for path in modules:
+    argv = ['spirv-val', '--target-env', 'vulkan1.3', str(path)]
+    result = subprocess.run(argv, capture_output=True, text=True, check=False)
+    commands.append({'argv': argv, 'exit_code': result.returncode,
+                     'stdout': result.stdout, 'stderr': result.stderr})
+assert modules and all(c['exit_code'] == 0 for c in commands)
+assert before == [identity(p) for p in modules]
+version = subprocess.run(['spirv-val', '--version'], capture_output=True, text=True, check=True)
+save(DEST / 'memory-final-spirv.json', {'tool_version': version.stdout, 'modules': before,
+    'commands': commands, 'physical_files': len(modules),
+    'unique_hashes': len({m['sha256'] for m in before}), 'inventory_unchanged': True, 'result': 'PASS'})
+
+assert source_identity() == source
+outcomes = collections.Counter()
+for process in observations['processes']:
+    outcomes.update(process['job_outcomes'])
+summary = {'schema': 'asciiflow-memory-final-mechanical-evidence-v1',
+    'decision': 'NOT SEALED', 'classification': 'Unresolved',
+    'processes': len(observations['processes']), 'cycles': sum(p['cycles'] for p in observations['processes']),
+    'jobs': sum(p['jobs'] for p in observations['processes']), 'outcomes': dict(outcomes),
+    'unmet_hwm_gate': [p['id'] for p in observations['processes'] if not p['observed_plateau']],
+    'source_unchanged_after_all_regressions': True, 'binary_sha256': execution['binary_sha256'],
+    'loaded_drivers_identical_all_ten': drivers[0], 'raw_archives': [identity(DEST / f'memory-process-{i:02d}.tar.gz') for i in range(10)],
+    'raw_common_archive': identity(common), 'retained': retained,
+    'corpus_results': identity(current / 'results.json'), 'spirv_files': len(modules),
+    'spirv_unique_hashes': len({m['sha256'] for m in before}),
+    'all_tracked_lifecycle_checks_pass': all(p['all_lifecycle_checks_pass'] for p in observations['processes'])}
+save(DEST / 'memory-final-mechanical-evidence.json', summary)
+print(json.dumps({k:v for k,v in summary.items() if k not in ('retained','raw_archives','loaded_drivers_identical_all_ten')}))

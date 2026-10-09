@@ -7,6 +7,8 @@ rust-version.workspace = true
 build = "build.rs"
 
 [features]
+native-reliability = ["asciiflow-core/native-reliability"]
+reliability-measurement = ["asciiflow-core/reliability-measurement"]
 p010-output-diagnostic = []
 hdr-pq-qualification = []
 hdr-to-sdr-production = ["hdr-pq-qualification"]

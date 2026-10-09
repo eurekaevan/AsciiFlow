@@ -138,7 +138,9 @@ impl From<InteropArg> for InteropRequest {
     about = "Bounded NV12/P010 ASCII video pipeline"
 )]
 pub struct Args {
+    /// Local input media file; qualified MP4 input combinations only.
     pub input: PathBuf,
+    /// MP4 output path; omitted only for capability or plan inspection.
     pub output: Option<PathBuf>,
     #[arg(long, value_enum, default_value = "auto")]
     pub backend: BackendArg,
@@ -147,19 +149,23 @@ pub struct Args {
     #[arg(long, value_enum, default_value = "auto")]
     pub decode: MediaArg,
     #[arg(long, value_enum, default_value = "auto")]
+    /// Video encoder; software H.264 8-bit SDR depends on libx264 and is excluded from the official LGPL prebuilt release.
     pub encode: MediaArg,
     #[arg(long, value_enum, default_value = "h264")]
+    /// Output codec: H.264 is 8-bit only; HEVC/AV1 require qualified VAAPI encoding.
     pub output_codec: OutputCodecArg,
     #[arg(long, value_enum, default_value = "8")]
+    /// Output depth: 10 requires HEVC/AV1; no SDR bit-depth conversion is implemented.
     pub output_bit_depth: OutputBitDepthArg,
     #[arg(
         long,
         value_enum,
         default_value = "preserve",
-        help = "Output dynamic range: preserve the input signal or convert HDR PQ to SDR"
+        help = "preserve keeps SDR or canonical limited BT.2020 NCL/PQ (PQ needs 10-bit HEVC/AV1); sdr explicitly converts canonical PQ <=1000 cd/m2 to BT.709 SDR and is a no-op for SDR. PQ requires the qualified VAAPI/Vulkan interop path; HLG and full range are unsupported"
     )]
     pub output_dynamic_range: OutputDynamicRangeArg,
     #[arg(long, value_enum, default_value = "auto")]
+    /// Compressed audio passthrough, not transcoding: auto omits incompatible tracks, copy rejects them, none omits audio. Copy requires the existing CFR timeline.
     pub audio: AudioArg,
     #[arg(long)]
     pub hw_device: Option<PathBuf>,
@@ -174,8 +180,10 @@ pub struct Args {
     #[arg(long, alias = "output-interop", value_enum, default_value = "auto")]
     pub vaapi_vulkan_output_interop: InteropArg,
     #[arg(long)]
+    /// Inspect the selected plan without creating video output.
     pub explain_plan: bool,
     #[arg(long)]
+    /// Inspect detected capabilities without creating video output.
     pub capabilities: bool,
     #[arg(
         long,
@@ -190,16 +198,19 @@ pub struct Args {
     #[arg(long, default_value = "standard")]
     pub charset: String,
     #[arg(long, default_value = "builtin-8x8")]
+    /// builtin-8x8 or an explicit scalable monospaced FreeType font file.
     pub font: String,
     #[arg(long, default_value_t = 0, value_parser = clap::value_parser!(u32).range(0..=i32::MAX as i64))]
     pub font_face_index: u32,
     #[arg(long,default_value_t=true,action=clap::ArgAction::Set)]
     pub color: bool,
     #[arg(long, default_value_t = 0)]
+    /// Limit video frames (0 means unlimited); selected audio is still fully drained.
     pub max_frames: u64,
     #[arg(long)]
     pub no_progress: bool,
     #[arg(short, long)]
+    /// Show detailed device and aggregate performance diagnostics.
     pub verbose: bool,
 }
 
@@ -323,6 +334,24 @@ mod tests {
         let help = Args::command().render_long_help().to_string();
         assert!(help.contains("--diagnostic-report <PATH>"));
         assert!(help.contains("refuses to overwrite"));
+    }
+
+    #[test]
+    fn help_states_output_and_audio_support_boundaries() {
+        use clap::CommandFactory;
+        let help = Args::command().render_long_help().to_string();
+        for boundary in [
+            "H.264 is 8-bit only",
+            "HEVC/AV1 require qualified VAAPI encoding",
+            "no SDR bit-depth conversion",
+            "PQ <=1000 cd/m2",
+            "no-op for SDR",
+            "HLG and full range are unsupported",
+            "not transcoding",
+            "existing CFR timeline",
+        ] {
+            assert!(help.contains(boundary), "missing help boundary: {boundary}");
+        }
     }
 
     #[test]

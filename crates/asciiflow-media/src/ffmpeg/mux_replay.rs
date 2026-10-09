@@ -7,6 +7,9 @@ use std::{
     path::PathBuf,
 };
 
+#[path = "native_io.rs"]
+pub(super) mod native_io;
+
 struct Capture {
     format: NonNull<ffi::AVFormatContext>,
     packets: Vec<(usize, Packet)>,
@@ -307,6 +310,437 @@ impl Drop for Capture {
 // Native demux reads have finished. Each replay creates independent refs;
 // the capture and its codec parameters are immutable throughout the test.
 unsafe impl Sync for Capture {}
+
+/// Stress replay without per-packet diagnostic I/O. Only independent AVPacket
+/// references cross the same bounded producer channels used by other replays.
+fn counted_replay(
+    capture: &Capture,
+    path: &Path,
+    cycles: usize,
+    cycle_ticks: &[i64],
+) -> Vec<usize> {
+    let output = capture.output(path);
+    let streams = unsafe { (*capture.format.as_ptr()).nb_streams } as usize;
+    let emitted: Vec<_> = (0..streams)
+        .map(|_| std::sync::atomic::AtomicUsize::new(0))
+        .collect();
+    let (video_tx, video_rx) = bounded(MUX_CHANNEL_CAPACITY);
+    let (audio_tx, audio_rx) = bounded(MUX_CHANNEL_CAPACITY);
+    std::thread::scope(|scope| {
+        for (audio, sender) in [(false, video_tx), (true, audio_tx)] {
+            let emitted = &emitted;
+            scope.spawn(move || {
+                for cycle in 0..cycles {
+                    for (index, original) in capture
+                        .packets
+                        .iter()
+                        .filter(|(i, _)| capture.audio(*i) == audio)
+                    {
+                        let mut packet = Packet::new().unwrap();
+                        check(
+                            unsafe {
+                                ffi::av_packet_ref(
+                                    packet.as_mut_ptr(),
+                                    original.pointer_for_replay(),
+                                )
+                            },
+                            "reference stress packet",
+                        )
+                        .unwrap();
+                        let tb = unsafe { (*capture.stream(*index)).time_base };
+                        let shift = cycle as i64 * cycle_ticks[*index];
+                        unsafe {
+                            (*packet.as_mut_ptr()).pts += shift;
+                            (*packet.as_mut_ptr()).dts += shift;
+                        }
+                        sender
+                            .send_timeout(
+                                MuxMessage::Packet {
+                                    packet,
+                                    input_index: *index,
+                                    input_time_base: tb,
+                                    audio,
+                                },
+                                Duration::from_secs(30),
+                            )
+                            .expect("stress producer backpressure watchdog");
+                        emitted[*index].fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                    }
+                }
+                sender
+                    .send_timeout(
+                        if audio {
+                            MuxMessage::AudioDone
+                        } else {
+                            MuxMessage::Finish
+                        },
+                        Duration::from_secs(30),
+                    )
+                    .unwrap();
+            });
+        }
+        run_mux_worker(
+            output,
+            mux_inbox::MuxInputs {
+                video: &video_rx,
+                audio: Some(&audio_rx),
+            },
+            Arc::new(Mutex::new(MuxStats::default())),
+            Arc::new(Mutex::new(None)),
+            CancellationToken::new(),
+            CancellationToken::new(),
+            None,
+        )
+        .unwrap();
+    });
+    emitted
+        .iter()
+        .map(|count| count.load(std::sync::atomic::Ordering::Relaxed))
+        .collect()
+}
+
+/// Stream the output rather than retaining one million packet references.
+/// Per-stream packet ordinal identifies the exact source packet and cycle.
+fn verify_counted_replay(
+    capture: &Capture,
+    path: &Path,
+    cycles: usize,
+    cycle_ticks: &[i64],
+) -> Vec<usize> {
+    struct Input(*mut ffi::AVFormatContext);
+    impl Drop for Input {
+        fn drop(&mut self) {
+            unsafe { ffi::avformat_close_input(&mut self.0) }
+        }
+    }
+    let name = CString::new(path.as_os_str().as_encoded_bytes()).unwrap();
+    let mut input = Input(ptr::null_mut());
+    check(
+        unsafe {
+            ffi::avformat_open_input(
+                &mut input.0,
+                name.as_ptr(),
+                ptr::null_mut(),
+                ptr::null_mut(),
+            )
+        },
+        "open stress readback",
+    )
+    .unwrap();
+    check(
+        unsafe { ffi::avformat_find_stream_info(input.0, ptr::null_mut()) },
+        "probe stress readback",
+    )
+    .unwrap();
+    let stream_count = unsafe { (*capture.format.as_ptr()).nb_streams } as usize;
+    assert_eq!(unsafe { (*input.0).nb_streams } as usize, stream_count);
+    let source: Vec<Vec<_>> = (0..stream_count)
+        .map(|stream| {
+            capture
+                .packets
+                .iter()
+                .filter(|(i, _)| *i == stream)
+                .map(|(_, packet)| packet)
+                .collect()
+        })
+        .collect();
+    let mut counts = vec![0; stream_count];
+    let mut last_dts = vec![None; stream_count];
+    let mut packet = Packet::new().unwrap();
+    loop {
+        let result = unsafe { ffi::av_read_frame(input.0, packet.as_mut_ptr()) };
+        if result == ffi::AVERROR_EOF {
+            break;
+        }
+        check(result, "read stress packet").unwrap();
+        let actual = unsafe { &*packet.as_mut_ptr() };
+        let index = actual.stream_index as usize;
+        assert!(index < stream_count);
+        let cycle = counts[index] / source[index].len();
+        assert!(cycle < cycles, "unexpected extra packet in stream {index}");
+        let original =
+            unsafe { &*source[index][counts[index] % source[index].len()].pointer_for_replay() };
+        let source_tb = unsafe { (*capture.stream(index)).time_base };
+        let output_tb = unsafe { (**(*input.0).streams.add(index)).time_base };
+        let shift = cycle as i64 * cycle_ticks[index];
+        for (label, expected, received) in [
+            ("PTS", original.pts, actual.pts),
+            ("DTS", original.dts, actual.dts),
+        ] {
+            assert_ne!(expected, ffi::AV_NOPTS_VALUE, "source {label} unavailable");
+            let expected = unsafe { ffi::av_rescale_q(expected + shift, source_tb, output_tb) };
+            assert_eq!(
+                received, expected,
+                "stream {index} packet {} {label}",
+                counts[index]
+            );
+        }
+        let duration = unsafe { ffi::av_rescale_q(original.duration, source_tb, output_tb) };
+        assert_eq!(
+            actual.duration, duration,
+            "stream {index} packet {} duration",
+            counts[index]
+        );
+        assert_eq!(
+            actual.size, original.size,
+            "stream {index} packet {} compressed size",
+            counts[index]
+        );
+        assert_eq!(actual.flags, original.flags, "stream {index} packet flags");
+        fn payload(packet: &ffi::AVPacket) -> &[u8] {
+            assert!(packet.size >= 0, "negative packet size");
+            if packet.size == 0 {
+                &[][..]
+            } else {
+                assert!(!packet.data.is_null(), "nonempty packet has no data");
+                unsafe { std::slice::from_raw_parts(packet.data, packet.size as usize) }
+            }
+        }
+        assert_eq!(
+            payload(actual),
+            payload(original),
+            "stream {index} packet {} compressed payload",
+            counts[index]
+        );
+        if let Some(previous) = last_dts[index] {
+            assert!(actual.dts > previous, "stream {index} DTS regression");
+        }
+        last_dts[index] = Some(actual.dts);
+        counts[index] += 1;
+        unsafe { ffi::av_packet_unref(packet.as_mut_ptr()) };
+    }
+    for index in 0..stream_count {
+        assert_eq!(counts[index], source[index].len() * cycles);
+    }
+    counts
+}
+
+#[test]
+#[ignore = "isolated release Path C packet replay; input/output directory environment required"]
+fn d1b_path_c_mux_memory_replay() {
+    assert!(!std::hint::black_box(cfg!(debug_assertions)));
+    let source = PathBuf::from(std::env::var_os("ASCIIFLOW_D1B_REPLAY_SOURCE").unwrap());
+    let directory = PathBuf::from(std::env::var_os("ASCIIFLOW_D1B_REPLAY_DIR").unwrap());
+    fs::create_dir(&directory).expect("replay directory must be new");
+    let before = fd_count();
+    // Capture completes before any measured mux interval. All original packet
+    // buffers remain immutable and retained, not a live demux/audio producer.
+    let capture = Capture::read(&source);
+    let streams = unsafe { (*capture.format.as_ptr()).nb_streams } as usize;
+    assert_eq!(streams, 3);
+    // MOV demux exposes the track title as "name", while its muxer consumes
+    // "title". Preserve the actual production title across this replay only.
+    for index in 0..streams {
+        let stream = capture.stream(index);
+        unsafe {
+            let name = ffi::av_dict_get((*stream).metadata, c"name".as_ptr(), ptr::null(), 0);
+            if !name.is_null() {
+                let title = std::ffi::CStr::from_ptr((*name).value).to_owned();
+                check(
+                    ffi::av_dict_set(
+                        &mut (*stream).metadata,
+                        c"title".as_ptr(),
+                        title.as_ptr(),
+                        0,
+                    ),
+                    "restore replay track title",
+                )
+                .unwrap();
+            }
+        }
+    }
+    let counts: Vec<_> = (0..streams)
+        .map(|i| capture.packets.iter().filter(|(s, _)| *s == i).count())
+        .collect();
+    assert_eq!(counts, [100_000, 93_751, 93_751]);
+    let baseline = fd_count();
+    fs::write(directory.join("capture-ready.json"), serde_json::to_vec(&serde_json::json!({
+        "pid": std::process::id(), "source_counts": counts,
+        "fd_before": before, "fd_with_fixed_capture": baseline,
+        "reliability_measurement": cfg!(feature = "reliability-measurement"),
+        "scope": "immutable captured actual output packets, same mux owner, no live demux/decode/Vulkan/VAAPI/audio producer",
+    })).unwrap()).unwrap();
+    let path = directory.join("output.mp4");
+    let output = capture.output(&path);
+    let (video_tx, video_rx) = bounded(MUX_CHANNEL_CAPACITY);
+    let (audio_tx, audio_rx) = bounded(MUX_CHANNEL_CAPACITY);
+    std::thread::scope(|scope| {
+        for (audio, sender) in [(false, video_tx), (true, audio_tx)] {
+            let capture = &capture;
+            scope.spawn(move || {
+                let mut video_packets = 0;
+                for (index, original) in capture
+                    .packets
+                    .iter()
+                    .filter(|(i, _)| capture.audio(*i) == audio)
+                {
+                    let mut packet = Packet::new().unwrap();
+                    check(
+                        unsafe {
+                            ffi::av_packet_ref(packet.as_mut_ptr(), original.pointer_for_replay())
+                        },
+                        "reference captured Path C packet",
+                    )
+                    .unwrap();
+                    sender
+                        .send_timeout(
+                            MuxMessage::Packet {
+                                packet,
+                                input_index: *index,
+                                input_time_base: unsafe { (*capture.stream(*index)).time_base },
+                                audio,
+                            },
+                            Duration::from_secs(30),
+                        )
+                        .unwrap();
+                    if !audio {
+                        video_packets += 1;
+                        // Pacing gives the external observer several samples
+                        // per checkpoint; no payload/timestamp or mux change.
+                        if video_packets == 50_000 || video_packets == 99_940 {
+                            std::thread::sleep(Duration::from_millis(300));
+                        } else if video_packets % 1000 == 0 {
+                            std::thread::sleep(Duration::from_millis(25));
+                        }
+                    }
+                }
+                sender
+                    .send_timeout(
+                        if audio {
+                            MuxMessage::AudioDone
+                        } else {
+                            MuxMessage::Finish
+                        },
+                        Duration::from_secs(30),
+                    )
+                    .unwrap();
+            });
+        }
+        run_mux_worker(
+            output,
+            mux_inbox::MuxInputs {
+                video: &video_rx,
+                audio: Some(&audio_rx),
+            },
+            Arc::new(Mutex::new(MuxStats::default())),
+            Arc::new(Mutex::new(None)),
+            CancellationToken::new(),
+            CancellationToken::new(),
+            None,
+        )
+        .unwrap();
+    });
+    fs::write(directory.join("mux-complete"), b"complete").unwrap();
+    assert_eq!(fd_count(), baseline);
+    assert_eq!(
+        verify_counted_replay(&capture, &path, 1, &[0, 0, 0]),
+        counts
+    );
+    assert_eq!(fd_count(), baseline);
+    drop(capture);
+    assert_eq!(fd_count(), before);
+    fs::write(
+        directory.join("result.json"),
+        serde_json::to_vec_pretty(&serde_json::json!({
+            "result": "PASS", "source": source, "packets_per_stream": counts,
+            "exact_payload_pts_dts_duration_flags": true,
+            "fd_before": before, "fd_final": fd_count(),
+            "production_code_changed": false,
+        }))
+        .unwrap(),
+    )
+    .unwrap();
+}
+
+#[test]
+#[ignore = "release-only at least one million real native mux packets; ASCIIFLOW_D1A_MILLION_PACKET_DIR must be new; run alone"]
+fn d1a_million_packet_native_mux_replay() {
+    assert!(
+        !std::hint::black_box(cfg!(debug_assertions)),
+        "run with --release"
+    );
+    let directory = PathBuf::from(std::env::var_os("ASCIIFLOW_D1A_MILLION_PACKET_DIR").unwrap());
+    fs::create_dir(&directory).expect("stress evidence directory must be new");
+    // A deadlock must fail the isolated qualification process, including native
+    // code that cannot be interrupted by a Rust receive timeout.
+    let (finished, watchdog) = bounded(1);
+    let watchdog = std::thread::spawn(move || {
+        if matches!(
+            watchdog.recv_timeout(Duration::from_secs(300)),
+            Err(crossbeam_channel::RecvTimeoutError::Timeout)
+        ) {
+            eprintln!("million-packet native mux exceeded the 300-second watchdog");
+            std::process::abort();
+        }
+    });
+    let started = Instant::now();
+    let source =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../tests/fixtures/media/multiple.mp4");
+    let before_capture = fd_count();
+    let capture = Capture::read(&source);
+    let baseline = fd_count();
+    let stream_count = unsafe { (*capture.format.as_ptr()).nb_streams } as usize;
+    let source_counts: Vec<_> = (0..stream_count)
+        .map(|stream| capture.packets.iter().filter(|(i, _)| *i == stream).count())
+        .collect();
+    assert_eq!(
+        source_counts.len(),
+        3,
+        "fixture must contain video and dual AAC"
+    );
+    // Stitch each stream at its own exact DTS span, including priming/tail.
+    // A shared wall-clock gap makes MP4 extend the previous sample duration.
+    // Independent stream cycles preserve every packet duration but deliberately
+    // do not qualify synchronized repeating-media or A/V alignment semantics.
+    let cycle_ticks: Vec<_> = (0..stream_count)
+        .map(|index| {
+            let packets: Vec<_> = capture
+                .packets
+                .iter()
+                .filter(|(i, _)| *i == index)
+                .map(|(_, p)| unsafe { &*p.pointer_for_replay() })
+                .collect();
+            let first = packets.first().unwrap();
+            let last = packets.last().unwrap();
+            let ticks = last.dts - first.dts + last.duration;
+            assert!(ticks > 0);
+            ticks
+        })
+        .collect();
+    let stream_clocks: Vec<_> = (0..stream_count).map(|index| {
+        let tb = unsafe { (*capture.stream(index)).time_base };
+        serde_json::json!({ "stream": index, "time_base_num": tb.num, "time_base_den": tb.den, "cycle_ticks": cycle_ticks[index] })
+    }).collect();
+    let mut records = Vec::new();
+    let cycles = 1_000_000usize.div_ceil(capture.packets.len());
+    for (label, cycles) in [("two-cycle-preflight", 2), ("million-packet", cycles)] {
+        let output = directory.join(format!("{label}.mp4"));
+        let emitted = counted_replay(&capture, &output, cycles, &cycle_ticks);
+        assert_eq!(fd_count(), baseline, "mux FD cleanup");
+        let readback = verify_counted_replay(&capture, &output, cycles, &cycle_ticks);
+        assert_eq!(emitted, readback);
+        assert_eq!(fd_count(), baseline, "readback FD cleanup");
+        records.push(serde_json::json!({
+            "label": label, "cycles": cycles, "source_packets_per_stream": source_counts,
+            "emitted_packets_per_stream": emitted, "readback_packets_per_stream": readback,
+            "total_packets": emitted.iter().sum::<usize>(), "exact_integer_pts_dts": true,
+            "exact_compressed_payload_and_duration": true,
+            "output_bytes": fs::metadata(output).unwrap().len(), "fd_after": fd_count(),
+        }));
+    }
+    assert!(records[1]["total_packets"].as_u64().unwrap() >= 1_000_000);
+    drop(capture);
+    assert_eq!(fd_count(), before_capture, "capture FD cleanup");
+    fs::write(directory.join("million-packet.json"), serde_json::to_vec_pretty(&serde_json::json!({
+        "schema": "asciiflow-d1a-million-packet-v1", "source": source,
+        "stream_clocks": stream_clocks, "native_mux": true, "trace_enabled": false,
+        "scope": "native mux-only per-stream cyclic packets; not synchronized repeating-media or A/V alignment parity",
+        "fd_before_capture": before_capture, "fd_with_capture": baseline, "fd_final": fd_count(),
+        "elapsed_ms": started.elapsed().as_millis(), "records": records,
+    })).unwrap()).unwrap();
+    finished.send(()).unwrap();
+    watchdog.join().unwrap();
+}
 
 #[test]
 #[ignore = "native mux cancellation while waiting for a head, under backpressure, and with buffered packets"]

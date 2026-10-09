@@ -16,9 +16,11 @@ def sha(path):
         return hashlib.file_digest(stream, "sha256").hexdigest()
 
 
-def generate(kind, frames, directory):
+def generate(kind, frames, directory, audio_tracks=0):
     if frames < 1:
         raise ValueError("frame count must be positive")
+    if audio_tracks not in (0, 1, 2):
+        raise ValueError("audio tracks must be 0, 1 or 2")
     directory.mkdir(parents=True, exist_ok=False)
     commands = []
 
@@ -75,8 +77,26 @@ def generate(kind, frames, directory):
             raise ValueError(f"{field}: expected {value}, got {stream.get(field)}")
     if int(stream["nb_read_packets"]) != frames or int(stream["nb_frames"]) != frames:
         raise ValueError("materialized packet/frame count mismatch")
+    if audio_tracks:
+        video = output
+        output = directory / "input-aac.mp4"
+        argv = ["ffmpeg", "-v", "error", "-nostdin", "-n", "-i", video]
+        for frequency in (440, 660)[:audio_tracks]:
+            argv += ["-f", "lavfi", "-i",
+                     f"sine=frequency={frequency}:sample_rate=48000:duration={frames / 50:.2f}"]
+        argv += ["-map", "0:v:0"]
+        for index in range(audio_tracks):
+            argv += ["-map", f"{index + 1}:a:0"]
+        argv += ["-c:v", "copy", "-c:a", "aac", "-b:a", "128k", "-ar", "48000",
+                 "-ac", "2", "-threads", "1", "-map_metadata", "-1", "-fflags", "+bitexact",
+                 "-flags:a", "+bitexact", "-video_track_timescale", "90000"]
+        for index in range(audio_tracks):
+            argv += [f"-metadata:s:a:{index}", f"language={('eng', 'jpn')[index]}",
+                     f"-metadata:s:a:{index}", f"title=Soak track {index + 1}",
+                     f"-disposition:a:{index}", "default" if index == 0 else "0"]
+        checked(argv + [output])
     identity = dict(schema_version=1, kind=kind, frames=frames, media_seconds=frames / 50,
-                    audio="none", status="GeneratedNotQualified",
+                    audio_tracks=audio_tracks, audio="copy" if audio_tracks else "none", status="GeneratedNotQualified",
                     source=dict(path=str(source), sha256=sha(source), bytes=source.stat().st_size),
                     generators=[dict(path=str(path), sha256=sha(path)) for path in recipes],
                     ffmpeg_version=version, ffprobe_version=probe_version, tools=tools, commands=commands,

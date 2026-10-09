@@ -95,6 +95,16 @@ impl<'a> MuxInbox<'a> {
     fn poll(&self, receiver: &Receiver<MuxMessage>) -> Result<Option<MuxMessage>> {
         match receiver.recv_timeout(MUX_POLL) {
             Ok(mut message) => {
+                #[cfg(feature = "reliability-measurement")]
+                asciiflow_core::reliability::observe_queue_boundary(
+                    if std::ptr::eq(receiver, self.video) {
+                        "mux_video"
+                    } else {
+                        "mux_audio"
+                    },
+                    receiver.len(),
+                    receiver.capacity(),
+                );
                 #[cfg(feature = "mux-qualification")]
                 if let Some(trace) = &self.trace
                     && let MuxMessage::Packet {
@@ -148,6 +158,14 @@ impl<'a> MuxInbox<'a> {
         let (adts, apts, atb, ai) = timestamp(audio)?;
         let dts = unsafe { ffi::av_compare_ts(vdts, vtb, adts, atb) };
         let pts = unsafe { ffi::av_compare_ts(vpts, vtb, apts, atb) };
+        #[cfg(feature = "native-reliability")]
+        if dts != 0 {
+            asciiflow_core::reliability_hooks::checkpoint(if dts > 0 {
+                "AudioAhead"
+            } else {
+                "VideoAhead"
+            });
+        }
         Ok(dts < 0 || (dts == 0 && (pts < 0 || (pts == 0 && vi <= ai))))
     }
 }

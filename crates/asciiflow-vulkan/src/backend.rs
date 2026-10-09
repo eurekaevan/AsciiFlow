@@ -1945,6 +1945,8 @@ impl Resources {
                 return Err(vk_error("failed to submit Vulkan work")(error));
             }
             drop(queue_guard);
+            #[cfg(feature = "native-reliability")]
+            asciiflow_core::reliability_hooks::checkpoint("VulkanInFlight");
             let queue_submit = submit_started.elapsed();
             let wait_started = Instant::now();
             match context.device.wait_for_fences(

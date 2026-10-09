@@ -175,6 +175,78 @@ Rows classify individual dimensions, not their Cartesian product. Conditions and
 | output_profile | hevc-main10 | ConditionallySupported | 10-bit SDR conversion or PQ preservation requires the scoped VAAPI P010 path. | stage53c4b |
 | subtitle_policy | ignored | ConditionallySupported | Exact mov_text input is decoded alongside video but subtitles are intentionally omitted, not transcoded or copied. | stage54b-corpus, stage54b-report |
 
+## Complete scenario inventory
+
+Generated from the existing contract cases, not a Cartesian-product support promise. Each row retains its declared backend, decode/encode and interop requirements in the source contract. Dynamic range records input color classification and explicit output intent.
+
+Audio and container cells below are globally conditioned scope references, not additional qualification of each row with every audio policy or container. Only exact retained/corpus tuples qualify MP4-compatible single/dual AAC copy or video-only output; audio copy requires the existing CFR timeline. Other container/audio combinations keep their dimension states above.
+
+| Scenario | Input codec | Input bit depth | Dynamic range (input / output intent) | Output codec | Output bit depth | Audio | Container | Status |
+|---|---|---|---|---|---|---|---|---|
+| portable-h264-sdr | h264 | 8 | sdr709 / preserve | h264 | 8 | Global audio conditions above; not per-row qualification | MP4 only under global conditions above | Supported |
+| sdr-h264-8 | h264 | 8 | sdr709 / preserve | h264 | 8 | Global audio conditions above; not per-row qualification | MP4 only under global conditions above | ConditionallySupported |
+| sdr-hevc-8 | h264 | 8 | sdr709 / preserve | hevc | 8 | Global audio conditions above; not per-row qualification | MP4 only under global conditions above | ConditionallySupported |
+| sdr-av1-8 | h264 | 8 | sdr709 / preserve | av1 | 8 | Global audio conditions above; not per-row qualification | MP4 only under global conditions above | ConditionallySupported |
+| sdr-hevc-10 | hevc | 10 | sdr709 / preserve | hevc | 10 | Global audio conditions above; not per-row qualification | MP4 only under global conditions above | ConditionallySupported |
+| sdr-av1-10 | hevc | 10 | sdr709 / preserve | av1 | 10 | Global audio conditions above; not per-row qualification | MP4 only under global conditions above | ConditionallySupported |
+| pq-preserve-hevc | hevc | 10 | pq / preserve | hevc | 10 | Global audio conditions above; not per-row qualification | MP4 only under global conditions above | ConditionallySupported |
+| pq-preserve-av1 | av1 | 10 | pq / preserve | av1 | 10 | Global audio conditions above; not per-row qualification | MP4 only under global conditions above | ConditionallySupported |
+| matrix-hevc-to-h264-8 | hevc | 10 | pq / sdr | h264 | 8 | Global audio conditions above; not per-row qualification | MP4 only under global conditions above | ConditionallySupported |
+| matrix-hevc-to-hevc-8 | hevc | 10 | pq / sdr | hevc | 8 | Global audio conditions above; not per-row qualification | MP4 only under global conditions above | ConditionallySupported |
+| matrix-hevc-to-av1-8 | hevc | 10 | pq / sdr | av1 | 8 | Global audio conditions above; not per-row qualification | MP4 only under global conditions above | ConditionallySupported |
+| matrix-hevc-to-hevc-10 | hevc | 10 | pq / sdr | hevc | 10 | Global audio conditions above; not per-row qualification | MP4 only under global conditions above | ConditionallySupported |
+| matrix-hevc-to-av1-10 | hevc | 10 | pq / sdr | av1 | 10 | Global audio conditions above; not per-row qualification | MP4 only under global conditions above | ConditionallySupported |
+| matrix-av1-to-h264-8 | av1 | 10 | pq / sdr | h264 | 8 | Global audio conditions above; not per-row qualification | MP4 only under global conditions above | ConditionallySupported |
+| matrix-av1-to-hevc-8 | av1 | 10 | pq / sdr | hevc | 8 | Global audio conditions above; not per-row qualification | MP4 only under global conditions above | ConditionallySupported |
+| matrix-av1-to-av1-8 | av1 | 10 | pq / sdr | av1 | 8 | Global audio conditions above; not per-row qualification | MP4 only under global conditions above | ConditionallySupported |
+| matrix-av1-to-hevc-10 | av1 | 10 | pq / sdr | hevc | 10 | Global audio conditions above; not per-row qualification | MP4 only under global conditions above | ConditionallySupported |
+| matrix-av1-to-av1-10 | av1 | 10 | pq / sdr | av1 | 10 | Global audio conditions above; not per-row qualification | MP4 only under global conditions above | ConditionallySupported |
+| missing-tone-map-capability | hevc | 10 | pq / sdr | hevc | 10 | Global audio conditions above; not per-row qualification | MP4 only under global conditions above | Unsupported |
+| missing-pq-encoder-capability | hevc | 10 | pq / preserve | hevc | 10 | Global audio conditions above; not per-row qualification | MP4 only under global conditions above | Unsupported |
+| unknown-color | hevc | 10 | unknown / preserve | hevc | 10 | Global audio conditions above; not per-row qualification | MP4 only under global conditions above | Unsupported |
+| conflicting-color | hevc | 10 | conflict / preserve | hevc | 10 | Global audio conditions above; not per-row qualification | MP4 only under global conditions above | Unsupported |
+| unqualified-h264-main-currently-plans | h264 | 8 | sdr709 / preserve | h264 | 8 | Global audio conditions above; not per-row qualification | MP4 only under global conditions above | Unqualified |
+| unqualified-601-normalization-currently-plans | h264 | 8 | sdr601 / preserve | h264 | 8 | Global audio conditions above; not per-row qualification | MP4 only under global conditions above | Unqualified |
+| h264-10bit-output-unsupported | h264 | 8 | sdr709 / preserve | h264 | 10 | Global audio conditions above; not per-row qualification | MP4 only under global conditions above | Unsupported |
+
+## Release profile `lgpl-prebuilt`
+
+Official LGPL prebuilt Linux release; opt-in distribution restrictions, not a replacement for the base support contract.
+
+Profile policy and actual FFmpeg codec capability probes both apply. Software decode and qualified VAAPI H.264/HEVC/AV1 encoding remain eligible; no silent software encoder fallback.
+
+Historical software H.264 PASS remains qualified under a GPL-capable build context; exclusion is not a historical FAIL.
+
+Availability is a distribution overlay, not a fifth base support state. Eligible does not promote Unsupported or Unqualified base cases.
+
+| Scenario | Base state | Release availability | Reason |
+|---|---|---|---|
+| portable-h264-sdr | Supported | Excluded | Software H.264 encoding requires GPL dependency libx264 and is excluded from the official LGPL prebuilt release. |
+| sdr-h264-8 | ConditionallySupported | Eligible | Base conditions and actual runtime capability probes still apply. |
+| sdr-hevc-8 | ConditionallySupported | Eligible | Base conditions and actual runtime capability probes still apply. |
+| sdr-av1-8 | ConditionallySupported | Eligible | Base conditions and actual runtime capability probes still apply. |
+| sdr-hevc-10 | ConditionallySupported | Eligible | Base conditions and actual runtime capability probes still apply. |
+| sdr-av1-10 | ConditionallySupported | Eligible | Base conditions and actual runtime capability probes still apply. |
+| pq-preserve-hevc | ConditionallySupported | Eligible | Base conditions and actual runtime capability probes still apply. |
+| pq-preserve-av1 | ConditionallySupported | Eligible | Base conditions and actual runtime capability probes still apply. |
+| matrix-hevc-to-h264-8 | ConditionallySupported | Eligible | Base conditions and actual runtime capability probes still apply. |
+| matrix-hevc-to-hevc-8 | ConditionallySupported | Eligible | Base conditions and actual runtime capability probes still apply. |
+| matrix-hevc-to-av1-8 | ConditionallySupported | Eligible | Base conditions and actual runtime capability probes still apply. |
+| matrix-hevc-to-hevc-10 | ConditionallySupported | Eligible | Base conditions and actual runtime capability probes still apply. |
+| matrix-hevc-to-av1-10 | ConditionallySupported | Eligible | Base conditions and actual runtime capability probes still apply. |
+| matrix-av1-to-h264-8 | ConditionallySupported | Eligible | Base conditions and actual runtime capability probes still apply. |
+| matrix-av1-to-hevc-8 | ConditionallySupported | Eligible | Base conditions and actual runtime capability probes still apply. |
+| matrix-av1-to-av1-8 | ConditionallySupported | Eligible | Base conditions and actual runtime capability probes still apply. |
+| matrix-av1-to-hevc-10 | ConditionallySupported | Eligible | Base conditions and actual runtime capability probes still apply. |
+| matrix-av1-to-av1-10 | ConditionallySupported | Eligible | Base conditions and actual runtime capability probes still apply. |
+| missing-tone-map-capability | Unsupported | Eligible | Base conditions and actual runtime capability probes still apply. |
+| missing-pq-encoder-capability | Unsupported | Eligible | Base conditions and actual runtime capability probes still apply. |
+| unknown-color | Unsupported | Eligible | Base conditions and actual runtime capability probes still apply. |
+| conflicting-color | Unsupported | Eligible | Base conditions and actual runtime capability probes still apply. |
+| unqualified-h264-main-currently-plans | Unqualified | Excluded | Software H.264 encoding requires GPL dependency libx264 and is excluded from the official LGPL prebuilt release. |
+| unqualified-601-normalization-currently-plans | Unqualified | Excluded | Software H.264 encoding requires GPL dependency libx264 and is excluded from the official LGPL prebuilt release. |
+| h264-10bit-output-unsupported | Unsupported | Excluded | Software H.264 encoding requires GPL dependency libx264 and is excluded from the official LGPL prebuilt release. |
+
 ## Evidence
 
 - `current-cli`: [apps/asciiflow-cli/src/main.rs](../apps/asciiflow-cli/src/main.rs) — current checkout, output-container-guard, CURRENT.

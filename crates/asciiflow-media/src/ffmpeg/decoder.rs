@@ -903,7 +903,10 @@ impl Decoder {
         let Some(pts) = self.next_native_frame()? else {
             return Ok(None);
         };
-        let frame = self.source_frame.try_clone()?;
+        #[allow(unused_mut)]
+        let mut frame = self.source_frame.try_clone()?;
+        #[cfg(feature = "reliability-measurement")]
+        frame.observe_surface_reference("vaapi_decoder_exported_frame_refs");
         self.source_frame.unref();
         Ok(Some(VaapiDecodedFrame {
             frame,
@@ -1334,6 +1337,8 @@ fn map_chroma_location(value: ffi::AVChromaLocation) -> ChromaLocation {
 
 impl FrameSource for Decoder {
     fn finish(&mut self) -> Result<()> {
+        #[cfg(feature = "native-reliability")]
+        asciiflow_core::reliability_hooks::checkpoint("NearEof");
         if let Some(reader) = &mut self.audio_reader {
             reader.finish()?;
             self.audio_sender.take();

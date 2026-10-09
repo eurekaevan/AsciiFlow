@@ -31,6 +31,14 @@ use tracing_subscriber::EnvFilter;
 
 fn main() -> ExitCode {
     let args = Args::parse();
+    // Keep native warnings/errors visible without default encoder debug summaries.
+    unsafe {
+        ffmpeg_sys_next::av_log_set_level(if args.verbose {
+            ffmpeg_sys_next::AV_LOG_INFO
+        } else {
+            ffmpeg_sys_next::AV_LOG_WARNING
+        });
+    }
     let filter = if args.verbose {
         "asciiflow=debug"
     } else {
@@ -44,11 +52,51 @@ fn main() -> ExitCode {
         .init();
     let cancellation = CancellationToken::new();
     let signal_token = cancellation.clone();
-    if let Err(error) = ctrlc::set_handler(move || signal_token.cancel()) {
+    if let Err(error) = ctrlc::set_handler(move || {
+        signal_token.cancel();
+        #[cfg(feature = "native-reliability")]
+        asciiflow_core::reliability_hooks::cancellation_observed();
+    }) {
         eprintln!("Error: cancellation initialization failed: install SIGINT handler: {error}");
         return ExitCode::FAILURE;
     }
-    match run(args, cancellation) {
+    #[cfg(feature = "reliability-measurement")]
+    let measurement = match asciiflow_core::reliability::Session::from_environment(
+        &[
+            Some(args.input.as_path()),
+            args.output.as_deref(),
+            args.diagnostic_report.as_deref(),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<_>>(),
+    ) {
+        Ok(session) => session,
+        Err(error) => {
+            eprintln!("Error: reliability report initialization failed: {error}");
+            return ExitCode::FAILURE;
+        }
+    };
+    let outcome = run(args, cancellation);
+    #[cfg(feature = "mux-qualification")]
+    if outcome.is_ok()
+        && let Err(error) = asciiflow_media::ffmpeg::finish_audio_memory_diagnostic()
+    {
+        eprintln!("Error: qualification audio memory diagnostic: {error}");
+        return ExitCode::FAILURE;
+    }
+    #[cfg(feature = "reliability-measurement")]
+    if let Some(session) = measurement {
+        if let Err(error) = session.finish() {
+            // Conversion may already have committed. Never remove that output
+            // or replace a primary media/cancellation cause with telemetry.
+            eprintln!("Error: reliability report failed (output state unchanged): {error}");
+            if outcome.is_ok() {
+                return ExitCode::FAILURE;
+            }
+        }
+    }
+    match outcome {
         Ok(()) => ExitCode::SUCCESS,
         Err(error) => {
             if is_cancellation(&error) {
@@ -95,12 +143,12 @@ fn run(args: Args, cancellation: CancellationToken) -> Result<()> {
         .err()
         .map(failure_diagnostic)
         .unwrap_or(serde_json::Value::Null);
-    if let Some(path) = report_path {
-        if let Err(error) = write_diagnostic_report(&path, &report) {
-            // Diagnostics are secondary: never turn a committed conversion
-            // into a reported pipeline failure, or replace its original error.
-            eprintln!("Warning: diagnostic report failed: {error:#}");
-        }
+    if let Some(path) = report_path
+        && let Err(error) = write_diagnostic_report(&path, &report)
+    {
+        // Diagnostics are secondary: never turn a committed conversion
+        // into a reported pipeline failure, or replace its original error.
+        eprintln!("Warning: diagnostic report failed: {error:#}");
     }
     outcome
 }
@@ -592,15 +640,18 @@ fn run_inner(
     };
     match result {
         Ok(metrics) => {
-            commit_output(&temporary, output)?;
+            #[cfg(feature = "native-reliability")]
+            asciiflow_core::reliability_hooks::checkpoint("BeforeCommit");
+            cancellation
+                .commit_unless_cancelled(|| commit_output(&temporary, output))
+                .ok_or(asciiflow_core::Error::Cancelled)??;
             temporary_guard.disarm();
-            display::print_summary(&metrics);
+            #[cfg(feature = "native-reliability")]
+            asciiflow_core::reliability_hooks::checkpoint("AfterCommit");
+            display::print_summary(&metrics, args.verbose);
             Ok(())
         }
-        Err(error) => {
-            let _ = fs::remove_file(&temporary);
-            Err(error.into())
-        }
+        Err(error) => Err(error.into()),
     }
 }
 
@@ -1330,10 +1381,10 @@ impl<S: FrameSource> FrameSource for LimitedSource<S> {
             return Ok(None);
         }
         let frame = self.inner.next_frame()?;
-        if frame.is_some() {
-            if let Some(value) = &mut self.remaining {
-                *value -= 1;
-            }
+        if frame.is_some()
+            && let Some(value) = &mut self.remaining
+        {
+            *value -= 1;
         }
         Ok(frame)
     }
@@ -1364,8 +1415,14 @@ impl TemporaryOutputGuard {
 
 impl Drop for TemporaryOutputGuard {
     fn drop(&mut self) {
-        if self.armed {
-            let _ = fs::remove_file(&self.path);
+        if self.armed
+            && let Err(error) = fs::remove_file(&self.path)
+            && error.kind() != std::io::ErrorKind::NotFound
+        {
+            eprintln!(
+                "Warning: staging cleanup failed for {}: {error}",
+                self.path.display()
+            );
         }
     }
 }
@@ -1580,6 +1637,10 @@ mod stage13_tests {
         }
     }
 }
+
+#[cfg(all(test, feature = "native-reliability"))]
+#[path = "native_reliability_tests.rs"]
+mod native_reliability_tests;
 
 #[cfg(test)]
 mod stage2_tests {

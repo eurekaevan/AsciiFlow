@@ -11,6 +11,8 @@ mod metrics;
 mod pipeline;
 mod planner;
 mod qualification;
+#[cfg(feature = "reliability-measurement")]
+pub mod reliability;
 pub mod sdr_target_volume;
 pub mod tone_map_bt2446;
 
@@ -45,3 +47,5 @@ pub use qualification::{
     InputProcessingCapabilities, InputProcessingDomain, InputProcessingPlan,
     InputProcessingPlanner, InputProcessingPolicy,
 };
+#[cfg(feature = "native-reliability")]
+pub mod reliability_hooks;

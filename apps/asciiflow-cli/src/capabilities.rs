@@ -307,7 +307,12 @@ pub fn probe(
     let media_info = software.info().clone();
     drop(software);
     let build = probe_vaapi_build();
-    let software_encode = if build.software_h264_encoder {
+    let software_encode = if cfg!(feature = "lgpl-prebuilt") {
+        CapabilitySupport::unsupported(format!(
+            "Software H.264 encoding is excluded from the official LGPL prebuilt release (libx264 excluded; runtime libx264 present: {})",
+            build.software_h264_encoder
+        ))
+    } else if build.software_h264_encoder {
         CapabilitySupport::supported()
     } else {
         CapabilitySupport::unsupported("FFmpeg exposes no software H.264 encoder")

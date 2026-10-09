@@ -1,0 +1,489 @@
+{
+  "scope": "Process00OnlyNotCampaignClassification",
+  "evidence_root": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-plateau/process-00",
+  "historical_cycle48_652kib": "Unresolved; no recovery of original missing full smaps",
+  "result": {
+    "allocator_policy": "unchanged glibc default; read-only mallinfo2/malloc_info; no trim/tuning",
+    "complete_cycles_without_new_hwm": 183,
+    "cycles": 500,
+    "extended": true,
+    "final_allocator": {
+      "arena_bytes": 158851072,
+      "fastbin_free_bytes": 0,
+      "free_retained_arena_bytes": 156660528,
+      "in_use_arena_bytes": 2190544,
+      "in_use_including_mmap_bytes": 10853584,
+      "mapped_bytes": 167514112,
+      "mmap_bytes": 8663040,
+      "mmap_regions": 3,
+      "scope": "glibc accounting, not application-live bytes or RSS; tcache may count as in-use; mmap bytes include allocation overhead"
+    },
+    "final_high_water_kib": 168948,
+    "final_private_anonymous_kib": 168948,
+    "initial_private_anonymous_kib": 15708,
+    "interpretation": "Operational finite-workload plateau only; allocation/mapping/live-byte review still required; not an automatic seal",
+    "jobs": 2040,
+    "largest_hwm_increment_kib": 49660,
+    "last_hwm_cycle": 317,
+    "observed_plateau": true,
+    "observer_fixed_proc_buffer_bytes": 8650752,
+    "process_id": 24670,
+    "reference_configurations": 4,
+    "retained_reference_bytes": 928880,
+    "schema": "asciiflow-default-memory-plateau-v1"
+  },
+  "all_jobs": 2040,
+  "outcomes": {
+    "Success": 2000,
+    "Cancelled": 20,
+    "InjectedFailure": 20
+  },
+  "all_jobs_cleanup_zero": true,
+  "all_jobs_joined": true,
+  "all_final_resource_samples_zero": true,
+  "late100": {
+    "cycle_range": [
+      401,
+      500
+    ],
+    "job_samples": 408,
+    "cycle_samples": 100,
+    "ranges": {
+      "private_anonymous_kib": [
+        168948,
+        168948
+      ],
+      "mapping_count": [
+        1084,
+        1084
+      ],
+      "fd_count": [
+        7,
+        7
+      ],
+      "thread_count": [
+        2,
+        2
+      ],
+      "swap_kib": [
+        0,
+        0
+      ]
+    },
+    "allocator_ranges": {
+      "mapped_bytes": [
+        167514112,
+        167514112
+      ],
+      "in_use_including_mmap_bytes": [
+        10843872,
+        10887632
+      ],
+      "free_retained_arena_bytes": [
+        156626480,
+        156670240
+      ],
+      "mmap_bytes": [
+        8663040,
+        8663040
+      ],
+      "mmap_regions": [
+        3,
+        3
+      ]
+    },
+    "category_fields_constant": false,
+    "mapping_categories": {
+      "anonymous_non_heap": {
+        "anonymous_kib": 127032,
+        "count": 155,
+        "private_anonymous_lower_kib": 127032,
+        "private_anonymous_upper_kib": 127032,
+        "private_clean_kib": 0,
+        "private_dirty_kib": 127032,
+        "rss_kib": 127032,
+        "shared_clean_kib": 0,
+        "shared_dirty_kib": 0,
+        "size_kib": 712880
+      },
+      "driver_device": {
+        "anonymous_kib": 0,
+        "count": 0,
+        "private_anonymous_lower_kib": 0,
+        "private_anonymous_upper_kib": 0,
+        "private_clean_kib": 0,
+        "private_dirty_kib": 0,
+        "rss_kib": 0,
+        "shared_clean_kib": 0,
+        "shared_dirty_kib": 0,
+        "size_kib": 0
+      },
+      "file_backed": {
+        "anonymous_kib": 8964,
+        "count": 923,
+        "private_anonymous_lower_kib": 8944,
+        "private_anonymous_upper_kib": 8964,
+        "private_clean_kib": 28868,
+        "private_dirty_kib": 8964,
+        "rss_kib": 89136,
+        "shared_clean_kib": 51304,
+        "shared_dirty_kib": 0,
+        "size_kib": 395260
+      },
+      "heap": {
+        "anonymous_kib": 32932,
+        "count": 1,
+        "private_anonymous_lower_kib": 32932,
+        "private_anonymous_upper_kib": 32932,
+        "private_clean_kib": 0,
+        "private_dirty_kib": 32932,
+        "rss_kib": 32932,
+        "shared_clean_kib": 0,
+        "shared_dirty_kib": 0,
+        "size_kib": 33140
+      },
+      "kernel_named_stack": {
+        "anonymous_kib": 20,
+        "count": 1,
+        "private_anonymous_lower_kib": 20,
+        "private_anonymous_upper_kib": 20,
+        "private_clean_kib": 0,
+        "private_dirty_kib": 20,
+        "rss_kib": 20,
+        "shared_clean_kib": 0,
+        "shared_dirty_kib": 0,
+        "size_kib": 136
+      },
+      "other": {
+        "anonymous_kib": 0,
+        "count": 0,
+        "private_anonymous_lower_kib": 0,
+        "private_anonymous_upper_kib": 0,
+        "private_clean_kib": 0,
+        "private_dirty_kib": 0,
+        "rss_kib": 0,
+        "shared_clean_kib": 0,
+        "shared_dirty_kib": 0,
+        "size_kib": 0
+      },
+      "special": {
+        "anonymous_kib": 0,
+        "count": 4,
+        "private_anonymous_lower_kib": 0,
+        "private_anonymous_upper_kib": 0,
+        "private_clean_kib": 0,
+        "private_dirty_kib": 0,
+        "rss_kib": 16,
+        "shared_clean_kib": 16,
+        "shared_dirty_kib": 0,
+        "size_kib": 36
+      }
+    }
+  },
+  "normal_macro_cycle_ends": [
+    {
+      "cycle": 50,
+      "allocator": {
+        "mapped_bytes": 165429248,
+        "in_use_including_mmap_bytes": 10834448,
+        "free_retained_arena_bytes": 154594800,
+        "mmap_bytes": 8663040,
+        "mmap_regions": 3
+      }
+    },
+    {
+      "cycle": 100,
+      "allocator": {
+        "mapped_bytes": 165474304,
+        "in_use_including_mmap_bytes": 10835232,
+        "free_retained_arena_bytes": 154639072,
+        "mmap_bytes": 8663040,
+        "mmap_regions": 3
+      }
+    },
+    {
+      "cycle": 150,
+      "allocator": {
+        "mapped_bytes": 165482496,
+        "in_use_including_mmap_bytes": 10841488,
+        "free_retained_arena_bytes": 154641008,
+        "mmap_bytes": 8663040,
+        "mmap_regions": 3
+      }
+    },
+    {
+      "cycle": 200,
+      "allocator": {
+        "mapped_bytes": 166277120,
+        "in_use_including_mmap_bytes": 10845568,
+        "free_retained_arena_bytes": 155431552,
+        "mmap_bytes": 8663040,
+        "mmap_regions": 3
+      }
+    },
+    {
+      "cycle": 250,
+      "allocator": {
+        "mapped_bytes": 166330368,
+        "in_use_including_mmap_bytes": 10848944,
+        "free_retained_arena_bytes": 155481424,
+        "mmap_bytes": 8663040,
+        "mmap_regions": 3
+      }
+    },
+    {
+      "cycle": 300,
+      "allocator": {
+        "mapped_bytes": 166563840,
+        "in_use_including_mmap_bytes": 10851904,
+        "free_retained_arena_bytes": 155711936,
+        "mmap_bytes": 8663040,
+        "mmap_regions": 3
+      }
+    },
+    {
+      "cycle": 350,
+      "allocator": {
+        "mapped_bytes": 167514112,
+        "in_use_including_mmap_bytes": 10852624,
+        "free_retained_arena_bytes": 156661488,
+        "mmap_bytes": 8663040,
+        "mmap_regions": 3
+      }
+    },
+    {
+      "cycle": 400,
+      "allocator": {
+        "mapped_bytes": 167514112,
+        "in_use_including_mmap_bytes": 10854176,
+        "free_retained_arena_bytes": 156659936,
+        "mmap_bytes": 8663040,
+        "mmap_regions": 3
+      }
+    },
+    {
+      "cycle": 450,
+      "allocator": {
+        "mapped_bytes": 167514112,
+        "in_use_including_mmap_bytes": 10852416,
+        "free_retained_arena_bytes": 156661696,
+        "mmap_bytes": 8663040,
+        "mmap_regions": 3
+      }
+    },
+    {
+      "cycle": 500,
+      "allocator": {
+        "mapped_bytes": 167514112,
+        "in_use_including_mmap_bytes": 10853584,
+        "free_retained_arena_bytes": 156660528,
+        "mmap_bytes": 8663040,
+        "mmap_regions": 3
+      }
+    }
+  ],
+  "late_macro_fault_cycle_ends": [
+    {
+      "cycle": 310,
+      "in_use_including_mmap_bytes": 10847296
+    },
+    {
+      "cycle": 320,
+      "in_use_including_mmap_bytes": 10845888
+    },
+    {
+      "cycle": 330,
+      "in_use_including_mmap_bytes": 10838192
+    },
+    {
+      "cycle": 340,
+      "in_use_including_mmap_bytes": 10850416
+    },
+    {
+      "cycle": 360,
+      "in_use_including_mmap_bytes": 10842064
+    },
+    {
+      "cycle": 370,
+      "in_use_including_mmap_bytes": 10846144
+    },
+    {
+      "cycle": 380,
+      "in_use_including_mmap_bytes": 10842352
+    },
+    {
+      "cycle": 390,
+      "in_use_including_mmap_bytes": 10845584
+    },
+    {
+      "cycle": 410,
+      "in_use_including_mmap_bytes": 10844240
+    },
+    {
+      "cycle": 420,
+      "in_use_including_mmap_bytes": 10849360
+    },
+    {
+      "cycle": 430,
+      "in_use_including_mmap_bytes": 10847376
+    },
+    {
+      "cycle": 440,
+      "in_use_including_mmap_bytes": 10850064
+    },
+    {
+      "cycle": 460,
+      "in_use_including_mmap_bytes": 10843872
+    },
+    {
+      "cycle": 470,
+      "in_use_including_mmap_bytes": 10853408
+    },
+    {
+      "cycle": 480,
+      "in_use_including_mmap_bytes": 10850112
+    },
+    {
+      "cycle": 490,
+      "in_use_including_mmap_bytes": 10854320
+    }
+  ],
+  "live_accounting_blocks": {
+    "301-350_normal_cycle_ends": {
+      "min": 10846800,
+      "max": 10860384,
+      "median": 10853768
+    },
+    "351-400_normal_cycle_ends": {
+      "min": 10848928,
+      "max": 10860736,
+      "median": 10854288
+    },
+    "401-450_normal_cycle_ends": {
+      "min": 10849328,
+      "max": 10863168,
+      "median": 10855432
+    },
+    "451-500_normal_cycle_ends": {
+      "min": 10848624,
+      "max": 10864128,
+      "median": 10857816
+    }
+  },
+  "late_shapes": {
+    "Pq10Hevc-freetype-colortrue-SingleAac-frames3": {
+      "count": 100,
+      "min": 10872304,
+      "max": 10887632,
+      "first": 10874512,
+      "last": 10879296,
+      "macro350_400_450_500": [
+        {
+          "cycle": 350,
+          "in_use": 10868160
+        },
+        {
+          "cycle": 400,
+          "in_use": 10877616
+        },
+        {
+          "cycle": 450,
+          "in_use": 10878640
+        },
+        {
+          "cycle": 500,
+          "in_use": 10879296
+        }
+      ]
+    },
+    "PqToSdr10Hevc-builtin-colortrue-None-frames3": {
+      "count": 8,
+      "min": 10843968,
+      "max": 10854416,
+      "first": 10844336,
+      "last": 10854416,
+      "macro350_400_450_500": []
+    },
+    "PqToSdr10Hevc-freetype-colorfalse-None-frames3": {
+      "count": 100,
+      "min": 10848896,
+      "max": 10864400,
+      "first": 10855344,
+      "last": 10853856,
+      "macro350_400_450_500": [
+        {
+          "cycle": 350,
+          "in_use": 10852896
+        },
+        {
+          "cycle": 400,
+          "in_use": 10854448
+        },
+        {
+          "cycle": 450,
+          "in_use": 10852688
+        },
+        {
+          "cycle": 500,
+          "in_use": 10853856
+        }
+      ]
+    },
+    "PqToSdr8H264-builtin-colorfalse-DualAac-frames3": {
+      "count": 100,
+      "min": 10865376,
+      "max": 10879904,
+      "first": 10865376,
+      "last": 10870496,
+      "macro350_400_450_500": [
+        {
+          "cycle": 350,
+          "in_use": 10868960
+        },
+        {
+          "cycle": 400,
+          "in_use": 10864704
+        },
+        {
+          "cycle": 450,
+          "in_use": 10867920
+        },
+        {
+          "cycle": 500,
+          "in_use": 10870496
+        }
+      ]
+    },
+    "Sdr8H264-builtin-colortrue-None-frames3": {
+      "count": 100,
+      "min": 10860080,
+      "max": 10876480,
+      "first": 10862496,
+      "last": 10870992,
+      "macro350_400_450_500": [
+        {
+          "cycle": 350,
+          "in_use": 10859408
+        },
+        {
+          "cycle": 400,
+          "in_use": 10863712
+        },
+        {
+          "cycle": 450,
+          "in_use": 10868144
+        },
+        {
+          "cycle": 500,
+          "in_use": 10870992
+        }
+      ]
+    }
+  },
+  "raw_sha256": {
+    "memory.jsonl": "49e482c46f368192d5b3321b6fa543093184496709ede30da31353e6464cd63a",
+    "jobs.jsonl": "89ede476bcbc980b61b7fb02c7ce8d2eb088016dbf6f1e1e25056836ca89a1c6",
+    "hwm.jsonl": "f8e5020f67a9093b999c8a75e1c2b8530213e1d1f037121b4c3e9d72f626c840",
+    "plateau-result.json": "f10851899bcd34fb640284e2cb4430d4d9bdf53b4926ce810b29e87cea812283"
+  }
+}

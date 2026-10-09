@@ -1,0 +1,37 @@
+{
+  "qualification": "StaticSpirvValidationOnlyNoGpuExecution",
+  "completed_at": "2026-10-08T05:44:04.668817+00:00",
+  "build_quiescence_basis": "Parent agent confirmed all producing native clippy and mux builds finished before this task; inventory checked before and after validation.",
+  "target_environment": "vulkan1.3",
+  "targets": {
+    "clean-default": {
+      "root": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/clean-default",
+      "physical_path_count": 100,
+      "distinct_device_inode_count": 100,
+      "unique_sha256_count": 25,
+      "bytes": 818160
+    },
+    "clean-measurement": {
+      "root": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/clean-measurement",
+      "physical_path_count": 100,
+      "distinct_device_inode_count": 100,
+      "unique_sha256_count": 25,
+      "bytes": 818160
+    },
+    "warm-native": {
+      "root": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-native-snapshot/target/qualification",
+      "physical_path_count": 100,
+      "distinct_device_inode_count": 100,
+      "unique_sha256_count": 25,
+      "bytes": 818160
+    }
+  },
+  "physical_path_count": 300,
+  "distinct_device_inode_count": 300,
+  "unique_sha256_count": 25,
+  "validated_commands": 300,
+  "failed_commands": 0,
+  "inventory_unchanged": true,
+  "source_unchanged": true,
+  "result": "PASS"
+}

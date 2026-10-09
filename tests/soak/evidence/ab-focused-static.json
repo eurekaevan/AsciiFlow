@@ -1,0 +1,62 @@
+{
+  "schema": "asciiflow.ab-focused-static.v1",
+  "artifact_root": "target/stage54d1a-ab-final-v1",
+  "scope": "Focused final-snapshot static checks and separately labeled lifecycle diagnostics. No GPU/build run was performed for this evidence summary.",
+  "static_checks": [
+    {
+      "name": "media-regression",
+      "command": "CARGO_TARGET_DIR=/home/eureka/Documents/AsciiFlow/target/stage54d1a-native-snapshot/target/qualification CARGO_BUILD_JOBS=2 cargo test --offline --release -p asciiflow-media --test media_regression",
+      "result": { "passed": 7, "failed": 0, "ignored": 3 },
+      "log": "target/final-static-resume/media-regression.log"
+    },
+    {
+      "name": "soak-python-unittests",
+      "command": "python3 -m unittest discover -s tests/soak",
+      "result": { "passed": 20, "failed": 0 },
+      "log": "target/final-static-resume/soak-unittest.log"
+    },
+    {
+      "name": "corpus-python-unittests",
+      "command": "python3 -m unittest discover -s tests/corpus",
+      "result": { "passed": 65, "failed": 0 },
+      "log": "target/final-static-resume/corpus-unittest.log"
+    },
+    {
+      "name": "missing-resource-accounting",
+      "command": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-native-snapshot/target/qualification/release/deps/asciiflow-704a3adfed39f3ee native_reliability_tests::missing_resource_accounting_is_not_a_cleanup_pass --exact --nocapture",
+      "result": { "passed": 1, "failed": 0, "filtered_out": 36 },
+      "log": "target/final-static-resume/native-unit.log"
+    },
+    {
+      "name": "native-reliability-clippy",
+      "command": "CARGO_TARGET_DIR=/home/eureka/Documents/AsciiFlow/target/stage54d1a-native-snapshot/target/qualification CARGO_BUILD_JOBS=2 cargo clippy --offline --release -p asciiflow-cli --features native-reliability --all-targets -- -D warnings",
+      "result": "Finished successfully with warnings denied.",
+      "log": "target/final-static-resume/clippy.log"
+    },
+    {
+      "name": "h264-driver-portability-contracts",
+      "result": { "passed": 3, "failed": 0, "ignored": 1 },
+      "log": "target/resumed-clean-evidence/default/test-release.log",
+      "log_section": "tests/h264_driver_portability.rs"
+    }
+  ],
+  "validation_enabled_lifecycle_diagnostics": {
+    "scope_note": "Validation-enabled lifecycle diagnostics are reported separately and are not ordinary production RSS measurements.",
+    "campaign_directory": "target/ab-rss-default-final",
+    "jobs": 244,
+    "command_count": 11,
+    "command_exit_codes": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    "source_unchanged": true,
+    "validation_diagnostics": {
+      "searched_patterns": ["Vulkan validation:", "VUID-", "Validation Error"],
+      "matches": 0
+    },
+    "evidence": {
+      "execution": "target/ab-rss-default-final/execution.json",
+      "logs": "target/ab-rss-default-final/command-000.log through command-010.log",
+      "source_before": "target/ab-rss-default-final/source-before.json",
+      "source_after": "target/ab-rss-default-final/source-after.json",
+      "job_count_basis": "204 lines in cycles-50/jobs.jsonl plus 4 lines in each of fresh-00 through fresh-09/jobs.jsonl"
+    }
+  }
+}

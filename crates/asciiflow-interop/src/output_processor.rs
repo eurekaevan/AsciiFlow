@@ -101,6 +101,9 @@ pub struct HardwareBackendOutput {
     pub timings: BackendTimings,
 }
 
+// Measurement adds ownership tokens to frame wrappers. Keep the production
+// inline message layout rather than adding per-frame boxing just for telemetry.
+#[cfg_attr(feature = "reliability-measurement", allow(clippy::large_enum_variant))]
 enum SlotJob {
     Process {
         sequence: u64,
@@ -329,10 +332,10 @@ impl VaapiVulkanFullInteropProcessor {
             asciiflow_core::PixelFormat::P010Le => asciiflow_vulkan::SdrPackFormat::P010,
         };
         for (index, slot) in [&mut first, &mut second].into_iter().enumerate() {
-            if let Some((fault_slot, Some(c3), _)) = fault {
-                if index == fault_slot {
-                    slot.inject_fault(c3);
-                }
+            if let Some((fault_slot, Some(c3), _)) = fault
+                && index == fault_slot
+            {
+                slot.inject_fault(c3);
             }
             slot.prepare(&desc, &config, false)?;
             #[cfg(feature = "hdr-to-sdr-qualification")]

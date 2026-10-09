@@ -7,7 +7,20 @@ inside the guard lifetime, while native decoder/encoder contexts still outlive
 interop teardown. Mux panic is latched before channel disconnect. The
 [reliability contract](reliability-testing.md) retains bounded queues, single
 mux ownership, no runtime fallback and same-directory atomic output commit.
-D-1 is NOT SEALED; long-run GPU/resource qualification remains open.
+D-1 is SEALED for the recorded single-job CLI workloads and long-run paths.
+Path C's audio-enabled residual is classified bounded allocator retention;
+persistent multi-job memory remains unqualified. The current release boundary
+is tracked separately in Stage5.4D-2, not by rewriting historical stage evidence.
+
+[D-1A](stage5.4d1a-resource-failure.md) adds opt-in, process-scoped ownership
+observations behind `reliability-measurement`, compiled out of default builds.
+Tokens release only after native release; abandoned resources stay active.
+Measured buffer bindings/imports/AVFrame references are not a driver-memory or
+surface-pool census. Queue capacity is a hard bound, sampled depth is an
+observation, and 64 packets/8 MiB triggers mux flushing rather than limiting
+total mux memory. See the [ownership map](reliability-testing.md#current-ownership-map).
+Reports cannot alias media/diagnostic paths, and diagnostic failures never
+remove committed output or mask a primary media/cancellation failure.
 
 Stage 5.4C2's five-stack portability matrix and H.264 closure are recorded in
 the [C-2A closure report](stage5.4c2a-h264-ihd2546.md),
@@ -724,3 +737,19 @@ pipeline eligibility, media correctness and exact stack-scoped artifacts.
 The corpus runner activates an attested isolated libav prefix and reuses the
 existing semantic comparators. Runtime descriptor pitches/offsets/modifiers
 remain authoritative; historical layouts are evidence, never configuration.
+### Cancellation and final commit arbitration
+
+Cancellation and the CLI's final atomic rename share a short commit gate.
+Cancellation admitted first prevents rename; an admitted rename completes
+before a later request. The gate contains only the final rename, never worker
+joins, GPU waits, callbacks or mux finalization. Pipeline workers are already
+joined at this boundary. Once rename succeeds the staging guard is disarmed;
+later cancellation cannot remove the committed target. This guarantees atomic
+visibility, not power-loss durability (no crash/forced-power-off qualification).
+Staging-removal errors are reported as secondary warnings without replacing
+the original conversion/commit failure.
+
+The explicit `native-reliability` qualification feature supplies controlled
+phase gates and injected errors. It is absent from normal builds and does not
+add a public multi-job CLI. The same-process test driver calls the private
+production `run` entry with fresh job state and cancellation tokens.

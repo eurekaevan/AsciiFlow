@@ -1,9 +1,11 @@
 # Stack-scoped portability qualification
 
 [Stage 5.4D-1 reliability hardening](reliability-testing.md) is in progress,
-not sealed. Native panic fixes require final-source retained/core reruns and
-alternate-stack smoke. Historical C evidence is source-scoped, not automatic
-D-1 PASS. Tier 1B-P and all same-stack strict oracles remain unchanged.
+not sealed. Final-source retained/core reruns and alternate-stack A/B evidence
+are recorded in the [D-1A report](stage5.4d1a-resource-failure.md); its RSS decision
+remains separate. Historical C evidence is source-scoped, not automatic D-1 PASS.
+All historical and same-stack strict oracles remain unchanged; the separate
+Tier 1B-P semantic rule is described below.
 
 Stage 5.4C-2 uses `tests/portability/c2-matrix.json` as a canonical-centered
 star matrix. `run-expanded-matrix.py` orchestrates the existing corpus and media
@@ -97,9 +99,11 @@ payload syntax and trailing bits are exact. It admits no unknown SEI, new NAL,
 SPS/PPS/VCL change, pixel change, AU/GOP/timestamp/color/stream metadata drift,
 or unrelated container bytes. The legacy Tier 1A/1B failure and raw hash drift
 remain in the same receipt beside the additional Tier 1B-P result. Same-stack
-checks never invoke it. This currently characterizes only the tested 1080p/300
-frame/50 fps limited BT.709 H.264 output routes; it is not a general H.264 parser
-or a blanket VCL equivalence policy. Full field inventories use fixed FFmpeg
+checks never invoke it. D-1A additionally proves single/dual-AAC and reordered-input
+routes with actual identical encoder-boundary NV12/context captures. The exact
+identifier rule no longer depends on fixture geometry, frame count, frame rate
+or video-only topology; unchanged audio remains strict. It is not a general H.264
+parser, a blanket VCL equivalence policy or qualification of other stacks. Full field inventories use fixed FFmpeg
 `trace_headers` independently of software decode-back.
 
 Every difference is classified as ExpectedExact, ApprovedVolatileDifference,

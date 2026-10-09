@@ -519,8 +519,8 @@ impl InputRequirements {
         }
         if self.width == 0
             || self.height == 0
-            || self.width % 2 != 0
-            || self.height % 2 != 0
+            || !self.width.is_multiple_of(2)
+            || !self.height.is_multiple_of(2)
             || self.width > i32::MAX as u32
             || self.height > i32::MAX as u32
         {
@@ -537,15 +537,15 @@ impl InputRequirements {
     /// Validate the input processing contract independently of output encoding.
     /// Production subsequently checks the selected output format without conversion.
     pub fn validate_processing_input(&self) -> Result<PixelFormat> {
-        if let Some(color) = self.color_semantics {
-            if let Err(reason) = color.support {
-                return Err(Error::UnsupportedColor {
-                    reason,
-                    stream: color.stream.space,
-                    frame: color.frame.space,
-                    effective: color.effective,
-                });
-            }
+        if let Some(color) = self.color_semantics
+            && let Err(reason) = color.support
+        {
+            return Err(Error::UnsupportedColor {
+                reason,
+                stream: color.stream.space,
+                frame: color.frame.space,
+                effective: color.effective,
+            });
         }
         if self.color_space.range == ColorRange::Full {
             return Err(Error::UnsupportedFrame(
@@ -588,8 +588,8 @@ impl InputRequirements {
                 }
                 if self.width == 0
                     || self.height == 0
-                    || self.width % 2 != 0
-                    || self.height % 2 != 0
+                    || !self.width.is_multiple_of(2)
+                    || !self.height.is_multiple_of(2)
                     || self.width > i32::MAX as u32
                     || self.height > i32::MAX as u32
                 {

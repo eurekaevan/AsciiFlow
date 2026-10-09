@@ -455,6 +455,11 @@ impl Encoder {
         options: EncoderCreateOptions,
     ) -> Result<Self> {
         require_supported_output(&options.codec, &desc, options.mode)?;
+        if options.mode == EncodeMode::Software && cfg!(feature = "lgpl-prebuilt") {
+            return Err(Error::InvalidConfig(
+                "Software H.264 encoding is excluded from the official LGPL prebuilt release (libx264 excluded)".into(),
+            ));
+        }
         let EncoderCreateOptions {
             codec: output_codec,
             mode,
@@ -494,15 +499,12 @@ impl Encoder {
             "libx264".into()
         };
         let name = CString::new(encoder_name.clone()).unwrap();
-        let mut encoder = unsafe { ffi::avcodec_find_encoder_by_name(name.as_ptr()) };
-        if encoder.is_null() && mode == EncodeMode::Software {
-            encoder = unsafe { ffi::avcodec_find_encoder(ffi::AVCodecID::AV_CODEC_ID_H264) };
-        }
+        let encoder = unsafe { ffi::avcodec_find_encoder_by_name(name.as_ptr()) };
         if encoder.is_null() {
             return Err(asciiflow_core::Error::Media(if mode == EncodeMode::Vaapi {
                 format!("this FFmpeg build has no {encoder_name} encoder")
             } else {
-                "this FFmpeg build has no H.264 encoder".into()
+                "this FFmpeg build has no libx264 software H.264 encoder; generic encoder fallback is not allowed".into()
             }));
         }
         require_output_codec_id(encoder, &output_codec)?;
@@ -1004,6 +1006,12 @@ impl Encoder {
             self.check_mux_active()?;
             match self.mux_sender.send_timeout(message, MUX_POLL) {
                 Ok(()) => {
+                    #[cfg(feature = "reliability-measurement")]
+                    asciiflow_core::reliability::observe_queue_boundary(
+                        "mux_video",
+                        self.mux_sender.len(),
+                        self.mux_sender.capacity(),
+                    );
                     #[cfg(feature = "mux-qualification")]
                     if let (Some(trace), Some((stream, audio, fields))) = (&self.trace, accepted) {
                         trace.accepted("B-accepted", stream, audio, fields)?;
@@ -1197,6 +1205,11 @@ impl Encoder {
                 sent,
                 &format!("failed to send NV12 frame to {} encoder", self.output_codec),
             )?;
+            #[cfg(feature = "native-reliability")]
+            {
+                asciiflow_core::reliability_hooks::checkpoint("EncoderBusy");
+                asciiflow_core::reliability_hooks::failure("EncoderBusy")?;
+            }
             break;
         }
         #[cfg(feature = "encode-characterization")]
@@ -1356,6 +1369,8 @@ impl FrameSink for Encoder {
         self.submit_native_frame(frame_to_send)
     }
     fn finish(&mut self) -> Result<()> {
+        #[cfg(feature = "native-reliability")]
+        asciiflow_core::reliability_hooks::checkpoint("BeforeMuxFinalization");
         if self.finished {
             return Ok(());
         }
@@ -1392,6 +1407,8 @@ impl FrameSink for Encoder {
         self.send_mux_message(MuxMessage::Finish)?;
         self.join_mux()?;
         self.finished = true;
+        #[cfg(feature = "native-reliability")]
+        asciiflow_core::reliability_hooks::checkpoint("AfterMuxFinalization");
         Ok(())
     }
 
@@ -1479,6 +1496,25 @@ fn run_mux_worker(
     #[cfg(all(test, feature = "mux-qualification"))]
     let mut intermediate_flush = true;
     loop {
+        #[cfg(feature = "native-reliability")]
+        if !receiver.is_empty() || audio_receiver.is_some_and(|audio| !audio.is_empty()) {
+            asciiflow_core::reliability_hooks::checkpoint("MuxQueueOccupied");
+        }
+        #[cfg(feature = "reliability-measurement")]
+        {
+            asciiflow_core::reliability::observe_queue(
+                "mux_video",
+                receiver.len(),
+                receiver.capacity(),
+            );
+            if let Some(audio) = audio_receiver {
+                asciiflow_core::reliability::observe_queue(
+                    "mux_audio",
+                    audio.len(),
+                    audio.capacity(),
+                );
+            }
+        }
         if let Some(error) = failure.lock().expect("mux failure lock poisoned").as_ref() {
             return Err(error.error());
         }
@@ -1523,6 +1559,11 @@ fn run_mux_worker(
                 input_time_base,
                 audio,
             } => {
+                #[cfg(feature = "native-reliability")]
+                {
+                    asciiflow_core::reliability_hooks::checkpoint("MuxPacketWrite");
+                    asciiflow_core::reliability_hooks::failure("MuxPacketWrite")?;
+                }
                 #[cfg(test)]
                 if audio && let Some(remaining) = &mut fail_audio_after {
                     if *remaining == 0 {
@@ -1601,9 +1642,17 @@ fn run_mux_worker(
                     last_dts.insert(output_index, unsafe { (*packet.as_mut_ptr()).dts });
                     written_packets += 1;
                 }
+                #[cfg(all(test, feature = "mux-qualification"))]
+                let boundary = mux_replay::native_io::Boundary::enter("packet-write");
                 let written = unsafe {
                     ffi::av_interleaved_write_frame(output.format.as_ptr(), packet.as_mut_ptr())
                 };
+                #[cfg(feature = "mux-qualification")]
+                if audio && written >= 0 {
+                    super::audio_reader::packet_lifetime::consumed(input_index);
+                }
+                #[cfg(all(test, feature = "mux-qualification"))]
+                drop(boundary);
                 #[cfg(feature = "encode-characterization")]
                 if !audio {
                     let write_wall = write_started.elapsed();
@@ -1642,6 +1691,10 @@ fn run_mux_worker(
                 // arriving in different streams' timestamp order.
                 buffered_packets += 1;
                 buffered_bytes += bytes;
+                #[cfg(feature = "reliability-measurement")]
+                asciiflow_core::reliability::packet_written(bytes);
+                #[cfg(feature = "reliability-measurement")]
+                asciiflow_core::reliability::observe_mux(buffered_packets, buffered_bytes, None);
                 #[cfg(all(test, feature = "mux-qualification"))]
                 let flush_allowed = intermediate_flush;
                 #[cfg(not(all(test, feature = "mux-qualification")))]
@@ -1658,12 +1711,16 @@ fn run_mux_worker(
                     }
                     #[cfg(feature = "encode-characterization")]
                     let flush_started = Instant::now();
+                    #[cfg(all(test, feature = "mux-qualification"))]
+                    let boundary = mux_replay::native_io::Boundary::enter("intermediate-flush");
                     check(
                         unsafe {
                             ffi::av_interleaved_write_frame(output.format.as_ptr(), ptr::null_mut())
                         },
                         "flush bounded mux interleaver",
                     )?;
+                    #[cfg(all(test, feature = "mux-qualification"))]
+                    drop(boundary);
                     #[cfg(feature = "encode-characterization")]
                     {
                         let flush_wall = flush_started.elapsed();
@@ -1673,6 +1730,16 @@ fn run_mux_worker(
                             .diagnostics
                             .mux_interleave_flush_wall += flush_wall;
                     }
+                    #[cfg(feature = "reliability-measurement")]
+                    asciiflow_core::reliability::observe_mux(
+                        0,
+                        0,
+                        Some(if buffered_packets >= 64 {
+                            "packet-threshold"
+                        } else {
+                            "byte-threshold"
+                        }),
+                    );
                     buffered_packets = 0;
                     buffered_bytes = 0;
                 }
@@ -1682,16 +1749,24 @@ fn run_mux_worker(
                 video_offset = unsafe { ffi::av_rescale_q(pts, time_base, output.video_time_base) };
             }
             MuxMessage::Finish => {
+                #[cfg(feature = "reliability-measurement")]
+                asciiflow_core::reliability::sample("pre-finalization");
                 #[cfg(feature = "mux-qualification")]
                 if let Some(trace) = &trace {
                     trace.event("F-flush", format!("\"reason\":\"final-eof\",\"written\":{written_packets},\"buffered_packets\":{buffered_packets},\"buffered_bytes\":{buffered_bytes}"))?;
                 }
+                #[cfg(all(test, feature = "mux-qualification"))]
+                let boundary = mux_replay::native_io::Boundary::enter("final-interleaver-flush");
                 check(
                     unsafe {
                         ffi::av_interleaved_write_frame(output.format.as_ptr(), ptr::null_mut())
                     },
                     "flush final mux interleaver",
                 )?;
+                #[cfg(all(test, feature = "mux-qualification"))]
+                drop(boundary);
+                #[cfg(feature = "reliability-measurement")]
+                asciiflow_core::reliability::observe_mux(0, 0, Some("final-eof"));
                 #[cfg(feature = "mux-qualification")]
                 if let Some(trace) = &trace {
                     trace.event("G-trailer", format!("\"written\":{written_packets}"))?;
@@ -1713,6 +1788,8 @@ fn run_mux_worker(
                 }
                 #[cfg(feature = "encode-characterization")]
                 let trailer_started = Instant::now();
+                #[cfg(all(test, feature = "mux-qualification"))]
+                let boundary = mux_replay::native_io::Boundary::enter("trailer");
                 check(
                     unsafe { ffi::av_write_trailer(output.format.as_ptr()) },
                     "failed to finalize MP4 output",
@@ -1735,6 +1812,8 @@ fn run_mux_worker(
                         error,
                     )
                 })?;
+                #[cfg(all(test, feature = "mux-qualification"))]
+                drop(boundary);
                 #[cfg(feature = "encode-characterization")]
                 {
                     let trailer_wall = trailer_started.elapsed();
@@ -2040,6 +2119,38 @@ mod audio_regression_tests {
         AsciiBackend, AsciiConfig, AudioPlan, AudioPolicy, BackendOutput, BackendTimings,
         ColorSpace, FrameDesc, HostFrame, Pipeline, VideoCodec,
     };
+    #[cfg(feature = "lgpl-prebuilt")]
+    #[test]
+    fn lgpl_profile_rejects_software_without_generic_h264_fallback() {
+        assert!(unsafe { ffi::avcodec_find_encoder_by_name(c"libx264".as_ptr()) }.is_null());
+        assert!(!unsafe { ffi::avcodec_find_encoder_by_name(c"h264_vaapi".as_ptr()) }.is_null());
+        assert!(!super::super::probe_vaapi_build().software_h264_encoder);
+        let target =
+            std::env::temp_dir().join(format!("lgpl-no-software-{}.mp4", std::process::id()));
+        assert!(!target.exists());
+        let desc = FrameDesc::host_nv12(128, 128, ColorSpace::default()).unwrap();
+        let result = Encoder::create_with_codec_and_audio(
+            &target,
+            desc,
+            Rational::new(50, 1).unwrap(),
+            OutputEncoding {
+                codec: VideoCodec::H264,
+                mode: EncodeMode::Software,
+            },
+            VaapiOptions::default(),
+            vec![],
+            CancellationToken::new(),
+        );
+        let error = result
+            .err()
+            .expect("software must not select any generic H.264 encoder");
+        assert!(
+            error
+                .to_string()
+                .contains("excluded from the official LGPL prebuilt")
+        );
+        assert!(!target.exists());
+    }
     struct Identity;
     impl AsciiBackend for Identity {
         fn process(&mut self, frame: VideoFrame, _: &AsciiConfig) -> Result<BackendOutput> {
@@ -2054,6 +2165,171 @@ mod audio_regression_tests {
         fn drop(&mut self) {
             let _ = std::fs::remove_file(&self.0);
         }
+    }
+
+    #[cfg(target_os = "linux")]
+    static NATIVE_WRITE_CALLBACKS: std::sync::atomic::AtomicUsize =
+        std::sync::atomic::AtomicUsize::new(0);
+
+    #[cfg(target_os = "linux")]
+    unsafe extern "C" fn fail_native_write_enospc(
+        _: *mut std::ffi::c_void,
+        _: *const u8,
+        _: i32,
+    ) -> i32 {
+        NATIVE_WRITE_CALLBACKS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        ffi::AVERROR(libc::ENOSPC)
+    }
+
+    #[cfg(target_os = "linux")]
+    unsafe extern "C" fn fail_native_write_eio(
+        _: *mut std::ffi::c_void,
+        _: *const u8,
+        _: i32,
+    ) -> i32 {
+        NATIVE_WRITE_CALLBACKS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        ffi::AVERROR(libc::EIO)
+    }
+
+    /// Minimal native MP4 output for exercising the real mux worker's AVIO
+    /// failure path. The normal URL-backed context retains its original opaque
+    /// pointer and close callback, so production cleanup owns every allocation.
+    #[cfg(target_os = "linux")]
+    fn native_write_test_output(path: &Path) -> MuxOutput {
+        let native = CString::new(path.as_os_str().as_encoded_bytes()).unwrap();
+        let mut format = ptr::null_mut();
+        check(
+            unsafe {
+                ffi::avformat_alloc_output_context2(
+                    &mut format,
+                    ptr::null(),
+                    c"mp4".as_ptr(),
+                    native.as_ptr(),
+                )
+            },
+            "allocate native write test output",
+        )
+        .unwrap();
+        let mut guard = OutputGuard(Some(NonNull::new(format).unwrap()));
+        let stream = unsafe { ffi::avformat_new_stream(format, ptr::null()) };
+        assert!(!stream.is_null());
+        unsafe {
+            let parameters = &mut *(*stream).codecpar;
+            parameters.codec_type = ffi::AVMediaType::AVMEDIA_TYPE_VIDEO;
+            parameters.codec_id = ffi::AVCodecID::AV_CODEC_ID_H264;
+            parameters.width = 16;
+            parameters.height = 16;
+            (*stream).time_base = ffi::AVRational { num: 1, den: 30 };
+        }
+        check(
+            unsafe { ffi::avio_open(&mut (*format).pb, native.as_ptr(), ffi::AVIO_FLAG_WRITE) },
+            "open native write test output",
+        )
+        .unwrap();
+        check(
+            unsafe { ffi::avformat_write_header(format, ptr::null_mut()) },
+            "write native test header",
+        )
+        .unwrap();
+        unsafe { ffi::avio_flush((*format).pb) };
+        assert_eq!(unsafe { (*(*format).pb).error }, 0);
+        MuxOutput {
+            format: guard.take(),
+            video_stream_index: unsafe { (*stream).index },
+            video_time_base: unsafe { (*stream).time_base },
+            audio_routes: Vec::new(),
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    #[ignore = "release-only native AVIO fault qualification; run with --test-threads=1 and ASCIIFLOW_D1A_NATIVE_WRITE_EVIDENCE_DIR naming a new directory"]
+    fn d1a_native_avio_enospc_and_eio_preserve_finalization_cause_and_cleanup() {
+        use std::sync::atomic::Ordering;
+        assert!(
+            !std::hint::black_box(cfg!(debug_assertions)),
+            "run with --release"
+        );
+        let evidence = std::path::PathBuf::from(
+            std::env::var_os("ASCIIFLOW_D1A_NATIVE_WRITE_EVIDENCE_DIR")
+                .expect("native AVIO evidence directory"),
+        );
+        std::fs::create_dir(&evidence).expect("evidence directory must be new");
+        let path = OutputPath(evidence.join("native-write.mp4"));
+        let fd_count = || std::fs::read_dir("/proc/self/fd").unwrap().count();
+        let finalize = |output| {
+            let (sender, receiver) = bounded(1);
+            sender.send(MuxMessage::Finish).unwrap();
+            run_mux_worker(
+                output,
+                mux_inbox::MuxInputs {
+                    video: &receiver,
+                    audio: None,
+                },
+                Arc::new(Mutex::new(MuxStats::default())),
+                Arc::new(Mutex::new(None)),
+                CancellationToken::new(),
+                CancellationToken::new(),
+                #[cfg(feature = "mux-qualification")]
+                None,
+            )
+        };
+        finalize(native_write_test_output(&path.0)).unwrap();
+        let expected = std::fs::read(&path.0).unwrap();
+        let baseline = fd_count();
+        let mut records = Vec::new();
+        for (errno, callback) in [
+            (
+                libc::ENOSPC,
+                fail_native_write_enospc as unsafe extern "C" fn(_, _, _) -> _,
+            ),
+            (
+                libc::EIO,
+                fail_native_write_eio as unsafe extern "C" fn(_, _, _) -> _,
+            ),
+        ] {
+            let output = native_write_test_output(&path.0);
+            NATIVE_WRITE_CALLBACKS.store(0, Ordering::Relaxed);
+            // Header has already been written and flushed successfully. Only
+            // subsequent native flush/trailer writes encounter this fault.
+            unsafe { (*(*output.format.as_ptr()).pb).write_packet = Some(callback) };
+            let error = finalize(output).unwrap_err();
+            let callbacks = NATIVE_WRITE_CALLBACKS.load(Ordering::Relaxed);
+            assert!(callbacks > 0, "fault never reached the AVIO write callback");
+            assert_eq!(error.stage(), Some(PipelineStage::Finalization), "{error}");
+            let Error::Media(native_cause) = ffmpeg_error("native cause", ffi::AVERROR(errno))
+            else {
+                unreachable!("ffmpeg_error returns the native media error")
+            };
+            let native_cause = native_cause.strip_prefix("native cause: ").unwrap();
+            assert!(
+                error.to_string().contains(native_cause),
+                "{error}; expected {native_cause}"
+            );
+            assert_eq!(
+                fd_count(),
+                baseline,
+                "native AVIO failure leaked a descriptor"
+            );
+            finalize(native_write_test_output(&path.0)).unwrap();
+            assert_eq!(std::fs::read(&path.0).unwrap(), expected);
+            assert_eq!(
+                fd_count(),
+                baseline,
+                "native AVIO recovery leaked a descriptor"
+            );
+            records.push(serde_json::json!({
+                "errno": errno, "actual_avio_callbacks": callbacks,
+                "phase": format!("{:?}", error.stage()), "error": error.to_string(),
+                "fd_baseline": baseline, "fd_after_recovery": fd_count(),
+                "byte_exact_recovery": true,
+            }));
+        }
+        std::fs::write(evidence.join("native-write.json"), serde_json::to_vec_pretty(&serde_json::json!({
+            "schema": "asciiflow-d1a-native-write-v1", "classification": "SimulatedOnly",
+            "scope": "native MP4 mux worker flush/trailer AVIO callbacks; not full CLI ENOSPC/EIO or header failure",
+            "records": records,
+        })).unwrap()).unwrap();
     }
 
     #[test]

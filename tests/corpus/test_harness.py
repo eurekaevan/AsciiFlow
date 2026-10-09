@@ -18,6 +18,17 @@ spec.loader.exec_module(runner)
 
 
 class HarnessTests(unittest.TestCase):
+    def test_observation_exception_terminates_and_reaps_child(self):
+        process = None
+        with self.assertRaisesRegex(OSError, "observation write failed"):
+            with runner.managed_process(
+                [sys.executable, "-c", "import time; time.sleep(30)"],
+                start_new_session=True,
+            ) as process:
+                raise OSError("observation write failed")
+        self.assertIsNotNone(process)
+        self.assertIsNotNone(process.returncode)
+
     def test_watchdog_kills_term_resistant_child_after_leader_exits(self):
         with tempfile.TemporaryDirectory() as folder:
             run = runner.Run.__new__(runner.Run)

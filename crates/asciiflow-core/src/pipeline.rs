@@ -107,8 +107,22 @@ fn forward_output(
         started_at,
     };
     loop {
+        #[cfg(feature = "reliability-measurement")]
+        crate::reliability::observe_queue(
+            "pipeline_processed",
+            processed.len(),
+            processed.capacity(),
+        );
         match processed.send_timeout(frame, POLL) {
-            Ok(()) => return true,
+            Ok(()) => {
+                #[cfg(feature = "reliability-measurement")]
+                crate::reliability::observe_queue_boundary(
+                    "pipeline_processed",
+                    processed.len(),
+                    processed.capacity(),
+                );
+                return true;
+            }
             Err(SendTimeoutError::Timeout(pending)) if !cancellation.is_cancelled() => {
                 frame = pending;
             }
@@ -201,6 +215,8 @@ impl Pipeline {
                     match source.next_frame() {
                         Ok(Some(frame)) => {
                             m.record(MetricStage::Decode, begin.elapsed());
+                            #[cfg(feature = "native-reliability")]
+                            crate::reliability_hooks::checkpoint("DecoderActive");
                             let timings = source.take_timings();
                             m.record(MetricStage::DecodePacketSubmit, timings.packet_submit);
                             m.record(MetricStage::DecodeFrameReceive, timings.frame_receive);
@@ -210,8 +226,22 @@ impl Pipeline {
                                 started_at: begin,
                             };
                             loop {
+                                #[cfg(feature = "reliability-measurement")]
+                                crate::reliability::observe_queue(
+                                    "pipeline_decoded",
+                                    decoded_tx.len(),
+                                    decoded_tx.capacity(),
+                                );
                                 match decoded_tx.send_timeout(pending, POLL) {
-                                    Ok(()) => break,
+                                    Ok(()) => {
+                                        #[cfg(feature = "reliability-measurement")]
+                                        crate::reliability::observe_queue_boundary(
+                                            "pipeline_decoded",
+                                            decoded_tx.len(),
+                                            decoded_tx.capacity(),
+                                        );
+                                        break;
+                                    }
                                     Err(SendTimeoutError::Timeout(frame))
                                         if !cancel.is_cancelled() =>
                                     {
@@ -260,8 +290,20 @@ impl Pipeline {
                 let mut backend = backend;
                 let mut pending_started = VecDeque::new();
                 loop {
+                    #[cfg(feature = "reliability-measurement")]
+                    crate::reliability::observe_queue(
+                        "pipeline_decoded",
+                        decoded_rx.len(),
+                        decoded_rx.capacity(),
+                    );
                     match decoded_rx.recv_timeout(POLL) {
                         Ok(frame) => {
+                            #[cfg(feature = "reliability-measurement")]
+                            crate::reliability::observe_queue_boundary(
+                                "pipeline_decoded",
+                                decoded_rx.len(),
+                                decoded_rx.capacity(),
+                            );
                             pending_started.push_back(frame.started_at);
                             match backend.submit(frame.frame, &config) {
                                 Ok(Some(output)) => {
@@ -334,8 +376,20 @@ impl Pipeline {
                 };
                 let mut sink = sink;
                 loop {
+                    #[cfg(feature = "reliability-measurement")]
+                    crate::reliability::observe_queue(
+                        "pipeline_processed",
+                        processed_rx.len(),
+                        processed_rx.capacity(),
+                    );
                     match processed_rx.recv_timeout(POLL) {
                         Ok(frame) => {
+                            #[cfg(feature = "reliability-measurement")]
+                            crate::reliability::observe_queue_boundary(
+                                "pipeline_processed",
+                                processed_rx.len(),
+                                processed_rx.capacity(),
+                            );
                             let begin = Instant::now();
                             if let Err(error) = sink.encode(frame.frame) {
                                 record_failure(
@@ -413,6 +467,10 @@ impl Pipeline {
                         &cancellation,
                         Error::pipeline_message(stage, operation, "worker thread panicked"),
                     );
+                }
+                #[cfg(feature = "native-reliability")]
+                if stage == PipelineStage::DecodeRuntime {
+                    crate::reliability_hooks::checkpoint("DuringWorkerShutdown");
                 }
             }
         });
@@ -510,6 +568,146 @@ mod tests {
         }
         fn finish(&mut self) -> Result<()> {
             Ok(())
+        }
+    }
+
+    #[test]
+    fn cancellation_with_synchronized_slow_backend_and_encoder_joins_all_owners() {
+        use crossbeam_channel::Receiver;
+        use std::sync::atomic::AtomicUsize;
+
+        struct Owner(Arc<AtomicUsize>);
+        impl Drop for Owner {
+            fn drop(&mut self) {
+                self.0.fetch_add(1, Ordering::SeqCst);
+            }
+        }
+        struct SignallingSource {
+            inner: Source,
+            full: Sender<()>,
+            _owner: Owner,
+        }
+        impl FrameSource for SignallingSource {
+            fn next_frame(&mut self) -> Result<Option<VideoFrame>> {
+                // With the backend held on frame zero and capacity one, entry
+                // for frame two proves frame one filled the decoded queue.
+                if self.inner.next == 2 {
+                    self.full.send(()).unwrap();
+                }
+                self.inner.next_frame()
+            }
+        }
+        struct ControlledBackend {
+            slow: bool,
+            entered: Sender<()>,
+            full: Sender<()>,
+            release: Receiver<()>,
+            calls: usize,
+            _owner: Owner,
+        }
+        impl AsciiBackend for ControlledBackend {
+            fn process(
+                &mut self,
+                frame: VideoFrame,
+                config: &AsciiConfig,
+            ) -> Result<BackendOutput> {
+                self.calls += 1;
+                if self.slow && self.calls == 1 {
+                    self.entered.send(()).unwrap();
+                    self.release.recv_timeout(Duration::from_secs(2)).unwrap();
+                }
+                // With the sink held on frame zero, reaching frame two proves
+                // the previous output filled the processed queue.
+                if self.calls == 3 {
+                    self.full.send(()).unwrap();
+                }
+                Backend.process(frame, config)
+            }
+        }
+        struct ControlledSink {
+            slow: bool,
+            entered: Sender<()>,
+            release: Receiver<()>,
+            finalized: Arc<AtomicBool>,
+            _owner: Owner,
+        }
+        impl FrameSink for ControlledSink {
+            fn encode(&mut self, _: VideoFrame) -> Result<()> {
+                if self.slow {
+                    self.slow = false;
+                    self.entered.send(()).unwrap();
+                    self.release.recv_timeout(Duration::from_secs(2)).unwrap();
+                }
+                Ok(())
+            }
+            fn finish(&mut self) -> Result<()> {
+                self.finalized.store(true, Ordering::SeqCst);
+                Ok(())
+            }
+        }
+
+        for slow_backend in [true, false] {
+            for iteration in 0..20 {
+                let owners = Arc::new(AtomicUsize::new(0));
+                let finalized = Arc::new(AtomicBool::new(false));
+                let cancellation = CancellationToken::new();
+                let (backend_entered, wait_backend) = bounded(1);
+                let (sink_entered, wait_sink) = bounded(1);
+                let (decoded_full, wait_decoded_full) = bounded(1);
+                let (processed_full, wait_processed_full) = bounded(1);
+                let (release, wait_release) = bounded(1);
+                let (complete, wait_complete) = bounded(1);
+                let source = SignallingSource {
+                    inner: Source { next: 0, end: 64 },
+                    full: decoded_full,
+                    _owner: Owner(owners.clone()),
+                };
+                let backend = ControlledBackend {
+                    slow: slow_backend,
+                    entered: backend_entered,
+                    full: processed_full,
+                    release: wait_release.clone(),
+                    calls: 0,
+                    _owner: Owner(owners.clone()),
+                };
+                let sink = ControlledSink {
+                    slow: !slow_backend,
+                    entered: sink_entered,
+                    release: wait_release,
+                    finalized: finalized.clone(),
+                    _owner: Owner(owners.clone()),
+                };
+                let token = cancellation.clone();
+                let worker = std::thread::spawn(move || {
+                    let result = Pipeline::new(1).unwrap().run_with_cancellation(
+                        source,
+                        backend,
+                        sink,
+                        AsciiConfig::default(),
+                        token,
+                    );
+                    complete.send(result).unwrap();
+                });
+                let (entered, full) = if slow_backend {
+                    (wait_backend, wait_decoded_full)
+                } else {
+                    (wait_sink, wait_processed_full)
+                };
+                entered.recv_timeout(Duration::from_secs(2)).unwrap();
+                full.recv_timeout(Duration::from_secs(2)).unwrap();
+                cancellation.cancel();
+                release.send(()).unwrap();
+                let result = wait_complete.recv_timeout(Duration::from_secs(3)).expect(
+                    "cancelled pipeline must join all workers before the completion watchdog",
+                );
+                worker.join().unwrap();
+                assert!(
+                    matches!(result, Err(Error::Cancelled)),
+                    "slow_backend={slow_backend} iteration={iteration}: {result:?}"
+                );
+                assert!(!finalized.load(Ordering::SeqCst));
+                assert_eq!(owners.load(Ordering::SeqCst), 3);
+            }
         }
     }
 

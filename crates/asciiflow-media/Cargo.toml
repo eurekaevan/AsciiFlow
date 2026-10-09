@@ -6,6 +6,9 @@ license.workspace = true
 rust-version.workspace = true
 
 [features]
+lgpl-prebuilt = []
+native-reliability = ["asciiflow-core/native-reliability"]
+reliability-measurement = ["asciiflow-core/reliability-measurement"]
 encode-characterization = []
 mux-qualification = []
 av1-encode-diagnostic = []

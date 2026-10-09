@@ -1,12 +1,15 @@
 use asciiflow_core::MetricsSnapshot;
 
-pub fn print_summary(metrics: &MetricsSnapshot) {
+pub fn print_summary(metrics: &MetricsSnapshot, verbose: bool) {
     println!(
         "完成：{} 帧，{:.3} 秒，{:.2} FPS",
         metrics.frames,
         metrics.total.as_secs_f64(),
         metrics.fps()
     );
+    if !verbose {
+        return;
+    }
     println!(
         "decode {:.3} · mapping {:.3} · render {:.3} · encode {:.3} · backend wall {:.3} ms/frame",
         MetricsSnapshot::ms_per_frame(metrics.decode, metrics.frames),

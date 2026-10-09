@@ -1,0 +1,245 @@
+#!/usr/bin/env python3
+"""Read existing completed campaign evidence; archive and summarize, never run GPU work."""
+import collections
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import tarfile
+import time
+import xml.etree.ElementTree as ET
+
+ROOT = Path('/home/eureka/Documents/AsciiFlow')
+BASE = ROOT / 'target/stage54d1a-memory-v2/target/memory-plateau'
+OUT = BASE.parent / 'memory-analysis'
+ARCHIVES = ROOT / 'tests/soak/evidence'
+
+def load(path):
+    return json.loads(path.read_text())
+
+def lines(path):
+    return [json.loads(line) for line in path.read_text().splitlines()]
+
+def sha(path):
+    h = hashlib.sha256()
+    with path.open('rb') as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b''):
+            h.update(chunk)
+    return h.hexdigest()
+
+def save(path, value):
+    path.write_text(json.dumps(value, indent=2) + '\n')
+
+def archive(index):
+    label = f'process-{index:02d}'
+    directory = BASE / label
+    destination = ARCHIVES / f'memory-{label}.tar.gz'
+    manifest = OUT / f'{label}-archive-manifest.json'
+    if manifest.exists():
+        assert destination.exists() and sha(destination) == load(manifest)['archive_sha256']
+        return
+    if destination.exists():
+        raise RuntimeError(f'Refusing existing archive without this helper manifest: {destination}')
+    paths = sorted(p for p in directory.rglob('*') if p.is_file())
+    assert all(not p.is_symlink() for p in paths)
+    originals = {str(p.relative_to(BASE)): {'sha256': sha(p), 'size': p.stat().st_size} for p in paths}
+    temporary = destination.with_suffix(destination.suffix + '.preparing')
+    if temporary.exists():
+        raise RuntimeError(f'Refusing existing temporary archive: {temporary}')
+    subprocess.run(['tar', '--sort=name', '--mtime=UTC 1970-01-01', '--owner=0',
+                    '--group=0', '--numeric-owner', '-czf', str(temporary),
+                    '-C', str(BASE), label], check=True)
+    verified = {}
+    with tarfile.open(temporary, 'r:gz') as tf:
+        members = tf.getmembers()
+        for member in members:
+            assert member.isdir() or member.isfile(), member.name
+            assert member.uid == member.gid == member.mtime == 0
+            if member.isfile():
+                stream = tf.extractfile(member)
+                digest = hashlib.sha256()
+                for chunk in iter(lambda: stream.read(1024 * 1024), b''):
+                    digest.update(chunk)
+                verified[member.name] = {'sha256': digest.hexdigest(), 'size': member.size}
+    assert originals == verified
+    assert originals == {str(p.relative_to(BASE)): {'sha256': sha(p), 'size': p.stat().st_size} for p in paths}
+    os.link(temporary, destination)  # atomic and refuses overwrite
+    temporary.unlink()
+    save(manifest, {'archive': str(destination), 'archive_sha256': sha(destination),
+                    'archive_size': destination.stat().st_size, 'member_count': len(members),
+                    'file_count': len(originals), 'verified_all_file_bytes': True, 'files': originals})
+    print(f'Archived {label}: {len(originals)} files, {destination.stat().st_size} bytes; verified', flush=True)
+
+def prefix(sample):
+    return f"hwm-c{sample['cycle']:03}-j{sample['job_index']:04}-{sample['boundary']}"
+
+def raw_categories(path):
+    result = collections.defaultdict(lambda: collections.Counter())
+    kind = None
+    for line in path.read_text().splitlines():
+        if re.match(r'^[0-9a-f]+-[0-9a-f]+ ', line):
+            fields = line.split()
+            name = fields[5] if len(fields) > 5 else ''
+            if name == '[heap]': kind = 'heap'
+            elif not name or name.startswith('[anon:'): kind = 'anonymous_non_heap'
+            elif name.startswith('[stack'): kind = 'kernel_named_stack'
+            elif name.startswith(('/dev/dri/', '/dev/udmabuf')): kind = 'driver_device'
+            elif name.startswith('/'): kind = 'file_backed'
+            elif name.startswith('['): kind = 'special'
+            else: kind = 'other'
+            result[kind]['count'] += 1
+        elif kind and ':' in line:
+            key, value = line.split(':', 1)
+            if key in ('Size', 'Rss', 'Anonymous', 'Private_Dirty', 'Shared_Clean', 'Shared_Dirty'):
+                result[kind][key] += int(value.split()[0])
+    return dict(result)
+
+def span(samples, key, allocator=False):
+    values = [(s['allocator'] if allocator else s)[key] for s in samples]
+    return {'minimum': min(values), 'maximum': max(values), 'first': values[0],
+            'last': values[-1], 'monotonic_nondecreasing': all(a <= b for a, b in zip(values, values[1:]))}
+
+def review(label):
+    directory = BASE / label
+    result = load(directory / 'plateau-result.json')
+    samples = lines(directory / 'memory.jsonl')
+    events = lines(directory / 'hwm.jsonl')
+    jobs = lines(directory / 'jobs.jsonl')
+    job_by_index = {j['index']: j for j in jobs}
+    sample_index = {(s['cycle'], s['job_index'], s['boundary']): i for i, s in enumerate(samples)}
+    cycles = [s for s in samples if s['boundary'] == 'cycle-end']
+    late = [s for s in samples if s['cycle'] > result['cycles'] - 100]
+    late_cycles = [s for s in late if s['boundary'] == 'cycle-end']
+    attribution = []
+    previous_raw = None
+    previous_xml = None
+    for event in events:
+        raw_path = directory / (prefix(event) + '.smaps')
+        xml_path = directory / (prefix(event) + '.malloc.xml')
+        raw = raw_categories(raw_path)
+        for category, totals in raw.items():
+            assert totals['Anonymous'] == event['mapping_categories'][category]['anonymous_kib']
+            assert totals['count'] == event['mapping_categories'][category]['count']
+        xml = ET.parse(xml_path).getroot()
+        xml_heaps = {heap.attrib['nr']: int(heap.find("system[@type='current']").attrib['size'])
+                     for heap in xml.findall('heap')}
+        i = sample_index[event['cycle'], event['job_index'], event['boundary']]
+        before = samples[i - 1] if i else event
+        delta = {k: event['allocator'][k] - before['allocator'][k] for k in
+                 ('mapped_bytes', 'in_use_including_mmap_bytes', 'free_retained_arena_bytes')}
+        categories = {c: raw.get(c, {}).get('Anonymous', 0) - (previous_raw or {}).get(c, {}).get('Anonymous', 0)
+                      for c in set(raw) | set(previous_raw or {})}
+        if not event['cycle']: observation = 'InitialObservation'
+        elif delta['mapped_bytes'] == 0: observation = 'ResidentIncreaseWithUnchangedNetAllocatorCapacity'
+        elif delta['mapped_bytes'] < 0: observation = 'ResidentIncreaseWithReducedNetAllocatorCapacity'
+        elif delta['free_retained_arena_bytes'] > 0: observation = 'AllocatorMappedAndFreeRetainedBothIncrease'
+        else: observation = 'AllocatorMappedIncreaseWithNoFreeRetainedIncrease'
+        attribution.append({'cycle': event['cycle'], 'job_index': event['job_index'],
+                            'boundary': event['boundary'], 'previous_sample_boundary': before['boundary'],
+                            'previous_sample_job_type': before['job_type'],
+                            'job_type': event['job_type'], 'outcome': job_by_index[event['job_index']]['outcome'] if i else None,
+                            'increment_kib': event['hwm_event']['delta_kib'], 'accounting_observation': observation,
+                            'allocator_delta_from_immediate_previous_sample': delta,
+                            'raw_mapping_category_totals': raw,
+                            'anonymous_category_delta_from_previous_hwm_kib': categories,
+                            'xml_heap_current_bytes': xml_heaps,
+                            'xml_heap_count': len(xml_heaps),
+                            'xml_previous_heap_count': len(previous_xml) if previous_xml is not None else None,
+                            'xml_heap_current_delta_from_previous_hwm': {
+                                nr: xml_heaps.get(nr, 0) - (previous_xml or xml_heaps).get(nr, 0)
+                                for nr in set(xml_heaps) | set(previous_xml or {})},
+                            'xml_new_heap_current_bytes': {
+                                nr: value for nr, value in xml_heaps.items()
+                                if previous_xml is not None and nr not in previous_xml},
+                            'xml_removed_heap_previous_current_bytes': {
+                                nr: value for nr, value in (previous_xml or {}).items() if nr not in xml_heaps},
+                            'raw_paths': [str(raw_path), str(xml_path)],
+                            'limitation': 'Sign-only accounting description; numeric deltas are aggregate correlation, not allocation ownership or any gate.'})
+        previous_raw, previous_xml = raw, xml_heaps
+    shapes = {}
+    for shape in sorted({s['job_type'] for s in late if s['boundary'] == 'job-end'}):
+        relevant = [s for s in late if s['boundary'] == 'job-end' and s['job_type'] == shape]
+        shapes[shape] = {'samples': len(relevant), 'in_use_including_mmap_bytes': span(relevant, 'in_use_including_mmap_bytes', True)}
+    transition_counts = collections.Counter(e['job_type'] for e in events if e['cycle'] >= 100)
+    return {'id': label, 'result': result,
+            'initial_anonymous_kib': samples[0]['private_anonymous_kib'],
+            'final_anonymous_kib': samples[-1]['private_anonymous_kib'],
+            'peak_anonymous_kib': max(s['private_anonymous_kib'] for s in samples),
+            'largest_noninitial_hwm_increment_kib': max(e['hwm_event']['delta_kib'] for e in events if e['cycle']),
+            'hwm_accounting_observations': dict(collections.Counter(e['accounting_observation'] for e in attribution)),
+            'every_hwm': attribution,
+            'late100': {'sample_count': len(late), 'cycle_count': len(late_cycles),
+                        'perjob_count': len(late) - len(late_cycles),
+                        'ranges': {k: span(late, k) for k in ('private_anonymous_kib', 'mapping_count', 'fd_count', 'thread_count', 'swap_kib')},
+                        'allocator_ranges': {k: span(late, k, True) for k in ('mapped_bytes', 'in_use_including_mmap_bytes', 'free_retained_arena_bytes')},
+                        'mapping_category_ranges': {
+                            c: {k: {'minimum': min(s['mapping_categories'][c][k] for s in late),
+                                    'maximum': max(s['mapping_categories'][c][k] for s in late)}
+                                for k in late[0]['mapping_categories'][c]}
+                            for c in late[0]['mapping_categories']},
+                        'cycle_end_in_use': span(late_cycles, 'in_use_including_mmap_bytes', True),
+                        'per_shape': shapes},
+            'macro_positions': [{'cycle': s['cycle'], 'anonymous_kib': s['private_anonymous_kib'],
+                                 'in_use_including_mmap_bytes': s['allocator']['in_use_including_mmap_bytes'],
+                                 'mapped_bytes': s['allocator']['mapped_bytes']} for s in cycles if s['cycle'] % 50 in (0, 10, 20, 30, 40)],
+            'resource_checks': {'jobs': len(jobs), 'outcomes': dict(collections.Counter(j['outcome'] for j in jobs)),
+                                'all_cleanup_zero': all(j['post_cleanup_resources_zero'] for j in jobs),
+                                'all_workers_joined': all(j['job_entry_returned_after_worker_join_boundary'] for j in jobs),
+                                'all_final_tracked_active_count_and_known_bytes_zero': all(all(r['active_count'] == 0 and r['active_bytes'] in (None, 0) for r in j['resource_samples'][-1]['resources'].values()) for j in jobs),
+                                'final_resource_inventory_nonempty_for_every_job': all(bool(j['resource_samples'][-1]['resources']) for j in jobs),
+                                'cleanup_time_queue_gauge_available': False,
+                                'queue_zero_observed': False,
+                                'queue_scope': 'No cleanup-time queue census; last telemetry boundary may be nonzero/null. Joined-worker/job-entry owner-teardown boundary is lifecycle evidence, not a queue-zero gauge.',
+                                'all_samples_fd_at_baseline': all(s['fd_count'] == samples[0]['fd_count'] for s in samples),
+                                'all_samples_threads_at_baseline': all(s['thread_count'] == samples[0]['thread_count'] for s in samples)},
+            'late_hwm_job_shape_counts': dict(transition_counts),
+            'unique_late_hwm_job_shape': len(transition_counts) == 1,
+            'raw_sha256': {n: sha(directory / n) for n in ('memory.jsonl', 'hwm.jsonl', 'jobs.jsonl', 'plateau-result.json')}}
+
+def finish():
+    processes = [review(f'process-{i:02d}') for i in range(10)]
+    failures = [p['id'] for p in processes if not p['result']['observed_plateau']]
+    document = {'scope': 'Mechanical evidence review; main agent owns whole-campaign classification',
+                'protocol': load(BASE / 'protocol-before-runs.json'), 'execution': load(BASE / 'execution.json'),
+                'processes': processes, 'processes_not_meeting_hwm_gate': failures,
+                'historical_cycle48_652kib': 'Unresolved; absent original full smaps and exited original process; never recovered.',
+                'limitations': ['Sequential proc, mallinfo2 and XML reads are correlated, not atomic.',
+                                'glibc in-use includes tcache/overhead and is not application-live ownership.',
+                                'Anonymous rollup is not intrinsically an exclusive private-page census.',
+                                'Unnamed anonymous mappings include arenas, cached stacks and potentially driver allocations.',
+                                'Tracked-resource zero applies to the instrumented inventory, not every library allocation. No cleanup-time queue gauge exists; the last queue telemetry boundary may be nonzero/null. Joined workers/channel-owner teardown are lifecycle evidence, not observed queue zero.',
+                                'Finite HWM plateau cannot prove mathematically bounded future use; no arbitrary accounting tolerance applied.',
+                                'HWM job-shape concentration alone does not establish a unique transition leak or ownership.']}
+    save(OUT / 'final-review.json', document)
+    text = '# All-ten-process evidence review\n\nMain agent owns final classification.\n\n'
+    text += '| Process | Cycles | Last HWM | Complete cycles since HWM | Observed gate | Final Anonymous KiB |\n| --- | ---: | ---: | ---: | --- | ---: |\n'
+    for p in processes:
+        r = p['result']
+        text += f"| {p['id']} | {r['cycles']} | {r['last_hwm_cycle']} | {r['complete_cycles_without_new_hwm']} | {r['observed_plateau']} | {p['final_anonymous_kib']} |\n"
+    text += '\nProcesses not meeting the fixed HWM gate: ' + ', '.join(failures) + '.\n'
+    text += 'Process-01 remains a definitive unmet gate regardless of later process results.\n\n'
+    text += 'Detailed per-HWM raw attribution, late100 accounting, macro comparisons, resource checks and hashes are in final-review.json.\n\n'
+    text += '\n'.join('- ' + s for s in document['limitations'])
+    text += '\n\nHistorical cycle48 +652 KiB remains Unresolved. No additional GPU work or allocator intervention occurred.\n'
+    (OUT / 'final-review.md').write_text(text)
+    print('All ten processes reviewed; unmet HWM gates: ' + ', '.join(failures), flush=True)
+
+def main():
+    print('Awaiting completed checkpoints; no GPU actions.', flush=True)
+    while True:
+        for index in range(2, 10):
+            if (BASE / f'process-{index:02d}-checkpoint.json').exists():
+                archive(index)
+        final = BASE / 'execution.json'
+        if final.exists():
+            execution = load(final)
+            if execution['processes_completed'] == 10:
+                finish()
+                return
+            raise RuntimeError(f'Campaign ended early: {execution}')
+        time.sleep(30)
+
+if __name__ == '__main__':
+    main()

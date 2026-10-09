@@ -1,0 +1,317 @@
+{
+  "scope": "Actual LD_DEBUG calling-init paths, resolved and hashed; all selected native libraries identical except iHD across every pair",
+  "runs": {
+    "canonical-real-aac-48000-stereo-mp4-hardware": {
+      "libfreetype": {
+        "path": "/usr/lib64/libfreetype.so.6.20.6",
+        "bytes": 910200,
+        "sha256": "8b3027d90bfcbdf021679e4ea72b8479d59b51bb3c4af4839fc4e32c51d07018"
+      },
+      "libva": {
+        "path": "/usr/lib64/libva.so.2.2300.0",
+        "bytes": 230072,
+        "sha256": "5c0a73ba45d797aa4e608d2c9123047103da7470fbac8dd7350f3e9b3c851d5a"
+      },
+      "libdrm": {
+        "path": "/usr/lib64/libdrm.so.2.134.0",
+        "bytes": 91056,
+        "sha256": "e2a416f7b7c9e9e46b5f96bf20be71f146426daa6e1e8438adce2ab8e4c0fc0e"
+      },
+      "libavutil": {
+        "path": "/usr/lib64/libavutil.so.60.26.103",
+        "bytes": 992920,
+        "sha256": "83a3d7ef525c152a73dfb18e4fb2378ce005b4c042bc892087d030a65e53287c"
+      },
+      "libswresample": {
+        "path": "/usr/lib64/libswresample.so.6.3.103",
+        "bytes": 128216,
+        "sha256": "34f7f83ae131c29a6387c0e3992c675d8449a29395fc77242b9f898ee7173929"
+      },
+      "libavcodec": {
+        "path": "/usr/lib64/libavcodec.so.62.28.103",
+        "bytes": 14439688,
+        "sha256": "057a31e300babb0d3515da95aef484472324b5bf7fc9fecd87718dcb1df9e056"
+      },
+      "libswscale": {
+        "path": "/usr/lib64/libswscale.so.9.5.103",
+        "bytes": 1019448,
+        "sha256": "9a1ceffbfccc05a2ac40ac19222cbe2c41cf81ef8e38c57076532913777706c8"
+      },
+      "libavformat": {
+        "path": "/usr/lib64/libavformat.so.62.12.103",
+        "bytes": 2895656,
+        "sha256": "68196d2f4f8127d324764e9061c91eb578313caab1c92a016d4225615030d1c4"
+      },
+      "iHD_drv_video.so": {
+        "path": "/usr/lib64/dri-nonfree/iHD_drv_video.so",
+        "bytes": 41505120,
+        "sha256": "98942f2f651c99e6874c108107a34e0f6335fefae777faca1454ca14311b950f"
+      },
+      "libvulkan_intel": {
+        "path": "/usr/lib64/libvulkan_intel.so",
+        "bytes": 26522104,
+        "sha256": "11ef9334499bd78b0010cb4f1462d59042a76d9bf49cf2bc0a08f02b3f9c01bd"
+      }
+    },
+    "canonical-real-dual-aac-mp4-hardware": {
+      "libfreetype": {
+        "path": "/usr/lib64/libfreetype.so.6.20.6",
+        "bytes": 910200,
+        "sha256": "8b3027d90bfcbdf021679e4ea72b8479d59b51bb3c4af4839fc4e32c51d07018"
+      },
+      "libva": {
+        "path": "/usr/lib64/libva.so.2.2300.0",
+        "bytes": 230072,
+        "sha256": "5c0a73ba45d797aa4e608d2c9123047103da7470fbac8dd7350f3e9b3c851d5a"
+      },
+      "libdrm": {
+        "path": "/usr/lib64/libdrm.so.2.134.0",
+        "bytes": 91056,
+        "sha256": "e2a416f7b7c9e9e46b5f96bf20be71f146426daa6e1e8438adce2ab8e4c0fc0e"
+      },
+      "libavutil": {
+        "path": "/usr/lib64/libavutil.so.60.26.103",
+        "bytes": 992920,
+        "sha256": "83a3d7ef525c152a73dfb18e4fb2378ce005b4c042bc892087d030a65e53287c"
+      },
+      "libswresample": {
+        "path": "/usr/lib64/libswresample.so.6.3.103",
+        "bytes": 128216,
+        "sha256": "34f7f83ae131c29a6387c0e3992c675d8449a29395fc77242b9f898ee7173929"
+      },
+      "libavcodec": {
+        "path": "/usr/lib64/libavcodec.so.62.28.103",
+        "bytes": 14439688,
+        "sha256": "057a31e300babb0d3515da95aef484472324b5bf7fc9fecd87718dcb1df9e056"
+      },
+      "libswscale": {
+        "path": "/usr/lib64/libswscale.so.9.5.103",
+        "bytes": 1019448,
+        "sha256": "9a1ceffbfccc05a2ac40ac19222cbe2c41cf81ef8e38c57076532913777706c8"
+      },
+      "libavformat": {
+        "path": "/usr/lib64/libavformat.so.62.12.103",
+        "bytes": 2895656,
+        "sha256": "68196d2f4f8127d324764e9061c91eb578313caab1c92a016d4225615030d1c4"
+      },
+      "iHD_drv_video.so": {
+        "path": "/usr/lib64/dri-nonfree/iHD_drv_video.so",
+        "bytes": 41505120,
+        "sha256": "98942f2f651c99e6874c108107a34e0f6335fefae777faca1454ca14311b950f"
+      },
+      "libvulkan_intel": {
+        "path": "/usr/lib64/libvulkan_intel.so",
+        "bytes": 26522104,
+        "sha256": "11ef9334499bd78b0010cb4f1462d59042a76d9bf49cf2bc0a08f02b3f9c01bd"
+      }
+    },
+    "canonical-real-h264-bframes-2-mp4-hardware": {
+      "libfreetype": {
+        "path": "/usr/lib64/libfreetype.so.6.20.6",
+        "bytes": 910200,
+        "sha256": "8b3027d90bfcbdf021679e4ea72b8479d59b51bb3c4af4839fc4e32c51d07018"
+      },
+      "libva": {
+        "path": "/usr/lib64/libva.so.2.2300.0",
+        "bytes": 230072,
+        "sha256": "5c0a73ba45d797aa4e608d2c9123047103da7470fbac8dd7350f3e9b3c851d5a"
+      },
+      "libdrm": {
+        "path": "/usr/lib64/libdrm.so.2.134.0",
+        "bytes": 91056,
+        "sha256": "e2a416f7b7c9e9e46b5f96bf20be71f146426daa6e1e8438adce2ab8e4c0fc0e"
+      },
+      "libavutil": {
+        "path": "/usr/lib64/libavutil.so.60.26.103",
+        "bytes": 992920,
+        "sha256": "83a3d7ef525c152a73dfb18e4fb2378ce005b4c042bc892087d030a65e53287c"
+      },
+      "libswresample": {
+        "path": "/usr/lib64/libswresample.so.6.3.103",
+        "bytes": 128216,
+        "sha256": "34f7f83ae131c29a6387c0e3992c675d8449a29395fc77242b9f898ee7173929"
+      },
+      "libavcodec": {
+        "path": "/usr/lib64/libavcodec.so.62.28.103",
+        "bytes": 14439688,
+        "sha256": "057a31e300babb0d3515da95aef484472324b5bf7fc9fecd87718dcb1df9e056"
+      },
+      "libswscale": {
+        "path": "/usr/lib64/libswscale.so.9.5.103",
+        "bytes": 1019448,
+        "sha256": "9a1ceffbfccc05a2ac40ac19222cbe2c41cf81ef8e38c57076532913777706c8"
+      },
+      "libavformat": {
+        "path": "/usr/lib64/libavformat.so.62.12.103",
+        "bytes": 2895656,
+        "sha256": "68196d2f4f8127d324764e9061c91eb578313caab1c92a016d4225615030d1c4"
+      },
+      "iHD_drv_video.so": {
+        "path": "/usr/lib64/dri-nonfree/iHD_drv_video.so",
+        "bytes": 41505120,
+        "sha256": "98942f2f651c99e6874c108107a34e0f6335fefae777faca1454ca14311b950f"
+      },
+      "libvulkan_intel": {
+        "path": "/usr/lib64/libvulkan_intel.so",
+        "bytes": 26522104,
+        "sha256": "11ef9334499bd78b0010cb4f1462d59042a76d9bf49cf2bc0a08f02b3f9c01bd"
+      }
+    },
+    "alternate-real-aac-48000-stereo-mp4-hardware": {
+      "libfreetype": {
+        "path": "/usr/lib64/libfreetype.so.6.20.6",
+        "bytes": 910200,
+        "sha256": "8b3027d90bfcbdf021679e4ea72b8479d59b51bb3c4af4839fc4e32c51d07018"
+      },
+      "libva": {
+        "path": "/usr/lib64/libva.so.2.2300.0",
+        "bytes": 230072,
+        "sha256": "5c0a73ba45d797aa4e608d2c9123047103da7470fbac8dd7350f3e9b3c851d5a"
+      },
+      "libdrm": {
+        "path": "/usr/lib64/libdrm.so.2.134.0",
+        "bytes": 91056,
+        "sha256": "e2a416f7b7c9e9e46b5f96bf20be71f146426daa6e1e8438adce2ab8e4c0fc0e"
+      },
+      "libavutil": {
+        "path": "/usr/lib64/libavutil.so.60.26.103",
+        "bytes": 992920,
+        "sha256": "83a3d7ef525c152a73dfb18e4fb2378ce005b4c042bc892087d030a65e53287c"
+      },
+      "libswresample": {
+        "path": "/usr/lib64/libswresample.so.6.3.103",
+        "bytes": 128216,
+        "sha256": "34f7f83ae131c29a6387c0e3992c675d8449a29395fc77242b9f898ee7173929"
+      },
+      "libavcodec": {
+        "path": "/usr/lib64/libavcodec.so.62.28.103",
+        "bytes": 14439688,
+        "sha256": "057a31e300babb0d3515da95aef484472324b5bf7fc9fecd87718dcb1df9e056"
+      },
+      "libswscale": {
+        "path": "/usr/lib64/libswscale.so.9.5.103",
+        "bytes": 1019448,
+        "sha256": "9a1ceffbfccc05a2ac40ac19222cbe2c41cf81ef8e38c57076532913777706c8"
+      },
+      "libavformat": {
+        "path": "/usr/lib64/libavformat.so.62.12.103",
+        "bytes": 2895656,
+        "sha256": "68196d2f4f8127d324764e9061c91eb578313caab1c92a016d4225615030d1c4"
+      },
+      "iHD_drv_video.so": {
+        "path": "/home/eureka/Documents/AsciiFlow/target/stage54c2-toolchains/intel-media-driver-25.4.6-1.fc44/usr/lib64/dri-nonfree/iHD_drv_video.so",
+        "bytes": 40162216,
+        "sha256": "92d5e20cd3d377a66a19e0da674712afd8b96d5c7c68c81ab45c2956069343a4"
+      },
+      "libvulkan_intel": {
+        "path": "/usr/lib64/libvulkan_intel.so",
+        "bytes": 26522104,
+        "sha256": "11ef9334499bd78b0010cb4f1462d59042a76d9bf49cf2bc0a08f02b3f9c01bd"
+      }
+    },
+    "alternate-real-dual-aac-mp4-hardware": {
+      "libfreetype": {
+        "path": "/usr/lib64/libfreetype.so.6.20.6",
+        "bytes": 910200,
+        "sha256": "8b3027d90bfcbdf021679e4ea72b8479d59b51bb3c4af4839fc4e32c51d07018"
+      },
+      "libva": {
+        "path": "/usr/lib64/libva.so.2.2300.0",
+        "bytes": 230072,
+        "sha256": "5c0a73ba45d797aa4e608d2c9123047103da7470fbac8dd7350f3e9b3c851d5a"
+      },
+      "libdrm": {
+        "path": "/usr/lib64/libdrm.so.2.134.0",
+        "bytes": 91056,
+        "sha256": "e2a416f7b7c9e9e46b5f96bf20be71f146426daa6e1e8438adce2ab8e4c0fc0e"
+      },
+      "libavutil": {
+        "path": "/usr/lib64/libavutil.so.60.26.103",
+        "bytes": 992920,
+        "sha256": "83a3d7ef525c152a73dfb18e4fb2378ce005b4c042bc892087d030a65e53287c"
+      },
+      "libswresample": {
+        "path": "/usr/lib64/libswresample.so.6.3.103",
+        "bytes": 128216,
+        "sha256": "34f7f83ae131c29a6387c0e3992c675d8449a29395fc77242b9f898ee7173929"
+      },
+      "libavcodec": {
+        "path": "/usr/lib64/libavcodec.so.62.28.103",
+        "bytes": 14439688,
+        "sha256": "057a31e300babb0d3515da95aef484472324b5bf7fc9fecd87718dcb1df9e056"
+      },
+      "libswscale": {
+        "path": "/usr/lib64/libswscale.so.9.5.103",
+        "bytes": 1019448,
+        "sha256": "9a1ceffbfccc05a2ac40ac19222cbe2c41cf81ef8e38c57076532913777706c8"
+      },
+      "libavformat": {
+        "path": "/usr/lib64/libavformat.so.62.12.103",
+        "bytes": 2895656,
+        "sha256": "68196d2f4f8127d324764e9061c91eb578313caab1c92a016d4225615030d1c4"
+      },
+      "iHD_drv_video.so": {
+        "path": "/home/eureka/Documents/AsciiFlow/target/stage54c2-toolchains/intel-media-driver-25.4.6-1.fc44/usr/lib64/dri-nonfree/iHD_drv_video.so",
+        "bytes": 40162216,
+        "sha256": "92d5e20cd3d377a66a19e0da674712afd8b96d5c7c68c81ab45c2956069343a4"
+      },
+      "libvulkan_intel": {
+        "path": "/usr/lib64/libvulkan_intel.so",
+        "bytes": 26522104,
+        "sha256": "11ef9334499bd78b0010cb4f1462d59042a76d9bf49cf2bc0a08f02b3f9c01bd"
+      }
+    },
+    "alternate-real-h264-bframes-2-mp4-hardware": {
+      "libfreetype": {
+        "path": "/usr/lib64/libfreetype.so.6.20.6",
+        "bytes": 910200,
+        "sha256": "8b3027d90bfcbdf021679e4ea72b8479d59b51bb3c4af4839fc4e32c51d07018"
+      },
+      "libva": {
+        "path": "/usr/lib64/libva.so.2.2300.0",
+        "bytes": 230072,
+        "sha256": "5c0a73ba45d797aa4e608d2c9123047103da7470fbac8dd7350f3e9b3c851d5a"
+      },
+      "libdrm": {
+        "path": "/usr/lib64/libdrm.so.2.134.0",
+        "bytes": 91056,
+        "sha256": "e2a416f7b7c9e9e46b5f96bf20be71f146426daa6e1e8438adce2ab8e4c0fc0e"
+      },
+      "libavutil": {
+        "path": "/usr/lib64/libavutil.so.60.26.103",
+        "bytes": 992920,
+        "sha256": "83a3d7ef525c152a73dfb18e4fb2378ce005b4c042bc892087d030a65e53287c"
+      },
+      "libswresample": {
+        "path": "/usr/lib64/libswresample.so.6.3.103",
+        "bytes": 128216,
+        "sha256": "34f7f83ae131c29a6387c0e3992c675d8449a29395fc77242b9f898ee7173929"
+      },
+      "libavcodec": {
+        "path": "/usr/lib64/libavcodec.so.62.28.103",
+        "bytes": 14439688,
+        "sha256": "057a31e300babb0d3515da95aef484472324b5bf7fc9fecd87718dcb1df9e056"
+      },
+      "libswscale": {
+        "path": "/usr/lib64/libswscale.so.9.5.103",
+        "bytes": 1019448,
+        "sha256": "9a1ceffbfccc05a2ac40ac19222cbe2c41cf81ef8e38c57076532913777706c8"
+      },
+      "libavformat": {
+        "path": "/usr/lib64/libavformat.so.62.12.103",
+        "bytes": 2895656,
+        "sha256": "68196d2f4f8127d324764e9061c91eb578313caab1c92a016d4225615030d1c4"
+      },
+      "iHD_drv_video.so": {
+        "path": "/home/eureka/Documents/AsciiFlow/target/stage54c2-toolchains/intel-media-driver-25.4.6-1.fc44/usr/lib64/dri-nonfree/iHD_drv_video.so",
+        "bytes": 40162216,
+        "sha256": "92d5e20cd3d377a66a19e0da674712afd8b96d5c7c68c81ab45c2956069343a4"
+      },
+      "libvulkan_intel": {
+        "path": "/usr/lib64/libvulkan_intel.so",
+        "bytes": 26522104,
+        "sha256": "11ef9334499bd78b0010cb4f1462d59042a76d9bf49cf2bc0a08f02b3f9c01bd"
+      }
+    }
+  }
+}

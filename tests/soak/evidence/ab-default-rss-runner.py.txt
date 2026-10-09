@@ -1,0 +1,41 @@
+import time,json
+from pathlib import Path
+pending=Path('target/ab-canonical-regression/results.json')
+deadline=time.monotonic()+1800
+while not pending.exists():
+ if time.monotonic()>deadline: raise TimeoutError('retained prerequisite did not complete')
+ time.sleep(1)
+time.sleep(1)
+prerequisite=json.loads(pending.read_text())
+assert prerequisite['results'] and all(r['result']=='PASS' for r in prerequisite['results']), 'retained prerequisite failed or skipped'
+import sys,os,shutil,json
+from pathlib import Path
+sys.path.insert(0,'tests/corpus')
+from run import Run,save,load,digest
+from portability import source_identity
+root=Path.cwd();binary=root/'target/ab-rss-default-final/rss-observer-test'
+r=Run(type('Args',(),{'output':root/'target/ab-rss-plateau-replicates','binary':binary,'device':'/dev/dri/renderD128','watchdog_seconds':900,'mode':'ten-independent-normal-production-50-cycle-processes','stack':None})())
+r.environment();before=source_identity();save(r.out/'source-before.json',before)
+protocol={'processes':10,'cycles_per_process':50,'healthy_jobs_per_process':200,'scheduled_faults_per_process':4,'selection':'All ten consecutive declared runs retained, no result-dependent reruns','classification':'PendingReviewNotAutomaticPass','absolute_memory_limit':None,'vulkan_validation':'Disabled for normal production RSS; separate validation-enabled 50-cycle campaign retained','comparison':'Compare all per-cycle smaps metrics and four equal late windows, lifecycle balance, failure recovery and fresh-process platform distribution; do not substitute startup dispersion for plateau-variance tolerance.'}
+save(r.out/'protocol-before-runs.json',protocol)
+rows=[]
+try:
+ for i in range(10):
+  label=f'replicate-{i:02d}';out=r.out/label
+  env=dict(os.environ,ASCIIFLOW_D1A_NATIVE_GPU='1',ASCIIFLOW_C4B_PRODUCTION='1',ASCIIFLOW_NATIVE_RSS_MODE='repeated-cycles',ASCIIFLOW_NATIVE_RELIABILITY_EVIDENCE_DIR=str(out),ASCIIFLOW_ATTEST_NATIVE_MAPS='1')
+  for key in ('ASCIIFLOW_VULKAN_VALIDATION','ASCIIFLOW_REQUIRE_VULKAN_VALIDATION','VK_INSTANCE_LAYERS'):
+   env.pop(key,None)
+  r.checked(label,[str(r.binary),'--ignored','--exact','native_reliability_tests::default_allocator_fixed_mixed_cycles_observation','--test-threads=1'],env=env,timeout=900)
+  data=load(out/'rss-cycles.json');jobs=[json.loads(x) for x in (out/'jobs.jsonl').read_text().splitlines()]
+  assert len(jobs)==data['jobs']==204
+  for job in jobs:
+   resources=job['resource_samples'][-1]['resources'];assert resources and all(v['active_count']==0 for v in resources.values())
+   assert job['fd_count_before_session']==job['fd_count_after_session'] and job['thread_count_before']==job['thread_count_after']
+  log=(r.out/r.commands[-1]['log']).read_text();assert 'Validation Error' not in log and 'VUID-' not in log
+  rows.append({'id':label,'data':data,'jobs_sha256':digest(out/'jobs.jsonl')})
+  save(r.out/(label+'-checkpoint.json'),{'runs':rows,'test_sha256':digest(r.binary)})
+ save(r.out/'replicates.json',{'protocol':protocol,'runs':rows,'test_sha256':digest(r.binary)})
+finally:
+ after=source_identity();save(r.out/'source-after.json',after);save(r.out/'execution.json',{'commands':r.commands,'source_unchanged':before==after})
+assert before==after
+print('10 consecutive independent default 50-cycle processes complete; pending evidence review')

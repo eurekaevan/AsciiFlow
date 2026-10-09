@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "status": "PlannedNotRun",
+  "qualification": "BoundedCompatibilityEvidenceOnly",
+  "capture_policy": "Wait for explicit SOURCE FREEZE. Capture canonical and iHD25.4.6 manifests against the same frozen source tree and exact default-release binary; change only stack selectors/provenance. Existing activate() source, binary, library, tool and native-loader guards remain enabled.",
+  "runner": "tests/soak/native-portability.py",
+  "fixture_subset": [
+    "canonical-h2648",
+    "hevc-pq10",
+    "hevc-pq-to-sdr10",
+    "real-aac-48000-stereo-mp4-hardware",
+    "real-dual-aac-mp4-hardware",
+    "real-h264-bframes-2-mp4-hardware",
+    "real-pq-no-static-mp4",
+    "real-pq-static-mp4",
+    "real-pq-static-64x64-mp4"
+  ],
+  "scoped_native_fault_gates": [
+    {"id": "native-avio-write-faults", "scope": "SimulatedOnly native AVIO ENOSPC/EIO during MP4 finalization, cleanup and healthy replay."},
+    {"id": "native-mux-cancellation", "scope": "Waiting-head, audio enqueue backpressure and buffered-interleaver cancellation; three scenarios."},
+    {"id": "pq-mux-fault-recovery", "scope": "SimulatedOnly PQ mux header/early/mid packet/trailer fault checkpoints and FD recovery."}
+  ],
+  "b_skipped": [
+    {"id": "real-aac-48000-stereo-mp4-hardware", "audit": "Applicable conditional path; prior run skipped because render node was unavailable. Not runtime-qualified."},
+    {"id": "real-dual-aac-mp4-hardware", "audit": "Applicable conditional dual-AAC path; prior run skipped because render node was unavailable. Not runtime-qualified."},
+    {"id": "real-h264-bframes-2-mp4-hardware", "audit": "Applicable conditional path; prior run skipped because render node was unavailable. Not runtime-qualified."},
+    {"id": "real-pq-no-static-mp4", "audit": "Applicable conditional PQ path; prior run skipped because render node was unavailable. Not runtime-qualified."},
+    {"id": "real-pq-static-mp4", "audit": "Applicable conditional PQ path; prior run skipped because render node was unavailable. Not runtime-qualified."},
+    {"id": "real-missing-range-attempt-mp4", "audit": "Unqualified input construction: generator did not create the requested unspecified source range. Not a support-pass case."},
+    {"id": "real-pq-static-64x64-mp4", "audit": "Unqualified expected-rejection case; prior run skipped without GPU. Existing recorded iHD probe rejects this exact P010 encoder tuple; this run did not re-verify it."}
+  ],
+  "b_unqualified": [
+    {"id": "real-av1-aac-mkv", "audit": "Strict audio oracle differences; remains Unqualified."},
+    {"id": "real-flac-copy-candidate-mkv", "audit": "Strict audio language/default-disposition differences; remains Unqualified."},
+    {"id": "real-h264-aac-mkv", "audit": "Strict audio language/default-disposition/duration differences; remains Unqualified."},
+    {"id": "real-h264-aac-mov", "audit": "Strict audio language difference; remains Unqualified."},
+    {"id": "real-hevc-aac-mkv", "audit": "Strict audio language/default-disposition/duration/first-duration differences; remains Unqualified."},
+    {"id": "real-matroska-mkv", "audit": "Video-only conversion does not qualify the container broadly; adjacent audio cases remain Unqualified."},
+    {"id": "real-negative-source-mkv", "audit": "Strict audio duration difference; remains Unqualified."},
+    {"id": "real-same-dimension-parameter-update-h264", "audit": "Elementary stream lacks source timestamps; timeline/container preservation remains unqualified."},
+    {"id": "real-vfr-three-durations-mp4", "audit": "Observed video retiming to CFR and rejected audio-copy VFR; remains Unqualified."}
+  ],
+  "oracle_policy": "Keep existing exact same-stack oracle and support contract. Tier1B-P remains limited to its already scoped cross-stack edges; never convert prior FAIL/DIFFERENT or Unqualified/Skipped status into PASS by expanding an allowlist.",
+  "portability_labels": "Use established terms 1A, 1B, 1B-P, 1C, 2 and 3 only; no P0/P1/P2/P3 mapping asserted.",
+  "not_run": ["No stack capture", "No hardware execution", "No full retained corpus", "No 100k soak", "No seal decision"]
+}

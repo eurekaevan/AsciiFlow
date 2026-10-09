@@ -1,0 +1,540 @@
+{
+  "schema": "asciiflow-d1b-MOV-memory-attribution-v1",
+  "date": "2026-10-09",
+  "container": {
+    "selected_muxer": "mp4 (MOV muxer implementation)",
+    "fragmented": false,
+    "movflags": "0 default; application passes no header dictionary, no private movflags setter",
+    "hybrid_fragmented": false,
+    "cluster_written_bytes": 0,
+    "boxes": [
+      {
+        "bytes": 28,
+        "offset": 0,
+        "type": "ftyp"
+      },
+      {
+        "bytes": 8,
+        "offset": 28,
+        "type": "free"
+      },
+      {
+        "bytes": 726929754,
+        "offset": 36,
+        "type": "mdat"
+      },
+      {
+        "bytes": 2428654,
+        "offset": 726929790,
+        "type": "moov"
+      }
+    ],
+    "format_probe_command": [
+      "ffprobe",
+      "-v",
+      "error",
+      "-show_format",
+      "-of",
+      "json",
+      "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/long-determinism/output.mp4"
+    ],
+    "format_probe": {
+      "format": {
+        "filename": "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/long-determinism/output.mp4",
+        "nb_streams": 3,
+        "nb_programs": 0,
+        "nb_stream_groups": 0,
+        "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+        "format_long_name": "QuickTime / MOV",
+        "start_time": "0.000000",
+        "duration": "2000.000000",
+        "size": "729358444",
+        "bit_rate": "2917433",
+        "probe_score": 100,
+        "tags": {
+          "major_brand": "isom",
+          "minor_version": "512",
+          "compatible_brands": "isomiso2mp41",
+          "encoder": "Lavf62.12.103"
+        }
+      }
+    }
+  },
+  "FFmpeg": {
+    "package_source": {
+      "status": "EXACT_PACKAGE_SOURCE_IDENTIFIED",
+      "installed_package": "ffmpeg-libs-8.1.3-1.fc44.x86_64",
+      "installed_sourcerpm": "ffmpeg-8.1.3-1.fc44.src.rpm",
+      "installed_build_host": "buildvm-07.virt.rpmfusion.net",
+      "installed_libavformat": "/usr/lib64/libavformat.so.62.12.103",
+      "installed_libavformat_sha256": "68196d2f4f8127d324764e9061c91eb578313caab1c92a016d4225615030d1c4",
+      "source_url": "https://download1.rpmfusion.org/free/fedora/updates/44/SRPMS/f/ffmpeg-8.1.3-1.fc44.src.rpm",
+      "source_rpm_sha256": "285fe17863d31e2bec872e4a53456560867c716645fd44c4660bb1fa2ec968e9",
+      "source_rpm_verification": "rpm -K: digests signatures OK; RSA/SHA256 key e06f8ecdd651ff2e, same key as installed binary package",
+      "spec_sha256": "b9b514a8cd4a18e6d33785e120f981eeffdfb6901373faac2631d6ba9817838a",
+      "source_tar_sha256": "7138d28c96d9d3e3af4ee3d8cad72741f8ffb40da90c1112235dea3ecd3178a3",
+      "prep": {
+        "spec": "%autosetup -p1 -n ffmpeg-%{version}; configure host-CFLAGS replacement and documentation example copy",
+        "observed_local": "All declared patches applied successfully via git apply --directory=target/stage54d1b-mov-attribution/source/ffmpeg-8.1.3. Configure host-CFLAGS replacement and documentation copy not executed because irrelevant to MOV source and no build requested.",
+        "patches": [
+          {
+            "filename": "ffmpeg-chromium.patch",
+            "sha256": "f79c0e3bd2faf7a9e78d267bd8ffc2829c7de5be3808e132c1467d94f027efdd",
+            "files": [
+              "libavformat/avformat.h",
+              "libavformat/utils.c"
+            ]
+          },
+          {
+            "filename": "ffmpeg-allow-fdk-aac-free.patch",
+            "sha256": "58fc0eb43dfac7c733c47e6f2bc08267b4f6431c643301661d65a107e7125833",
+            "files": [
+              "configure"
+            ]
+          },
+          {
+            "filename": "25e187f8494966377a4b9d077260ce7b501a911c.patch",
+            "sha256": "bc73afa946be4821db70f17078777ce0a4a0a27ec2667ddb0880baaf51c959dc",
+            "files": [
+              "libavcodec/vulkan_decode.c",
+              "libavutil/hwcontext_vulkan.c"
+            ]
+          }
+        ],
+        "patches_affecting_movenc": []
+      },
+      "movenc_c_sha256_before_and_after_patches": "2bf6468f311937a4abc3e5e1480f2c670b345108f58196f3578d72362b3a97bd",
+      "movenc_h_sha256_before_and_after_patches": "71dfdfa9d500bb8cc0ba01eb491deb9abb2e898d7f6d18705c06d92e8d59bcbd",
+      "struct_size": {
+        "MOVIentry_bytes": 72,
+        "method": "Compared full exact-source typedef against existing sizeof.c using diff (identical), then compiled sizeof.c with exact source tree include path, not installed headers",
+        "command": "cc -I target/stage54d1b-mov-attribution/source/ffmpeg-8.1.3 target/stage54d1b-long-soak/mov-index-model/sizeof.c -o target/stage54d1b-mov-attribution/source/mov-entry-size",
+        "run": "target/stage54d1b-mov-attribution/source/mov-entry-size",
+        "scope": "Native x86_64 ABI, static exact-source layout evidence; not a live heap measurement"
+      },
+      "capacity": {
+        "quantum_entries": 1024,
+        "condition": "trk->entry >= trk->cluster_capacity",
+        "new_capacity": "trk->entry + MOV_INDEX_CLUSTER_SIZE",
+        "allocation": "av_realloc_array(trk->cluster, new_capacity, sizeof(*trk->cluster))",
+        "allocation_lines": "libavformat/movenc.c:7039-7047",
+        "free": "mov_free: av_freep(&track->cluster); av_freep(&track->cluster_written)",
+        "free_lines": "libavformat/movenc.c:7731-7732"
+      },
+      "limitations": [
+        "Source provenance and static layout do not establish live allocation identity, capacity at each sample, allocator residency or unexplained memory attribution.",
+        "rpm -V ffmpeg-libs reports ownership/group differences only (UG), not content digest differences; no installed files were changed.",
+        "No native rebuild, system installation or production source changes performed."
+      ]
+    },
+    "runtime_library_sha256": "68196d2f4f8127d324764e9061c91eb578313caab1c92a016d4225615030d1c4",
+    "runtime_version": "62.12.103",
+    "runtime_configuration": "--prefix=/usr --bindir=/usr/bin --datadir=/usr/share/ffmpeg --docdir=/usr/share/doc/ffmpeg --incdir=/usr/include/ffmpeg --libdir=/usr/lib64 --mandir=/usr/share/man --arch=x86_64 --optflags='-O2 -flto=auto -ffat-lto-objects -fexceptions -g -grecord-gcc-switches -pipe -Wall -Wno-complain-wrong-lang -Werror=format-security -Wp,-U_FORTIFY_SOURCE,-D_FORTIFY_SOURCE=3 -Wp,-D_GLIBCXX_ASSERTIONS -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -fstack-protector-strong -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -m64 -march=x86-64 -mtune=generic -fasynchronous-unwind-tables -fstack-clash-protection -fcf-protection -mtls-dialect=gnu2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer' --extra-ldflags='-Wl,-z,relro -Wl,--as-needed -Wl,-z,pack-relative-relocs -Wl,-z,now -specs=/usr/lib/rpm/redhat/redhat-hardened-ld -specs=/usr/lib/rpm/redhat/redhat-hardened-ld-errors -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -Wl,--build-id=sha1 -specs=/usr/lib/rpm/redhat/redhat-package-notes ' --extra-cflags=' -I/usr/include/rav1e' --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libvo-amrwbenc --enable-version3 --enable-bzlib --enable-chromaprint --enable-fontconfig --enable-frei0r --enable-gcrypt --enable-gnutls --enable-ladspa --enable-lcms2 --enable-libaom --enable-libaribb24 --enable-libaribcaption --enable-libdav1d --enable-libass --enable-libbluray --enable-libbs2b --enable-libcodec2 --enable-cuda --enable-cuda-llvm --enable-cuvid --enable-libcdio --enable-libdrm --enable-libfdk-aac --enable-libjack --enable-libjxl --enable-libklvanc --enable-libfreetype --enable-libfribidi --enable-libgme --enable-libgsm --enable-libharfbuzz --enable-libilbc --enable-liblc3 --enable-libmp3lame --enable-libmysofa --enable-nvenc --enable-nvdec --enable-openal --enable-liboapv --enable-opencl --enable-opengl --enable-libopenh264 --enable-libopenjpeg --enable-libopenmpt --enable-libopus --enable-libpulse --enable-libplacebo --enable-librsvg --enable-librav1e --enable-librubberband --enable-libqrencode --enable-libsmbclient --enable-version3 --enable-libsnappy --enable-libsoxr --enable-libspeex --enable-libsrt --enable-libssh --enable-libsvtav1 --enable-libtesseract --enable-libtheora --enable-libtwolame --enable-libvorbis --enable-libv4l2 --enable-libvidstab --enable-libvmaf --enable-version3 --enable-vapoursynth --enable-libvpx --enable-libvvenc --enable-vulkan --enable-libshaderc --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxvid --enable-libxml2 --enable-libzimg --enable-libzmq --enable-libzvbi --enable-lv2 --enable-avfilter --enable-libmodplug --enable-pthreads --disable-static --enable-shared --enable-gpl --disable-debug --disable-stripping --shlibdir=/usr/lib64 --enable-lto --enable-libvpl --enable-runtime-cpudetect",
+    "matches_recorded_soak_stack_library": true
+  },
+  "implementation": {
+    "MOVIentry_bytes": 72,
+    "capacity_quantum_entries": 1024,
+    "formula": "sum_over_tracks(ceil(entries / 1024) * 1024 * 72)",
+    "lifetime": "cluster retained during non-fragmented packet writing; used by stco/co64, stsz, stsc, stts, ctts/stss as applicable when av_write_trailer writes moov. av_write_trailer then calls deinit_muxer -> mov_free (mux.c:1267); failed-job context destruction also deinitializes the initialized muxer.",
+    "trailer_temporaries": "stts/ctts temporary arrays are allocated and freed while writing final tables, not retained per-packet structures throughout the pre-trailer sampling interval.",
+    "secondary_cluster": "cluster_written allocated only under FF_MOV_FLAG_HYBRID_FRAGMENTED; not used in this production path.",
+    "sample_entry_scope": "HEVC/H264/AAC one MOVIentry per muxed packet; AAC PCM sample duration is not an entry-count multiplier."
+  },
+  "paths": [
+    {
+      "path": "A",
+      "kind": "sdr",
+      "packet_trace": [
+        {
+          "path": "target/stage54d1b-long-soak/production-v1/command-001.log",
+          "sha256": "6e3de6d06f7e45d7bd63ee872e744a93b94b66dd0e92cc6e6cf977d05e4984ef"
+        },
+        {
+          "path": "target/stage54d1b-long-soak/production-v1/command-004.log",
+          "sha256": "eb2cbf502631f3f5188592221e7e2a1c9bf78fe05f7d341704b2ea0e0acd28a2"
+        }
+      ],
+      "milestones": [
+        {
+          "video_frames": 50000,
+          "packet_end_offset": 619156264,
+          "total_mux_packets": 96876,
+          "tracks": [
+            {
+              "stream_index": 0,
+              "entries": 50000,
+              "capacity": 50176,
+              "cluster_bytes": 3612672
+            },
+            {
+              "stream_index": 1,
+              "entries": 46876,
+              "capacity": 47104,
+              "cluster_bytes": 3391488
+            }
+          ],
+          "total_cluster_bytes": 7004160
+        },
+        {
+          "video_frames": 99000,
+          "packet_end_offset": 1225838985,
+          "total_mux_packets": 191813,
+          "tracks": [
+            {
+              "stream_index": 0,
+              "entries": 99000,
+              "capacity": 99328,
+              "cluster_bytes": 7151616
+            },
+            {
+              "stream_index": 1,
+              "entries": 92813,
+              "capacity": 93184,
+              "cluster_bytes": 6709248
+            }
+          ],
+          "total_cluster_bytes": 13860864
+        },
+        {
+          "video_frames": 100000,
+          "packet_end_offset": 1237978534,
+          "total_mux_packets": 193751,
+          "tracks": [
+            {
+              "stream_index": 0,
+              "entries": 100000,
+              "capacity": 100352,
+              "cluster_bytes": 7225344
+            },
+            {
+              "stream_index": 1,
+              "entries": 93751,
+              "capacity": 94208,
+              "cluster_bytes": 6782976
+            }
+          ],
+          "total_cluster_bytes": 14008320
+        }
+      ],
+      "reported_counter_capacity_check": [
+        {
+          "frames": 50000,
+          "accepted_mux_packets": 96872,
+          "physical_video_boundary_packets": 96876,
+          "same_rounded_capacities_for_plus_minus_64_packet_prefixes": true
+        },
+        {
+          "frames": 99000,
+          "accepted_mux_packets": 191809,
+          "physical_video_boundary_packets": 191813,
+          "same_rounded_capacities_for_plus_minus_64_packet_prefixes": true
+        }
+      ],
+      "measurement_comparison": {
+        "frames": [
+          50000,
+          99000
+        ],
+        "rss_kib": [
+          154152,
+          160624
+        ],
+        "observed_rss_delta_kib": 6472,
+        "expected_cluster_delta_kib": 6696.0,
+        "rss_minus_cluster_delta_kib": -224.0
+      },
+      "endpoint_note": "A 100k report overlaps teardown; use last pre-teardown 99k instead."
+    },
+    {
+      "path": "B",
+      "kind": "pq-preserve",
+      "packet_trace": [
+        {
+          "path": "target/stage54d1b-long-soak/production-v1/command-006.log",
+          "sha256": "bbd0ae4793b775eef5a7c8538526049b7d0189b3c92e553c81e283638abae7e4"
+        }
+      ],
+      "milestones": [
+        {
+          "video_frames": 50000,
+          "packet_end_offset": 258910594,
+          "total_mux_packets": 50000,
+          "tracks": [
+            {
+              "stream_index": 0,
+              "entries": 50000,
+              "capacity": 50176,
+              "cluster_bytes": 3612672
+            }
+          ],
+          "total_cluster_bytes": 3612672
+        },
+        {
+          "video_frames": 99000,
+          "packet_end_offset": 512633198,
+          "total_mux_packets": 99000,
+          "tracks": [
+            {
+              "stream_index": 0,
+              "entries": 99000,
+              "capacity": 99328,
+              "cluster_bytes": 7151616
+            }
+          ],
+          "total_cluster_bytes": 7151616
+        },
+        {
+          "video_frames": 100000,
+          "packet_end_offset": 517850336,
+          "total_mux_packets": 100000,
+          "tracks": [
+            {
+              "stream_index": 0,
+              "entries": 100000,
+              "capacity": 100352,
+              "cluster_bytes": 7225344
+            }
+          ],
+          "total_cluster_bytes": 7225344
+        }
+      ],
+      "reported_counter_capacity_check": [
+        {
+          "frames": 50000,
+          "accepted_mux_packets": 49998,
+          "physical_video_boundary_packets": 50000,
+          "same_rounded_capacities_for_plus_minus_64_packet_prefixes": true
+        },
+        {
+          "frames": 100000,
+          "accepted_mux_packets": 99998,
+          "physical_video_boundary_packets": 100000,
+          "same_rounded_capacities_for_plus_minus_64_packet_prefixes": true
+        }
+      ],
+      "measurement_comparison": {
+        "frames": [
+          50000,
+          100000
+        ],
+        "rss_kib": [
+          164796,
+          168232
+        ],
+        "observed_rss_delta_kib": 3436,
+        "expected_cluster_delta_kib": 3528.0,
+        "rss_minus_cluster_delta_kib": -92.0
+      },
+      "endpoint_note": "100k progress, before pre-finalization/cleanup."
+    },
+    {
+      "path": "C",
+      "kind": "pq-to-sdr",
+      "packet_trace": [
+        {
+          "path": "target/stage54d1b-long-soak/production-v1/command-009.log",
+          "sha256": "25cdd1d5c8f8bfa32b0bce54d94b244d5c504ec92bccf78a18273adb11985735"
+        },
+        {
+          "path": "target/stage54d1b-long-soak/production-v1/command-012.log",
+          "sha256": "adae9f02c028b9e19053efdf2008ad9da56e056ba67a15064c569f8269445998"
+        }
+      ],
+      "milestones": [
+        {
+          "video_frames": 50000,
+          "packet_end_offset": 363440655,
+          "total_mux_packets": 143752,
+          "tracks": [
+            {
+              "stream_index": 0,
+              "entries": 50000,
+              "capacity": 50176,
+              "cluster_bytes": 3612672
+            },
+            {
+              "stream_index": 1,
+              "entries": 46876,
+              "capacity": 47104,
+              "cluster_bytes": 3391488
+            },
+            {
+              "stream_index": 2,
+              "entries": 46876,
+              "capacity": 47104,
+              "cluster_bytes": 3391488
+            }
+          ],
+          "total_cluster_bytes": 10395648
+        },
+        {
+          "video_frames": 99000,
+          "packet_end_offset": 719616010,
+          "total_mux_packets": 284626,
+          "tracks": [
+            {
+              "stream_index": 0,
+              "entries": 99000,
+              "capacity": 99328,
+              "cluster_bytes": 7151616
+            },
+            {
+              "stream_index": 1,
+              "entries": 92813,
+              "capacity": 93184,
+              "cluster_bytes": 6709248
+            },
+            {
+              "stream_index": 2,
+              "entries": 92813,
+              "capacity": 93184,
+              "cluster_bytes": 6709248
+            }
+          ],
+          "total_cluster_bytes": 20570112
+        },
+        {
+          "video_frames": 100000,
+          "packet_end_offset": 726929790,
+          "total_mux_packets": 287502,
+          "tracks": [
+            {
+              "stream_index": 0,
+              "entries": 100000,
+              "capacity": 100352,
+              "cluster_bytes": 7225344
+            },
+            {
+              "stream_index": 1,
+              "entries": 93751,
+              "capacity": 94208,
+              "cluster_bytes": 6782976
+            },
+            {
+              "stream_index": 2,
+              "entries": 93751,
+              "capacity": 94208,
+              "cluster_bytes": 6782976
+            }
+          ],
+          "total_cluster_bytes": 20791296
+        }
+      ],
+      "reported_counter_capacity_check": [
+        {
+          "frames": 50000,
+          "accepted_mux_packets": 143746,
+          "physical_video_boundary_packets": 143752,
+          "same_rounded_capacities_for_plus_minus_64_packet_prefixes": true
+        },
+        {
+          "frames": 100000,
+          "accepted_mux_packets": 287496,
+          "physical_video_boundary_packets": 287502,
+          "same_rounded_capacities_for_plus_minus_64_packet_prefixes": true
+        }
+      ],
+      "measurement_comparison": {
+        "frames": [
+          50000,
+          100000
+        ],
+        "rss_kib": [
+          208436,
+          226916
+        ],
+        "observed_rss_delta_kib": 18480,
+        "expected_cluster_delta_kib": 10152.0,
+        "rss_minus_cluster_delta_kib": 8328.0
+      },
+      "endpoint_note": "100k progress, before pre-finalization/cleanup."
+    }
+  ],
+  "default_C_repeat": {
+    "samples": [
+      {
+        "actual_written_frames": 50000,
+        "elapsed_seconds": 240.72725582400017,
+        "tracks": [
+          {
+            "stream_index": 0,
+            "entries": 50000,
+            "capacity": 50176
+          },
+          {
+            "stream_index": 1,
+            "entries": 46876,
+            "capacity": 47104
+          },
+          {
+            "stream_index": 2,
+            "entries": 46876,
+            "capacity": 47104
+          }
+        ],
+        "cluster_kib": 10152.0,
+        "rss_kib": 174728,
+        "pss_kib": 147241,
+        "anonymous_kib": 115008
+      },
+      {
+        "actual_written_frames": 99940,
+        "elapsed_seconds": 479.32076986599714,
+        "tracks": [
+          {
+            "stream_index": 0,
+            "entries": 99940,
+            "capacity": 100352
+          },
+          {
+            "stream_index": 1,
+            "entries": 93695,
+            "capacity": 94208
+          },
+          {
+            "stream_index": 2,
+            "entries": 93695,
+            "capacity": 94208
+          }
+        ],
+        "cluster_kib": 20304.0,
+        "rss_kib": 193184,
+        "pss_kib": 165697,
+        "anonymous_kib": 133464
+      }
+    ],
+    "expected_cluster_delta_kib": 10152.0,
+    "observed_delta_kib": {
+      "rss_kib": 18456,
+      "pss_kib": 18456,
+      "anonymous_kib": 18456
+    },
+    "residual_delta_kib": {
+      "rss_kib": 8304.0,
+      "pss_kib": 8304.0,
+      "anonymous_kib": 8304.0
+    },
+    "method": "Actual final packet-end offsets versus observed staging byte length; whole-file identity and tail moov checked. Written packets lag accepted/processed frames by bounded queues/AVIO buffering; samples are not atomic.",
+    "endpoint_limitation": "Last external sample has 99940 written video frames; all rounded track capacities equal those at final 100000, so expected cluster-byte delta is unchanged."
+  },
+  "diagnostic": {
+    "new_media_runs": 0,
+    "audio_off_matched_experiment": "Not run: existing exact-package model and real traces already establish a significant unexplained residual; no extra soak needed to decide the stated hypothesis.",
+    "fragmented_MP4_experiment": "Not run; production format unchanged."
+  },
+  "classification": "UnexplainedResidualGrowth (classification B); required MOV index component is ExpectedContainerIndexGrowth, but does not explain all observed growth.",
+  "not_claimed": [
+    "Residual proves a resource leak",
+    "cluster_written duplicates ordinary MP4 index",
+    "Exact allocation/RSS attribution",
+    "Constant-memory or duration-independent muxing",
+    "Persistent-process boundedness",
+    "New production support"
+  ],
+  "memory_contract": "No unexplained frame-count-correlated memory growth beyond container/runtime structures whose required growth has been explicitly accounted for.",
+  "D1B": "NOT SEALED",
+  "D1": "NOT SEALED",
+  "D2_justified": false,
+  "production_changes": false
+}

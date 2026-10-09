@@ -4,12 +4,63 @@ Toolchain/driver changes use the [stack-scoped portability workflow](portability
 
 ## Stage 5.4D-1 reliability hardening (NOT SEALED)
 
+The user accepted the unresolved default-memory plateau limitation on 2026-10-08
+and authorized [D-1B long-run work](stage5.4d1b-long-run.md). This prospectively
+removes that item as a progression blocker; it does not change D-1A's historical
+NOT SEALED/Unresolved result or mark the failed memory gate PASS. Do not repeat
+the plateau campaign. D-2 remains outside the authorized next-stage scope.
+
 The [reliability contract](reliability-testing.md),
 [D-1 ledger](stage5.4d1-soak-failure-hardening.md) and
 [`stage54d1.json`](../tests/soak/stage54d1.json) distinguish native mux replay,
 portable failure-model tests and unexecuted production long-run gates. Generated
 inputs, short GPU preflights and historical C receipts are not D-1 qualification.
 Stage 5.4D-2 is not started.
+
+The [D-1A observation/failure report](stage5.4d1a-resource-failure.md) and
+[`stage54d1a-resource-failure.json`](../tests/soak/stage54d1a-resource-failure.json)
+track the separate short/mid-run campaign. Use the actual opt-in
+`reliability-measurement` feature; unknown driver/native internals remain
+unavailable, sampled queue peaks are not exact high-water marks, and 10k
+results must not be described as 100k qualification. Keep input generator/tool/
+command/SHA, binary and source identity, output command/SHA or existing structured
+oracle, raw resource samples, failures and cleanup outcomes for every new run.
+
+The subsequent [native closure receipt](../tests/soak/stage54d1a-native-closure.json)
+uses an immutable dirty-source checkout for both clean builds and actual GPU
+execution. Keep the source file map, binary/test identities and runtime selectors;
+document/evidence-only updates after qualification do not retrospectively change
+the qualified checkout. Build, test relinking and runtime artifact copies must
+not be assigned the same hash without checking. A failed resource alarm remains
+a failure until investigated; allocator-tuned diagnostics are not substitutes
+for the default runtime gate. D-1A currently remains NOT SEALED: the final ten
+normal-production 50-cycle processes pass tracked lifecycle checks, but residual
+private-anonymous growth remains Unresolved (including a 652 KiB healthy-cycle
+48 step). The separate exact H.264 Tier 1B-P blocker is closed; A14 is not proved.
+
+The frozen-source pass now has all 17 retained paths × three runs, 36 native
+SIGINT cases, the dual-AAC 10k path and both independent clean-build suites.
+That historical pass left default same-process RSS and strict alternate H.264
+audio/B-frame comparison unresolved. The subsequent
+[A/B closure receipt](../tests/soak/stage54d1a-final-closure.json) is the current
+decision source; the [original receipt archive](../tests/soak/evidence/stage54d1a-resource-failure-historical.json)
+preserves the exact original bytes and SHA before adding its follow-up pointer.
+A per-stack runtime PASS or decoded-pixel match does
+not waive a failed coded-packet oracle. The separate D-1A Tier 1B-P rule now
+recognizes only the attested identifier-SEI semantic class, without the former
+video-only fixture restriction; it does not promote other unqualified stack
+profiles or relax the historical/same-stack oracle. Independently passing fault tests
+after an aborted portability campaign do not create an aggregate campaign PASS.
+
+RSS qualification must separate normal-production residency from opt-in Vulkan
+Validation residency. Keep required-validation lifecycle runs, but do not use
+their RSS as the default production result. The fixed mixed-cycle native observer
+rejects allocator-tuning environment variables, retains only four fixed output
+references and streams evidence instead of accumulating it. Preserve the old
+64 MiB review alarm and its failure; do not substitute another absolute magic
+number. A plateau decision requires independent full-cycle processes, per-job
+resource/FD/thread/staging balance, smaps attribution and successful post-failure
+jobs. Report late-window changes and residual uncertainty, not just one delta.
 
 ## Stage 5.4C2 expanded portability matrix
 

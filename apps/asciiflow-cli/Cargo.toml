@@ -6,6 +6,9 @@ license.workspace = true
 rust-version.workspace = true
 
 [features]
+lgpl-prebuilt = ["asciiflow-media/lgpl-prebuilt"]
+native-reliability = ["reliability-measurement", "asciiflow-core/native-reliability", "asciiflow-media/native-reliability", "asciiflow-vulkan/native-reliability", "asciiflow-interop/native-reliability"]
+reliability-measurement = ["asciiflow-core/reliability-measurement", "asciiflow-media/reliability-measurement", "asciiflow-vulkan/reliability-measurement", "asciiflow-interop/reliability-measurement"]
 encode-characterization = ["asciiflow-media/encode-characterization"]
 mux-qualification = ["asciiflow-media/mux-qualification"]
 
@@ -23,10 +26,10 @@ asciiflow-media = { path = "../../crates/asciiflow-media" }
 asciiflow-vulkan = { path = "../../crates/asciiflow-vulkan" }
 clap.workspace = true
 ctrlc.workspace = true
+ffmpeg-sys-next.workspace = true
 serde_json = "1.0"
 tracing.workspace = true
 tracing-subscriber.workspace = true
 
 [dev-dependencies]
-ffmpeg-sys-next.workspace = true
 libc = "0.2"

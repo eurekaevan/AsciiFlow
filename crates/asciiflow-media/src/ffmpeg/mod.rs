@@ -1,5 +1,9 @@
 mod audio;
 mod audio_reader;
+#[cfg(feature = "mux-qualification")]
+pub fn finish_audio_memory_diagnostic() -> asciiflow_core::Result<()> {
+    audio_reader::packet_lifetime::finish()
+}
 mod codec;
 mod decoder;
 mod encoder;

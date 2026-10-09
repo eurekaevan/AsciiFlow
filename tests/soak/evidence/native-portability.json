@@ -1,0 +1,1823 @@
+{
+  "schema": "asciiflow-native-portability-v1",
+  "result": "FAIL",
+  "source_identity_equal": true,
+  "source_identity_guard": "Unchanged existing source/binary/native-loader guard; full actual loader probes retained in hashed manifests",
+  "source_registry_files": 422,
+  "same_binary": true,
+  "stacks": {
+    "canonical": {
+      "manifest": {
+        "path": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-native-snapshot/target/native-stack-captures/canonical.json",
+        "sha256": "b277e04c39c2db25488677186d5c7cc0a2cb5606c773a5b486152341a4d4e948",
+        "size_bytes": 416235
+      },
+      "identity": {
+        "stack_id": "d1a-frozen-canonical",
+        "binary": {
+          "bytes": 4130448,
+          "path": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-native-snapshot/target/qualification-binaries/default-asciiflow",
+          "sha256": "92fc20d079c8067872e88ba6f1d67949e952f630b07d1ac7f6441245f831fe02"
+        },
+        "driver_files": {
+          "anv": {
+            "bytes": 26522104,
+            "path": "/usr/lib64/libvulkan_intel.so",
+            "sha256": "11ef9334499bd78b0010cb4f1462d59042a76d9bf49cf2bc0a08f02b3f9c01bd"
+          },
+          "ihd": {
+            "bytes": 41505120,
+            "path": "/usr/lib64/dri-nonfree/iHD_drv_video.so",
+            "sha256": "98942f2f651c99e6874c108107a34e0f6335fefae777faca1454ca14311b950f"
+          }
+        },
+        "native_dependencies": {
+          "/usr/lib64/dri-nonfree/iHD_drv_video.so": {
+            "bytes": 41505120,
+            "path": "/usr/lib64/dri-nonfree/iHD_drv_video.so",
+            "sha256": "98942f2f651c99e6874c108107a34e0f6335fefae777faca1454ca14311b950f"
+          },
+          "/usr/lib64/ld-linux-x86-64.so.2": {
+            "bytes": 1002600,
+            "path": "/usr/lib64/ld-linux-x86-64.so.2",
+            "sha256": "4e5d39355699e90fa29313d3100e82af4a23290028c58c364d6a249ef6a78e5e"
+          },
+          "/usr/lib64/libSPIRV-Tools.so": {
+            "bytes": 1722808,
+            "path": "/usr/lib64/libSPIRV-Tools.so",
+            "sha256": "06897d4ed1051d4e95b1045288d54230564440064fd117965d742267e7f4834e"
+          },
+          "/usr/lib64/libVkLayer_MESA_device_select.so": {
+            "bytes": 100680,
+            "path": "/usr/lib64/libVkLayer_MESA_device_select.so",
+            "sha256": "81d08cd0099f965af984dc1aae6135bf85778c03c9412ae33c42456ccc3d793d"
+          },
+          "/usr/lib64/libX11-xcb.so.1.0.0": {
+            "bytes": 11016,
+            "path": "/usr/lib64/libX11-xcb.so.1.0.0",
+            "sha256": "57cdf71a9b30e068f7b00112b6e879a804fb8d451d351e3dff8260a34718f408"
+          },
+          "/usr/lib64/libX11.so.6.4.0": {
+            "bytes": 1408520,
+            "path": "/usr/lib64/libX11.so.6.4.0",
+            "sha256": "95b9ecfbde1b73c7f7380ae643e8ade9555234607a47d7e131ae6365a9899244"
+          },
+          "/usr/lib64/libXau.so.6.0.0": {
+            "bytes": 19640,
+            "path": "/usr/lib64/libXau.so.6.0.0",
+            "sha256": "78e2e7a514a6844530b099c7dfb184a9992f7b0681c30105281ddb8e48dc8a59"
+          },
+          "/usr/lib64/libXext.so.6.4.0": {
+            "bytes": 79904,
+            "path": "/usr/lib64/libXext.so.6.4.0",
+            "sha256": "09056dd620dc643dc1c2ed20041fa11de6a981dd0f618d6785124b4bdc607a1e"
+          },
+          "/usr/lib64/libXfixes.so.3.1.0": {
+            "bytes": 32072,
+            "path": "/usr/lib64/libXfixes.so.3.1.0",
+            "sha256": "6160ee5edaa0aa4e96d263b16fcc41892567e82aca7e6d5bbb2a3d2e2bc4fa6f"
+          },
+          "/usr/lib64/libc.so.6": {
+            "bytes": 2482096,
+            "path": "/usr/lib64/libc.so.6",
+            "sha256": "a5c5ad9d59d3c69eda93aa8f82930ba06cc4e893a113e66c85ad6e96243d53c8"
+          },
+          "/usr/lib64/libdisplay-info.so.0.3.0": {
+            "bytes": 224808,
+            "path": "/usr/lib64/libdisplay-info.so.0.3.0",
+            "sha256": "2744bd4b6f456e67f24a37f79c43ed2d3fd73b87802ab677dd3a5ad4c5ad5a7d"
+          },
+          "/usr/lib64/libdrm.so.2.134.0": {
+            "bytes": 91056,
+            "path": "/usr/lib64/libdrm.so.2.134.0",
+            "sha256": "e2a416f7b7c9e9e46b5f96bf20be71f146426daa6e1e8438adce2ab8e4c0fc0e"
+          },
+          "/usr/lib64/libexpat.so.1.12.5": {
+            "bytes": 190864,
+            "path": "/usr/lib64/libexpat.so.1.12.5",
+            "sha256": "47e20fe57bb15932d63c9f8a874f64092fd222f87d3df2de55e70db8804edc11"
+          },
+          "/usr/lib64/libffi.so.8.2.0": {
+            "bytes": 65584,
+            "path": "/usr/lib64/libffi.so.8.2.0",
+            "sha256": "05bf4048cc0fd016140d7d880c4a4ec402096732f60463c8fb87b98d877d3628"
+          },
+          "/usr/lib64/libgcc_s-16-20260819.so.1": {
+            "bytes": 186512,
+            "path": "/usr/lib64/libgcc_s-16-20260819.so.1",
+            "sha256": "c71a62b5ef442ab8cf4470874dee6f2383d73a744f0006b6d287412f131c2e09"
+          },
+          "/usr/lib64/libigdgmm.so.12.10.0": {
+            "bytes": 910376,
+            "path": "/usr/lib64/libigdgmm.so.12.10.0",
+            "sha256": "623976005c53b0f62057a472b7abe51aba6a0379cee6f771a3184a24b4703f1f"
+          },
+          "/usr/lib64/libm.so.6": {
+            "bytes": 1153848,
+            "path": "/usr/lib64/libm.so.6",
+            "sha256": "16a03ce6d24c8a46742206d4a9c1d35bb6577ae2384f153dc6ef4a4b62b5357f"
+          },
+          "/usr/lib64/libstdc++.so.6.0.36": {
+            "bytes": 2884696,
+            "path": "/usr/lib64/libstdc++.so.6.0.36",
+            "sha256": "fc224ee3cc56b9b3e58453bfb9a0cac3a696e60fd33ba48b6a30eb22b76cc867"
+          },
+          "/usr/lib64/libudev.so.1.7.12": {
+            "bytes": 316008,
+            "path": "/usr/lib64/libudev.so.1.7.12",
+            "sha256": "020ad2e125ac945faf59983f6d9babda805ff809a97fd8f4660d9ffdfbef6b30"
+          },
+          "/usr/lib64/libva-drm.so.2.2300.0": {
+            "bytes": 11368,
+            "path": "/usr/lib64/libva-drm.so.2.2300.0",
+            "sha256": "0c364a7bd48dd48467ec8c522e074384169bf501936eacc6a13700d34c6560de"
+          },
+          "/usr/lib64/libva-wayland.so.2.2300.0": {
+            "bytes": 24432,
+            "path": "/usr/lib64/libva-wayland.so.2.2300.0",
+            "sha256": "d2f1675812ee336551b5d301bd9a380c9f69027656e503a21d867a9b151b4247"
+          },
+          "/usr/lib64/libva-x11.so.2.2300.0": {
+            "bytes": 32488,
+            "path": "/usr/lib64/libva-x11.so.2.2300.0",
+            "sha256": "ba438bb29e665b1b2f7c8833a72287e518cb220c605cb58d07445ca4e211028d"
+          },
+          "/usr/lib64/libva.so.2.2300.0": {
+            "bytes": 230072,
+            "path": "/usr/lib64/libva.so.2.2300.0",
+            "sha256": "5c0a73ba45d797aa4e608d2c9123047103da7470fbac8dd7350f3e9b3c851d5a"
+          },
+          "/usr/lib64/libvulkan.so.1.4.341": {
+            "bytes": 569952,
+            "path": "/usr/lib64/libvulkan.so.1.4.341",
+            "sha256": "a09dab583a4b8e50bba61d1284b46b9d6256300713aa1db6f20f06b2dbbe0696"
+          },
+          "/usr/lib64/libvulkan_intel.so": {
+            "bytes": 26522104,
+            "path": "/usr/lib64/libvulkan_intel.so",
+            "sha256": "11ef9334499bd78b0010cb4f1462d59042a76d9bf49cf2bc0a08f02b3f9c01bd"
+          },
+          "/usr/lib64/libwayland-client.so.0.26.0": {
+            "bytes": 66168,
+            "path": "/usr/lib64/libwayland-client.so.0.26.0",
+            "sha256": "cb517c02f6e808257932a4b3f1a4bd1232ce415cdd8e41a854ff0f0e918b51c9"
+          },
+          "/usr/lib64/libxcb-dri3.so.0.1.0": {
+            "bytes": 23704,
+            "path": "/usr/lib64/libxcb-dri3.so.0.1.0",
+            "sha256": "68618518da296821983f625112923b4c247dd073060508250e73cfd8cada166a"
+          },
+          "/usr/lib64/libxcb-present.so.0.0.0": {
+            "bytes": 15496,
+            "path": "/usr/lib64/libxcb-present.so.0.0.0",
+            "sha256": "f05943f707a89465291685f539d7b8070fbb630eb518f70c4f14931f6600e211"
+          },
+          "/usr/lib64/libxcb-randr.so.0.1.0": {
+            "bytes": 72896,
+            "path": "/usr/lib64/libxcb-randr.so.0.1.0",
+            "sha256": "bd9493e1eaec84ad952388095d5c64165a3b345c342ecacf2dc7fdcc9ddf3abb"
+          },
+          "/usr/lib64/libxcb-shm.so.0.0.0": {
+            "bytes": 15544,
+            "path": "/usr/lib64/libxcb-shm.so.0.0.0",
+            "sha256": "fe83f32f3c5d3337e2c6c1b36949e4087877697d32317c52611743c70ab7e13c"
+          },
+          "/usr/lib64/libxcb-sync.so.1.0.0": {
+            "bytes": 31952,
+            "path": "/usr/lib64/libxcb-sync.so.1.0.0",
+            "sha256": "70a683c72408b0b2b4c3db6217eafb7e54c6c27659ff09444277586394fe4da8"
+          },
+          "/usr/lib64/libxcb-xfixes.so.0.0.0": {
+            "bytes": 35960,
+            "path": "/usr/lib64/libxcb-xfixes.so.0.0.0",
+            "sha256": "3ba1cf11d47c26f03f2efa573acbdcc71e4a4e95b9438a1958e25b15a0f020fa"
+          },
+          "/usr/lib64/libxcb.so.1.1.0": {
+            "bytes": 173424,
+            "path": "/usr/lib64/libxcb.so.1.1.0",
+            "sha256": "15fd80f8917a44ec68c17a322648a5c576c3fc3bc7745c691573bd6d24ade7eb"
+          },
+          "/usr/lib64/libxshmfence.so.1.0.0": {
+            "bytes": 11424,
+            "path": "/usr/lib64/libxshmfence.so.1.0.0",
+            "sha256": "fa822d052508b66cb80b5fb42d2ad3686dc7cf47b1ef578fad71cf9d3a82576d"
+          },
+          "/usr/lib64/libz.so.1.3.1.zlib-ng": {
+            "bytes": 169544,
+            "path": "/usr/lib64/libz.so.1.3.1.zlib-ng",
+            "sha256": "bbde8faec092a7c67b8bd76bbba4a826e61b05c171b97004ce6b308c5a090351"
+          },
+          "/usr/lib64/libzstd.so.1.5.7": {
+            "bytes": 959384,
+            "path": "/usr/lib64/libzstd.so.1.5.7",
+            "sha256": "70ec54d150f4052f28fb1e8f8a1c6ca35e1a499e4744c6f6d9d783537618f80b"
+          }
+        },
+        "runtime": {
+          "effective_environment": {
+            "LIBVA_DRIVERS_PATH": "/usr/lib64/dri-nonfree",
+            "LIBVA_DRIVER_NAME": "iHD",
+            "PATH": "/home/eureka/.local/bin:/home/eureka/.local/bin:/home/eureka/.nvm/versions/node/v24.15.0/bin:/home/eureka/.local/bin:/home/eureka/bin:/home/eureka/.codex/tmp/arg0/codex-arg0LpQkfU:/home/eureka/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/override:/home/eureka/.local/bin:/run/user/1000/fnm_multishells/25723_1791377633910/bin:/home/eureka/.local/share/fnm:/home/eureka/.dotnet:/home/eureka/Android/Sdk/emulator:/home/eureka/Android/Sdk/platform-tools:/home/eureka/.local/bin:/home/eureka/.cargo/bin:/run/user/1000/fnm_multishells/4164_1791374644534/bin:/home/eureka/.local/share/fnm:/home/eureka/.local/bin:/usr/local/bin:/usr/bin:/home/eureka/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback:/usr/lib/chatgpt/resources",
+            "VK_ICD_FILENAMES": "/usr/share/vulkan/icd.d/intel_icd.x86_64.json"
+          },
+          "prefix": null,
+          "selectors": {
+            "LIBVA_DRIVERS_PATH": "/usr/lib64/dri-nonfree",
+            "LIBVA_DRIVER_NAME": "iHD",
+            "VK_ICD_FILENAMES": "/usr/share/vulkan/icd.d/intel_icd.x86_64.json"
+          }
+        },
+        "ffmpeg": {
+          "identity": {
+            "bytes": 416936,
+            "path": "/usr/bin/ffmpeg",
+            "sha256": "c71eb1c6b9d57114ea567b1525c393295285df3ad21b17ad8144e02832d8ed92"
+          },
+          "version": {
+            "argv": [
+              "ffmpeg",
+              "-version"
+            ],
+            "exit_code": 0,
+            "stderr": "",
+            "stdout": "ffmpeg version 8.1.3 Copyright (c) 2000-2026 the FFmpeg developers\nbuilt with gcc 16 (GCC)\nconfiguration: --prefix=/usr --bindir=/usr/bin --datadir=/usr/share/ffmpeg --docdir=/usr/share/doc/ffmpeg --incdir=/usr/include/ffmpeg --libdir=/usr/lib64 --mandir=/usr/share/man --arch=x86_64 --optflags='-O2 -flto=auto -ffat-lto-objects -fexceptions -g -grecord-gcc-switches -pipe -Wall -Wno-complain-wrong-lang -Werror=format-security -Wp,-U_FORTIFY_SOURCE,-D_FORTIFY_SOURCE=3 -Wp,-D_GLIBCXX_ASSERTIONS -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -fstack-protector-strong -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -m64 -march=x86-64 -mtune=generic -fasynchronous-unwind-tables -fstack-clash-protection -fcf-protection -mtls-dialect=gnu2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer' --extra-ldflags='-Wl,-z,relro -Wl,--as-needed -Wl,-z,pack-relative-relocs -Wl,-z,now -specs=/usr/lib/rpm/redhat/redhat-hardened-ld -specs=/usr/lib/rpm/redhat/redhat-hardened-ld-errors -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -Wl,--build-id=sha1 -specs=/usr/lib/rpm/redhat/redhat-package-notes ' --extra-cflags=' -I/usr/include/rav1e' --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libvo-amrwbenc --enable-version3 --enable-bzlib --enable-chromaprint --enable-fontconfig --enable-frei0r --enable-gcrypt --enable-gnutls --enable-ladspa --enable-lcms2 --enable-libaom --enable-libaribb24 --enable-libaribcaption --enable-libdav1d --enable-libass --enable-libbluray --enable-libbs2b --enable-libcodec2 --enable-cuda --enable-cuda-llvm --enable-cuvid --enable-libcdio --enable-libdrm --enable-libfdk-aac --enable-libjack --enable-libjxl --enable-libklvanc --enable-libfreetype --enable-libfribidi --enable-libgme --enable-libgsm --enable-libharfbuzz --enable-libilbc --enable-liblc3 --enable-libmp3lame --enable-libmysofa --enable-nvenc --enable-nvdec --enable-openal --enable-liboapv --enable-opencl --enable-opengl --enable-libopenh264 --enable-libopenjpeg --enable-libopenmpt --enable-libopus --enable-libpulse --enable-libplacebo --enable-librsvg --enable-librav1e --enable-librubberband --enable-libqrencode --enable-libsmbclient --enable-version3 --enable-libsnappy --enable-libsoxr --enable-libspeex --enable-libsrt --enable-libssh --enable-libsvtav1 --enable-libtesseract --enable-libtheora --enable-libtwolame --enable-libvorbis --enable-libv4l2 --enable-libvidstab --enable-libvmaf --enable-version3 --enable-vapoursynth --enable-libvpx --enable-libvvenc --enable-vulkan --enable-libshaderc --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxvid --enable-libxml2 --enable-libzimg --enable-libzmq --enable-libzvbi --enable-lv2 --enable-avfilter --enable-libmodplug --enable-pthreads --disable-static --enable-shared --enable-gpl --disable-debug --disable-stripping --shlibdir=/usr/lib64 --enable-lto --enable-libvpl --enable-runtime-cpudetect\nlibavutil      60. 26.103 / 60. 26.103\nlibavcodec     62. 28.103 / 62. 28.103\nlibavformat    62. 12.103 / 62. 12.103\nlibavdevice    62.  3.103 / 62.  3.103\nlibavfilter    11. 14.103 / 11. 14.103\nlibswscale      9.  5.103 /  9.  5.103\nlibswresample   6.  3.103 /  6.  3.103\n\nExiting with exit code 0\n"
+          }
+        },
+        "packages": {
+          "argv": [
+            "rpm",
+            "-q",
+            "mesa-vulkan-drivers",
+            "libva",
+            "intel-media-driver",
+            "libdrm"
+          ],
+          "exit_code": 0,
+          "stderr": "",
+          "stdout": "mesa-vulkan-drivers-26.2.3-1.fc44.x86_64\nmesa-vulkan-drivers-26.2.3-1.fc44.i686\nlibva-2.23.0-3.fc44.x86_64\nlibva-2.23.0-3.fc44.i686\nintel-media-driver-26.1.5-1.fc44.x86_64\nlibdrm-2.4.134-1.fc44.x86_64\nlibdrm-2.4.134-1.fc44.i686\n"
+        }
+      }
+    },
+    "alternate": {
+      "manifest": {
+        "path": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-native-snapshot/target/native-stack-captures/alternate.json",
+        "sha256": "55d02501f2fa684892c7ece1d3e04fa841c6ff700ab37855ddf8fc0773c66b02",
+        "size_bytes": 417293
+      },
+      "identity": {
+        "stack_id": "d1a-frozen-ihd25.4.6",
+        "binary": {
+          "bytes": 4130448,
+          "path": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-native-snapshot/target/qualification-binaries/default-asciiflow",
+          "sha256": "92fc20d079c8067872e88ba6f1d67949e952f630b07d1ac7f6441245f831fe02"
+        },
+        "driver_files": {
+          "anv": {
+            "bytes": 26522104,
+            "path": "/usr/lib64/libvulkan_intel.so",
+            "sha256": "11ef9334499bd78b0010cb4f1462d59042a76d9bf49cf2bc0a08f02b3f9c01bd"
+          },
+          "ihd": {
+            "bytes": 40162216,
+            "path": "/home/eureka/Documents/AsciiFlow/target/stage54c2-toolchains/intel-media-driver-25.4.6-1.fc44/usr/lib64/dri-nonfree/iHD_drv_video.so",
+            "sha256": "92d5e20cd3d377a66a19e0da674712afd8b96d5c7c68c81ab45c2956069343a4"
+          }
+        },
+        "native_dependencies": {
+          "/home/eureka/Documents/AsciiFlow/target/stage54c2-toolchains/intel-media-driver-25.4.6-1.fc44/usr/lib64/dri-nonfree/iHD_drv_video.so": {
+            "bytes": 40162216,
+            "path": "/home/eureka/Documents/AsciiFlow/target/stage54c2-toolchains/intel-media-driver-25.4.6-1.fc44/usr/lib64/dri-nonfree/iHD_drv_video.so",
+            "sha256": "92d5e20cd3d377a66a19e0da674712afd8b96d5c7c68c81ab45c2956069343a4"
+          },
+          "/usr/lib64/ld-linux-x86-64.so.2": {
+            "bytes": 1002600,
+            "path": "/usr/lib64/ld-linux-x86-64.so.2",
+            "sha256": "4e5d39355699e90fa29313d3100e82af4a23290028c58c364d6a249ef6a78e5e"
+          },
+          "/usr/lib64/libSPIRV-Tools.so": {
+            "bytes": 1722808,
+            "path": "/usr/lib64/libSPIRV-Tools.so",
+            "sha256": "06897d4ed1051d4e95b1045288d54230564440064fd117965d742267e7f4834e"
+          },
+          "/usr/lib64/libVkLayer_MESA_device_select.so": {
+            "bytes": 100680,
+            "path": "/usr/lib64/libVkLayer_MESA_device_select.so",
+            "sha256": "81d08cd0099f965af984dc1aae6135bf85778c03c9412ae33c42456ccc3d793d"
+          },
+          "/usr/lib64/libX11-xcb.so.1.0.0": {
+            "bytes": 11016,
+            "path": "/usr/lib64/libX11-xcb.so.1.0.0",
+            "sha256": "57cdf71a9b30e068f7b00112b6e879a804fb8d451d351e3dff8260a34718f408"
+          },
+          "/usr/lib64/libX11.so.6.4.0": {
+            "bytes": 1408520,
+            "path": "/usr/lib64/libX11.so.6.4.0",
+            "sha256": "95b9ecfbde1b73c7f7380ae643e8ade9555234607a47d7e131ae6365a9899244"
+          },
+          "/usr/lib64/libXau.so.6.0.0": {
+            "bytes": 19640,
+            "path": "/usr/lib64/libXau.so.6.0.0",
+            "sha256": "78e2e7a514a6844530b099c7dfb184a9992f7b0681c30105281ddb8e48dc8a59"
+          },
+          "/usr/lib64/libXext.so.6.4.0": {
+            "bytes": 79904,
+            "path": "/usr/lib64/libXext.so.6.4.0",
+            "sha256": "09056dd620dc643dc1c2ed20041fa11de6a981dd0f618d6785124b4bdc607a1e"
+          },
+          "/usr/lib64/libXfixes.so.3.1.0": {
+            "bytes": 32072,
+            "path": "/usr/lib64/libXfixes.so.3.1.0",
+            "sha256": "6160ee5edaa0aa4e96d263b16fcc41892567e82aca7e6d5bbb2a3d2e2bc4fa6f"
+          },
+          "/usr/lib64/libc.so.6": {
+            "bytes": 2482096,
+            "path": "/usr/lib64/libc.so.6",
+            "sha256": "a5c5ad9d59d3c69eda93aa8f82930ba06cc4e893a113e66c85ad6e96243d53c8"
+          },
+          "/usr/lib64/libdisplay-info.so.0.3.0": {
+            "bytes": 224808,
+            "path": "/usr/lib64/libdisplay-info.so.0.3.0",
+            "sha256": "2744bd4b6f456e67f24a37f79c43ed2d3fd73b87802ab677dd3a5ad4c5ad5a7d"
+          },
+          "/usr/lib64/libdrm.so.2.134.0": {
+            "bytes": 91056,
+            "path": "/usr/lib64/libdrm.so.2.134.0",
+            "sha256": "e2a416f7b7c9e9e46b5f96bf20be71f146426daa6e1e8438adce2ab8e4c0fc0e"
+          },
+          "/usr/lib64/libexpat.so.1.12.5": {
+            "bytes": 190864,
+            "path": "/usr/lib64/libexpat.so.1.12.5",
+            "sha256": "47e20fe57bb15932d63c9f8a874f64092fd222f87d3df2de55e70db8804edc11"
+          },
+          "/usr/lib64/libffi.so.8.2.0": {
+            "bytes": 65584,
+            "path": "/usr/lib64/libffi.so.8.2.0",
+            "sha256": "05bf4048cc0fd016140d7d880c4a4ec402096732f60463c8fb87b98d877d3628"
+          },
+          "/usr/lib64/libgcc_s-16-20260819.so.1": {
+            "bytes": 186512,
+            "path": "/usr/lib64/libgcc_s-16-20260819.so.1",
+            "sha256": "c71a62b5ef442ab8cf4470874dee6f2383d73a744f0006b6d287412f131c2e09"
+          },
+          "/usr/lib64/libigdgmm.so.12.10.0": {
+            "bytes": 910376,
+            "path": "/usr/lib64/libigdgmm.so.12.10.0",
+            "sha256": "623976005c53b0f62057a472b7abe51aba6a0379cee6f771a3184a24b4703f1f"
+          },
+          "/usr/lib64/libm.so.6": {
+            "bytes": 1153848,
+            "path": "/usr/lib64/libm.so.6",
+            "sha256": "16a03ce6d24c8a46742206d4a9c1d35bb6577ae2384f153dc6ef4a4b62b5357f"
+          },
+          "/usr/lib64/libstdc++.so.6.0.36": {
+            "bytes": 2884696,
+            "path": "/usr/lib64/libstdc++.so.6.0.36",
+            "sha256": "fc224ee3cc56b9b3e58453bfb9a0cac3a696e60fd33ba48b6a30eb22b76cc867"
+          },
+          "/usr/lib64/libudev.so.1.7.12": {
+            "bytes": 316008,
+            "path": "/usr/lib64/libudev.so.1.7.12",
+            "sha256": "020ad2e125ac945faf59983f6d9babda805ff809a97fd8f4660d9ffdfbef6b30"
+          },
+          "/usr/lib64/libva-drm.so.2.2300.0": {
+            "bytes": 11368,
+            "path": "/usr/lib64/libva-drm.so.2.2300.0",
+            "sha256": "0c364a7bd48dd48467ec8c522e074384169bf501936eacc6a13700d34c6560de"
+          },
+          "/usr/lib64/libva-wayland.so.2.2300.0": {
+            "bytes": 24432,
+            "path": "/usr/lib64/libva-wayland.so.2.2300.0",
+            "sha256": "d2f1675812ee336551b5d301bd9a380c9f69027656e503a21d867a9b151b4247"
+          },
+          "/usr/lib64/libva-x11.so.2.2300.0": {
+            "bytes": 32488,
+            "path": "/usr/lib64/libva-x11.so.2.2300.0",
+            "sha256": "ba438bb29e665b1b2f7c8833a72287e518cb220c605cb58d07445ca4e211028d"
+          },
+          "/usr/lib64/libva.so.2.2300.0": {
+            "bytes": 230072,
+            "path": "/usr/lib64/libva.so.2.2300.0",
+            "sha256": "5c0a73ba45d797aa4e608d2c9123047103da7470fbac8dd7350f3e9b3c851d5a"
+          },
+          "/usr/lib64/libvulkan.so.1.4.341": {
+            "bytes": 569952,
+            "path": "/usr/lib64/libvulkan.so.1.4.341",
+            "sha256": "a09dab583a4b8e50bba61d1284b46b9d6256300713aa1db6f20f06b2dbbe0696"
+          },
+          "/usr/lib64/libvulkan_intel.so": {
+            "bytes": 26522104,
+            "path": "/usr/lib64/libvulkan_intel.so",
+            "sha256": "11ef9334499bd78b0010cb4f1462d59042a76d9bf49cf2bc0a08f02b3f9c01bd"
+          },
+          "/usr/lib64/libwayland-client.so.0.26.0": {
+            "bytes": 66168,
+            "path": "/usr/lib64/libwayland-client.so.0.26.0",
+            "sha256": "cb517c02f6e808257932a4b3f1a4bd1232ce415cdd8e41a854ff0f0e918b51c9"
+          },
+          "/usr/lib64/libxcb-dri3.so.0.1.0": {
+            "bytes": 23704,
+            "path": "/usr/lib64/libxcb-dri3.so.0.1.0",
+            "sha256": "68618518da296821983f625112923b4c247dd073060508250e73cfd8cada166a"
+          },
+          "/usr/lib64/libxcb-present.so.0.0.0": {
+            "bytes": 15496,
+            "path": "/usr/lib64/libxcb-present.so.0.0.0",
+            "sha256": "f05943f707a89465291685f539d7b8070fbb630eb518f70c4f14931f6600e211"
+          },
+          "/usr/lib64/libxcb-randr.so.0.1.0": {
+            "bytes": 72896,
+            "path": "/usr/lib64/libxcb-randr.so.0.1.0",
+            "sha256": "bd9493e1eaec84ad952388095d5c64165a3b345c342ecacf2dc7fdcc9ddf3abb"
+          },
+          "/usr/lib64/libxcb-shm.so.0.0.0": {
+            "bytes": 15544,
+            "path": "/usr/lib64/libxcb-shm.so.0.0.0",
+            "sha256": "fe83f32f3c5d3337e2c6c1b36949e4087877697d32317c52611743c70ab7e13c"
+          },
+          "/usr/lib64/libxcb-sync.so.1.0.0": {
+            "bytes": 31952,
+            "path": "/usr/lib64/libxcb-sync.so.1.0.0",
+            "sha256": "70a683c72408b0b2b4c3db6217eafb7e54c6c27659ff09444277586394fe4da8"
+          },
+          "/usr/lib64/libxcb-xfixes.so.0.0.0": {
+            "bytes": 35960,
+            "path": "/usr/lib64/libxcb-xfixes.so.0.0.0",
+            "sha256": "3ba1cf11d47c26f03f2efa573acbdcc71e4a4e95b9438a1958e25b15a0f020fa"
+          },
+          "/usr/lib64/libxcb.so.1.1.0": {
+            "bytes": 173424,
+            "path": "/usr/lib64/libxcb.so.1.1.0",
+            "sha256": "15fd80f8917a44ec68c17a322648a5c576c3fc3bc7745c691573bd6d24ade7eb"
+          },
+          "/usr/lib64/libxshmfence.so.1.0.0": {
+            "bytes": 11424,
+            "path": "/usr/lib64/libxshmfence.so.1.0.0",
+            "sha256": "fa822d052508b66cb80b5fb42d2ad3686dc7cf47b1ef578fad71cf9d3a82576d"
+          },
+          "/usr/lib64/libz.so.1.3.1.zlib-ng": {
+            "bytes": 169544,
+            "path": "/usr/lib64/libz.so.1.3.1.zlib-ng",
+            "sha256": "bbde8faec092a7c67b8bd76bbba4a826e61b05c171b97004ce6b308c5a090351"
+          },
+          "/usr/lib64/libzstd.so.1.5.7": {
+            "bytes": 959384,
+            "path": "/usr/lib64/libzstd.so.1.5.7",
+            "sha256": "70ec54d150f4052f28fb1e8f8a1c6ca35e1a499e4744c6f6d9d783537618f80b"
+          }
+        },
+        "runtime": {
+          "effective_environment": {
+            "LIBVA_DRIVERS_PATH": "/home/eureka/Documents/AsciiFlow/target/stage54c2-toolchains/intel-media-driver-25.4.6-1.fc44/usr/lib64/dri-nonfree",
+            "LIBVA_DRIVER_NAME": "iHD",
+            "PATH": "/home/eureka/.local/bin:/home/eureka/.local/bin:/home/eureka/.nvm/versions/node/v24.15.0/bin:/home/eureka/.local/bin:/home/eureka/bin:/home/eureka/.codex/tmp/arg0/codex-arg0LpQkfU:/home/eureka/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/override:/home/eureka/.local/bin:/run/user/1000/fnm_multishells/25723_1791377633910/bin:/home/eureka/.local/share/fnm:/home/eureka/.dotnet:/home/eureka/Android/Sdk/emulator:/home/eureka/Android/Sdk/platform-tools:/home/eureka/.local/bin:/home/eureka/.cargo/bin:/run/user/1000/fnm_multishells/4164_1791374644534/bin:/home/eureka/.local/share/fnm:/home/eureka/.local/bin:/usr/local/bin:/usr/bin:/home/eureka/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback:/usr/lib/chatgpt/resources",
+            "VK_ICD_FILENAMES": "/usr/share/vulkan/icd.d/intel_icd.x86_64.json"
+          },
+          "prefix": null,
+          "selectors": {
+            "LIBVA_DRIVERS_PATH": "/home/eureka/Documents/AsciiFlow/target/stage54c2-toolchains/intel-media-driver-25.4.6-1.fc44/usr/lib64/dri-nonfree",
+            "LIBVA_DRIVER_NAME": "iHD",
+            "VK_ICD_FILENAMES": "/usr/share/vulkan/icd.d/intel_icd.x86_64.json"
+          }
+        },
+        "ffmpeg": {
+          "identity": {
+            "bytes": 416936,
+            "path": "/usr/bin/ffmpeg",
+            "sha256": "c71eb1c6b9d57114ea567b1525c393295285df3ad21b17ad8144e02832d8ed92"
+          },
+          "version": {
+            "argv": [
+              "ffmpeg",
+              "-version"
+            ],
+            "exit_code": 0,
+            "stderr": "",
+            "stdout": "ffmpeg version 8.1.3 Copyright (c) 2000-2026 the FFmpeg developers\nbuilt with gcc 16 (GCC)\nconfiguration: --prefix=/usr --bindir=/usr/bin --datadir=/usr/share/ffmpeg --docdir=/usr/share/doc/ffmpeg --incdir=/usr/include/ffmpeg --libdir=/usr/lib64 --mandir=/usr/share/man --arch=x86_64 --optflags='-O2 -flto=auto -ffat-lto-objects -fexceptions -g -grecord-gcc-switches -pipe -Wall -Wno-complain-wrong-lang -Werror=format-security -Wp,-U_FORTIFY_SOURCE,-D_FORTIFY_SOURCE=3 -Wp,-D_GLIBCXX_ASSERTIONS -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -fstack-protector-strong -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -m64 -march=x86-64 -mtune=generic -fasynchronous-unwind-tables -fstack-clash-protection -fcf-protection -mtls-dialect=gnu2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer' --extra-ldflags='-Wl,-z,relro -Wl,--as-needed -Wl,-z,pack-relative-relocs -Wl,-z,now -specs=/usr/lib/rpm/redhat/redhat-hardened-ld -specs=/usr/lib/rpm/redhat/redhat-hardened-ld-errors -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -Wl,--build-id=sha1 -specs=/usr/lib/rpm/redhat/redhat-package-notes ' --extra-cflags=' -I/usr/include/rav1e' --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libvo-amrwbenc --enable-version3 --enable-bzlib --enable-chromaprint --enable-fontconfig --enable-frei0r --enable-gcrypt --enable-gnutls --enable-ladspa --enable-lcms2 --enable-libaom --enable-libaribb24 --enable-libaribcaption --enable-libdav1d --enable-libass --enable-libbluray --enable-libbs2b --enable-libcodec2 --enable-cuda --enable-cuda-llvm --enable-cuvid --enable-libcdio --enable-libdrm --enable-libfdk-aac --enable-libjack --enable-libjxl --enable-libklvanc --enable-libfreetype --enable-libfribidi --enable-libgme --enable-libgsm --enable-libharfbuzz --enable-libilbc --enable-liblc3 --enable-libmp3lame --enable-libmysofa --enable-nvenc --enable-nvdec --enable-openal --enable-liboapv --enable-opencl --enable-opengl --enable-libopenh264 --enable-libopenjpeg --enable-libopenmpt --enable-libopus --enable-libpulse --enable-libplacebo --enable-librsvg --enable-librav1e --enable-librubberband --enable-libqrencode --enable-libsmbclient --enable-version3 --enable-libsnappy --enable-libsoxr --enable-libspeex --enable-libsrt --enable-libssh --enable-libsvtav1 --enable-libtesseract --enable-libtheora --enable-libtwolame --enable-libvorbis --enable-libv4l2 --enable-libvidstab --enable-libvmaf --enable-version3 --enable-vapoursynth --enable-libvpx --enable-libvvenc --enable-vulkan --enable-libshaderc --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxvid --enable-libxml2 --enable-libzimg --enable-libzmq --enable-libzvbi --enable-lv2 --enable-avfilter --enable-libmodplug --enable-pthreads --disable-static --enable-shared --enable-gpl --disable-debug --disable-stripping --shlibdir=/usr/lib64 --enable-lto --enable-libvpl --enable-runtime-cpudetect\nlibavutil      60. 26.103 / 60. 26.103\nlibavcodec     62. 28.103 / 62. 28.103\nlibavformat    62. 12.103 / 62. 12.103\nlibavdevice    62.  3.103 / 62.  3.103\nlibavfilter    11. 14.103 / 11. 14.103\nlibswscale      9.  5.103 /  9.  5.103\nlibswresample   6.  3.103 /  6.  3.103\n\nExiting with exit code 0\n"
+          }
+        },
+        "packages": {
+          "argv": [
+            "rpm",
+            "-q",
+            "mesa-vulkan-drivers",
+            "libva",
+            "intel-media-driver",
+            "libdrm"
+          ],
+          "exit_code": 0,
+          "stderr": "",
+          "stdout": "mesa-vulkan-drivers-26.2.3-1.fc44.x86_64\nmesa-vulkan-drivers-26.2.3-1.fc44.i686\nlibva-2.23.0-3.fc44.x86_64\nlibva-2.23.0-3.fc44.i686\nintel-media-driver-26.1.5-1.fc44.x86_64\nlibdrm-2.4.134-1.fc44.x86_64\nlibdrm-2.4.134-1.fc44.i686\n"
+        }
+      }
+    }
+  },
+  "corpora": {
+    "canonical-core": {
+      "raw": {
+        "path": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-native-snapshot/target/native-portability-subset/canonical-core/results.json",
+        "sha256": "4784f02a3d37e1d1aec067978c944fbf946334b4bccfeaae5dddb43a97949c61",
+        "size_bytes": 50849
+      },
+      "summary": {
+        "classification": {
+          "PASS": 3
+        },
+        "decode-back": {
+          "PASS": 3
+        },
+        "hardware": {},
+        "media oracle": {
+          "PASS": 1
+        },
+        "planner": {
+          "PASS": 4
+        },
+        "runtime": {
+          "PASS": 3
+        },
+        "static": {
+          "PASS": 2
+        }
+      },
+      "results": [
+        {
+          "category": "classification",
+          "id": "canonical-h2648",
+          "result": "PASS",
+          "evidence": {
+            "classification": {
+              "observed": "Sdr",
+              "scope": "structured first-frame diagnostics"
+            },
+            "decode_back": {
+              "codec": "h264",
+              "decoded_hashes": {
+                "path": "command-006.log",
+                "sha256": "58b3e6e9370b751e84ab8585f70676efb7446a81eebe92ed3052a4f20a52c7a0"
+              },
+              "frames": 300,
+              "pixel_format": "yuv420p",
+              "scope": "full video decode, geometry, depth, color; audio checked by retained oracle"
+            },
+            "expected_rejection": false,
+            "input_sha256": "6e5c214b813dca3e1db65629b1241cfb663166eb565cda1c48b5ee74ed0dce6b",
+            "output_sha256": "7c8a7572320b8c6c999143dfece4a76d487d6c9e7788206b7af52df9acd4e1cc"
+          }
+        },
+        {
+          "category": "static",
+          "id": "corpus-schema",
+          "result": "PASS",
+          "evidence": {}
+        },
+        {
+          "category": "classification",
+          "id": "hevc-pq-to-sdr10",
+          "result": "PASS",
+          "evidence": {
+            "classification": {
+              "observed": "HdrPq",
+              "scope": "structured first-frame diagnostics"
+            },
+            "decode_back": {
+              "codec": "h264",
+              "decoded_hashes": {
+                "path": "command-011.log",
+                "sha256": "b851592b8891c81a0691131cb3684b55096a2ddf22b083c805296b09205180de"
+              },
+              "frames": 300,
+              "pixel_format": "yuv420p",
+              "scope": "full video decode, geometry, depth, color; audio checked by retained oracle"
+            },
+            "expected_rejection": false,
+            "input_sha256": "eb8d8c42cd99369b99031900e8861c08f611bfcc662b8d0eb741eb695a0c366a",
+            "output_sha256": "866cd722e7969994c91e2d0647abd82a1b6be5f29929205baa25040742feda12"
+          }
+        },
+        {
+          "category": "classification",
+          "id": "hevc-pq10",
+          "result": "PASS",
+          "evidence": {
+            "classification": {
+              "observed": "HdrPq",
+              "scope": "structured first-frame diagnostics"
+            },
+            "decode_back": {
+              "codec": "hevc",
+              "decoded_hashes": {
+                "path": "command-016.log",
+                "sha256": "4f3e0c9c21a05480ae5306f1e6ff42aba8d6d75aeffa22a408ab66e8dc0c1aea"
+              },
+              "frames": 300,
+              "pixel_format": "yuv420p10le",
+              "scope": "full video decode, geometry, depth, color; audio checked by retained oracle"
+            },
+            "expected_rejection": false,
+            "input_sha256": "eb8d8c42cd99369b99031900e8861c08f611bfcc662b8d0eb741eb695a0c366a",
+            "output_sha256": "6aca8ad25ea139f4788f61a49992d6994479ebf5fb9d1bed7fe6ee94a5d172bd"
+          }
+        },
+        {
+          "category": "media oracle",
+          "id": "media-oracle-controls",
+          "result": "PASS",
+          "evidence": {}
+        },
+        {
+          "category": "static",
+          "id": "support-document-consistency",
+          "result": "PASS",
+          "evidence": {}
+        },
+        {
+          "category": "planner",
+          "id": "support-planner-consistency",
+          "result": "PASS",
+          "evidence": {}
+        }
+      ]
+    },
+    "canonical-audio": {
+      "raw": {
+        "path": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-native-snapshot/target/native-portability-subset/canonical-audio/results.json",
+        "sha256": "9691fa02122e128214aa05d502b153828f17bda7f28f0b4cc19666e8953a7c1d",
+        "size_bytes": 99821
+      },
+      "summary": {
+        "classification": {
+          "PASS": 5,
+          "UNQUALIFIED": 1
+        },
+        "decode-back": {
+          "PASS": 5
+        },
+        "hardware": {},
+        "media oracle": {
+          "PASS": 1
+        },
+        "planner": {
+          "PASS": 6
+        },
+        "runtime": {
+          "PASS": 5
+        },
+        "static": {
+          "PASS": 2
+        }
+      },
+      "results": [
+        {
+          "category": "static",
+          "id": "corpus-schema",
+          "result": "PASS",
+          "evidence": {}
+        },
+        {
+          "category": "media oracle",
+          "id": "media-oracle-controls",
+          "result": "PASS",
+          "evidence": {}
+        },
+        {
+          "category": "classification",
+          "id": "real-aac-48000-stereo-mp4-hardware",
+          "result": "PASS",
+          "evidence": {
+            "audio_oracle": {
+              "command": "audio-oracle-real-aac-48000-stereo-mp4-hardware",
+              "environment": {
+                "ASCIIFLOW_AUDIO_CANDIDATE": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-native-snapshot/target/native-portability-subset/canonical-audio/real-aac-48000-stereo-mp4-hardware-output.mp4",
+                "ASCIIFLOW_AUDIO_REFERENCE": "/home/eureka/Documents/AsciiFlow/target/stage54c1-evidence/inputs/aac-48000-stereo.mp4"
+              },
+              "log_sha256": "27fc7beec38c2d7358f843931b75bafeb0d7889849ec3ce9d631b01cd1624935",
+              "result": "PASS",
+              "scope": "unchanged strict retained audio oracle"
+            },
+            "classification": {
+              "observed": "Sdr",
+              "scope": "structured first-frame diagnostics"
+            },
+            "decode_back": {
+              "codec": "h264",
+              "decoded_hashes": {
+                "path": "command-006.log",
+                "sha256": "8b84b88c02aa3b2320c6ea06ccf94c9275f9e38edbeaaa115a2ee1568cf19a53"
+              },
+              "frames": 50,
+              "pixel_format": "yuv420p",
+              "scope": "full video decode, geometry, depth, color; audio checked by retained oracle"
+            },
+            "expected_rejection": false,
+            "input_sha256": "c6c57073f86e6db7a614842176e3a9921aabcda95a14294745208bc8627ca5fb",
+            "output_sha256": "6fc32ffdc22472467f7ece746ec99b2de96748fe3a0ddd4a146ddccfb7bdaf2c"
+          }
+        },
+        {
+          "category": "classification",
+          "id": "real-dual-aac-mp4-hardware",
+          "result": "PASS",
+          "evidence": {
+            "audio_oracle": {
+              "command": "audio-oracle-real-dual-aac-mp4-hardware",
+              "environment": {
+                "ASCIIFLOW_AUDIO_CANDIDATE": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-native-snapshot/target/native-portability-subset/canonical-audio/real-dual-aac-mp4-hardware-output.mp4",
+                "ASCIIFLOW_AUDIO_REFERENCE": "/home/eureka/Documents/AsciiFlow/target/stage54c1-evidence/inputs/dual-aac.mp4"
+              },
+              "log_sha256": "14007dd1a9a5f30b78366e039ce691d6b039a4e27c7d9afd353eee069517002f",
+              "result": "PASS",
+              "scope": "unchanged strict retained audio oracle"
+            },
+            "classification": {
+              "observed": "Sdr",
+              "scope": "structured first-frame diagnostics"
+            },
+            "decode_back": {
+              "codec": "h264",
+              "decoded_hashes": {
+                "path": "command-012.log",
+                "sha256": "7ad2b8d1fb2cb3586d0b33fd4c4685b76b46475f177b91ce630a4d4e315c76b0"
+              },
+              "frames": 50,
+              "pixel_format": "yuv420p",
+              "scope": "full video decode, geometry, depth, color; audio checked by retained oracle"
+            },
+            "expected_rejection": false,
+            "input_sha256": "e71f10d3808692232a8bdc3eb1b26fc163360433d62f78f3749a3b1513a0187c",
+            "output_sha256": "9914787486105de905e587cc07f8457e98d62675ca3bed4c98034f408b91d1ea"
+          }
+        },
+        {
+          "category": "classification",
+          "id": "real-h264-bframes-2-mp4-hardware",
+          "result": "PASS",
+          "evidence": {
+            "classification": {
+              "observed": "Sdr",
+              "scope": "structured first-frame diagnostics"
+            },
+            "decode_back": {
+              "codec": "h264",
+              "decoded_hashes": {
+                "path": "command-018.log",
+                "sha256": "cd6e141e8fbdd189ac073ff3f0e1546b4759af21262bcaa3080b4901b5f642ed"
+              },
+              "frames": 24,
+              "pixel_format": "yuv420p",
+              "scope": "full video decode, geometry, depth, color; audio checked by retained oracle"
+            },
+            "expected_rejection": false,
+            "input_sha256": "2c9c90eede8cfd4222d53476356ffe91f39a85aebc3ba64e5241c936d08f62fa",
+            "output_sha256": "de86ab0160a31bbde0aeb40e4a97b67f9f34585a3131392e2fac265c30adefd5"
+          }
+        },
+        {
+          "category": "classification",
+          "id": "real-pq-no-static-mp4",
+          "result": "PASS",
+          "evidence": {
+            "classification": {
+              "observed": "HdrPq",
+              "scope": "structured first-frame diagnostics"
+            },
+            "decode_back": {
+              "codec": "hevc",
+              "decoded_hashes": {
+                "path": "command-023.log",
+                "sha256": "43ffb55fb887e608918dfac640c2d515e33969fa303d87a5c6e1f0bb4b4e8e7c"
+              },
+              "frames": 10,
+              "pixel_format": "yuv420p10le",
+              "scope": "full video decode, geometry, depth, color; audio checked by retained oracle"
+            },
+            "expected_rejection": false,
+            "input_sha256": "fad7953546f2433ae92ba6d0135bdba365261f4df098718f23b1da3bd2c6599e",
+            "output_sha256": "8367f39d32c7f80dcca42895c5fce44b35edb88abbb280264047c537b52f5ac9"
+          }
+        },
+        {
+          "category": "classification",
+          "id": "real-pq-static-64x64-mp4",
+          "result": "UNQUALIFIED",
+          "evidence": {
+            "classification": {
+              "observed": "HdrPq",
+              "scope": "structured first-frame diagnostics"
+            },
+            "expected_rejection": true,
+            "input_sha256": "9ab186252d86660fad93295a025828d045346b1030af93b0e5eb24d2421735b8",
+            "transaction": {
+              "sentinel_preserved": true,
+              "sentinel_sha256": "72ccdeecbecc7c72f5b65bb537afb2e31f14c5790919c14cc517e92de9b39be5",
+              "staging_files": []
+            }
+          }
+        },
+        {
+          "category": "classification",
+          "id": "real-pq-static-mp4",
+          "result": "PASS",
+          "evidence": {
+            "classification": {
+              "observed": "HdrPq",
+              "scope": "structured first-frame diagnostics"
+            },
+            "decode_back": {
+              "codec": "hevc",
+              "decoded_hashes": {
+                "path": "command-031.log",
+                "sha256": "43ffb55fb887e608918dfac640c2d515e33969fa303d87a5c6e1f0bb4b4e8e7c"
+              },
+              "frames": 10,
+              "pixel_format": "yuv420p10le",
+              "scope": "full video decode, geometry, depth, color; audio checked by retained oracle"
+            },
+            "expected_rejection": false,
+            "input_sha256": "6a9616fd7d9793ad22a368aa928e095071258aea75e5cf6ac9da921d4c243366",
+            "output_sha256": "8367f39d32c7f80dcca42895c5fce44b35edb88abbb280264047c537b52f5ac9"
+          }
+        },
+        {
+          "category": "static",
+          "id": "support-document-consistency",
+          "result": "PASS",
+          "evidence": {}
+        },
+        {
+          "category": "planner",
+          "id": "support-planner-consistency",
+          "result": "PASS",
+          "evidence": {}
+        }
+      ]
+    },
+    "alternate-core": {
+      "raw": {
+        "path": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-native-snapshot/target/native-portability-subset/alternate-core/results.json",
+        "sha256": "60cbc9a05637ec171f6ae59a15a7099e2099d8d282763990017e0141e6b24fda",
+        "size_bytes": 436492
+      },
+      "summary": {
+        "classification": {
+          "PASS": 3
+        },
+        "decode-back": {
+          "PASS": 3
+        },
+        "hardware": {},
+        "media oracle": {
+          "PASS": 2
+        },
+        "planner": {
+          "PASS": 4
+        },
+        "runtime": {
+          "PASS": 3
+        },
+        "static": {
+          "PASS": 2
+        }
+      },
+      "results": [
+        {
+          "category": "classification",
+          "id": "canonical-h2648",
+          "result": "PASS",
+          "evidence": {
+            "classification": {
+              "observed": "Sdr",
+              "scope": "structured first-frame diagnostics"
+            },
+            "decode_back": {
+              "codec": "h264",
+              "decoded_hashes": {
+                "path": "command-006.log",
+                "sha256": "58b3e6e9370b751e84ab8585f70676efb7446a81eebe92ed3052a4f20a52c7a0"
+              },
+              "frames": 300,
+              "pixel_format": "yuv420p",
+              "scope": "full video decode, geometry, depth, color; audio checked by retained oracle"
+            },
+            "expected_rejection": false,
+            "input_sha256": "6e5c214b813dca3e1db65629b1241cfb663166eb565cda1c48b5ee74ed0dce6b",
+            "output_sha256": "d9aefcbe01ae3db8af586e480fa4a0a7738c881c14d381419061f5d8c7725a7b"
+          }
+        },
+        {
+          "category": "static",
+          "id": "corpus-schema",
+          "result": "PASS",
+          "evidence": {}
+        },
+        {
+          "category": "classification",
+          "id": "hevc-pq-to-sdr10",
+          "result": "PASS",
+          "evidence": {
+            "classification": {
+              "observed": "HdrPq",
+              "scope": "structured first-frame diagnostics"
+            },
+            "decode_back": {
+              "codec": "h264",
+              "decoded_hashes": {
+                "path": "command-011.log",
+                "sha256": "b851592b8891c81a0691131cb3684b55096a2ddf22b083c805296b09205180de"
+              },
+              "frames": 300,
+              "pixel_format": "yuv420p",
+              "scope": "full video decode, geometry, depth, color; audio checked by retained oracle"
+            },
+            "expected_rejection": false,
+            "input_sha256": "eb8d8c42cd99369b99031900e8861c08f611bfcc662b8d0eb741eb695a0c366a",
+            "output_sha256": "bb56847918437e9c603b547e301c32141b5b002c67126f3b22bd1db3b14c0756"
+          }
+        },
+        {
+          "category": "classification",
+          "id": "hevc-pq10",
+          "result": "PASS",
+          "evidence": {
+            "classification": {
+              "observed": "HdrPq",
+              "scope": "structured first-frame diagnostics"
+            },
+            "decode_back": {
+              "codec": "hevc",
+              "decoded_hashes": {
+                "path": "command-016.log",
+                "sha256": "4f3e0c9c21a05480ae5306f1e6ff42aba8d6d75aeffa22a408ab66e8dc0c1aea"
+              },
+              "frames": 300,
+              "pixel_format": "yuv420p10le",
+              "scope": "full video decode, geometry, depth, color; audio checked by retained oracle"
+            },
+            "expected_rejection": false,
+            "input_sha256": "eb8d8c42cd99369b99031900e8861c08f611bfcc662b8d0eb741eb695a0c366a",
+            "output_sha256": "6aca8ad25ea139f4788f61a49992d6994479ebf5fb9d1bed7fe6ee94a5d172bd"
+          }
+        },
+        {
+          "category": "media oracle",
+          "id": "media-oracle-controls",
+          "result": "PASS",
+          "evidence": {}
+        },
+        {
+          "category": "media oracle",
+          "id": "portability-stack-comparison",
+          "result": "PASS",
+          "evidence": {}
+        },
+        {
+          "category": "static",
+          "id": "support-document-consistency",
+          "result": "PASS",
+          "evidence": {}
+        },
+        {
+          "category": "planner",
+          "id": "support-planner-consistency",
+          "result": "PASS",
+          "evidence": {}
+        }
+      ]
+    },
+    "alternate-audio": {
+      "raw": {
+        "path": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-native-snapshot/target/native-portability-subset/alternate-audio/results.json",
+        "sha256": "1ebdab50b9ef0065e5eca53d2530b0524c71a4c6213939ebb3e6e0ac844c09ff",
+        "size_bytes": 104391
+      },
+      "summary": {
+        "classification": {
+          "PASS": 5,
+          "UNQUALIFIED": 1
+        },
+        "decode-back": {
+          "PASS": 5
+        },
+        "hardware": {},
+        "media oracle": {
+          "FAILED": 1,
+          "PASS": 1
+        },
+        "planner": {
+          "PASS": 6
+        },
+        "runtime": {
+          "PASS": 5
+        },
+        "static": {
+          "PASS": 2
+        }
+      },
+      "results": [
+        {
+          "category": "static",
+          "id": "corpus-schema",
+          "result": "PASS",
+          "evidence": {}
+        },
+        {
+          "category": "media oracle",
+          "id": "media-oracle-controls",
+          "result": "PASS",
+          "evidence": {}
+        },
+        {
+          "category": "media oracle",
+          "id": "portability-stack-comparison",
+          "reason": "portability semantic/eligibility differences remain unresolved; see comparison receipt",
+          "result": "FAILED",
+          "evidence": {}
+        },
+        {
+          "category": "classification",
+          "id": "real-aac-48000-stereo-mp4-hardware",
+          "result": "PASS",
+          "evidence": {
+            "audio_oracle": {
+              "command": "audio-oracle-real-aac-48000-stereo-mp4-hardware",
+              "environment": {
+                "ASCIIFLOW_AUDIO_CANDIDATE": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-native-snapshot/target/native-portability-subset/alternate-audio/real-aac-48000-stereo-mp4-hardware-output.mp4",
+                "ASCIIFLOW_AUDIO_REFERENCE": "/home/eureka/Documents/AsciiFlow/target/stage54c1-evidence/inputs/aac-48000-stereo.mp4"
+              },
+              "log_sha256": "d0c20af6cf28eebeeb3556bf943a66946e29a64af18556e8f76cfe15621b01c1",
+              "result": "PASS",
+              "scope": "unchanged strict retained audio oracle"
+            },
+            "classification": {
+              "observed": "Sdr",
+              "scope": "structured first-frame diagnostics"
+            },
+            "decode_back": {
+              "codec": "h264",
+              "decoded_hashes": {
+                "path": "command-006.log",
+                "sha256": "8b84b88c02aa3b2320c6ea06ccf94c9275f9e38edbeaaa115a2ee1568cf19a53"
+              },
+              "frames": 50,
+              "pixel_format": "yuv420p",
+              "scope": "full video decode, geometry, depth, color; audio checked by retained oracle"
+            },
+            "expected_rejection": false,
+            "input_sha256": "c6c57073f86e6db7a614842176e3a9921aabcda95a14294745208bc8627ca5fb",
+            "output_sha256": "5a7efdcf5d57bc73209926f3bd68c982d2b717b380419a14a7c3a6b7b877d819"
+          }
+        },
+        {
+          "category": "classification",
+          "id": "real-dual-aac-mp4-hardware",
+          "result": "PASS",
+          "evidence": {
+            "audio_oracle": {
+              "command": "audio-oracle-real-dual-aac-mp4-hardware",
+              "environment": {
+                "ASCIIFLOW_AUDIO_CANDIDATE": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-native-snapshot/target/native-portability-subset/alternate-audio/real-dual-aac-mp4-hardware-output.mp4",
+                "ASCIIFLOW_AUDIO_REFERENCE": "/home/eureka/Documents/AsciiFlow/target/stage54c1-evidence/inputs/dual-aac.mp4"
+              },
+              "log_sha256": "09c6e5471db084ea13dc74228162686397050bf17f46444fa68080652298dde4",
+              "result": "PASS",
+              "scope": "unchanged strict retained audio oracle"
+            },
+            "classification": {
+              "observed": "Sdr",
+              "scope": "structured first-frame diagnostics"
+            },
+            "decode_back": {
+              "codec": "h264",
+              "decoded_hashes": {
+                "path": "command-012.log",
+                "sha256": "7ad2b8d1fb2cb3586d0b33fd4c4685b76b46475f177b91ce630a4d4e315c76b0"
+              },
+              "frames": 50,
+              "pixel_format": "yuv420p",
+              "scope": "full video decode, geometry, depth, color; audio checked by retained oracle"
+            },
+            "expected_rejection": false,
+            "input_sha256": "e71f10d3808692232a8bdc3eb1b26fc163360433d62f78f3749a3b1513a0187c",
+            "output_sha256": "ea276a4dc67aabcf3c8a01e03c31e9a4a93294a21db34c4bb43e0fd26f518f04"
+          }
+        },
+        {
+          "category": "classification",
+          "id": "real-h264-bframes-2-mp4-hardware",
+          "result": "PASS",
+          "evidence": {
+            "classification": {
+              "observed": "Sdr",
+              "scope": "structured first-frame diagnostics"
+            },
+            "decode_back": {
+              "codec": "h264",
+              "decoded_hashes": {
+                "path": "command-018.log",
+                "sha256": "cd6e141e8fbdd189ac073ff3f0e1546b4759af21262bcaa3080b4901b5f642ed"
+              },
+              "frames": 24,
+              "pixel_format": "yuv420p",
+              "scope": "full video decode, geometry, depth, color; audio checked by retained oracle"
+            },
+            "expected_rejection": false,
+            "input_sha256": "2c9c90eede8cfd4222d53476356ffe91f39a85aebc3ba64e5241c936d08f62fa",
+            "output_sha256": "285d5a0fd5f04d4f302a19fbc6bc8cdad1de2a9be85672fa6db62cd5ea851278"
+          }
+        },
+        {
+          "category": "classification",
+          "id": "real-pq-no-static-mp4",
+          "result": "PASS",
+          "evidence": {
+            "classification": {
+              "observed": "HdrPq",
+              "scope": "structured first-frame diagnostics"
+            },
+            "decode_back": {
+              "codec": "hevc",
+              "decoded_hashes": {
+                "path": "command-023.log",
+                "sha256": "43ffb55fb887e608918dfac640c2d515e33969fa303d87a5c6e1f0bb4b4e8e7c"
+              },
+              "frames": 10,
+              "pixel_format": "yuv420p10le",
+              "scope": "full video decode, geometry, depth, color; audio checked by retained oracle"
+            },
+            "expected_rejection": false,
+            "input_sha256": "fad7953546f2433ae92ba6d0135bdba365261f4df098718f23b1da3bd2c6599e",
+            "output_sha256": "8367f39d32c7f80dcca42895c5fce44b35edb88abbb280264047c537b52f5ac9"
+          }
+        },
+        {
+          "category": "classification",
+          "id": "real-pq-static-64x64-mp4",
+          "result": "UNQUALIFIED",
+          "evidence": {
+            "classification": {
+              "observed": "HdrPq",
+              "scope": "structured first-frame diagnostics"
+            },
+            "expected_rejection": true,
+            "input_sha256": "9ab186252d86660fad93295a025828d045346b1030af93b0e5eb24d2421735b8",
+            "transaction": {
+              "sentinel_preserved": true,
+              "sentinel_sha256": "72ccdeecbecc7c72f5b65bb537afb2e31f14c5790919c14cc517e92de9b39be5",
+              "staging_files": []
+            }
+          }
+        },
+        {
+          "category": "classification",
+          "id": "real-pq-static-mp4",
+          "result": "PASS",
+          "evidence": {
+            "classification": {
+              "observed": "HdrPq",
+              "scope": "structured first-frame diagnostics"
+            },
+            "decode_back": {
+              "codec": "hevc",
+              "decoded_hashes": {
+                "path": "command-031.log",
+                "sha256": "43ffb55fb887e608918dfac640c2d515e33969fa303d87a5c6e1f0bb4b4e8e7c"
+              },
+              "frames": 10,
+              "pixel_format": "yuv420p10le",
+              "scope": "full video decode, geometry, depth, color; audio checked by retained oracle"
+            },
+            "expected_rejection": false,
+            "input_sha256": "6a9616fd7d9793ad22a368aa928e095071258aea75e5cf6ac9da921d4c243366",
+            "output_sha256": "8367f39d32c7f80dcca42895c5fce44b35edb88abbb280264047c537b52f5ac9"
+          }
+        },
+        {
+          "category": "static",
+          "id": "support-document-consistency",
+          "result": "PASS",
+          "evidence": {}
+        },
+        {
+          "category": "planner",
+          "id": "support-planner-consistency",
+          "result": "PASS",
+          "evidence": {}
+        }
+      ]
+    }
+  },
+  "comparison": {
+    "raw": {
+      "path": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-native-snapshot/target/native-portability-subset/alternate-audio/portability-comparison.json",
+      "sha256": "52d2c4553c96cf16e3bc1faaad093d4ddf932b08e5b3dc01d5fe440ca20ed07a",
+      "size_bytes": 349722
+    },
+    "differences": [
+      {
+        "candidate_output_sha256": "8367f39d32c7f80dcca42895c5fce44b35edb88abbb280264047c537b52f5ac9",
+        "candidate_stack": "d1a-frozen-ihd25.4.6",
+        "capability_diff": [],
+        "classification": "ExpectedExact",
+        "fixture": "real-pq-no-static-mp4",
+        "oracle_command": "portability-oracle-real-pq-no-static-mp4",
+        "oracle_log_sha256": "67c494dccefca7a93415dee3e28e6e96a1f996ffd5cf101f443932d63542d15c",
+        "planner_diff": [],
+        "planner_reason_diff": [],
+        "reference_output_sha256": "8367f39d32c7f80dcca42895c5fce44b35edb88abbb280264047c537b52f5ac9",
+        "reference_stack": "d1a-frozen-canonical",
+        "semantic_oracle": {
+          "argv": [
+            "cargo",
+            "test",
+            "--release",
+            "-p",
+            "asciiflow-media",
+            "--test",
+            "media_regression",
+            "compare_portability_pair_from_env",
+            "--",
+            "--ignored",
+            "--exact",
+            "--nocapture"
+          ],
+          "exit_code": 0,
+          "log_path": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-native-snapshot/target/native-portability-subset/alternate-audio/command-032.log",
+          "log_sha256": "67c494dccefca7a93415dee3e28e6e96a1f996ffd5cf101f443932d63542d15c"
+        },
+        "tiers": {
+          "2": "PASS",
+          "3": "MATCH",
+          "1A": "PASS",
+          "1B": "PASS",
+          "1C": "PASS"
+        },
+        "whole_file_equal": true
+      },
+      {
+        "candidate_stack": "d1a-frozen-ihd25.4.6",
+        "classification": "Unresolved",
+        "fixture": "real-pq-static-64x64-mp4",
+        "reason": "execution did not pass on both stacks",
+        "reference_stack": "d1a-frozen-canonical"
+      },
+      {
+        "candidate_output_sha256": "8367f39d32c7f80dcca42895c5fce44b35edb88abbb280264047c537b52f5ac9",
+        "candidate_stack": "d1a-frozen-ihd25.4.6",
+        "capability_diff": [],
+        "classification": "ExpectedExact",
+        "fixture": "real-pq-static-mp4",
+        "oracle_command": "portability-oracle-real-pq-static-mp4",
+        "oracle_log_sha256": "67c494dccefca7a93415dee3e28e6e96a1f996ffd5cf101f443932d63542d15c",
+        "planner_diff": [],
+        "planner_reason_diff": [],
+        "reference_output_sha256": "8367f39d32c7f80dcca42895c5fce44b35edb88abbb280264047c537b52f5ac9",
+        "reference_stack": "d1a-frozen-canonical",
+        "semantic_oracle": {
+          "argv": [
+            "cargo",
+            "test",
+            "--release",
+            "-p",
+            "asciiflow-media",
+            "--test",
+            "media_regression",
+            "compare_portability_pair_from_env",
+            "--",
+            "--ignored",
+            "--exact",
+            "--nocapture"
+          ],
+          "exit_code": 0,
+          "log_path": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-native-snapshot/target/native-portability-subset/alternate-audio/command-033.log",
+          "log_sha256": "67c494dccefca7a93415dee3e28e6e96a1f996ffd5cf101f443932d63542d15c"
+        },
+        "tiers": {
+          "2": "PASS",
+          "3": "MATCH",
+          "1A": "PASS",
+          "1B": "PASS",
+          "1C": "PASS"
+        },
+        "whole_file_equal": true
+      },
+      {
+        "candidate_output_sha256": "5a7efdcf5d57bc73209926f3bd68c982d2b717b380419a14a7c3a6b7b877d819",
+        "candidate_stack": "d1a-frozen-ihd25.4.6",
+        "capability_diff": [],
+        "classification": "Regression",
+        "driver_portability_oracle": {
+          "argv": [
+            "cargo",
+            "test",
+            "--offline",
+            "--release",
+            "-p",
+            "asciiflow-media",
+            "--test",
+            "h264_driver_portability",
+            "compare_h264_driver_pair_from_env",
+            "--",
+            "--ignored",
+            "--exact",
+            "--nocapture"
+          ],
+          "attested_ihd_versions": [
+            "26.1.5",
+            "25.4.6"
+          ],
+          "exit_code": 101,
+          "log_path": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-native-snapshot/target/native-portability-subset/alternate-audio/command-035.log",
+          "log_sha256": "c378c2a65898b7f9324f24e2a8b7b862e7bfbf9cb1d21a602847d1cef8d95571"
+        },
+        "fixture": "real-aac-48000-stereo-mp4-hardware",
+        "oracle_command": "portability-oracle-real-aac-48000-stereo-mp4-hardware",
+        "oracle_log_sha256": "6961f4a3b2539301d894d9f51866b6a3b7485c5bdee480a949e157e8a0c8f624",
+        "planner_diff": [],
+        "planner_reason_diff": [],
+        "reference_output_sha256": "6fc32ffdc22472467f7ece746ec99b2de96748fe3a0ddd4a146ddccfb7bdaf2c",
+        "reference_stack": "d1a-frozen-canonical",
+        "semantic_oracle": {
+          "argv": [
+            "cargo",
+            "test",
+            "--release",
+            "-p",
+            "asciiflow-media",
+            "--test",
+            "media_regression",
+            "compare_portability_pair_from_env",
+            "--",
+            "--ignored",
+            "--exact",
+            "--nocapture"
+          ],
+          "exit_code": 101,
+          "log_path": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-native-snapshot/target/native-portability-subset/alternate-audio/command-034.log",
+          "log_sha256": "6961f4a3b2539301d894d9f51866b6a3b7485c5bdee480a949e157e8a0c8f624"
+        },
+        "tiers": {
+          "2": "PASS",
+          "3": "DIFFERENT",
+          "1A": "FAIL",
+          "1B": "FAIL",
+          "1B-P": "FAIL",
+          "1C": "PASS"
+        },
+        "whole_file_equal": false
+      },
+      {
+        "candidate_output_sha256": "ea276a4dc67aabcf3c8a01e03c31e9a4a93294a21db34c4bb43e0fd26f518f04",
+        "candidate_stack": "d1a-frozen-ihd25.4.6",
+        "capability_diff": [],
+        "classification": "Regression",
+        "driver_portability_oracle": {
+          "argv": [
+            "cargo",
+            "test",
+            "--offline",
+            "--release",
+            "-p",
+            "asciiflow-media",
+            "--test",
+            "h264_driver_portability",
+            "compare_h264_driver_pair_from_env",
+            "--",
+            "--ignored",
+            "--exact",
+            "--nocapture"
+          ],
+          "attested_ihd_versions": [
+            "26.1.5",
+            "25.4.6"
+          ],
+          "exit_code": 101,
+          "log_path": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-native-snapshot/target/native-portability-subset/alternate-audio/command-037.log",
+          "log_sha256": "786b0223f5df9b3ccd5befefd7f33c1641f6731d8c369159e9860fd2e1f4b836"
+        },
+        "fixture": "real-dual-aac-mp4-hardware",
+        "oracle_command": "portability-oracle-real-dual-aac-mp4-hardware",
+        "oracle_log_sha256": "fd902c71f414cc905f77ae76c59a971f59a03fbe5089df6a156ebf2a492febaa",
+        "planner_diff": [],
+        "planner_reason_diff": [],
+        "reference_output_sha256": "9914787486105de905e587cc07f8457e98d62675ca3bed4c98034f408b91d1ea",
+        "reference_stack": "d1a-frozen-canonical",
+        "semantic_oracle": {
+          "argv": [
+            "cargo",
+            "test",
+            "--release",
+            "-p",
+            "asciiflow-media",
+            "--test",
+            "media_regression",
+            "compare_portability_pair_from_env",
+            "--",
+            "--ignored",
+            "--exact",
+            "--nocapture"
+          ],
+          "exit_code": 101,
+          "log_path": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-native-snapshot/target/native-portability-subset/alternate-audio/command-036.log",
+          "log_sha256": "fd902c71f414cc905f77ae76c59a971f59a03fbe5089df6a156ebf2a492febaa"
+        },
+        "tiers": {
+          "2": "PASS",
+          "3": "DIFFERENT",
+          "1A": "FAIL",
+          "1B": "FAIL",
+          "1B-P": "FAIL",
+          "1C": "PASS"
+        },
+        "whole_file_equal": false
+      },
+      {
+        "candidate_output_sha256": "285d5a0fd5f04d4f302a19fbc6bc8cdad1de2a9be85672fa6db62cd5ea851278",
+        "candidate_stack": "d1a-frozen-ihd25.4.6",
+        "capability_diff": [],
+        "classification": "Regression",
+        "driver_portability_oracle": {
+          "argv": [
+            "cargo",
+            "test",
+            "--offline",
+            "--release",
+            "-p",
+            "asciiflow-media",
+            "--test",
+            "h264_driver_portability",
+            "compare_h264_driver_pair_from_env",
+            "--",
+            "--ignored",
+            "--exact",
+            "--nocapture"
+          ],
+          "attested_ihd_versions": [
+            "26.1.5",
+            "25.4.6"
+          ],
+          "exit_code": 101,
+          "log_path": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-native-snapshot/target/native-portability-subset/alternate-audio/command-039.log",
+          "log_sha256": "b70f9e9cb9f0f206de112f6ec3d5de4770ba0846b83fabc9ea7feff0b9899ade"
+        },
+        "fixture": "real-h264-bframes-2-mp4-hardware",
+        "oracle_command": "portability-oracle-real-h264-bframes-2-mp4-hardware",
+        "oracle_log_sha256": "26bf478d837248f52776e2cbbebefc2771f113abaed3fea0089a9a6aeb4a0f0c",
+        "planner_diff": [],
+        "planner_reason_diff": [],
+        "reference_output_sha256": "de86ab0160a31bbde0aeb40e4a97b67f9f34585a3131392e2fac265c30adefd5",
+        "reference_stack": "d1a-frozen-canonical",
+        "semantic_oracle": {
+          "argv": [
+            "cargo",
+            "test",
+            "--release",
+            "-p",
+            "asciiflow-media",
+            "--test",
+            "media_regression",
+            "compare_portability_pair_from_env",
+            "--",
+            "--ignored",
+            "--exact",
+            "--nocapture"
+          ],
+          "exit_code": 101,
+          "log_path": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-native-snapshot/target/native-portability-subset/alternate-audio/command-038.log",
+          "log_sha256": "26bf478d837248f52776e2cbbebefc2771f113abaed3fea0089a9a6aeb4a0f0c"
+        },
+        "tiers": {
+          "2": "PASS",
+          "3": "DIFFERENT",
+          "1A": "FAIL",
+          "1B": "FAIL",
+          "1B-P": "FAIL",
+          "1C": "PASS"
+        },
+        "whole_file_equal": false
+      }
+    ]
+  },
+  "core_comparison": [
+    {
+      "candidate_output_sha256": "d9aefcbe01ae3db8af586e480fa4a0a7738c881c14d381419061f5d8c7725a7b",
+      "candidate_stack": "d1a-frozen-ihd25.4.6",
+      "capability_diff": [],
+      "classification": "SemanticEquivalent",
+      "driver_portability_oracle": {
+        "argv": [
+          "cargo",
+          "test",
+          "--offline",
+          "--release",
+          "-p",
+          "asciiflow-media",
+          "--test",
+          "h264_driver_portability",
+          "compare_h264_driver_pair_from_env",
+          "--",
+          "--ignored",
+          "--exact",
+          "--nocapture"
+        ],
+        "attested_ihd_versions": [
+          "26.1.5",
+          "25.4.6"
+        ],
+        "exit_code": 0,
+        "log_path": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-native-snapshot/target/native-portability-subset/alternate-core/command-018.log",
+        "log_sha256": "800b37cd7d1afdc7a6c4cba783be0f8151987716d97e0744719ce482d924ef80"
+      },
+      "fixture": "canonical-h2648",
+      "oracle_command": "portability-oracle-canonical-h2648",
+      "oracle_log_sha256": "c019c41258e28ba54c3ec117370f50331247cbd30c633355caef732b0d0233dc",
+      "planner_diff": [],
+      "planner_reason_diff": [],
+      "reference_output_sha256": "7c8a7572320b8c6c999143dfece4a76d487d6c9e7788206b7af52df9acd4e1cc",
+      "reference_stack": "d1a-frozen-canonical",
+      "semantic_oracle": {
+        "argv": [
+          "cargo",
+          "test",
+          "--release",
+          "-p",
+          "asciiflow-media",
+          "--test",
+          "media_regression",
+          "compare_portability_pair_from_env",
+          "--",
+          "--ignored",
+          "--exact",
+          "--nocapture"
+        ],
+        "exit_code": 101,
+        "log_path": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-native-snapshot/target/native-portability-subset/alternate-core/command-017.log",
+        "log_sha256": "c019c41258e28ba54c3ec117370f50331247cbd30c633355caef732b0d0233dc"
+      },
+      "tiers": {
+        "2": "PASS",
+        "3": "DIFFERENT",
+        "1A": "FAIL",
+        "1B": "FAIL",
+        "1B-P": "PASS",
+        "1C": "PASS"
+      },
+      "whole_file_equal": false
+    },
+    {
+      "candidate_output_sha256": "6aca8ad25ea139f4788f61a49992d6994479ebf5fb9d1bed7fe6ee94a5d172bd",
+      "candidate_stack": "d1a-frozen-ihd25.4.6",
+      "capability_diff": [],
+      "classification": "ExpectedExact",
+      "fixture": "hevc-pq10",
+      "oracle_command": "portability-oracle-hevc-pq10",
+      "oracle_log_sha256": "c76f2338e6be48219c9506a14ef0a6b0431ce8165899346613ed799dd703cf45",
+      "planner_diff": [],
+      "planner_reason_diff": [],
+      "reference_output_sha256": "6aca8ad25ea139f4788f61a49992d6994479ebf5fb9d1bed7fe6ee94a5d172bd",
+      "reference_stack": "d1a-frozen-canonical",
+      "semantic_oracle": {
+        "argv": [
+          "cargo",
+          "test",
+          "--release",
+          "-p",
+          "asciiflow-media",
+          "--test",
+          "media_regression",
+          "compare_portability_pair_from_env",
+          "--",
+          "--ignored",
+          "--exact",
+          "--nocapture"
+        ],
+        "exit_code": 0,
+        "log_path": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-native-snapshot/target/native-portability-subset/alternate-core/command-019.log",
+        "log_sha256": "c76f2338e6be48219c9506a14ef0a6b0431ce8165899346613ed799dd703cf45"
+      },
+      "tiers": {
+        "2": "PASS",
+        "3": "MATCH",
+        "1A": "PASS",
+        "1B": "PASS",
+        "1C": "PASS"
+      },
+      "whole_file_equal": true
+    },
+    {
+      "candidate_output_sha256": "bb56847918437e9c603b547e301c32141b5b002c67126f3b22bd1db3b14c0756",
+      "candidate_stack": "d1a-frozen-ihd25.4.6",
+      "capability_diff": [],
+      "classification": "SemanticEquivalent",
+      "driver_portability_oracle": {
+        "argv": [
+          "cargo",
+          "test",
+          "--offline",
+          "--release",
+          "-p",
+          "asciiflow-media",
+          "--test",
+          "h264_driver_portability",
+          "compare_h264_driver_pair_from_env",
+          "--",
+          "--ignored",
+          "--exact",
+          "--nocapture"
+        ],
+        "attested_ihd_versions": [
+          "26.1.5",
+          "25.4.6"
+        ],
+        "exit_code": 0,
+        "log_path": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-native-snapshot/target/native-portability-subset/alternate-core/command-021.log",
+        "log_sha256": "6814168efd43d496b98ab4c4451b1a31b939173ccb063ba54d86556302d8dcaa"
+      },
+      "fixture": "hevc-pq-to-sdr10",
+      "oracle_command": "portability-oracle-hevc-pq-to-sdr10",
+      "oracle_log_sha256": "463fb8c09f58c0d7feb885b10c7b207c205f81c1c36817f269e0dda277d4ec67",
+      "planner_diff": [],
+      "planner_reason_diff": [],
+      "reference_output_sha256": "866cd722e7969994c91e2d0647abd82a1b6be5f29929205baa25040742feda12",
+      "reference_stack": "d1a-frozen-canonical",
+      "semantic_oracle": {
+        "argv": [
+          "cargo",
+          "test",
+          "--release",
+          "-p",
+          "asciiflow-media",
+          "--test",
+          "media_regression",
+          "compare_portability_pair_from_env",
+          "--",
+          "--ignored",
+          "--exact",
+          "--nocapture"
+        ],
+        "exit_code": 101,
+        "log_path": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-native-snapshot/target/native-portability-subset/alternate-core/command-020.log",
+        "log_sha256": "463fb8c09f58c0d7feb885b10c7b207c205f81c1c36817f269e0dda277d4ec67"
+      },
+      "tiers": {
+        "2": "PASS",
+        "3": "DIFFERENT",
+        "1A": "FAIL",
+        "1B": "FAIL",
+        "1B-P": "PASS",
+        "1C": "PASS"
+      },
+      "whole_file_equal": false
+    }
+  ],
+  "independent_alternate_faults": {
+    "raw": {
+      "path": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-native-snapshot/target/native-alternate-faults/fault-results.json",
+      "sha256": "486b4f46ce57d1ec95af864359ff78e71b101587d4e58852b416b031a455055b",
+      "size_bytes": 436210
+    },
+    "result": "PASS three explicitly selected tests; not a portability aggregate PASS",
+    "gates": [
+      {
+        "evidence": {
+          "canonical_identity": null,
+          "log": "command-000.log",
+          "log_sha256": "fa06b1f43e94913370867b9e4331156fcde36a97547818bb853b883df2c00c4f",
+          "receipt": {
+            "path": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-native-snapshot/target/native-alternate-faults/native-avio-write-faults/native-write.json",
+            "sha256": "b4de95105bcd78ed6f22f4518acf7562e344588634223b9f02c88aff9a4f010c",
+            "summary": {
+              "classification": "SimulatedOnly",
+              "records": [
+                {
+                  "actual_avio_callbacks": 1,
+                  "byte_exact_recovery": true,
+                  "errno": 28,
+                  "error": "pipeline finalization: write MP4 container trailer failed: media operation failed: failed to finalize MP4 output: No space left on device (-28)",
+                  "fd_after_recovery": 4,
+                  "fd_baseline": 4,
+                  "phase": "Some(Finalization)"
+                },
+                {
+                  "actual_avio_callbacks": 1,
+                  "byte_exact_recovery": true,
+                  "errno": 5,
+                  "error": "pipeline finalization: write MP4 container trailer failed: media operation failed: failed to finalize MP4 output: Input/output error (-5)",
+                  "fd_after_recovery": 4,
+                  "fd_baseline": 4,
+                  "phase": "Some(Finalization)"
+                }
+              ],
+              "schema": "asciiflow-d1a-native-write-v1",
+              "scope": "native MP4 mux worker flush/trailer AVIO callbacks; not full CLI ENOSPC/EIO or header failure"
+            }
+          },
+          "scope": "SimulatedOnly: actual native AVIO ENOSPC/EIO callbacks at MP4 finalization, FD cleanup and healthy replay; not full CLI/header faults",
+          "selected_test": "ffmpeg::encoder::audio_regression_tests::d1a_native_avio_enospc_and_eio_preserve_finalization_cause_and_cleanup",
+          "validation_environment_requested": false
+        },
+        "id": "native-avio-write-faults",
+        "scope": "SimulatedOnly: actual native AVIO ENOSPC/EIO callbacks at MP4 finalization, FD cleanup and healthy replay; not full CLI/header faults"
+      },
+      {
+        "evidence": {
+          "canonical_identity": null,
+          "log": "command-001.log",
+          "log_sha256": "3ab6edc629488058ff8cb310bee613137e8cec6e58f5f133dc057289ef2fa0d1",
+          "scope": "Native mux waiting-head, audio enqueue backpressure and buffered-interleaver cancellation; three scenarios, not 20 phase-targeted CLI cancellations",
+          "selected_test": "ffmpeg::encoder::mux_replay::deterministic_merge_cancellation_releases_fds_and_packets",
+          "validation_environment_requested": false
+        },
+        "id": "native-mux-cancellation",
+        "scope": "Native mux waiting-head, audio enqueue backpressure and buffered-interleaver cancellation; three scenarios, not 20 phase-targeted CLI cancellations"
+      },
+      {
+        "evidence": {
+          "canonical_identity": null,
+          "log": "command-002.log",
+          "log_sha256": "e4a0fa03338b3e5b2b8d6b74324a54155e9c38ccd8e9a7ad7b688ca026373c3b",
+          "scope": "SimulatedOnly PQ native encoder header/early/mid packet/trailer fault checkpoints and FD recovery",
+          "selected_test": "ffmpeg::encoder::audio_regression_tests::pq_mux_header_packet_and_trailer_failures_preserve_cause_and_fds",
+          "validation_environment_requested": true
+        },
+        "id": "pq-mux-fault-recovery",
+        "scope": "SimulatedOnly PQ native encoder header/early/mid packet/trailer fault checkpoints and FD recovery"
+      }
+    ],
+    "execution": [
+      {
+        "argv": [
+          "cargo",
+          "test",
+          "--release",
+          "-p",
+          "asciiflow-media",
+          "--lib",
+          "ffmpeg::encoder::audio_regression_tests::d1a_native_avio_enospc_and_eio_preserve_finalization_cause_and_cleanup",
+          "--",
+          "--ignored",
+          "--exact",
+          "--test-threads=1",
+          "--nocapture"
+        ],
+        "elapsed_seconds": 0.10060551700007636,
+        "exit_code": 0,
+        "id": "native-avio-write-faults",
+        "log": "command-000.log",
+        "peak_process_rss_kib": 88,
+        "watchdog": "completed"
+      },
+      {
+        "argv": [
+          "cargo",
+          "test",
+          "--release",
+          "-p",
+          "asciiflow-media",
+          "--lib",
+          "--features",
+          "mux-qualification",
+          "ffmpeg::encoder::mux_replay::deterministic_merge_cancellation_releases_fds_and_packets",
+          "--",
+          "--ignored",
+          "--exact",
+          "--test-threads=1",
+          "--nocapture"
+        ],
+        "elapsed_seconds": 0.132158375000472,
+        "exit_code": 0,
+        "id": "native-mux-cancellation",
+        "log": "command-001.log",
+        "peak_process_rss_kib": 39068,
+        "watchdog": "completed"
+      },
+      {
+        "argv": [
+          "cargo",
+          "test",
+          "--release",
+          "-p",
+          "asciiflow-media",
+          "--lib",
+          "ffmpeg::encoder::audio_regression_tests::pq_mux_header_packet_and_trailer_failures_preserve_cause_and_fds",
+          "--",
+          "--ignored",
+          "--exact",
+          "--test-threads=1",
+          "--nocapture"
+        ],
+        "elapsed_seconds": 0.20085145699977147,
+        "exit_code": 0,
+        "id": "pq-mux-fault-recovery",
+        "log": "command-002.log",
+        "peak_process_rss_kib": 38900,
+        "watchdog": "completed"
+      }
+    ]
+  },
+  "limitations": [
+    "Top-level subset aborted at failed alternate audio comparison; no aggregate subset-results.json emitted. Independent fault run does not replace that FAIL.",
+    "Actual Regression/FAIL classifications preserved for three H264 fixtures; Tier1C pixels and Tier2 structure pass.",
+    "Existing Tier1B-P requires exactly one video stream, 1080p/50 BT709 limited and 300 access units. Audio and differently sized/rated B-frame fixtures are outside this exception scope. No widening or audio stripping.",
+    "64x64 PQ expected InvalidConfig on both stacks remains Unqualified; comparator Unresolved preserved, not PASS.",
+    "Historical seven SKIPs and nine Unqualified entries preserved. Five skipped media paths now have per-stack runtime/decode evidence. Missing-range input construction and unsupported-container limits remain unqualified."
+  ]
+}

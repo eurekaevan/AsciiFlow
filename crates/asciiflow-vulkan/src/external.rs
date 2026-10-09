@@ -53,6 +53,8 @@ pub(crate) struct ImportedExternalPlane {
     pub kind: ExternalPlaneKind,
     pub width: u32,
     pub height: u32,
+    #[cfg(feature = "reliability-measurement")]
+    observation: asciiflow_core::reliability::ResourceToken,
 }
 
 impl ImportedExternalPlane {
@@ -179,6 +181,11 @@ impl ImportedExternalPlane {
                 kind: input.kind,
                 width: input.width,
                 height: input.height,
+                #[cfg(feature = "reliability-measurement")]
+                observation: asciiflow_core::reliability::ResourceToken::acquire(
+                    "dma_buf_imported_plane_bindings",
+                    Some(requirements.size),
+                ),
             },
             ExternalImageTimings {
                 capability_query,
@@ -203,6 +210,8 @@ impl ImportedExternalPlane {
         }
         self.image = vk::Image::null();
         self.memory = vk::DeviceMemory::null();
+        #[cfg(feature = "reliability-measurement")]
+        self.observation.release();
         started.elapsed()
     }
 }
@@ -216,6 +225,8 @@ impl Drop for ImportedExternalPlane {
             self.device.destroy_image(self.image, None);
             self.device.free_memory(self.memory, None);
         }
+        #[cfg(feature = "reliability-measurement")]
+        self.observation.release();
     }
 }
 

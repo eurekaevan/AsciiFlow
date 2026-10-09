@@ -38,6 +38,8 @@ pub(crate) struct Buffer {
     pub size: vk::DeviceSize,
     non_coherent_atom_size: vk::DeviceSize,
     pub memory_info: BufferMemoryInfo,
+    #[cfg(feature = "reliability-measurement")]
+    observation: asciiflow_core::reliability::ResourceToken,
 }
 impl Buffer {
     pub fn new(
@@ -91,6 +93,11 @@ impl Buffer {
             return Err(Error::Vulkan(format!("failed to bind {name}: {error:?}")));
         }
         Ok(Self {
+            #[cfg(feature = "reliability-measurement")]
+            observation: asciiflow_core::reliability::ResourceToken::acquire(
+                "vulkan_buffer_bindings",
+                Some(allocation.size()),
+            ),
             handle,
             memory: Some(BufferMemory::Managed(allocation)),
             size,
@@ -160,6 +167,11 @@ impl Buffer {
             }
         };
         Ok(Some(Self {
+            #[cfg(feature = "reliability-measurement")]
+            observation: asciiflow_core::reliability::ResourceToken::acquire(
+                "vulkan_buffer_bindings",
+                Some(requirements.size),
+            ),
             handle,
             memory: Some(BufferMemory::Dedicated {
                 memory,
@@ -268,11 +280,19 @@ impl Buffer {
                     // Destruction runs during normal completion, cancellation,
                     // and error unwinding. A cleanup failure must not replace
                     // the original pipeline error with a panic.
-                    allocator.free(allocation).ok();
+                    let released = allocator.free(allocation).is_ok();
+                    #[cfg(feature = "reliability-measurement")]
+                    if released {
+                        self.observation.release();
+                    }
+                    #[cfg(not(feature = "reliability-measurement"))]
+                    let _ = released;
                 }
                 BufferMemory::Dedicated { memory, .. } => unsafe {
                     device.unmap_memory(memory);
                     device.free_memory(memory, None);
+                    #[cfg(feature = "reliability-measurement")]
+                    self.observation.release();
                 },
             }
         }

@@ -86,7 +86,11 @@ pub fn pack(
     format: PixelFormat,
 ) -> Result<Vec<u8>> {
     let count = (width as usize).checked_mul(height as usize);
-    if width == 0 || height == 0 || width % 2 != 0 || height % 2 != 0 || count != Some(pixels.len())
+    if width == 0
+        || height == 0
+        || !width.is_multiple_of(2)
+        || !height.is_multiple_of(2)
+        || count != Some(pixels.len())
     {
         return Err(Error::Cpu(
             "C-4A requires nonzero even geometry and exact RGB sample count".into(),

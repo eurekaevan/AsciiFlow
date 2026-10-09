@@ -1,0 +1,740 @@
+{
+  "scope": "Process01OnlyNotCampaignClassification",
+  "evidence_root": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-plateau/process-01",
+  "historical_cycle48_652kib": "Unresolved; original full smaps unavailable",
+  "result": {
+    "allocator_policy": "unchanged glibc default; read-only mallinfo2/malloc_info; no trim/tuning",
+    "complete_cycles_without_new_hwm": 80,
+    "cycles": 500,
+    "extended": false,
+    "final_allocator": {
+      "arena_bytes": 162451456,
+      "fastbin_free_bytes": 0,
+      "free_retained_arena_bytes": 160265216,
+      "in_use_arena_bytes": 2186240,
+      "in_use_including_mmap_bytes": 10849280,
+      "mapped_bytes": 171114496,
+      "mmap_bytes": 8663040,
+      "mmap_regions": 3,
+      "scope": "glibc accounting, not application-live bytes or RSS; tcache may count as in-use; mmap bytes include allocation overhead"
+    },
+    "final_high_water_kib": 178252,
+    "final_private_anonymous_kib": 178252,
+    "initial_private_anonymous_kib": 15712,
+    "interpretation": "Operational finite-workload plateau only; allocation/mapping/live-byte review still required; not an automatic seal",
+    "jobs": 2040,
+    "largest_hwm_increment_kib": 47840,
+    "last_hwm_cycle": 420,
+    "observed_plateau": false,
+    "observer_fixed_proc_buffer_bytes": 8650752,
+    "process_id": 101354,
+    "reference_configurations": 4,
+    "retained_reference_bytes": 928880,
+    "schema": "asciiflow-default-memory-plateau-v1"
+  },
+  "blocker": "Last HWM at cycle420 leaves only80 complete cycles by500, below required100; observed_plateau=false. Retained arena attribution does not waive the rule.",
+  "all_jobs": 2040,
+  "outcomes": {
+    "Success": 2000,
+    "Cancelled": 20,
+    "InjectedFailure": 20
+  },
+  "all_jobs_cleanup_zero": true,
+  "all_jobs_joined": true,
+  "all_final_resource_samples_zero": true,
+  "late100": {
+    "cycle_range": [
+      401,
+      500
+    ],
+    "job_samples": 408,
+    "cycle_samples": 100,
+    "ranges": {
+      "private_anonymous_kib": [
+        177608,
+        178252
+      ],
+      "mapping_count": [
+        1081,
+        1081
+      ],
+      "fd_count": [
+        7,
+        7
+      ],
+      "thread_count": [
+        2,
+        2
+      ],
+      "swap_kib": [
+        0,
+        0
+      ]
+    },
+    "allocator_ranges": {
+      "mapped_bytes": [
+        170455040,
+        171114496
+      ],
+      "in_use_including_mmap_bytes": [
+        10832800,
+        10874784
+      ],
+      "free_retained_arena_bytes": [
+        159583040,
+        160279264
+      ],
+      "mmap_bytes": [
+        8663040,
+        8663040
+      ],
+      "mmap_regions": [
+        3,
+        3
+      ]
+    }
+  },
+  "normal_macro_cycle_ends": [
+    {
+      "cycle": 50,
+      "allocator": {
+        "mapped_bytes": 168960000,
+        "in_use_including_mmap_bytes": 10834528,
+        "free_retained_arena_bytes": 158125472,
+        "mmap_bytes": 8663040,
+        "mmap_regions": 3
+      }
+    },
+    {
+      "cycle": 100,
+      "allocator": {
+        "mapped_bytes": 169025536,
+        "in_use_including_mmap_bytes": 10832144,
+        "free_retained_arena_bytes": 158193392,
+        "mmap_bytes": 8663040,
+        "mmap_regions": 3
+      }
+    },
+    {
+      "cycle": 150,
+      "allocator": {
+        "mapped_bytes": 169099264,
+        "in_use_including_mmap_bytes": 10837840,
+        "free_retained_arena_bytes": 158261424,
+        "mmap_bytes": 8663040,
+        "mmap_regions": 3
+      }
+    },
+    {
+      "cycle": 200,
+      "allocator": {
+        "mapped_bytes": 169148416,
+        "in_use_including_mmap_bytes": 10835776,
+        "free_retained_arena_bytes": 158312640,
+        "mmap_bytes": 8663040,
+        "mmap_regions": 3
+      }
+    },
+    {
+      "cycle": 250,
+      "allocator": {
+        "mapped_bytes": 169553920,
+        "in_use_including_mmap_bytes": 10835696,
+        "free_retained_arena_bytes": 158718224,
+        "mmap_bytes": 8663040,
+        "mmap_regions": 3
+      }
+    },
+    {
+      "cycle": 300,
+      "allocator": {
+        "mapped_bytes": 170450944,
+        "in_use_including_mmap_bytes": 10843632,
+        "free_retained_arena_bytes": 159607312,
+        "mmap_bytes": 8663040,
+        "mmap_regions": 3
+      }
+    },
+    {
+      "cycle": 350,
+      "allocator": {
+        "mapped_bytes": 170450944,
+        "in_use_including_mmap_bytes": 10846384,
+        "free_retained_arena_bytes": 159604560,
+        "mmap_bytes": 8663040,
+        "mmap_regions": 3
+      }
+    },
+    {
+      "cycle": 400,
+      "allocator": {
+        "mapped_bytes": 170455040,
+        "in_use_including_mmap_bytes": 10845968,
+        "free_retained_arena_bytes": 159609072,
+        "mmap_bytes": 8663040,
+        "mmap_regions": 3
+      }
+    },
+    {
+      "cycle": 450,
+      "allocator": {
+        "mapped_bytes": 171114496,
+        "in_use_including_mmap_bytes": 10841664,
+        "free_retained_arena_bytes": 160272832,
+        "mmap_bytes": 8663040,
+        "mmap_regions": 3
+      }
+    },
+    {
+      "cycle": 500,
+      "allocator": {
+        "mapped_bytes": 171114496,
+        "in_use_including_mmap_bytes": 10849280,
+        "free_retained_arena_bytes": 160265216,
+        "mmap_bytes": 8663040,
+        "mmap_regions": 3
+      }
+    }
+  ],
+  "live_accounting_blocks": {
+    "301-350_normal_cycle_ends": {
+      "min": 10838416,
+      "max": 10850960,
+      "median": 10845400
+    },
+    "351-400_normal_cycle_ends": {
+      "min": 10840320,
+      "max": 10850240,
+      "median": 10845688
+    },
+    "401-450_normal_cycle_ends": {
+      "min": 10840880,
+      "max": 10850256,
+      "median": 10845160
+    },
+    "451-500_normal_cycle_ends": {
+      "min": 10841984,
+      "max": 10854432,
+      "median": 10848712
+    }
+  },
+  "late_shapes": {
+    "Pq10Hevc-freetype-colortrue-SingleAac-frames3": {
+      "count": 100,
+      "min": 10860272,
+      "max": 10874784,
+      "first": 10869360,
+      "last": 10867280,
+      "monotonic_nondecreasing": false
+    },
+    "PqToSdr10Hevc-builtin-colortrue-None-frames3": {
+      "count": 8,
+      "min": 10832896,
+      "max": 10842736,
+      "first": 10832896,
+      "last": 10839424,
+      "monotonic_nondecreasing": false
+    },
+    "PqToSdr10Hevc-freetype-colorfalse-None-frames3": {
+      "count": 100,
+      "min": 10841152,
+      "max": 10854704,
+      "first": 10843552,
+      "last": 10849552,
+      "monotonic_nondecreasing": false
+    },
+    "PqToSdr8H264-builtin-colorfalse-DualAac-frames3": {
+      "count": 100,
+      "min": 10856656,
+      "max": 10866688,
+      "first": 10861680,
+      "last": 10861888,
+      "monotonic_nondecreasing": false
+    },
+    "Sdr8H264-builtin-colortrue-None-frames3": {
+      "count": 100,
+      "min": 10849568,
+      "max": 10862960,
+      "first": 10858528,
+      "last": 10856064,
+      "monotonic_nondecreasing": false
+    }
+  },
+  "late_hwm": [
+    {
+      "cycle": 120,
+      "job_index": 486,
+      "job_type": "Pq10Hevc-freetype-colortrue-SingleAac-frames3",
+      "outcome": "Success",
+      "previous_job_type": "Sdr8H264-builtin-colortrue-None-frames3",
+      "anonymous_increment_kib": 4,
+      "raw_basename": "hwm-c120-j0486-job-end",
+      "allocator_delta_immediate": {
+        "mapped_bytes": 4096,
+        "in_use_including_mmap_bytes": 7712,
+        "free_retained_arena_bytes": -3616,
+        "mmap_bytes": 0,
+        "mmap_regions": 0
+      },
+      "raw_vma_changes_vs_previous_hwm": [
+        {
+          "header": "7fa6a8000000-7fa6a86be000 rw-p 00000000 00:00 0 ",
+          "deltas_kib": {
+            "Size": 4,
+            "Rss": 4,
+            "Anonymous": 4
+          }
+        }
+      ],
+      "xml_system_current_changes_vs_previous_hwm": [
+        {
+          "heap": 9,
+          "before": 7065600,
+          "after": 7069696,
+          "delta": 4096
+        }
+      ]
+    },
+    {
+      "cycle": 120,
+      "job_index": 489,
+      "job_type": "PqToSdr10Hevc-builtin-colortrue-None-frames3",
+      "outcome": "InjectedFailure",
+      "previous_job_type": "PqToSdr10Hevc-freetype-colorfalse-None-frames3",
+      "anonymous_increment_kib": 8,
+      "raw_basename": "hwm-c120-j0489-job-end",
+      "allocator_delta_immediate": {
+        "mapped_bytes": 8192,
+        "in_use_including_mmap_bytes": -2176,
+        "free_retained_arena_bytes": 10368,
+        "mmap_bytes": 0,
+        "mmap_regions": 0
+      },
+      "raw_vma_changes_vs_previous_hwm": [
+        {
+          "header": "7fa690000000-7fa69075d000 rw-p 00000000 00:00 0 ",
+          "deltas_kib": {
+            "Size": 8,
+            "Rss": 8,
+            "Anonymous": 8
+          }
+        }
+      ],
+      "xml_system_current_changes_vs_previous_hwm": [
+        {
+          "heap": 6,
+          "before": 7712768,
+          "after": 7720960,
+          "delta": 8192
+        }
+      ]
+    },
+    {
+      "cycle": 148,
+      "job_index": 601,
+      "job_type": "Pq10Hevc-freetype-colortrue-SingleAac-frames3",
+      "outcome": "Success",
+      "previous_job_type": "Sdr8H264-builtin-colortrue-None-frames3",
+      "anonymous_increment_kib": 4,
+      "raw_basename": "hwm-c148-j0601-job-end",
+      "allocator_delta_immediate": {
+        "mapped_bytes": 4096,
+        "in_use_including_mmap_bytes": 8688,
+        "free_retained_arena_bytes": -4592,
+        "mmap_bytes": 0,
+        "mmap_regions": 0
+      },
+      "raw_vma_changes_vs_previous_hwm": [
+        {
+          "header": "7fa680000000-7fa6806c0000 rw-p 00000000 00:00 0 ",
+          "deltas_kib": {
+            "Size": 4,
+            "Rss": 4,
+            "Anonymous": 4
+          }
+        }
+      ],
+      "xml_system_current_changes_vs_previous_hwm": [
+        {
+          "heap": 2,
+          "before": 7073792,
+          "after": 7077888,
+          "delta": 4096
+        }
+      ]
+    },
+    {
+      "cycle": 149,
+      "job_index": 605,
+      "job_type": "Pq10Hevc-freetype-colortrue-SingleAac-frames3",
+      "outcome": "Success",
+      "previous_job_type": "Sdr8H264-builtin-colortrue-None-frames3",
+      "anonymous_increment_kib": 56,
+      "raw_basename": "hwm-c149-j0605-job-end",
+      "allocator_delta_immediate": {
+        "mapped_bytes": 57344,
+        "in_use_including_mmap_bytes": 13760,
+        "free_retained_arena_bytes": 43584,
+        "mmap_bytes": 0,
+        "mmap_regions": 0
+      },
+      "raw_vma_changes_vs_previous_hwm": [
+        {
+          "header": "7fa684000000-7fa6846cb000 rw-p 00000000 00:00 0 ",
+          "deltas_kib": {
+            "Size": 56,
+            "Rss": 56,
+            "Anonymous": 56
+          }
+        }
+      ],
+      "xml_system_current_changes_vs_previous_hwm": [
+        {
+          "heap": 1,
+          "before": 7065600,
+          "after": 7122944,
+          "delta": 57344
+        }
+      ]
+    },
+    {
+      "cycle": 152,
+      "job_index": 617,
+      "job_type": "Pq10Hevc-freetype-colortrue-SingleAac-frames3",
+      "outcome": "Success",
+      "previous_job_type": "Sdr8H264-builtin-colortrue-None-frames3",
+      "anonymous_increment_kib": 52,
+      "raw_basename": "hwm-c152-j0617-job-end",
+      "allocator_delta_immediate": {
+        "mapped_bytes": 49152,
+        "in_use_including_mmap_bytes": 7136,
+        "free_retained_arena_bytes": 42016,
+        "mmap_bytes": 0,
+        "mmap_regions": 0
+      },
+      "raw_vma_changes_vs_previous_hwm": [
+        {
+          "header": "7fa680000000-7fa6806cc000 rw-p 00000000 00:00 0 ",
+          "deltas_kib": {
+            "Size": 48,
+            "Rss": 52,
+            "Anonymous": 52
+          }
+        }
+      ],
+      "xml_system_current_changes_vs_previous_hwm": [
+        {
+          "heap": 2,
+          "before": 7077888,
+          "after": 7127040,
+          "delta": 49152
+        }
+      ]
+    },
+    {
+      "cycle": 180,
+      "job_index": 731,
+      "job_type": "Pq10Hevc-freetype-colortrue-SingleAac-frames3",
+      "outcome": "Success",
+      "previous_job_type": "Sdr8H264-builtin-colortrue-None-frames3",
+      "anonymous_increment_kib": 8,
+      "raw_basename": "hwm-c180-j0731-job-end",
+      "allocator_delta_immediate": {
+        "mapped_bytes": 0,
+        "in_use_including_mmap_bytes": 17216,
+        "free_retained_arena_bytes": -17216,
+        "mmap_bytes": 0,
+        "mmap_regions": 0
+      },
+      "raw_vma_changes_vs_previous_hwm": [
+        {
+          "header": "7fa68c000000-7fa68c6bc000 rw-p 00000000 00:00 0 ",
+          "deltas_kib": {
+            "Size": 0,
+            "Rss": 8,
+            "Anonymous": 8
+          }
+        }
+      ],
+      "xml_system_current_changes_vs_previous_hwm": []
+    },
+    {
+      "cycle": 213,
+      "job_index": 867,
+      "job_type": "PqToSdr8H264-builtin-colorfalse-DualAac-frames3",
+      "outcome": "Success",
+      "previous_job_type": "Pq10Hevc-freetype-colortrue-SingleAac-frames3",
+      "anonymous_increment_kib": 340,
+      "raw_basename": "hwm-c213-j0867-job-end",
+      "allocator_delta_immediate": {
+        "mapped_bytes": 348160,
+        "in_use_including_mmap_bytes": 912,
+        "free_retained_arena_bytes": 347248,
+        "mmap_bytes": 0,
+        "mmap_regions": 0
+      },
+      "raw_vma_changes_vs_previous_hwm": [
+        {
+          "header": "7fa6a8000000-7fa6a8713000 rw-p 00000000 00:00 0 ",
+          "deltas_kib": {
+            "Size": 340,
+            "Rss": 340,
+            "Anonymous": 340
+          }
+        }
+      ],
+      "xml_system_current_changes_vs_previous_hwm": [
+        {
+          "heap": 9,
+          "before": 7069696,
+          "after": 7417856,
+          "delta": 348160
+        }
+      ]
+    },
+    {
+      "cycle": 249,
+      "job_index": 1013,
+      "job_type": "Pq10Hevc-freetype-colortrue-SingleAac-frames3",
+      "outcome": "Success",
+      "previous_job_type": "Sdr8H264-builtin-colortrue-None-frames3",
+      "anonymous_increment_kib": 56,
+      "raw_basename": "hwm-c249-j1013-job-end",
+      "allocator_delta_immediate": {
+        "mapped_bytes": 57344,
+        "in_use_including_mmap_bytes": 6208,
+        "free_retained_arena_bytes": 51136,
+        "mmap_bytes": 0,
+        "mmap_regions": 0
+      },
+      "raw_vma_changes_vs_previous_hwm": [
+        {
+          "header": "7fa68c000000-7fa68c6ca000 rw-p 00000000 00:00 0 ",
+          "deltas_kib": {
+            "Size": 56,
+            "Rss": 56,
+            "Anonymous": 56
+          }
+        }
+      ],
+      "xml_system_current_changes_vs_previous_hwm": [
+        {
+          "heap": 3,
+          "before": 7061504,
+          "after": 7118848,
+          "delta": 57344
+        }
+      ]
+    },
+    {
+      "cycle": 254,
+      "job_index": 1033,
+      "job_type": "Pq10Hevc-freetype-colortrue-SingleAac-frames3",
+      "outcome": "Success",
+      "previous_job_type": "Sdr8H264-builtin-colortrue-None-frames3",
+      "anonymous_increment_kib": 580,
+      "raw_basename": "hwm-c254-j1033-job-end",
+      "allocator_delta_immediate": {
+        "mapped_bytes": 593920,
+        "in_use_including_mmap_bytes": 8816,
+        "free_retained_arena_bytes": 585104,
+        "mmap_bytes": 0,
+        "mmap_regions": 0
+      },
+      "raw_vma_changes_vs_previous_hwm": [
+        {
+          "header": "7fa684000000-7fa68475c000 rw-p 00000000 00:00 0 ",
+          "deltas_kib": {
+            "Size": 580,
+            "Rss": 580,
+            "Anonymous": 580
+          }
+        }
+      ],
+      "xml_system_current_changes_vs_previous_hwm": [
+        {
+          "heap": 1,
+          "before": 7122944,
+          "after": 7716864,
+          "delta": 593920
+        }
+      ]
+    },
+    {
+      "cycle": 289,
+      "job_index": 1176,
+      "job_type": "Pq10Hevc-freetype-colortrue-SingleAac-frames3",
+      "outcome": "Success",
+      "previous_job_type": "Sdr8H264-builtin-colortrue-None-frames3",
+      "anonymous_increment_kib": 268,
+      "raw_basename": "hwm-c289-j1176-job-end",
+      "allocator_delta_immediate": {
+        "mapped_bytes": 274432,
+        "in_use_including_mmap_bytes": 10624,
+        "free_retained_arena_bytes": 263808,
+        "mmap_bytes": 0,
+        "mmap_regions": 0
+      },
+      "raw_vma_changes_vs_previous_hwm": [
+        {
+          "header": "7fa6a8000000-7fa6a8756000 rw-p 00000000 00:00 0 ",
+          "deltas_kib": {
+            "Size": 268,
+            "Rss": 268,
+            "Anonymous": 268
+          }
+        }
+      ],
+      "xml_system_current_changes_vs_previous_hwm": [
+        {
+          "heap": 9,
+          "before": 7417856,
+          "after": 7692288,
+          "delta": 274432
+        }
+      ]
+    },
+    {
+      "cycle": 294,
+      "job_index": 1197,
+      "job_type": "Pq10Hevc-freetype-colortrue-SingleAac-frames3",
+      "outcome": "Success",
+      "previous_job_type": "Sdr8H264-builtin-colortrue-None-frames3",
+      "anonymous_increment_kib": 28,
+      "raw_basename": "hwm-c294-j1197-job-end",
+      "allocator_delta_immediate": {
+        "mapped_bytes": 28672,
+        "in_use_including_mmap_bytes": 9824,
+        "free_retained_arena_bytes": 18848,
+        "mmap_bytes": 0,
+        "mmap_regions": 0
+      },
+      "raw_vma_changes_vs_previous_hwm": [
+        {
+          "header": "7fa6a8000000-7fa6a875d000 rw-p 00000000 00:00 0 ",
+          "deltas_kib": {
+            "Size": 28,
+            "Rss": 28,
+            "Anonymous": 28
+          }
+        }
+      ],
+      "xml_system_current_changes_vs_previous_hwm": [
+        {
+          "heap": 9,
+          "before": 7692288,
+          "after": 7720960,
+          "delta": 28672
+        }
+      ]
+    },
+    {
+      "cycle": 372,
+      "job_index": 1515,
+      "job_type": "Pq10Hevc-freetype-colortrue-SingleAac-frames3",
+      "outcome": "Success",
+      "previous_job_type": "Sdr8H264-builtin-colortrue-None-frames3",
+      "anonymous_increment_kib": 4,
+      "raw_basename": "hwm-c372-j1515-job-end",
+      "allocator_delta_immediate": {
+        "mapped_bytes": 4096,
+        "in_use_including_mmap_bytes": 5296,
+        "free_retained_arena_bytes": -1200,
+        "mmap_bytes": 0,
+        "mmap_regions": 0
+      },
+      "raw_vma_changes_vs_previous_hwm": [
+        {
+          "header": "7fa690000000-7fa69075e000 rw-p 00000000 00:00 0 ",
+          "deltas_kib": {
+            "Size": 4,
+            "Rss": 4,
+            "Anonymous": 4
+          }
+        }
+      ],
+      "xml_system_current_changes_vs_previous_hwm": [
+        {
+          "heap": 6,
+          "before": 7720960,
+          "after": 7725056,
+          "delta": 4096
+        }
+      ]
+    },
+    {
+      "cycle": 407,
+      "job_index": 1657,
+      "job_type": "Pq10Hevc-freetype-colortrue-SingleAac-frames3",
+      "outcome": "Success",
+      "previous_job_type": "Sdr8H264-builtin-colortrue-None-frames3",
+      "anonymous_increment_kib": 4,
+      "raw_basename": "hwm-c407-j1657-job-end",
+      "allocator_delta_immediate": {
+        "mapped_bytes": 4096,
+        "in_use_including_mmap_bytes": 13472,
+        "free_retained_arena_bytes": -9376,
+        "mmap_bytes": 0,
+        "mmap_regions": 0
+      },
+      "raw_vma_changes_vs_previous_hwm": [
+        {
+          "header": "7fa688000000-7fa6886c1000 rw-p 00000000 00:00 0 ",
+          "deltas_kib": {
+            "Size": 4,
+            "Rss": 4,
+            "Anonymous": 4
+          }
+        }
+      ],
+      "xml_system_current_changes_vs_previous_hwm": [
+        {
+          "heap": 4,
+          "before": 7077888,
+          "after": 7081984,
+          "delta": 4096
+        }
+      ]
+    },
+    {
+      "cycle": 420,
+      "job_index": 1713,
+      "job_type": "PqToSdr10Hevc-builtin-colortrue-None-frames3",
+      "outcome": "InjectedFailure",
+      "previous_job_type": "PqToSdr10Hevc-freetype-colorfalse-None-frames3",
+      "anonymous_increment_kib": 640,
+      "raw_basename": "hwm-c420-j1713-job-end",
+      "allocator_delta_immediate": {
+        "mapped_bytes": 655360,
+        "in_use_including_mmap_bytes": -11584,
+        "free_retained_arena_bytes": 666944,
+        "mmap_bytes": 0,
+        "mmap_regions": 0
+      },
+      "raw_vma_changes_vs_previous_hwm": [
+        {
+          "header": "7fa698000000-7fa69875c000 rw-p 00000000 00:00 0 ",
+          "deltas_kib": {
+            "Size": 640,
+            "Rss": 640,
+            "Anonymous": 640
+          }
+        }
+      ],
+      "xml_system_current_changes_vs_previous_hwm": [
+        {
+          "heap": 7,
+          "before": 7061504,
+          "after": 7716864,
+          "delta": 655360
+        }
+      ]
+    }
+  ],
+  "raw_sha256": {
+    "memory.jsonl": "52c15f9473a65e966c0f33cff7e226e847872c687f9f44cfc0e7ffb2df80fc6b",
+    "jobs.jsonl": "5d7e7ec17913dc24ed7cb970f1c6bb2f4b41fd2f80a19746653acabdf7064f75",
+    "hwm.jsonl": "88335d50d3fd4647911570a8180f8921744968370e3d588581f1e36f2922a3f7",
+    "plateau-result.json": "f7b7a144782f76408fcac1aa5bf9a0f5f14a6797df6b0a9dfd1368e673bbc3e9"
+  }
+}

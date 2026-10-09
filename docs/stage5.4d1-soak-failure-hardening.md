@@ -1,7 +1,51 @@
 # Stage 5.4D-1 — soak / failure / resource hardening
 
-Status: **NOT SEALED**. D-2 has not started and is not justified by this partial
-evidence. Historical C evidence and strict media oracles/Tier 1B-P are unchanged.
+Current progression: D-1A is **SEALED for the current product scope** (one CLI
+process, one media job, then process exit). Persistent-process allocator/runtime
+retention remains an unqualified, nonblocking observation outside that contract;
+the original failures and evidence are preserved. [D-1B production long-soak
+work](stage5.4d1b-long-soak.md) is authorized as of 2026-10-08 under that
+single-job contract. Final2026-10-09 audio-memory attribution now seals D-1B
+and D-1 overall. Original8,304KiB residual measurements remain preserved;
+matched replayed-AAC C retains8,312KiB, while a native last-reference census
+proves bounded live audio ownership and zero final payloads. Together with
+explicit release paths and post-teardown free-page reclaim, the classification
+is `BoundedAudioPacketAllocatorRetention`, not a packet leak or constant-RSS
+proof. See the final long-soak report and audio attribution receipt.
+Exact claim: “Qualified for the recorded single-job CLI workloads and long-run
+production paths.” Persistent multi-job memory remains unqualified.
+Stage5.4D-2 Release Qualification is now justified, but has not started.
+
+## Historical pre-audio-attribution boundary
+
+Final review 2026-10-09: D-1B and D-1 overall are **NOT SEALED**.
+Matched layer isolation subsequently found mux-only residual −52 KiB and
+C audio-off residual +24 KiB with 100k encoded video packets identical to full C.
+The original 8,304 KiB residual is narrowed to the audio-enabled upstream/native
+input path or its mux interaction; its specific state remains unidentified.
+It is not reclassified as bounded or PASS. No production Rust behavior changed;
+the new replay is test-only. See `stage5.4d1b-long-soak.md` for current evidence.
+The only remaining gate is current single-job Path C memory qualification:
+unexplained growth persists in a default Release repeat after a logical mux
+index model. Output/ownership/FD/queue checks, both 51k controls, alternate
+10k and required post-soak/static regressions passed. The original runner's
+A/C packet-count failures are preserved, with independent corrected review.
+See the [final long-soak report](stage5.4d1b-long-soak.md) and
+[current receipt](../tests/soak/stage54d1b-long-soak.json). D-2 is not justified.
+The subsequent exact-package MOV attribution accounts for 1024-entry rounded
+72-byte clusters per real output track, but still leaves 8,304 KiB in the
+default C repeat. Required non-fragmented MP4 indexing is not a leak or a
+plateau requirement; this remaining residual, not indexing itself, is the gate.
+
+The following **NOT SEALED** status and progression text records the historical
+broader qualification boundary. Historical C evidence and strict
+same-stack/historical media oracles are unchanged. The separate D-1A Tier 1B-P
+investigation is documented below; its exact known identifier rule is not a
+same-stack exception.
+
+The [D-1A report](stage5.4d1a-resource-failure.md) retains the dated broader-
+scope history and original receipts. That history is not overwritten or
+promoted to a long-soak qualification.
 
 ## Implementation pass
 
@@ -69,7 +113,7 @@ safety tests passed. All 1,003 SPIR-V files actually present under debug/release
 build roots passed Vulkan 1.3 validation. This is not a two-clean-build census
 or a claim that the historical 1,203-artifact set is still present.
 
-## Gate ledger
+## Original pass gate ledger (historical)
 
 | Group | Decision |
 |---|---|
@@ -88,7 +132,8 @@ or a claim that the historical 1,203-artifact set is still present.
 | 17×3 retained, B subset, C canonical core | NOT RUN on final D-1 source |
 | Two clean builds, measurement/static/SPIR-V | Receipt tracks executed subset; incomplete gates stay open |
 
-All three production paths have **Unresolved** D-1 resource behavior. No
-qualified-stack registry or historical baseline is promoted. Freeze source and
-stack, follow [reliability testing](reliability-testing.md), complete all gates,
-then review evidence before sealing. No 24/7 uptime guarantee is asserted.
+At the time of this original pass, all three planned production paths had
+**Unresolved** D-1 resource behavior. No qualified-stack registry or historical
+baseline is promoted. Current D-1B progress is tracked in the
+[long-soak document](stage5.4d1b-long-soak.md). No 24/7 uptime guarantee is
+asserted.

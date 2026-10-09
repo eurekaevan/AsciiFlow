@@ -1,0 +1,4499 @@
+{
+  "all_observed_plateau": false,
+  "classification": "PendingReviewNotAnAutomaticPass",
+  "processes": [
+    {
+      "all_lifecycle_checks_pass": true,
+      "allocator_policy": "unchanged glibc default; read-only mallinfo2/malloc_info; no trim/tuning",
+      "complete_cycles_without_new_hwm": 183,
+      "configurations": {
+        "Pq10Hevc-freetype-colortrue-SingleAac-frames3": {
+          "input_sha256": "87288c82fa7eaafdae2dfa1051b0aec53ba3942fa2304c006856f7a56df55f89",
+          "oracle": {
+            "audio_streams": 1,
+            "bit_depth": 10,
+            "codec": "Hevc",
+            "color_space": "ColorSpace { matrix: Bt2020, range: Limited, primaries: Bt2020, transfer: Pq, chroma_location: Left }",
+            "decoded_frames": 3,
+            "oracle": "independent FFmpeg software decode plus media metadata"
+          },
+          "output_sha256": "499e7736f1fdadb8653fe488f6e2cd9ba9611c83228cc0b213fddd1331f577ba",
+          "plan": {
+            "backend": "Vulkan",
+            "buffer_capacity": 3,
+            "color_processing": "HdrPqPreserve",
+            "decode": "Hardware",
+            "encode": "Hardware",
+            "hardware_download": false,
+            "hardware_input_interop": true,
+            "hardware_output_interop": true,
+            "hardware_upload": false,
+            "output": {
+              "bit_depth": 10,
+              "chroma_subsampling": "Yuv420",
+              "codec": "Hevc",
+              "color_space": "ColorSpace { matrix: Bt2020, range: Limited, primaries: Bt2020, transfer: Pq, chroma_location: Left }",
+              "pixel_format": "P010Le",
+              "profile": "HevcMain10"
+            },
+            "pixel_path": "GpuResident",
+            "reasons": [
+              "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+              "input interop avoids the expensive hardware download path",
+              "output interop avoids Host readback and encoder hwupload"
+            ]
+          }
+        },
+        "PqToSdr10Hevc-freetype-colorfalse-None-frames3": {
+          "input_sha256": "eb8d8c42cd99369b99031900e8861c08f611bfcc662b8d0eb741eb695a0c366a",
+          "oracle": {
+            "audio_streams": 0,
+            "bit_depth": 10,
+            "codec": "Hevc",
+            "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+            "decoded_frames": 3,
+            "oracle": "independent FFmpeg software decode plus media metadata"
+          },
+          "output_sha256": "387f68bd1ac3b05b3334543e558a69bb1b49b6052d72a9edbc43bbe97b08c15a",
+          "plan": {
+            "backend": "Vulkan",
+            "buffer_capacity": 3,
+            "color_processing": "HdrPqToSdrBt709",
+            "decode": "Hardware",
+            "encode": "Hardware",
+            "hardware_download": false,
+            "hardware_input_interop": true,
+            "hardware_output_interop": true,
+            "hardware_upload": false,
+            "output": {
+              "bit_depth": 10,
+              "chroma_subsampling": "Yuv420",
+              "codec": "Hevc",
+              "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+              "pixel_format": "P010Le",
+              "profile": "HevcMain10"
+            },
+            "pixel_path": "GpuResident",
+            "reasons": [
+              "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+              "input interop avoids the expensive hardware download path",
+              "output interop avoids Host readback and encoder hwupload",
+              "explicit PQ HDR \u2192 BT.709 SDR request; sealed BT.2446-1 0\u20131000 cd/m\u00b2 input domain, no implicit highlight clipping"
+            ]
+          }
+        },
+        "PqToSdr8H264-builtin-colorfalse-DualAac-frames3": {
+          "input_sha256": "8f7dcd9aaf6a5061ee3f36a3cfa686f7fbb74356bbeb016b80658c87e556c443",
+          "oracle": {
+            "audio_streams": 2,
+            "bit_depth": 8,
+            "codec": "H264",
+            "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+            "decoded_frames": 3,
+            "oracle": "independent FFmpeg software decode plus media metadata"
+          },
+          "output_sha256": "16e34a0ce0a4cad545ffdda473fd2cf258da4fd4dd39bf6dff61c39bf73111be",
+          "plan": {
+            "backend": "Vulkan",
+            "buffer_capacity": 3,
+            "color_processing": "HdrPqToSdrBt709",
+            "decode": "Hardware",
+            "encode": "Hardware",
+            "hardware_download": false,
+            "hardware_input_interop": true,
+            "hardware_output_interop": true,
+            "hardware_upload": false,
+            "output": {
+              "bit_depth": 8,
+              "chroma_subsampling": "Yuv420",
+              "codec": "H264",
+              "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+              "pixel_format": "Nv12",
+              "profile": null
+            },
+            "pixel_path": "GpuResident",
+            "reasons": [
+              "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+              "input interop avoids the expensive hardware download path",
+              "output interop avoids Host readback and encoder hwupload",
+              "explicit PQ HDR \u2192 BT.709 SDR request; sealed BT.2446-1 0\u20131000 cd/m\u00b2 input domain, no implicit highlight clipping"
+            ]
+          }
+        },
+        "Sdr8H264-builtin-colortrue-None-frames3": {
+          "input_sha256": "bf61c8e035aecce8901a636dcb76a6ccc7c28f243d22f20340fb2b6f8e487dfb",
+          "oracle": {
+            "audio_streams": 0,
+            "bit_depth": 8,
+            "codec": "H264",
+            "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+            "decoded_frames": 3,
+            "oracle": "independent FFmpeg software decode plus media metadata"
+          },
+          "output_sha256": "356a26767343eb9106d3bd979947021511d41a627e14e69f97d8c7d30008dab7",
+          "plan": {
+            "backend": "Vulkan",
+            "buffer_capacity": 3,
+            "color_processing": "Sdr",
+            "decode": "Hardware",
+            "encode": "Hardware",
+            "hardware_download": false,
+            "hardware_input_interop": true,
+            "hardware_output_interop": true,
+            "hardware_upload": false,
+            "output": {
+              "bit_depth": 8,
+              "chroma_subsampling": "Yuv420",
+              "codec": "H264",
+              "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+              "pixel_format": "Nv12",
+              "profile": null
+            },
+            "pixel_path": "GpuResident",
+            "reasons": [
+              "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+              "input interop avoids the expensive hardware download path",
+              "output interop avoids Host readback and encoder hwupload"
+            ]
+          }
+        }
+      },
+      "cycle_records": 500,
+      "cycles": 500,
+      "extended": true,
+      "final": {
+        "allocator": {
+          "arena_bytes": 158851072,
+          "fastbin_free_bytes": 0,
+          "free_retained_arena_bytes": 156660528,
+          "in_use_arena_bytes": 2190544,
+          "in_use_including_mmap_bytes": 10853584,
+          "mapped_bytes": 167514112,
+          "mmap_bytes": 8663040,
+          "mmap_regions": 3,
+          "scope": "glibc accounting, not application-live bytes or RSS; tcache may count as in-use; mmap bytes include allocation overhead"
+        },
+        "boundary": "cycle-end",
+        "complete_cycles_without_new_hwm": 183,
+        "cycle": 500,
+        "fd_count": 7,
+        "job_index": 2039,
+        "job_type": "complete-fixed-mixed-cycle",
+        "last_hwm_cycle": 317,
+        "mapping_categories": {
+          "anonymous_non_heap": {
+            "anonymous_kib": 127032,
+            "count": 155,
+            "private_anonymous_lower_kib": 127032,
+            "private_anonymous_upper_kib": 127032,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 127032,
+            "rss_kib": 127032,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 712880
+          },
+          "driver_device": {
+            "anonymous_kib": 0,
+            "count": 0,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 0,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 0
+          },
+          "file_backed": {
+            "anonymous_kib": 8964,
+            "count": 923,
+            "private_anonymous_lower_kib": 8944,
+            "private_anonymous_upper_kib": 8964,
+            "private_clean_kib": 29272,
+            "private_dirty_kib": 8964,
+            "rss_kib": 89136,
+            "shared_clean_kib": 50900,
+            "shared_dirty_kib": 0,
+            "size_kib": 395260
+          },
+          "heap": {
+            "anonymous_kib": 32932,
+            "count": 1,
+            "private_anonymous_lower_kib": 32932,
+            "private_anonymous_upper_kib": 32932,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 32932,
+            "rss_kib": 32932,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 33140
+          },
+          "kernel_named_stack": {
+            "anonymous_kib": 20,
+            "count": 1,
+            "private_anonymous_lower_kib": 20,
+            "private_anonymous_upper_kib": 20,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 20,
+            "rss_kib": 20,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 136
+          },
+          "other": {
+            "anonymous_kib": 0,
+            "count": 0,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 0,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 0
+          },
+          "special": {
+            "anonymous_kib": 0,
+            "count": 4,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 16,
+            "shared_clean_kib": 16,
+            "shared_dirty_kib": 0,
+            "size_kib": 36
+          }
+        },
+        "mapping_count": 1084,
+        "mapping_count_source": "VMA headers in /proc/self/smaps, corresponding to /proc/self/maps entries; unnamed cached stacks remain anonymous_non_heap, not guessed",
+        "metric_scope": "smaps_rollup.Anonymous is the historical conservative anonymous-resident HWM metric, not intrinsically an exclusive private-page census; per-mapping shared/private fields remain available for attribution. Private_Dirty may also include private file-backed pages.",
+        "private_anonymous_kib": 168948,
+        "private_anonymous_lower_kib": 168928,
+        "private_anonymous_upper_kib": 168948,
+        "private_clean_kib": 29272,
+        "private_dirty_kib": 168948,
+        "pss_kib": 204325,
+        "rss_kib": 249136,
+        "smaps_rollup_anonymous_kib": 168948,
+        "snapshot_scope": "Sequential correlated reads, not atomic; JSON/XML observer allocations are ephemeral but allocator retention is included",
+        "swap_kib": 0,
+        "thread_count": 2
+      },
+      "final_allocator": {
+        "arena_bytes": 158851072,
+        "fastbin_free_bytes": 0,
+        "free_retained_arena_bytes": 156660528,
+        "in_use_arena_bytes": 2190544,
+        "in_use_including_mmap_bytes": 10853584,
+        "mapped_bytes": 167514112,
+        "mmap_bytes": 8663040,
+        "mmap_regions": 3,
+        "scope": "glibc accounting, not application-live bytes or RSS; tcache may count as in-use; mmap bytes include allocation overhead"
+      },
+      "final_high_water_kib": 168948,
+      "final_private_anonymous_kib": 168948,
+      "hwm_events": 55,
+      "id": "process-00",
+      "initial": {
+        "allocator": {
+          "arena_bytes": 647168,
+          "fastbin_free_bytes": 0,
+          "free_retained_arena_bytes": 243520,
+          "in_use_arena_bytes": 403648,
+          "in_use_including_mmap_bytes": 9066688,
+          "mapped_bytes": 9310208,
+          "mmap_bytes": 8663040,
+          "mmap_regions": 3,
+          "scope": "glibc accounting, not application-live bytes or RSS; tcache may count as in-use; mmap bytes include allocation overhead"
+        },
+        "boundary": "initial",
+        "complete_cycles_without_new_hwm": 0,
+        "cycle": 0,
+        "fd_count": 7,
+        "hwm_event": {
+          "delta_kib": 15708,
+          "new_kib": 15708,
+          "previous_kib": 0,
+          "resource_evidence": "Initial process observation, before any job"
+        },
+        "job_index": 0,
+        "job_type": "initial",
+        "last_hwm_cycle": 0,
+        "mapping_categories": {
+          "anonymous_non_heap": {
+            "anonymous_kib": 9448,
+            "count": 125,
+            "private_anonymous_lower_kib": 9448,
+            "private_anonymous_upper_kib": 9448,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 9448,
+            "rss_kib": 9448,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 91512
+          },
+          "driver_device": {
+            "anonymous_kib": 0,
+            "count": 0,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 0,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 0
+          },
+          "file_backed": {
+            "anonymous_kib": 5944,
+            "count": 896,
+            "private_anonymous_lower_kib": 5924,
+            "private_anonymous_upper_kib": 5944,
+            "private_clean_kib": 14056,
+            "private_dirty_kib": 5944,
+            "rss_kib": 42460,
+            "shared_clean_kib": 22460,
+            "shared_dirty_kib": 0,
+            "size_kib": 204996
+          },
+          "heap": {
+            "anonymous_kib": 296,
+            "count": 1,
+            "private_anonymous_lower_kib": 296,
+            "private_anonymous_upper_kib": 296,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 296,
+            "rss_kib": 296,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 500
+          },
+          "kernel_named_stack": {
+            "anonymous_kib": 20,
+            "count": 1,
+            "private_anonymous_lower_kib": 20,
+            "private_anonymous_upper_kib": 20,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 20,
+            "rss_kib": 20,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 136
+          },
+          "other": {
+            "anonymous_kib": 0,
+            "count": 0,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 0,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 0
+          },
+          "special": {
+            "anonymous_kib": 0,
+            "count": 4,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 16,
+            "shared_clean_kib": 16,
+            "shared_dirty_kib": 0,
+            "size_kib": 36
+          }
+        },
+        "mapping_count": 1027,
+        "mapping_count_source": "VMA headers in /proc/self/smaps, corresponding to /proc/self/maps entries; unnamed cached stacks remain anonymous_non_heap, not guessed",
+        "metric_scope": "smaps_rollup.Anonymous is the historical conservative anonymous-resident HWM metric, not intrinsically an exclusive private-page census; per-mapping shared/private fields remain available for attribution. Private_Dirty may also include private file-backed pages.",
+        "private_anonymous_kib": 15708,
+        "private_anonymous_lower_kib": 15688,
+        "private_anonymous_upper_kib": 15708,
+        "private_clean_kib": 14056,
+        "private_dirty_kib": 15708,
+        "pss_kib": 32193,
+        "rss_kib": 52240,
+        "smaps_rollup_anonymous_kib": 15708,
+        "snapshot_scope": "Sequential correlated reads, not atomic; JSON/XML observer allocations are ephemeral but allocator retention is included",
+        "swap_kib": 0,
+        "thread_count": 2
+      },
+      "initial_private_anonymous_kib": 15708,
+      "interpretation": "Operational finite-workload plateau only; allocation/mapping/live-byte review still required; not an automatic seal",
+      "job_boundary_records": 2040,
+      "job_outcomes": {
+        "Cancelled": 20,
+        "InjectedFailure": 20,
+        "Success": 2000
+      },
+      "jobs": 2040,
+      "largest_hwm_increment_kib": 49660,
+      "last_hwm_cycle": 317,
+      "late_100_cycle_live_range_bytes": [
+        10843872,
+        10864128
+      ],
+      "observed_plateau": true,
+      "observer_fixed_proc_buffer_bytes": 8650752,
+      "process_id": 24670,
+      "raw_sha256": {
+        "hwm.jsonl": "f8e5020f67a9093b999c8a75e1c2b8530213e1d1f037121b4c3e9d72f626c840",
+        "jobs.jsonl": "89ede476bcbc980b61b7fb02c7ce8d2eb088016dbf6f1e1e25056836ca89a1c6",
+        "memory.jsonl": "49e482c46f368192d5b3321b6fa543093184496709ede30da31353e6464cd63a",
+        "plateau-result.json": "f10851899bcd34fb640284e2cb4430d4d9bdf53b4926ce810b29e87cea812283"
+      },
+      "reference_configurations": 4,
+      "retained_reference_bytes": 928880,
+      "schema": "asciiflow-default-memory-plateau-v1"
+    },
+    {
+      "all_lifecycle_checks_pass": true,
+      "allocator_policy": "unchanged glibc default; read-only mallinfo2/malloc_info; no trim/tuning",
+      "complete_cycles_without_new_hwm": 80,
+      "configurations": {
+        "Pq10Hevc-freetype-colortrue-SingleAac-frames3": {
+          "input_sha256": "87288c82fa7eaafdae2dfa1051b0aec53ba3942fa2304c006856f7a56df55f89",
+          "oracle": {
+            "audio_streams": 1,
+            "bit_depth": 10,
+            "codec": "Hevc",
+            "color_space": "ColorSpace { matrix: Bt2020, range: Limited, primaries: Bt2020, transfer: Pq, chroma_location: Left }",
+            "decoded_frames": 3,
+            "oracle": "independent FFmpeg software decode plus media metadata"
+          },
+          "output_sha256": "499e7736f1fdadb8653fe488f6e2cd9ba9611c83228cc0b213fddd1331f577ba",
+          "plan": {
+            "backend": "Vulkan",
+            "buffer_capacity": 3,
+            "color_processing": "HdrPqPreserve",
+            "decode": "Hardware",
+            "encode": "Hardware",
+            "hardware_download": false,
+            "hardware_input_interop": true,
+            "hardware_output_interop": true,
+            "hardware_upload": false,
+            "output": {
+              "bit_depth": 10,
+              "chroma_subsampling": "Yuv420",
+              "codec": "Hevc",
+              "color_space": "ColorSpace { matrix: Bt2020, range: Limited, primaries: Bt2020, transfer: Pq, chroma_location: Left }",
+              "pixel_format": "P010Le",
+              "profile": "HevcMain10"
+            },
+            "pixel_path": "GpuResident",
+            "reasons": [
+              "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+              "input interop avoids the expensive hardware download path",
+              "output interop avoids Host readback and encoder hwupload"
+            ]
+          }
+        },
+        "PqToSdr10Hevc-freetype-colorfalse-None-frames3": {
+          "input_sha256": "eb8d8c42cd99369b99031900e8861c08f611bfcc662b8d0eb741eb695a0c366a",
+          "oracle": {
+            "audio_streams": 0,
+            "bit_depth": 10,
+            "codec": "Hevc",
+            "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+            "decoded_frames": 3,
+            "oracle": "independent FFmpeg software decode plus media metadata"
+          },
+          "output_sha256": "387f68bd1ac3b05b3334543e558a69bb1b49b6052d72a9edbc43bbe97b08c15a",
+          "plan": {
+            "backend": "Vulkan",
+            "buffer_capacity": 3,
+            "color_processing": "HdrPqToSdrBt709",
+            "decode": "Hardware",
+            "encode": "Hardware",
+            "hardware_download": false,
+            "hardware_input_interop": true,
+            "hardware_output_interop": true,
+            "hardware_upload": false,
+            "output": {
+              "bit_depth": 10,
+              "chroma_subsampling": "Yuv420",
+              "codec": "Hevc",
+              "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+              "pixel_format": "P010Le",
+              "profile": "HevcMain10"
+            },
+            "pixel_path": "GpuResident",
+            "reasons": [
+              "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+              "input interop avoids the expensive hardware download path",
+              "output interop avoids Host readback and encoder hwupload",
+              "explicit PQ HDR \u2192 BT.709 SDR request; sealed BT.2446-1 0\u20131000 cd/m\u00b2 input domain, no implicit highlight clipping"
+            ]
+          }
+        },
+        "PqToSdr8H264-builtin-colorfalse-DualAac-frames3": {
+          "input_sha256": "8f7dcd9aaf6a5061ee3f36a3cfa686f7fbb74356bbeb016b80658c87e556c443",
+          "oracle": {
+            "audio_streams": 2,
+            "bit_depth": 8,
+            "codec": "H264",
+            "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+            "decoded_frames": 3,
+            "oracle": "independent FFmpeg software decode plus media metadata"
+          },
+          "output_sha256": "16e34a0ce0a4cad545ffdda473fd2cf258da4fd4dd39bf6dff61c39bf73111be",
+          "plan": {
+            "backend": "Vulkan",
+            "buffer_capacity": 3,
+            "color_processing": "HdrPqToSdrBt709",
+            "decode": "Hardware",
+            "encode": "Hardware",
+            "hardware_download": false,
+            "hardware_input_interop": true,
+            "hardware_output_interop": true,
+            "hardware_upload": false,
+            "output": {
+              "bit_depth": 8,
+              "chroma_subsampling": "Yuv420",
+              "codec": "H264",
+              "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+              "pixel_format": "Nv12",
+              "profile": null
+            },
+            "pixel_path": "GpuResident",
+            "reasons": [
+              "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+              "input interop avoids the expensive hardware download path",
+              "output interop avoids Host readback and encoder hwupload",
+              "explicit PQ HDR \u2192 BT.709 SDR request; sealed BT.2446-1 0\u20131000 cd/m\u00b2 input domain, no implicit highlight clipping"
+            ]
+          }
+        },
+        "Sdr8H264-builtin-colortrue-None-frames3": {
+          "input_sha256": "bf61c8e035aecce8901a636dcb76a6ccc7c28f243d22f20340fb2b6f8e487dfb",
+          "oracle": {
+            "audio_streams": 0,
+            "bit_depth": 8,
+            "codec": "H264",
+            "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+            "decoded_frames": 3,
+            "oracle": "independent FFmpeg software decode plus media metadata"
+          },
+          "output_sha256": "356a26767343eb9106d3bd979947021511d41a627e14e69f97d8c7d30008dab7",
+          "plan": {
+            "backend": "Vulkan",
+            "buffer_capacity": 3,
+            "color_processing": "Sdr",
+            "decode": "Hardware",
+            "encode": "Hardware",
+            "hardware_download": false,
+            "hardware_input_interop": true,
+            "hardware_output_interop": true,
+            "hardware_upload": false,
+            "output": {
+              "bit_depth": 8,
+              "chroma_subsampling": "Yuv420",
+              "codec": "H264",
+              "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+              "pixel_format": "Nv12",
+              "profile": null
+            },
+            "pixel_path": "GpuResident",
+            "reasons": [
+              "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+              "input interop avoids the expensive hardware download path",
+              "output interop avoids Host readback and encoder hwupload"
+            ]
+          }
+        }
+      },
+      "cycle_records": 500,
+      "cycles": 500,
+      "extended": false,
+      "final": {
+        "allocator": {
+          "arena_bytes": 162451456,
+          "fastbin_free_bytes": 0,
+          "free_retained_arena_bytes": 160265216,
+          "in_use_arena_bytes": 2186240,
+          "in_use_including_mmap_bytes": 10849280,
+          "mapped_bytes": 171114496,
+          "mmap_bytes": 8663040,
+          "mmap_regions": 3,
+          "scope": "glibc accounting, not application-live bytes or RSS; tcache may count as in-use; mmap bytes include allocation overhead"
+        },
+        "boundary": "cycle-end",
+        "complete_cycles_without_new_hwm": 80,
+        "cycle": 500,
+        "fd_count": 7,
+        "job_index": 2039,
+        "job_type": "complete-fixed-mixed-cycle",
+        "last_hwm_cycle": 420,
+        "mapping_categories": {
+          "anonymous_non_heap": {
+            "anonymous_kib": 136332,
+            "count": 152,
+            "private_anonymous_lower_kib": 136332,
+            "private_anonymous_upper_kib": 136332,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 136332,
+            "rss_kib": 136332,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 712880
+          },
+          "driver_device": {
+            "anonymous_kib": 0,
+            "count": 0,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 0,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 0
+          },
+          "file_backed": {
+            "anonymous_kib": 8964,
+            "count": 923,
+            "private_anonymous_lower_kib": 8944,
+            "private_anonymous_upper_kib": 8964,
+            "private_clean_kib": 29376,
+            "private_dirty_kib": 8964,
+            "rss_kib": 89352,
+            "shared_clean_kib": 51012,
+            "shared_dirty_kib": 0,
+            "size_kib": 395260
+          },
+          "heap": {
+            "anonymous_kib": 32932,
+            "count": 1,
+            "private_anonymous_lower_kib": 32932,
+            "private_anonymous_upper_kib": 32932,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 32932,
+            "rss_kib": 32932,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 33140
+          },
+          "kernel_named_stack": {
+            "anonymous_kib": 24,
+            "count": 1,
+            "private_anonymous_lower_kib": 24,
+            "private_anonymous_upper_kib": 24,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 24,
+            "rss_kib": 24,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 136
+          },
+          "other": {
+            "anonymous_kib": 0,
+            "count": 0,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 0,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 0
+          },
+          "special": {
+            "anonymous_kib": 0,
+            "count": 4,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 16,
+            "shared_clean_kib": 16,
+            "shared_dirty_kib": 0,
+            "size_kib": 36
+          }
+        },
+        "mapping_count": 1081,
+        "mapping_count_source": "VMA headers in /proc/self/smaps, corresponding to /proc/self/maps entries; unnamed cached stacks remain anonymous_non_heap, not guessed",
+        "metric_scope": "smaps_rollup.Anonymous is the historical conservative anonymous-resident HWM metric, not intrinsically an exclusive private-page census; per-mapping shared/private fields remain available for attribution. Private_Dirty may also include private file-backed pages.",
+        "private_anonymous_kib": 178252,
+        "private_anonymous_lower_kib": 178232,
+        "private_anonymous_upper_kib": 178252,
+        "private_clean_kib": 29376,
+        "private_dirty_kib": 178252,
+        "pss_kib": 213081,
+        "rss_kib": 258656,
+        "smaps_rollup_anonymous_kib": 178252,
+        "snapshot_scope": "Sequential correlated reads, not atomic; JSON/XML observer allocations are ephemeral but allocator retention is included",
+        "swap_kib": 0,
+        "thread_count": 2
+      },
+      "final_allocator": {
+        "arena_bytes": 162451456,
+        "fastbin_free_bytes": 0,
+        "free_retained_arena_bytes": 160265216,
+        "in_use_arena_bytes": 2186240,
+        "in_use_including_mmap_bytes": 10849280,
+        "mapped_bytes": 171114496,
+        "mmap_bytes": 8663040,
+        "mmap_regions": 3,
+        "scope": "glibc accounting, not application-live bytes or RSS; tcache may count as in-use; mmap bytes include allocation overhead"
+      },
+      "final_high_water_kib": 178252,
+      "final_private_anonymous_kib": 178252,
+      "hwm_events": 60,
+      "id": "process-01",
+      "initial": {
+        "allocator": {
+          "arena_bytes": 647168,
+          "fastbin_free_bytes": 0,
+          "free_retained_arena_bytes": 243520,
+          "in_use_arena_bytes": 403648,
+          "in_use_including_mmap_bytes": 9066688,
+          "mapped_bytes": 9310208,
+          "mmap_bytes": 8663040,
+          "mmap_regions": 3,
+          "scope": "glibc accounting, not application-live bytes or RSS; tcache may count as in-use; mmap bytes include allocation overhead"
+        },
+        "boundary": "initial",
+        "complete_cycles_without_new_hwm": 0,
+        "cycle": 0,
+        "fd_count": 7,
+        "hwm_event": {
+          "delta_kib": 15712,
+          "new_kib": 15712,
+          "previous_kib": 0,
+          "resource_evidence": "Initial process observation, before any job"
+        },
+        "job_index": 0,
+        "job_type": "initial",
+        "last_hwm_cycle": 0,
+        "mapping_categories": {
+          "anonymous_non_heap": {
+            "anonymous_kib": 9448,
+            "count": 125,
+            "private_anonymous_lower_kib": 9448,
+            "private_anonymous_upper_kib": 9448,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 9448,
+            "rss_kib": 9448,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 91512
+          },
+          "driver_device": {
+            "anonymous_kib": 0,
+            "count": 0,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 0,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 0
+          },
+          "file_backed": {
+            "anonymous_kib": 5944,
+            "count": 896,
+            "private_anonymous_lower_kib": 5924,
+            "private_anonymous_upper_kib": 5944,
+            "private_clean_kib": 13924,
+            "private_dirty_kib": 5944,
+            "rss_kib": 42484,
+            "shared_clean_kib": 22616,
+            "shared_dirty_kib": 0,
+            "size_kib": 204996
+          },
+          "heap": {
+            "anonymous_kib": 296,
+            "count": 1,
+            "private_anonymous_lower_kib": 296,
+            "private_anonymous_upper_kib": 296,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 296,
+            "rss_kib": 296,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 500
+          },
+          "kernel_named_stack": {
+            "anonymous_kib": 24,
+            "count": 1,
+            "private_anonymous_lower_kib": 24,
+            "private_anonymous_upper_kib": 24,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 24,
+            "rss_kib": 24,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 136
+          },
+          "other": {
+            "anonymous_kib": 0,
+            "count": 0,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 0,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 0
+          },
+          "special": {
+            "anonymous_kib": 0,
+            "count": 4,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 16,
+            "shared_clean_kib": 16,
+            "shared_dirty_kib": 0,
+            "size_kib": 36
+          }
+        },
+        "mapping_count": 1027,
+        "mapping_count_source": "VMA headers in /proc/self/smaps, corresponding to /proc/self/maps entries; unnamed cached stacks remain anonymous_non_heap, not guessed",
+        "metric_scope": "smaps_rollup.Anonymous is the historical conservative anonymous-resident HWM metric, not intrinsically an exclusive private-page census; per-mapping shared/private fields remain available for attribution. Private_Dirty may also include private file-backed pages.",
+        "private_anonymous_kib": 15712,
+        "private_anonymous_lower_kib": 15692,
+        "private_anonymous_upper_kib": 15712,
+        "private_clean_kib": 13924,
+        "private_dirty_kib": 15712,
+        "pss_kib": 32107,
+        "rss_kib": 52268,
+        "smaps_rollup_anonymous_kib": 15712,
+        "snapshot_scope": "Sequential correlated reads, not atomic; JSON/XML observer allocations are ephemeral but allocator retention is included",
+        "swap_kib": 0,
+        "thread_count": 2
+      },
+      "initial_private_anonymous_kib": 15712,
+      "interpretation": "Operational finite-workload plateau only; allocation/mapping/live-byte review still required; not an automatic seal",
+      "job_boundary_records": 2040,
+      "job_outcomes": {
+        "Cancelled": 20,
+        "InjectedFailure": 20,
+        "Success": 2000
+      },
+      "jobs": 2040,
+      "largest_hwm_increment_kib": 47840,
+      "last_hwm_cycle": 420,
+      "late_100_cycle_live_range_bytes": [
+        10832800,
+        10854432
+      ],
+      "observed_plateau": false,
+      "observer_fixed_proc_buffer_bytes": 8650752,
+      "process_id": 101354,
+      "raw_sha256": {
+        "hwm.jsonl": "88335d50d3fd4647911570a8180f8921744968370e3d588581f1e36f2922a3f7",
+        "jobs.jsonl": "5d7e7ec17913dc24ed7cb970f1c6bb2f4b41fd2f80a19746653acabdf7064f75",
+        "memory.jsonl": "52c15f9473a65e966c0f33cff7e226e847872c687f9f44cfc0e7ffb2df80fc6b",
+        "plateau-result.json": "f7b7a144782f76408fcac1aa5bf9a0f5f14a6797df6b0a9dfd1368e673bbc3e9"
+      },
+      "reference_configurations": 4,
+      "retained_reference_bytes": 928880,
+      "schema": "asciiflow-default-memory-plateau-v1"
+    },
+    {
+      "all_lifecycle_checks_pass": true,
+      "allocator_policy": "unchanged glibc default; read-only mallinfo2/malloc_info; no trim/tuning",
+      "complete_cycles_without_new_hwm": 77,
+      "configurations": {
+        "Pq10Hevc-freetype-colortrue-SingleAac-frames3": {
+          "input_sha256": "87288c82fa7eaafdae2dfa1051b0aec53ba3942fa2304c006856f7a56df55f89",
+          "oracle": {
+            "audio_streams": 1,
+            "bit_depth": 10,
+            "codec": "Hevc",
+            "color_space": "ColorSpace { matrix: Bt2020, range: Limited, primaries: Bt2020, transfer: Pq, chroma_location: Left }",
+            "decoded_frames": 3,
+            "oracle": "independent FFmpeg software decode plus media metadata"
+          },
+          "output_sha256": "499e7736f1fdadb8653fe488f6e2cd9ba9611c83228cc0b213fddd1331f577ba",
+          "plan": {
+            "backend": "Vulkan",
+            "buffer_capacity": 3,
+            "color_processing": "HdrPqPreserve",
+            "decode": "Hardware",
+            "encode": "Hardware",
+            "hardware_download": false,
+            "hardware_input_interop": true,
+            "hardware_output_interop": true,
+            "hardware_upload": false,
+            "output": {
+              "bit_depth": 10,
+              "chroma_subsampling": "Yuv420",
+              "codec": "Hevc",
+              "color_space": "ColorSpace { matrix: Bt2020, range: Limited, primaries: Bt2020, transfer: Pq, chroma_location: Left }",
+              "pixel_format": "P010Le",
+              "profile": "HevcMain10"
+            },
+            "pixel_path": "GpuResident",
+            "reasons": [
+              "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+              "input interop avoids the expensive hardware download path",
+              "output interop avoids Host readback and encoder hwupload"
+            ]
+          }
+        },
+        "PqToSdr10Hevc-freetype-colorfalse-None-frames3": {
+          "input_sha256": "eb8d8c42cd99369b99031900e8861c08f611bfcc662b8d0eb741eb695a0c366a",
+          "oracle": {
+            "audio_streams": 0,
+            "bit_depth": 10,
+            "codec": "Hevc",
+            "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+            "decoded_frames": 3,
+            "oracle": "independent FFmpeg software decode plus media metadata"
+          },
+          "output_sha256": "387f68bd1ac3b05b3334543e558a69bb1b49b6052d72a9edbc43bbe97b08c15a",
+          "plan": {
+            "backend": "Vulkan",
+            "buffer_capacity": 3,
+            "color_processing": "HdrPqToSdrBt709",
+            "decode": "Hardware",
+            "encode": "Hardware",
+            "hardware_download": false,
+            "hardware_input_interop": true,
+            "hardware_output_interop": true,
+            "hardware_upload": false,
+            "output": {
+              "bit_depth": 10,
+              "chroma_subsampling": "Yuv420",
+              "codec": "Hevc",
+              "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+              "pixel_format": "P010Le",
+              "profile": "HevcMain10"
+            },
+            "pixel_path": "GpuResident",
+            "reasons": [
+              "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+              "input interop avoids the expensive hardware download path",
+              "output interop avoids Host readback and encoder hwupload",
+              "explicit PQ HDR \u2192 BT.709 SDR request; sealed BT.2446-1 0\u20131000 cd/m\u00b2 input domain, no implicit highlight clipping"
+            ]
+          }
+        },
+        "PqToSdr8H264-builtin-colorfalse-DualAac-frames3": {
+          "input_sha256": "8f7dcd9aaf6a5061ee3f36a3cfa686f7fbb74356bbeb016b80658c87e556c443",
+          "oracle": {
+            "audio_streams": 2,
+            "bit_depth": 8,
+            "codec": "H264",
+            "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+            "decoded_frames": 3,
+            "oracle": "independent FFmpeg software decode plus media metadata"
+          },
+          "output_sha256": "16e34a0ce0a4cad545ffdda473fd2cf258da4fd4dd39bf6dff61c39bf73111be",
+          "plan": {
+            "backend": "Vulkan",
+            "buffer_capacity": 3,
+            "color_processing": "HdrPqToSdrBt709",
+            "decode": "Hardware",
+            "encode": "Hardware",
+            "hardware_download": false,
+            "hardware_input_interop": true,
+            "hardware_output_interop": true,
+            "hardware_upload": false,
+            "output": {
+              "bit_depth": 8,
+              "chroma_subsampling": "Yuv420",
+              "codec": "H264",
+              "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+              "pixel_format": "Nv12",
+              "profile": null
+            },
+            "pixel_path": "GpuResident",
+            "reasons": [
+              "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+              "input interop avoids the expensive hardware download path",
+              "output interop avoids Host readback and encoder hwupload",
+              "explicit PQ HDR \u2192 BT.709 SDR request; sealed BT.2446-1 0\u20131000 cd/m\u00b2 input domain, no implicit highlight clipping"
+            ]
+          }
+        },
+        "Sdr8H264-builtin-colortrue-None-frames3": {
+          "input_sha256": "bf61c8e035aecce8901a636dcb76a6ccc7c28f243d22f20340fb2b6f8e487dfb",
+          "oracle": {
+            "audio_streams": 0,
+            "bit_depth": 8,
+            "codec": "H264",
+            "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+            "decoded_frames": 3,
+            "oracle": "independent FFmpeg software decode plus media metadata"
+          },
+          "output_sha256": "356a26767343eb9106d3bd979947021511d41a627e14e69f97d8c7d30008dab7",
+          "plan": {
+            "backend": "Vulkan",
+            "buffer_capacity": 3,
+            "color_processing": "Sdr",
+            "decode": "Hardware",
+            "encode": "Hardware",
+            "hardware_download": false,
+            "hardware_input_interop": true,
+            "hardware_output_interop": true,
+            "hardware_upload": false,
+            "output": {
+              "bit_depth": 8,
+              "chroma_subsampling": "Yuv420",
+              "codec": "H264",
+              "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+              "pixel_format": "Nv12",
+              "profile": null
+            },
+            "pixel_path": "GpuResident",
+            "reasons": [
+              "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+              "input interop avoids the expensive hardware download path",
+              "output interop avoids Host readback and encoder hwupload"
+            ]
+          }
+        }
+      },
+      "cycle_records": 500,
+      "cycles": 500,
+      "extended": false,
+      "final": {
+        "allocator": {
+          "arena_bytes": 162369536,
+          "fastbin_free_bytes": 0,
+          "free_retained_arena_bytes": 160177424,
+          "in_use_arena_bytes": 2192112,
+          "in_use_including_mmap_bytes": 10855152,
+          "mapped_bytes": 171032576,
+          "mmap_bytes": 8663040,
+          "mmap_regions": 3,
+          "scope": "glibc accounting, not application-live bytes or RSS; tcache may count as in-use; mmap bytes include allocation overhead"
+        },
+        "boundary": "cycle-end",
+        "complete_cycles_without_new_hwm": 77,
+        "cycle": 500,
+        "fd_count": 7,
+        "job_index": 2039,
+        "job_type": "complete-fixed-mixed-cycle",
+        "last_hwm_cycle": 423,
+        "mapping_categories": {
+          "anonymous_non_heap": {
+            "anonymous_kib": 136252,
+            "count": 156,
+            "private_anonymous_lower_kib": 136252,
+            "private_anonymous_upper_kib": 136252,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 136252,
+            "rss_kib": 136252,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 712880
+          },
+          "driver_device": {
+            "anonymous_kib": 0,
+            "count": 0,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 0,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 0
+          },
+          "file_backed": {
+            "anonymous_kib": 8964,
+            "count": 923,
+            "private_anonymous_lower_kib": 8944,
+            "private_anonymous_upper_kib": 8964,
+            "private_clean_kib": 29444,
+            "private_dirty_kib": 8964,
+            "rss_kib": 89508,
+            "shared_clean_kib": 51100,
+            "shared_dirty_kib": 0,
+            "size_kib": 395260
+          },
+          "heap": {
+            "anonymous_kib": 32932,
+            "count": 1,
+            "private_anonymous_lower_kib": 32932,
+            "private_anonymous_upper_kib": 32932,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 32932,
+            "rss_kib": 32932,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 33140
+          },
+          "kernel_named_stack": {
+            "anonymous_kib": 24,
+            "count": 1,
+            "private_anonymous_lower_kib": 24,
+            "private_anonymous_upper_kib": 24,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 24,
+            "rss_kib": 24,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 136
+          },
+          "other": {
+            "anonymous_kib": 0,
+            "count": 0,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 0,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 0
+          },
+          "special": {
+            "anonymous_kib": 0,
+            "count": 4,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 16,
+            "shared_clean_kib": 16,
+            "shared_dirty_kib": 0,
+            "size_kib": 36
+          }
+        },
+        "mapping_count": 1085,
+        "mapping_count_source": "VMA headers in /proc/self/smaps, corresponding to /proc/self/maps entries; unnamed cached stacks remain anonymous_non_heap, not guessed",
+        "metric_scope": "smaps_rollup.Anonymous is the historical conservative anonymous-resident HWM metric, not intrinsically an exclusive private-page census; per-mapping shared/private fields remain available for attribution. Private_Dirty may also include private file-backed pages.",
+        "private_anonymous_kib": 178172,
+        "private_anonymous_lower_kib": 178152,
+        "private_anonymous_upper_kib": 178172,
+        "private_clean_kib": 29444,
+        "private_dirty_kib": 178172,
+        "pss_kib": 213061,
+        "rss_kib": 258732,
+        "smaps_rollup_anonymous_kib": 178172,
+        "snapshot_scope": "Sequential correlated reads, not atomic; JSON/XML observer allocations are ephemeral but allocator retention is included",
+        "swap_kib": 0,
+        "thread_count": 2
+      },
+      "final_allocator": {
+        "arena_bytes": 162369536,
+        "fastbin_free_bytes": 0,
+        "free_retained_arena_bytes": 160177424,
+        "in_use_arena_bytes": 2192112,
+        "in_use_including_mmap_bytes": 10855152,
+        "mapped_bytes": 171032576,
+        "mmap_bytes": 8663040,
+        "mmap_regions": 3,
+        "scope": "glibc accounting, not application-live bytes or RSS; tcache may count as in-use; mmap bytes include allocation overhead"
+      },
+      "final_high_water_kib": 178172,
+      "final_private_anonymous_kib": 178172,
+      "hwm_events": 62,
+      "id": "process-02",
+      "initial": {
+        "allocator": {
+          "arena_bytes": 647168,
+          "fastbin_free_bytes": 0,
+          "free_retained_arena_bytes": 243520,
+          "in_use_arena_bytes": 403648,
+          "in_use_including_mmap_bytes": 9066688,
+          "mapped_bytes": 9310208,
+          "mmap_bytes": 8663040,
+          "mmap_regions": 3,
+          "scope": "glibc accounting, not application-live bytes or RSS; tcache may count as in-use; mmap bytes include allocation overhead"
+        },
+        "boundary": "initial",
+        "complete_cycles_without_new_hwm": 0,
+        "cycle": 0,
+        "fd_count": 7,
+        "hwm_event": {
+          "delta_kib": 15712,
+          "new_kib": 15712,
+          "previous_kib": 0,
+          "resource_evidence": "Initial process observation, before any job"
+        },
+        "job_index": 0,
+        "job_type": "initial",
+        "last_hwm_cycle": 0,
+        "mapping_categories": {
+          "anonymous_non_heap": {
+            "anonymous_kib": 9448,
+            "count": 129,
+            "private_anonymous_lower_kib": 9448,
+            "private_anonymous_upper_kib": 9448,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 9448,
+            "rss_kib": 9448,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 91512
+          },
+          "driver_device": {
+            "anonymous_kib": 0,
+            "count": 0,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 0,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 0
+          },
+          "file_backed": {
+            "anonymous_kib": 5944,
+            "count": 896,
+            "private_anonymous_lower_kib": 5924,
+            "private_anonymous_upper_kib": 5944,
+            "private_clean_kib": 13984,
+            "private_dirty_kib": 5944,
+            "rss_kib": 42500,
+            "shared_clean_kib": 22572,
+            "shared_dirty_kib": 0,
+            "size_kib": 204996
+          },
+          "heap": {
+            "anonymous_kib": 296,
+            "count": 1,
+            "private_anonymous_lower_kib": 296,
+            "private_anonymous_upper_kib": 296,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 296,
+            "rss_kib": 296,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 500
+          },
+          "kernel_named_stack": {
+            "anonymous_kib": 24,
+            "count": 1,
+            "private_anonymous_lower_kib": 24,
+            "private_anonymous_upper_kib": 24,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 24,
+            "rss_kib": 24,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 136
+          },
+          "other": {
+            "anonymous_kib": 0,
+            "count": 0,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 0,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 0
+          },
+          "special": {
+            "anonymous_kib": 0,
+            "count": 4,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 16,
+            "shared_clean_kib": 16,
+            "shared_dirty_kib": 0,
+            "size_kib": 36
+          }
+        },
+        "mapping_count": 1031,
+        "mapping_count_source": "VMA headers in /proc/self/smaps, corresponding to /proc/self/maps entries; unnamed cached stacks remain anonymous_non_heap, not guessed",
+        "metric_scope": "smaps_rollup.Anonymous is the historical conservative anonymous-resident HWM metric, not intrinsically an exclusive private-page census; per-mapping shared/private fields remain available for attribution. Private_Dirty may also include private file-backed pages.",
+        "private_anonymous_kib": 15712,
+        "private_anonymous_lower_kib": 15692,
+        "private_anonymous_upper_kib": 15712,
+        "private_clean_kib": 13984,
+        "private_dirty_kib": 15712,
+        "pss_kib": 32111,
+        "rss_kib": 52284,
+        "smaps_rollup_anonymous_kib": 15712,
+        "snapshot_scope": "Sequential correlated reads, not atomic; JSON/XML observer allocations are ephemeral but allocator retention is included",
+        "swap_kib": 0,
+        "thread_count": 2
+      },
+      "initial_private_anonymous_kib": 15712,
+      "interpretation": "Operational finite-workload plateau only; allocation/mapping/live-byte review still required; not an automatic seal",
+      "job_boundary_records": 2040,
+      "job_outcomes": {
+        "Cancelled": 20,
+        "InjectedFailure": 20,
+        "Success": 2000
+      },
+      "jobs": 2040,
+      "largest_hwm_increment_kib": 48896,
+      "last_hwm_cycle": 423,
+      "late_100_cycle_live_range_bytes": [
+        10841872,
+        10865040
+      ],
+      "observed_plateau": false,
+      "observer_fixed_proc_buffer_bytes": 8650752,
+      "process_id": 165008,
+      "raw_sha256": {
+        "hwm.jsonl": "561b7a24d9cf120f0e6657800ea81388845dfcf6783769b3dc3516e4c1883fce",
+        "jobs.jsonl": "6bf72210ab6eb9d33becf235cdfe565ed1726ffb6749e900d50400cfce62b3db",
+        "memory.jsonl": "680642db881eef2c6cde59d8f6d013cc1627c9d2c28ed4d6cf8889189d8ffd94",
+        "plateau-result.json": "028d9fb47d08d8986043add7cac2be6f813af93e5d5ee4fb4aaf0047571ee7c7"
+      },
+      "reference_configurations": 4,
+      "retained_reference_bytes": 928880,
+      "schema": "asciiflow-default-memory-plateau-v1"
+    },
+    {
+      "all_lifecycle_checks_pass": true,
+      "allocator_policy": "unchanged glibc default; read-only mallinfo2/malloc_info; no trim/tuning",
+      "complete_cycles_without_new_hwm": 37,
+      "configurations": {
+        "Pq10Hevc-freetype-colortrue-SingleAac-frames3": {
+          "input_sha256": "87288c82fa7eaafdae2dfa1051b0aec53ba3942fa2304c006856f7a56df55f89",
+          "oracle": {
+            "audio_streams": 1,
+            "bit_depth": 10,
+            "codec": "Hevc",
+            "color_space": "ColorSpace { matrix: Bt2020, range: Limited, primaries: Bt2020, transfer: Pq, chroma_location: Left }",
+            "decoded_frames": 3,
+            "oracle": "independent FFmpeg software decode plus media metadata"
+          },
+          "output_sha256": "499e7736f1fdadb8653fe488f6e2cd9ba9611c83228cc0b213fddd1331f577ba",
+          "plan": {
+            "backend": "Vulkan",
+            "buffer_capacity": 3,
+            "color_processing": "HdrPqPreserve",
+            "decode": "Hardware",
+            "encode": "Hardware",
+            "hardware_download": false,
+            "hardware_input_interop": true,
+            "hardware_output_interop": true,
+            "hardware_upload": false,
+            "output": {
+              "bit_depth": 10,
+              "chroma_subsampling": "Yuv420",
+              "codec": "Hevc",
+              "color_space": "ColorSpace { matrix: Bt2020, range: Limited, primaries: Bt2020, transfer: Pq, chroma_location: Left }",
+              "pixel_format": "P010Le",
+              "profile": "HevcMain10"
+            },
+            "pixel_path": "GpuResident",
+            "reasons": [
+              "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+              "input interop avoids the expensive hardware download path",
+              "output interop avoids Host readback and encoder hwupload"
+            ]
+          }
+        },
+        "PqToSdr10Hevc-freetype-colorfalse-None-frames3": {
+          "input_sha256": "eb8d8c42cd99369b99031900e8861c08f611bfcc662b8d0eb741eb695a0c366a",
+          "oracle": {
+            "audio_streams": 0,
+            "bit_depth": 10,
+            "codec": "Hevc",
+            "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+            "decoded_frames": 3,
+            "oracle": "independent FFmpeg software decode plus media metadata"
+          },
+          "output_sha256": "387f68bd1ac3b05b3334543e558a69bb1b49b6052d72a9edbc43bbe97b08c15a",
+          "plan": {
+            "backend": "Vulkan",
+            "buffer_capacity": 3,
+            "color_processing": "HdrPqToSdrBt709",
+            "decode": "Hardware",
+            "encode": "Hardware",
+            "hardware_download": false,
+            "hardware_input_interop": true,
+            "hardware_output_interop": true,
+            "hardware_upload": false,
+            "output": {
+              "bit_depth": 10,
+              "chroma_subsampling": "Yuv420",
+              "codec": "Hevc",
+              "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+              "pixel_format": "P010Le",
+              "profile": "HevcMain10"
+            },
+            "pixel_path": "GpuResident",
+            "reasons": [
+              "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+              "input interop avoids the expensive hardware download path",
+              "output interop avoids Host readback and encoder hwupload",
+              "explicit PQ HDR \u2192 BT.709 SDR request; sealed BT.2446-1 0\u20131000 cd/m\u00b2 input domain, no implicit highlight clipping"
+            ]
+          }
+        },
+        "PqToSdr8H264-builtin-colorfalse-DualAac-frames3": {
+          "input_sha256": "8f7dcd9aaf6a5061ee3f36a3cfa686f7fbb74356bbeb016b80658c87e556c443",
+          "oracle": {
+            "audio_streams": 2,
+            "bit_depth": 8,
+            "codec": "H264",
+            "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+            "decoded_frames": 3,
+            "oracle": "independent FFmpeg software decode plus media metadata"
+          },
+          "output_sha256": "16e34a0ce0a4cad545ffdda473fd2cf258da4fd4dd39bf6dff61c39bf73111be",
+          "plan": {
+            "backend": "Vulkan",
+            "buffer_capacity": 3,
+            "color_processing": "HdrPqToSdrBt709",
+            "decode": "Hardware",
+            "encode": "Hardware",
+            "hardware_download": false,
+            "hardware_input_interop": true,
+            "hardware_output_interop": true,
+            "hardware_upload": false,
+            "output": {
+              "bit_depth": 8,
+              "chroma_subsampling": "Yuv420",
+              "codec": "H264",
+              "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+              "pixel_format": "Nv12",
+              "profile": null
+            },
+            "pixel_path": "GpuResident",
+            "reasons": [
+              "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+              "input interop avoids the expensive hardware download path",
+              "output interop avoids Host readback and encoder hwupload",
+              "explicit PQ HDR \u2192 BT.709 SDR request; sealed BT.2446-1 0\u20131000 cd/m\u00b2 input domain, no implicit highlight clipping"
+            ]
+          }
+        },
+        "Sdr8H264-builtin-colortrue-None-frames3": {
+          "input_sha256": "bf61c8e035aecce8901a636dcb76a6ccc7c28f243d22f20340fb2b6f8e487dfb",
+          "oracle": {
+            "audio_streams": 0,
+            "bit_depth": 8,
+            "codec": "H264",
+            "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+            "decoded_frames": 3,
+            "oracle": "independent FFmpeg software decode plus media metadata"
+          },
+          "output_sha256": "356a26767343eb9106d3bd979947021511d41a627e14e69f97d8c7d30008dab7",
+          "plan": {
+            "backend": "Vulkan",
+            "buffer_capacity": 3,
+            "color_processing": "Sdr",
+            "decode": "Hardware",
+            "encode": "Hardware",
+            "hardware_download": false,
+            "hardware_input_interop": true,
+            "hardware_output_interop": true,
+            "hardware_upload": false,
+            "output": {
+              "bit_depth": 8,
+              "chroma_subsampling": "Yuv420",
+              "codec": "H264",
+              "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+              "pixel_format": "Nv12",
+              "profile": null
+            },
+            "pixel_path": "GpuResident",
+            "reasons": [
+              "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+              "input interop avoids the expensive hardware download path",
+              "output interop avoids Host readback and encoder hwupload"
+            ]
+          }
+        }
+      },
+      "cycle_records": 500,
+      "cycles": 500,
+      "extended": false,
+      "final": {
+        "allocator": {
+          "arena_bytes": 129736704,
+          "fastbin_free_bytes": 0,
+          "free_retained_arena_bytes": 127542032,
+          "in_use_arena_bytes": 2194672,
+          "in_use_including_mmap_bytes": 10857712,
+          "mapped_bytes": 138399744,
+          "mmap_bytes": 8663040,
+          "mmap_regions": 3,
+          "scope": "glibc accounting, not application-live bytes or RSS; tcache may count as in-use; mmap bytes include allocation overhead"
+        },
+        "boundary": "cycle-end",
+        "complete_cycles_without_new_hwm": 37,
+        "cycle": 500,
+        "fd_count": 7,
+        "job_index": 2039,
+        "job_type": "complete-fixed-mixed-cycle",
+        "last_hwm_cycle": 463,
+        "mapping_categories": {
+          "anonymous_non_heap": {
+            "anonymous_kib": 137024,
+            "count": 156,
+            "private_anonymous_lower_kib": 137024,
+            "private_anonymous_upper_kib": 137024,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 137024,
+            "rss_kib": 137024,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 712880
+          },
+          "driver_device": {
+            "anonymous_kib": 0,
+            "count": 0,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 0,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 0
+          },
+          "file_backed": {
+            "anonymous_kib": 8964,
+            "count": 923,
+            "private_anonymous_lower_kib": 8944,
+            "private_anonymous_upper_kib": 8964,
+            "private_clean_kib": 29252,
+            "private_dirty_kib": 8964,
+            "rss_kib": 89144,
+            "shared_clean_kib": 50928,
+            "shared_dirty_kib": 0,
+            "size_kib": 395260
+          },
+          "heap": {
+            "anonymous_kib": 296,
+            "count": 1,
+            "private_anonymous_lower_kib": 296,
+            "private_anonymous_upper_kib": 296,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 296,
+            "rss_kib": 296,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 500
+          },
+          "kernel_named_stack": {
+            "anonymous_kib": 20,
+            "count": 1,
+            "private_anonymous_lower_kib": 20,
+            "private_anonymous_upper_kib": 20,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 20,
+            "rss_kib": 20,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 136
+          },
+          "other": {
+            "anonymous_kib": 0,
+            "count": 0,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 0,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 0
+          },
+          "special": {
+            "anonymous_kib": 0,
+            "count": 4,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 16,
+            "shared_clean_kib": 16,
+            "shared_dirty_kib": 0,
+            "size_kib": 36
+          }
+        },
+        "mapping_count": 1085,
+        "mapping_count_source": "VMA headers in /proc/self/smaps, corresponding to /proc/self/maps entries; unnamed cached stacks remain anonymous_non_heap, not guessed",
+        "metric_scope": "smaps_rollup.Anonymous is the historical conservative anonymous-resident HWM metric, not intrinsically an exclusive private-page census; per-mapping shared/private fields remain available for attribution. Private_Dirty may also include private file-backed pages.",
+        "private_anonymous_kib": 146304,
+        "private_anonymous_lower_kib": 146284,
+        "private_anonymous_upper_kib": 146304,
+        "private_clean_kib": 29252,
+        "private_dirty_kib": 146304,
+        "pss_kib": 180072,
+        "rss_kib": 226500,
+        "smaps_rollup_anonymous_kib": 146304,
+        "snapshot_scope": "Sequential correlated reads, not atomic; JSON/XML observer allocations are ephemeral but allocator retention is included",
+        "swap_kib": 0,
+        "thread_count": 2
+      },
+      "final_allocator": {
+        "arena_bytes": 129736704,
+        "fastbin_free_bytes": 0,
+        "free_retained_arena_bytes": 127542032,
+        "in_use_arena_bytes": 2194672,
+        "in_use_including_mmap_bytes": 10857712,
+        "mapped_bytes": 138399744,
+        "mmap_bytes": 8663040,
+        "mmap_regions": 3,
+        "scope": "glibc accounting, not application-live bytes or RSS; tcache may count as in-use; mmap bytes include allocation overhead"
+      },
+      "final_high_water_kib": 146304,
+      "final_private_anonymous_kib": 146304,
+      "hwm_events": 55,
+      "id": "process-03",
+      "initial": {
+        "allocator": {
+          "arena_bytes": 647168,
+          "fastbin_free_bytes": 0,
+          "free_retained_arena_bytes": 243520,
+          "in_use_arena_bytes": 403648,
+          "in_use_including_mmap_bytes": 9066688,
+          "mapped_bytes": 9310208,
+          "mmap_bytes": 8663040,
+          "mmap_regions": 3,
+          "scope": "glibc accounting, not application-live bytes or RSS; tcache may count as in-use; mmap bytes include allocation overhead"
+        },
+        "boundary": "initial",
+        "complete_cycles_without_new_hwm": 0,
+        "cycle": 0,
+        "fd_count": 7,
+        "hwm_event": {
+          "delta_kib": 15708,
+          "new_kib": 15708,
+          "previous_kib": 0,
+          "resource_evidence": "Initial process observation, before any job"
+        },
+        "job_index": 0,
+        "job_type": "initial",
+        "last_hwm_cycle": 0,
+        "mapping_categories": {
+          "anonymous_non_heap": {
+            "anonymous_kib": 9448,
+            "count": 128,
+            "private_anonymous_lower_kib": 9448,
+            "private_anonymous_upper_kib": 9448,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 9448,
+            "rss_kib": 9448,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 91512
+          },
+          "driver_device": {
+            "anonymous_kib": 0,
+            "count": 0,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 0,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 0
+          },
+          "file_backed": {
+            "anonymous_kib": 5944,
+            "count": 896,
+            "private_anonymous_lower_kib": 5924,
+            "private_anonymous_upper_kib": 5944,
+            "private_clean_kib": 13968,
+            "private_dirty_kib": 5944,
+            "rss_kib": 42468,
+            "shared_clean_kib": 22556,
+            "shared_dirty_kib": 0,
+            "size_kib": 204996
+          },
+          "heap": {
+            "anonymous_kib": 296,
+            "count": 1,
+            "private_anonymous_lower_kib": 296,
+            "private_anonymous_upper_kib": 296,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 296,
+            "rss_kib": 296,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 500
+          },
+          "kernel_named_stack": {
+            "anonymous_kib": 20,
+            "count": 1,
+            "private_anonymous_lower_kib": 20,
+            "private_anonymous_upper_kib": 20,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 20,
+            "rss_kib": 20,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 136
+          },
+          "other": {
+            "anonymous_kib": 0,
+            "count": 0,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 0,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 0
+          },
+          "special": {
+            "anonymous_kib": 0,
+            "count": 4,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 16,
+            "shared_clean_kib": 16,
+            "shared_dirty_kib": 0,
+            "size_kib": 36
+          }
+        },
+        "mapping_count": 1030,
+        "mapping_count_source": "VMA headers in /proc/self/smaps, corresponding to /proc/self/maps entries; unnamed cached stacks remain anonymous_non_heap, not guessed",
+        "metric_scope": "smaps_rollup.Anonymous is the historical conservative anonymous-resident HWM metric, not intrinsically an exclusive private-page census; per-mapping shared/private fields remain available for attribution. Private_Dirty may also include private file-backed pages.",
+        "private_anonymous_kib": 15708,
+        "private_anonymous_lower_kib": 15688,
+        "private_anonymous_upper_kib": 15708,
+        "private_clean_kib": 13968,
+        "private_dirty_kib": 15708,
+        "pss_kib": 32127,
+        "rss_kib": 52248,
+        "smaps_rollup_anonymous_kib": 15708,
+        "snapshot_scope": "Sequential correlated reads, not atomic; JSON/XML observer allocations are ephemeral but allocator retention is included",
+        "swap_kib": 0,
+        "thread_count": 2
+      },
+      "initial_private_anonymous_kib": 15708,
+      "interpretation": "Operational finite-workload plateau only; allocation/mapping/live-byte review still required; not an automatic seal",
+      "job_boundary_records": 2040,
+      "job_outcomes": {
+        "Cancelled": 20,
+        "InjectedFailure": 20,
+        "Success": 2000
+      },
+      "jobs": 2040,
+      "largest_hwm_increment_kib": 42648,
+      "last_hwm_cycle": 463,
+      "late_100_cycle_live_range_bytes": [
+        10841856,
+        10861984
+      ],
+      "observed_plateau": false,
+      "observer_fixed_proc_buffer_bytes": 8650752,
+      "process_id": 214324,
+      "raw_sha256": {
+        "hwm.jsonl": "740713724c8c7db458bae153cadc8dae5b9523362ee4ce6cb2eee4e3e80847cf",
+        "jobs.jsonl": "0a9d5f8e93a191a0047aa6d06fd4e943b9ddde7d0137a6a5065a3c5e18e25d84",
+        "memory.jsonl": "b1c1e11d1b3bee74d6c259cc3003912258c15a1c66993f2aaf2ac6a3987282bf",
+        "plateau-result.json": "5cea9827325a9be2a739b907528535a25bf0412a3dadfef31dff7c4c2b808ec9"
+      },
+      "reference_configurations": 4,
+      "retained_reference_bytes": 928880,
+      "schema": "asciiflow-default-memory-plateau-v1"
+    },
+    {
+      "all_lifecycle_checks_pass": true,
+      "allocator_policy": "unchanged glibc default; read-only mallinfo2/malloc_info; no trim/tuning",
+      "complete_cycles_without_new_hwm": 100,
+      "configurations": {
+        "Pq10Hevc-freetype-colortrue-SingleAac-frames3": {
+          "input_sha256": "87288c82fa7eaafdae2dfa1051b0aec53ba3942fa2304c006856f7a56df55f89",
+          "oracle": {
+            "audio_streams": 1,
+            "bit_depth": 10,
+            "codec": "Hevc",
+            "color_space": "ColorSpace { matrix: Bt2020, range: Limited, primaries: Bt2020, transfer: Pq, chroma_location: Left }",
+            "decoded_frames": 3,
+            "oracle": "independent FFmpeg software decode plus media metadata"
+          },
+          "output_sha256": "499e7736f1fdadb8653fe488f6e2cd9ba9611c83228cc0b213fddd1331f577ba",
+          "plan": {
+            "backend": "Vulkan",
+            "buffer_capacity": 3,
+            "color_processing": "HdrPqPreserve",
+            "decode": "Hardware",
+            "encode": "Hardware",
+            "hardware_download": false,
+            "hardware_input_interop": true,
+            "hardware_output_interop": true,
+            "hardware_upload": false,
+            "output": {
+              "bit_depth": 10,
+              "chroma_subsampling": "Yuv420",
+              "codec": "Hevc",
+              "color_space": "ColorSpace { matrix: Bt2020, range: Limited, primaries: Bt2020, transfer: Pq, chroma_location: Left }",
+              "pixel_format": "P010Le",
+              "profile": "HevcMain10"
+            },
+            "pixel_path": "GpuResident",
+            "reasons": [
+              "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+              "input interop avoids the expensive hardware download path",
+              "output interop avoids Host readback and encoder hwupload"
+            ]
+          }
+        },
+        "PqToSdr10Hevc-freetype-colorfalse-None-frames3": {
+          "input_sha256": "eb8d8c42cd99369b99031900e8861c08f611bfcc662b8d0eb741eb695a0c366a",
+          "oracle": {
+            "audio_streams": 0,
+            "bit_depth": 10,
+            "codec": "Hevc",
+            "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+            "decoded_frames": 3,
+            "oracle": "independent FFmpeg software decode plus media metadata"
+          },
+          "output_sha256": "387f68bd1ac3b05b3334543e558a69bb1b49b6052d72a9edbc43bbe97b08c15a",
+          "plan": {
+            "backend": "Vulkan",
+            "buffer_capacity": 3,
+            "color_processing": "HdrPqToSdrBt709",
+            "decode": "Hardware",
+            "encode": "Hardware",
+            "hardware_download": false,
+            "hardware_input_interop": true,
+            "hardware_output_interop": true,
+            "hardware_upload": false,
+            "output": {
+              "bit_depth": 10,
+              "chroma_subsampling": "Yuv420",
+              "codec": "Hevc",
+              "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+              "pixel_format": "P010Le",
+              "profile": "HevcMain10"
+            },
+            "pixel_path": "GpuResident",
+            "reasons": [
+              "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+              "input interop avoids the expensive hardware download path",
+              "output interop avoids Host readback and encoder hwupload",
+              "explicit PQ HDR \u2192 BT.709 SDR request; sealed BT.2446-1 0\u20131000 cd/m\u00b2 input domain, no implicit highlight clipping"
+            ]
+          }
+        },
+        "PqToSdr8H264-builtin-colorfalse-DualAac-frames3": {
+          "input_sha256": "8f7dcd9aaf6a5061ee3f36a3cfa686f7fbb74356bbeb016b80658c87e556c443",
+          "oracle": {
+            "audio_streams": 2,
+            "bit_depth": 8,
+            "codec": "H264",
+            "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+            "decoded_frames": 3,
+            "oracle": "independent FFmpeg software decode plus media metadata"
+          },
+          "output_sha256": "16e34a0ce0a4cad545ffdda473fd2cf258da4fd4dd39bf6dff61c39bf73111be",
+          "plan": {
+            "backend": "Vulkan",
+            "buffer_capacity": 3,
+            "color_processing": "HdrPqToSdrBt709",
+            "decode": "Hardware",
+            "encode": "Hardware",
+            "hardware_download": false,
+            "hardware_input_interop": true,
+            "hardware_output_interop": true,
+            "hardware_upload": false,
+            "output": {
+              "bit_depth": 8,
+              "chroma_subsampling": "Yuv420",
+              "codec": "H264",
+              "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+              "pixel_format": "Nv12",
+              "profile": null
+            },
+            "pixel_path": "GpuResident",
+            "reasons": [
+              "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+              "input interop avoids the expensive hardware download path",
+              "output interop avoids Host readback and encoder hwupload",
+              "explicit PQ HDR \u2192 BT.709 SDR request; sealed BT.2446-1 0\u20131000 cd/m\u00b2 input domain, no implicit highlight clipping"
+            ]
+          }
+        },
+        "Sdr8H264-builtin-colortrue-None-frames3": {
+          "input_sha256": "bf61c8e035aecce8901a636dcb76a6ccc7c28f243d22f20340fb2b6f8e487dfb",
+          "oracle": {
+            "audio_streams": 0,
+            "bit_depth": 8,
+            "codec": "H264",
+            "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+            "decoded_frames": 3,
+            "oracle": "independent FFmpeg software decode plus media metadata"
+          },
+          "output_sha256": "356a26767343eb9106d3bd979947021511d41a627e14e69f97d8c7d30008dab7",
+          "plan": {
+            "backend": "Vulkan",
+            "buffer_capacity": 3,
+            "color_processing": "Sdr",
+            "decode": "Hardware",
+            "encode": "Hardware",
+            "hardware_download": false,
+            "hardware_input_interop": true,
+            "hardware_output_interop": true,
+            "hardware_upload": false,
+            "output": {
+              "bit_depth": 8,
+              "chroma_subsampling": "Yuv420",
+              "codec": "H264",
+              "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+              "pixel_format": "Nv12",
+              "profile": null
+            },
+            "pixel_path": "GpuResident",
+            "reasons": [
+              "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+              "input interop avoids the expensive hardware download path",
+              "output interop avoids Host readback and encoder hwupload"
+            ]
+          }
+        }
+      },
+      "cycle_records": 368,
+      "cycles": 368,
+      "extended": false,
+      "final": {
+        "allocator": {
+          "arena_bytes": 127242240,
+          "fastbin_free_bytes": 0,
+          "free_retained_arena_bytes": 125057488,
+          "in_use_arena_bytes": 2184752,
+          "in_use_including_mmap_bytes": 10847792,
+          "mapped_bytes": 135905280,
+          "mmap_bytes": 8663040,
+          "mmap_regions": 3,
+          "scope": "glibc accounting, not application-live bytes or RSS; tcache may count as in-use; mmap bytes include allocation overhead"
+        },
+        "boundary": "cycle-end",
+        "complete_cycles_without_new_hwm": 100,
+        "cycle": 368,
+        "fd_count": 7,
+        "job_index": 1500,
+        "job_type": "complete-fixed-mixed-cycle",
+        "last_hwm_cycle": 268,
+        "mapping_categories": {
+          "anonymous_non_heap": {
+            "anonymous_kib": 134588,
+            "count": 148,
+            "private_anonymous_lower_kib": 134588,
+            "private_anonymous_upper_kib": 134588,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 134588,
+            "rss_kib": 134588,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 712880
+          },
+          "driver_device": {
+            "anonymous_kib": 0,
+            "count": 0,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 0,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 0
+          },
+          "file_backed": {
+            "anonymous_kib": 8964,
+            "count": 923,
+            "private_anonymous_lower_kib": 8944,
+            "private_anonymous_upper_kib": 8964,
+            "private_clean_kib": 29264,
+            "private_dirty_kib": 8964,
+            "rss_kib": 89152,
+            "shared_clean_kib": 50924,
+            "shared_dirty_kib": 0,
+            "size_kib": 395260
+          },
+          "heap": {
+            "anonymous_kib": 296,
+            "count": 1,
+            "private_anonymous_lower_kib": 296,
+            "private_anonymous_upper_kib": 296,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 296,
+            "rss_kib": 296,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 500
+          },
+          "kernel_named_stack": {
+            "anonymous_kib": 24,
+            "count": 1,
+            "private_anonymous_lower_kib": 24,
+            "private_anonymous_upper_kib": 24,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 24,
+            "rss_kib": 24,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 136
+          },
+          "other": {
+            "anonymous_kib": 0,
+            "count": 0,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 0,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 0
+          },
+          "special": {
+            "anonymous_kib": 0,
+            "count": 4,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 16,
+            "shared_clean_kib": 16,
+            "shared_dirty_kib": 0,
+            "size_kib": 36
+          }
+        },
+        "mapping_count": 1077,
+        "mapping_count_source": "VMA headers in /proc/self/smaps, corresponding to /proc/self/maps entries; unnamed cached stacks remain anonymous_non_heap, not guessed",
+        "metric_scope": "smaps_rollup.Anonymous is the historical conservative anonymous-resident HWM metric, not intrinsically an exclusive private-page census; per-mapping shared/private fields remain available for attribution. Private_Dirty may also include private file-backed pages.",
+        "private_anonymous_kib": 143872,
+        "private_anonymous_lower_kib": 143852,
+        "private_anonymous_upper_kib": 143872,
+        "private_clean_kib": 29264,
+        "private_dirty_kib": 143872,
+        "pss_kib": 177620,
+        "rss_kib": 224076,
+        "smaps_rollup_anonymous_kib": 143872,
+        "snapshot_scope": "Sequential correlated reads, not atomic; JSON/XML observer allocations are ephemeral but allocator retention is included",
+        "swap_kib": 0,
+        "thread_count": 2
+      },
+      "final_allocator": {
+        "arena_bytes": 127242240,
+        "fastbin_free_bytes": 0,
+        "free_retained_arena_bytes": 125057488,
+        "in_use_arena_bytes": 2184752,
+        "in_use_including_mmap_bytes": 10847792,
+        "mapped_bytes": 135905280,
+        "mmap_bytes": 8663040,
+        "mmap_regions": 3,
+        "scope": "glibc accounting, not application-live bytes or RSS; tcache may count as in-use; mmap bytes include allocation overhead"
+      },
+      "final_high_water_kib": 143872,
+      "final_private_anonymous_kib": 143872,
+      "hwm_events": 52,
+      "id": "process-04",
+      "initial": {
+        "allocator": {
+          "arena_bytes": 647168,
+          "fastbin_free_bytes": 0,
+          "free_retained_arena_bytes": 243520,
+          "in_use_arena_bytes": 403648,
+          "in_use_including_mmap_bytes": 9066688,
+          "mapped_bytes": 9310208,
+          "mmap_bytes": 8663040,
+          "mmap_regions": 3,
+          "scope": "glibc accounting, not application-live bytes or RSS; tcache may count as in-use; mmap bytes include allocation overhead"
+        },
+        "boundary": "initial",
+        "complete_cycles_without_new_hwm": 0,
+        "cycle": 0,
+        "fd_count": 7,
+        "hwm_event": {
+          "delta_kib": 15712,
+          "new_kib": 15712,
+          "previous_kib": 0,
+          "resource_evidence": "Initial process observation, before any job"
+        },
+        "job_index": 0,
+        "job_type": "initial",
+        "last_hwm_cycle": 0,
+        "mapping_categories": {
+          "anonymous_non_heap": {
+            "anonymous_kib": 9448,
+            "count": 120,
+            "private_anonymous_lower_kib": 9448,
+            "private_anonymous_upper_kib": 9448,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 9448,
+            "rss_kib": 9448,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 91512
+          },
+          "driver_device": {
+            "anonymous_kib": 0,
+            "count": 0,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 0,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 0
+          },
+          "file_backed": {
+            "anonymous_kib": 5944,
+            "count": 896,
+            "private_anonymous_lower_kib": 5924,
+            "private_anonymous_upper_kib": 5944,
+            "private_clean_kib": 13852,
+            "private_dirty_kib": 5944,
+            "rss_kib": 42408,
+            "shared_clean_kib": 22612,
+            "shared_dirty_kib": 0,
+            "size_kib": 204996
+          },
+          "heap": {
+            "anonymous_kib": 296,
+            "count": 1,
+            "private_anonymous_lower_kib": 296,
+            "private_anonymous_upper_kib": 296,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 296,
+            "rss_kib": 296,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 500
+          },
+          "kernel_named_stack": {
+            "anonymous_kib": 24,
+            "count": 1,
+            "private_anonymous_lower_kib": 24,
+            "private_anonymous_upper_kib": 24,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 24,
+            "rss_kib": 24,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 136
+          },
+          "other": {
+            "anonymous_kib": 0,
+            "count": 0,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 0,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 0
+          },
+          "special": {
+            "anonymous_kib": 0,
+            "count": 4,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 16,
+            "shared_clean_kib": 16,
+            "shared_dirty_kib": 0,
+            "size_kib": 36
+          }
+        },
+        "mapping_count": 1022,
+        "mapping_count_source": "VMA headers in /proc/self/smaps, corresponding to /proc/self/maps entries; unnamed cached stacks remain anonymous_non_heap, not guessed",
+        "metric_scope": "smaps_rollup.Anonymous is the historical conservative anonymous-resident HWM metric, not intrinsically an exclusive private-page census; per-mapping shared/private fields remain available for attribution. Private_Dirty may also include private file-backed pages.",
+        "private_anonymous_kib": 15712,
+        "private_anonymous_lower_kib": 15692,
+        "private_anonymous_upper_kib": 15712,
+        "private_clean_kib": 13852,
+        "private_dirty_kib": 15712,
+        "pss_kib": 31755,
+        "rss_kib": 52192,
+        "smaps_rollup_anonymous_kib": 15712,
+        "snapshot_scope": "Sequential correlated reads, not atomic; JSON/XML observer allocations are ephemeral but allocator retention is included",
+        "swap_kib": 0,
+        "thread_count": 2
+      },
+      "initial_private_anonymous_kib": 15712,
+      "interpretation": "Operational finite-workload plateau only; allocation/mapping/live-byte review still required; not an automatic seal",
+      "job_boundary_records": 1501,
+      "job_outcomes": {
+        "Cancelled": 15,
+        "InjectedFailure": 14,
+        "Success": 1472
+      },
+      "jobs": 1501,
+      "largest_hwm_increment_kib": 42816,
+      "last_hwm_cycle": 268,
+      "late_100_cycle_live_range_bytes": [
+        10832032,
+        10860160
+      ],
+      "observed_plateau": true,
+      "observer_fixed_proc_buffer_bytes": 8650752,
+      "process_id": 266485,
+      "raw_sha256": {
+        "hwm.jsonl": "04e523f0aaf1a5881d9ede231e089bde85af9a03b8d27c0316d14c4165c43852",
+        "jobs.jsonl": "b4b70ec6fa2664ccef32cd7bac8570de808f7101e12b8dd038a3725e2d29e1e0",
+        "memory.jsonl": "2bcc77d269b7917a607d7d8a85a116ba991eea9c9e3627c1e3fad7f1e0936077",
+        "plateau-result.json": "67250d50f91f574f188113e6297492e31b293e5c00adaf527c4515b65601e973"
+      },
+      "reference_configurations": 4,
+      "retained_reference_bytes": 928880,
+      "schema": "asciiflow-default-memory-plateau-v1"
+    },
+    {
+      "all_lifecycle_checks_pass": true,
+      "allocator_policy": "unchanged glibc default; read-only mallinfo2/malloc_info; no trim/tuning",
+      "complete_cycles_without_new_hwm": 100,
+      "configurations": {
+        "Pq10Hevc-freetype-colortrue-SingleAac-frames3": {
+          "input_sha256": "87288c82fa7eaafdae2dfa1051b0aec53ba3942fa2304c006856f7a56df55f89",
+          "oracle": {
+            "audio_streams": 1,
+            "bit_depth": 10,
+            "codec": "Hevc",
+            "color_space": "ColorSpace { matrix: Bt2020, range: Limited, primaries: Bt2020, transfer: Pq, chroma_location: Left }",
+            "decoded_frames": 3,
+            "oracle": "independent FFmpeg software decode plus media metadata"
+          },
+          "output_sha256": "499e7736f1fdadb8653fe488f6e2cd9ba9611c83228cc0b213fddd1331f577ba",
+          "plan": {
+            "backend": "Vulkan",
+            "buffer_capacity": 3,
+            "color_processing": "HdrPqPreserve",
+            "decode": "Hardware",
+            "encode": "Hardware",
+            "hardware_download": false,
+            "hardware_input_interop": true,
+            "hardware_output_interop": true,
+            "hardware_upload": false,
+            "output": {
+              "bit_depth": 10,
+              "chroma_subsampling": "Yuv420",
+              "codec": "Hevc",
+              "color_space": "ColorSpace { matrix: Bt2020, range: Limited, primaries: Bt2020, transfer: Pq, chroma_location: Left }",
+              "pixel_format": "P010Le",
+              "profile": "HevcMain10"
+            },
+            "pixel_path": "GpuResident",
+            "reasons": [
+              "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+              "input interop avoids the expensive hardware download path",
+              "output interop avoids Host readback and encoder hwupload"
+            ]
+          }
+        },
+        "PqToSdr10Hevc-freetype-colorfalse-None-frames3": {
+          "input_sha256": "eb8d8c42cd99369b99031900e8861c08f611bfcc662b8d0eb741eb695a0c366a",
+          "oracle": {
+            "audio_streams": 0,
+            "bit_depth": 10,
+            "codec": "Hevc",
+            "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+            "decoded_frames": 3,
+            "oracle": "independent FFmpeg software decode plus media metadata"
+          },
+          "output_sha256": "387f68bd1ac3b05b3334543e558a69bb1b49b6052d72a9edbc43bbe97b08c15a",
+          "plan": {
+            "backend": "Vulkan",
+            "buffer_capacity": 3,
+            "color_processing": "HdrPqToSdrBt709",
+            "decode": "Hardware",
+            "encode": "Hardware",
+            "hardware_download": false,
+            "hardware_input_interop": true,
+            "hardware_output_interop": true,
+            "hardware_upload": false,
+            "output": {
+              "bit_depth": 10,
+              "chroma_subsampling": "Yuv420",
+              "codec": "Hevc",
+              "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+              "pixel_format": "P010Le",
+              "profile": "HevcMain10"
+            },
+            "pixel_path": "GpuResident",
+            "reasons": [
+              "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+              "input interop avoids the expensive hardware download path",
+              "output interop avoids Host readback and encoder hwupload",
+              "explicit PQ HDR \u2192 BT.709 SDR request; sealed BT.2446-1 0\u20131000 cd/m\u00b2 input domain, no implicit highlight clipping"
+            ]
+          }
+        },
+        "PqToSdr8H264-builtin-colorfalse-DualAac-frames3": {
+          "input_sha256": "8f7dcd9aaf6a5061ee3f36a3cfa686f7fbb74356bbeb016b80658c87e556c443",
+          "oracle": {
+            "audio_streams": 2,
+            "bit_depth": 8,
+            "codec": "H264",
+            "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+            "decoded_frames": 3,
+            "oracle": "independent FFmpeg software decode plus media metadata"
+          },
+          "output_sha256": "16e34a0ce0a4cad545ffdda473fd2cf258da4fd4dd39bf6dff61c39bf73111be",
+          "plan": {
+            "backend": "Vulkan",
+            "buffer_capacity": 3,
+            "color_processing": "HdrPqToSdrBt709",
+            "decode": "Hardware",
+            "encode": "Hardware",
+            "hardware_download": false,
+            "hardware_input_interop": true,
+            "hardware_output_interop": true,
+            "hardware_upload": false,
+            "output": {
+              "bit_depth": 8,
+              "chroma_subsampling": "Yuv420",
+              "codec": "H264",
+              "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+              "pixel_format": "Nv12",
+              "profile": null
+            },
+            "pixel_path": "GpuResident",
+            "reasons": [
+              "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+              "input interop avoids the expensive hardware download path",
+              "output interop avoids Host readback and encoder hwupload",
+              "explicit PQ HDR \u2192 BT.709 SDR request; sealed BT.2446-1 0\u20131000 cd/m\u00b2 input domain, no implicit highlight clipping"
+            ]
+          }
+        },
+        "Sdr8H264-builtin-colortrue-None-frames3": {
+          "input_sha256": "bf61c8e035aecce8901a636dcb76a6ccc7c28f243d22f20340fb2b6f8e487dfb",
+          "oracle": {
+            "audio_streams": 0,
+            "bit_depth": 8,
+            "codec": "H264",
+            "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+            "decoded_frames": 3,
+            "oracle": "independent FFmpeg software decode plus media metadata"
+          },
+          "output_sha256": "356a26767343eb9106d3bd979947021511d41a627e14e69f97d8c7d30008dab7",
+          "plan": {
+            "backend": "Vulkan",
+            "buffer_capacity": 3,
+            "color_processing": "Sdr",
+            "decode": "Hardware",
+            "encode": "Hardware",
+            "hardware_download": false,
+            "hardware_input_interop": true,
+            "hardware_output_interop": true,
+            "hardware_upload": false,
+            "output": {
+              "bit_depth": 8,
+              "chroma_subsampling": "Yuv420",
+              "codec": "H264",
+              "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+              "pixel_format": "Nv12",
+              "profile": null
+            },
+            "pixel_path": "GpuResident",
+            "reasons": [
+              "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+              "input interop avoids the expensive hardware download path",
+              "output interop avoids Host readback and encoder hwupload"
+            ]
+          }
+        }
+      },
+      "cycle_records": 245,
+      "cycles": 245,
+      "extended": false,
+      "final": {
+        "allocator": {
+          "arena_bytes": 157777920,
+          "fastbin_free_bytes": 0,
+          "free_retained_arena_bytes": 155592208,
+          "in_use_arena_bytes": 2185712,
+          "in_use_including_mmap_bytes": 10848752,
+          "mapped_bytes": 166440960,
+          "mmap_bytes": 8663040,
+          "mmap_regions": 3,
+          "scope": "glibc accounting, not application-live bytes or RSS; tcache may count as in-use; mmap bytes include allocation overhead"
+        },
+        "boundary": "cycle-end",
+        "complete_cycles_without_new_hwm": 100,
+        "cycle": 245,
+        "fd_count": 7,
+        "job_index": 999,
+        "job_type": "complete-fixed-mixed-cycle",
+        "last_hwm_cycle": 145,
+        "mapping_categories": {
+          "anonymous_non_heap": {
+            "anonymous_kib": 126100,
+            "count": 149,
+            "private_anonymous_lower_kib": 126100,
+            "private_anonymous_upper_kib": 126100,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 126100,
+            "rss_kib": 126100,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 712880
+          },
+          "driver_device": {
+            "anonymous_kib": 0,
+            "count": 0,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 0,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 0
+          },
+          "file_backed": {
+            "anonymous_kib": 8964,
+            "count": 923,
+            "private_anonymous_lower_kib": 8944,
+            "private_anonymous_upper_kib": 8964,
+            "private_clean_kib": 29248,
+            "private_dirty_kib": 8964,
+            "rss_kib": 89264,
+            "shared_clean_kib": 51052,
+            "shared_dirty_kib": 0,
+            "size_kib": 395260
+          },
+          "heap": {
+            "anonymous_kib": 32932,
+            "count": 1,
+            "private_anonymous_lower_kib": 32932,
+            "private_anonymous_upper_kib": 32932,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 32932,
+            "rss_kib": 32932,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 33140
+          },
+          "kernel_named_stack": {
+            "anonymous_kib": 20,
+            "count": 1,
+            "private_anonymous_lower_kib": 20,
+            "private_anonymous_upper_kib": 20,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 20,
+            "rss_kib": 20,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 136
+          },
+          "other": {
+            "anonymous_kib": 0,
+            "count": 0,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 0,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 0
+          },
+          "special": {
+            "anonymous_kib": 0,
+            "count": 4,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 16,
+            "shared_clean_kib": 16,
+            "shared_dirty_kib": 0,
+            "size_kib": 36
+          }
+        },
+        "mapping_count": 1078,
+        "mapping_count_source": "VMA headers in /proc/self/smaps, corresponding to /proc/self/maps entries; unnamed cached stacks remain anonymous_non_heap, not guessed",
+        "metric_scope": "smaps_rollup.Anonymous is the historical conservative anonymous-resident HWM metric, not intrinsically an exclusive private-page census; per-mapping shared/private fields remain available for attribution. Private_Dirty may also include private file-backed pages.",
+        "private_anonymous_kib": 168016,
+        "private_anonymous_lower_kib": 167996,
+        "private_anonymous_upper_kib": 168016,
+        "private_clean_kib": 29248,
+        "private_dirty_kib": 168016,
+        "pss_kib": 201453,
+        "rss_kib": 248332,
+        "smaps_rollup_anonymous_kib": 168016,
+        "snapshot_scope": "Sequential correlated reads, not atomic; JSON/XML observer allocations are ephemeral but allocator retention is included",
+        "swap_kib": 0,
+        "thread_count": 2
+      },
+      "final_allocator": {
+        "arena_bytes": 157777920,
+        "fastbin_free_bytes": 0,
+        "free_retained_arena_bytes": 155592208,
+        "in_use_arena_bytes": 2185712,
+        "in_use_including_mmap_bytes": 10848752,
+        "mapped_bytes": 166440960,
+        "mmap_bytes": 8663040,
+        "mmap_regions": 3,
+        "scope": "glibc accounting, not application-live bytes or RSS; tcache may count as in-use; mmap bytes include allocation overhead"
+      },
+      "final_high_water_kib": 168016,
+      "final_private_anonymous_kib": 168016,
+      "hwm_events": 56,
+      "id": "process-05",
+      "initial": {
+        "allocator": {
+          "arena_bytes": 647168,
+          "fastbin_free_bytes": 0,
+          "free_retained_arena_bytes": 243520,
+          "in_use_arena_bytes": 403648,
+          "in_use_including_mmap_bytes": 9066688,
+          "mapped_bytes": 9310208,
+          "mmap_bytes": 8663040,
+          "mmap_regions": 3,
+          "scope": "glibc accounting, not application-live bytes or RSS; tcache may count as in-use; mmap bytes include allocation overhead"
+        },
+        "boundary": "initial",
+        "complete_cycles_without_new_hwm": 0,
+        "cycle": 0,
+        "fd_count": 7,
+        "hwm_event": {
+          "delta_kib": 15708,
+          "new_kib": 15708,
+          "previous_kib": 0,
+          "resource_evidence": "Initial process observation, before any job"
+        },
+        "job_index": 0,
+        "job_type": "initial",
+        "last_hwm_cycle": 0,
+        "mapping_categories": {
+          "anonymous_non_heap": {
+            "anonymous_kib": 9448,
+            "count": 122,
+            "private_anonymous_lower_kib": 9448,
+            "private_anonymous_upper_kib": 9448,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 9448,
+            "rss_kib": 9448,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 91512
+          },
+          "driver_device": {
+            "anonymous_kib": 0,
+            "count": 0,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 0,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 0
+          },
+          "file_backed": {
+            "anonymous_kib": 5944,
+            "count": 896,
+            "private_anonymous_lower_kib": 5924,
+            "private_anonymous_upper_kib": 5944,
+            "private_clean_kib": 13912,
+            "private_dirty_kib": 5944,
+            "rss_kib": 42344,
+            "shared_clean_kib": 22488,
+            "shared_dirty_kib": 0,
+            "size_kib": 204996
+          },
+          "heap": {
+            "anonymous_kib": 296,
+            "count": 1,
+            "private_anonymous_lower_kib": 296,
+            "private_anonymous_upper_kib": 296,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 296,
+            "rss_kib": 296,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 500
+          },
+          "kernel_named_stack": {
+            "anonymous_kib": 20,
+            "count": 1,
+            "private_anonymous_lower_kib": 20,
+            "private_anonymous_upper_kib": 20,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 20,
+            "rss_kib": 20,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 136
+          },
+          "other": {
+            "anonymous_kib": 0,
+            "count": 0,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 0,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 0
+          },
+          "special": {
+            "anonymous_kib": 0,
+            "count": 4,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 16,
+            "shared_clean_kib": 16,
+            "shared_dirty_kib": 0,
+            "size_kib": 36
+          }
+        },
+        "mapping_count": 1024,
+        "mapping_count_source": "VMA headers in /proc/self/smaps, corresponding to /proc/self/maps entries; unnamed cached stacks remain anonymous_non_heap, not guessed",
+        "metric_scope": "smaps_rollup.Anonymous is the historical conservative anonymous-resident HWM metric, not intrinsically an exclusive private-page census; per-mapping shared/private fields remain available for attribution. Private_Dirty may also include private file-backed pages.",
+        "private_anonymous_kib": 15708,
+        "private_anonymous_lower_kib": 15688,
+        "private_anonymous_upper_kib": 15708,
+        "private_clean_kib": 13912,
+        "private_dirty_kib": 15708,
+        "pss_kib": 31785,
+        "rss_kib": 52124,
+        "smaps_rollup_anonymous_kib": 15708,
+        "snapshot_scope": "Sequential correlated reads, not atomic; JSON/XML observer allocations are ephemeral but allocator retention is included",
+        "swap_kib": 0,
+        "thread_count": 2
+      },
+      "initial_private_anonymous_kib": 15708,
+      "interpretation": "Operational finite-workload plateau only; allocation/mapping/live-byte review still required; not an automatic seal",
+      "job_boundary_records": 1000,
+      "job_outcomes": {
+        "Cancelled": 10,
+        "InjectedFailure": 10,
+        "Success": 980
+      },
+      "jobs": 1000,
+      "largest_hwm_increment_kib": 49380,
+      "last_hwm_cycle": 145,
+      "late_100_cycle_live_range_bytes": [
+        10829376,
+        10852416
+      ],
+      "observed_plateau": true,
+      "observer_fixed_proc_buffer_bytes": 8650752,
+      "process_id": 305070,
+      "raw_sha256": {
+        "hwm.jsonl": "221cff745aa0abfcc4f48304163ea70c9af8099e48b03aeefc5a25cf174ad380",
+        "jobs.jsonl": "8508df636245b228fe2430fc7ef0e556c087eb79981a3652685011db55da1286",
+        "memory.jsonl": "f4290dd2aa070c146c90da3fe6241d720b1eb857fe898b25c244e7aa2fe88736",
+        "plateau-result.json": "f79ac8d57c59bc2bdc71425b9a2472abb54306da0f77fb22f6793042e5f6df00"
+      },
+      "reference_configurations": 4,
+      "retained_reference_bytes": 928880,
+      "schema": "asciiflow-default-memory-plateau-v1"
+    },
+    {
+      "all_lifecycle_checks_pass": true,
+      "allocator_policy": "unchanged glibc default; read-only mallinfo2/malloc_info; no trim/tuning",
+      "complete_cycles_without_new_hwm": 18,
+      "configurations": {
+        "Pq10Hevc-freetype-colortrue-SingleAac-frames3": {
+          "input_sha256": "87288c82fa7eaafdae2dfa1051b0aec53ba3942fa2304c006856f7a56df55f89",
+          "oracle": {
+            "audio_streams": 1,
+            "bit_depth": 10,
+            "codec": "Hevc",
+            "color_space": "ColorSpace { matrix: Bt2020, range: Limited, primaries: Bt2020, transfer: Pq, chroma_location: Left }",
+            "decoded_frames": 3,
+            "oracle": "independent FFmpeg software decode plus media metadata"
+          },
+          "output_sha256": "499e7736f1fdadb8653fe488f6e2cd9ba9611c83228cc0b213fddd1331f577ba",
+          "plan": {
+            "backend": "Vulkan",
+            "buffer_capacity": 3,
+            "color_processing": "HdrPqPreserve",
+            "decode": "Hardware",
+            "encode": "Hardware",
+            "hardware_download": false,
+            "hardware_input_interop": true,
+            "hardware_output_interop": true,
+            "hardware_upload": false,
+            "output": {
+              "bit_depth": 10,
+              "chroma_subsampling": "Yuv420",
+              "codec": "Hevc",
+              "color_space": "ColorSpace { matrix: Bt2020, range: Limited, primaries: Bt2020, transfer: Pq, chroma_location: Left }",
+              "pixel_format": "P010Le",
+              "profile": "HevcMain10"
+            },
+            "pixel_path": "GpuResident",
+            "reasons": [
+              "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+              "input interop avoids the expensive hardware download path",
+              "output interop avoids Host readback and encoder hwupload"
+            ]
+          }
+        },
+        "PqToSdr10Hevc-freetype-colorfalse-None-frames3": {
+          "input_sha256": "eb8d8c42cd99369b99031900e8861c08f611bfcc662b8d0eb741eb695a0c366a",
+          "oracle": {
+            "audio_streams": 0,
+            "bit_depth": 10,
+            "codec": "Hevc",
+            "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+            "decoded_frames": 3,
+            "oracle": "independent FFmpeg software decode plus media metadata"
+          },
+          "output_sha256": "387f68bd1ac3b05b3334543e558a69bb1b49b6052d72a9edbc43bbe97b08c15a",
+          "plan": {
+            "backend": "Vulkan",
+            "buffer_capacity": 3,
+            "color_processing": "HdrPqToSdrBt709",
+            "decode": "Hardware",
+            "encode": "Hardware",
+            "hardware_download": false,
+            "hardware_input_interop": true,
+            "hardware_output_interop": true,
+            "hardware_upload": false,
+            "output": {
+              "bit_depth": 10,
+              "chroma_subsampling": "Yuv420",
+              "codec": "Hevc",
+              "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+              "pixel_format": "P010Le",
+              "profile": "HevcMain10"
+            },
+            "pixel_path": "GpuResident",
+            "reasons": [
+              "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+              "input interop avoids the expensive hardware download path",
+              "output interop avoids Host readback and encoder hwupload",
+              "explicit PQ HDR \u2192 BT.709 SDR request; sealed BT.2446-1 0\u20131000 cd/m\u00b2 input domain, no implicit highlight clipping"
+            ]
+          }
+        },
+        "PqToSdr8H264-builtin-colorfalse-DualAac-frames3": {
+          "input_sha256": "8f7dcd9aaf6a5061ee3f36a3cfa686f7fbb74356bbeb016b80658c87e556c443",
+          "oracle": {
+            "audio_streams": 2,
+            "bit_depth": 8,
+            "codec": "H264",
+            "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+            "decoded_frames": 3,
+            "oracle": "independent FFmpeg software decode plus media metadata"
+          },
+          "output_sha256": "16e34a0ce0a4cad545ffdda473fd2cf258da4fd4dd39bf6dff61c39bf73111be",
+          "plan": {
+            "backend": "Vulkan",
+            "buffer_capacity": 3,
+            "color_processing": "HdrPqToSdrBt709",
+            "decode": "Hardware",
+            "encode": "Hardware",
+            "hardware_download": false,
+            "hardware_input_interop": true,
+            "hardware_output_interop": true,
+            "hardware_upload": false,
+            "output": {
+              "bit_depth": 8,
+              "chroma_subsampling": "Yuv420",
+              "codec": "H264",
+              "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+              "pixel_format": "Nv12",
+              "profile": null
+            },
+            "pixel_path": "GpuResident",
+            "reasons": [
+              "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+              "input interop avoids the expensive hardware download path",
+              "output interop avoids Host readback and encoder hwupload",
+              "explicit PQ HDR \u2192 BT.709 SDR request; sealed BT.2446-1 0\u20131000 cd/m\u00b2 input domain, no implicit highlight clipping"
+            ]
+          }
+        },
+        "Sdr8H264-builtin-colortrue-None-frames3": {
+          "input_sha256": "bf61c8e035aecce8901a636dcb76a6ccc7c28f243d22f20340fb2b6f8e487dfb",
+          "oracle": {
+            "audio_streams": 0,
+            "bit_depth": 8,
+            "codec": "H264",
+            "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+            "decoded_frames": 3,
+            "oracle": "independent FFmpeg software decode plus media metadata"
+          },
+          "output_sha256": "356a26767343eb9106d3bd979947021511d41a627e14e69f97d8c7d30008dab7",
+          "plan": {
+            "backend": "Vulkan",
+            "buffer_capacity": 3,
+            "color_processing": "Sdr",
+            "decode": "Hardware",
+            "encode": "Hardware",
+            "hardware_download": false,
+            "hardware_input_interop": true,
+            "hardware_output_interop": true,
+            "hardware_upload": false,
+            "output": {
+              "bit_depth": 8,
+              "chroma_subsampling": "Yuv420",
+              "codec": "H264",
+              "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+              "pixel_format": "Nv12",
+              "profile": null
+            },
+            "pixel_path": "GpuResident",
+            "reasons": [
+              "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+              "input interop avoids the expensive hardware download path",
+              "output interop avoids Host readback and encoder hwupload"
+            ]
+          }
+        }
+      },
+      "cycle_records": 500,
+      "cycles": 500,
+      "extended": false,
+      "final": {
+        "allocator": {
+          "arena_bytes": 131342336,
+          "fastbin_free_bytes": 0,
+          "free_retained_arena_bytes": 129165184,
+          "in_use_arena_bytes": 2177152,
+          "in_use_including_mmap_bytes": 10840192,
+          "mapped_bytes": 140005376,
+          "mmap_bytes": 8663040,
+          "mmap_regions": 3,
+          "scope": "glibc accounting, not application-live bytes or RSS; tcache may count as in-use; mmap bytes include allocation overhead"
+        },
+        "boundary": "cycle-end",
+        "complete_cycles_without_new_hwm": 18,
+        "cycle": 500,
+        "fd_count": 7,
+        "job_index": 2039,
+        "job_type": "complete-fixed-mixed-cycle",
+        "last_hwm_cycle": 482,
+        "mapping_categories": {
+          "anonymous_non_heap": {
+            "anonymous_kib": 138592,
+            "count": 150,
+            "private_anonymous_lower_kib": 138592,
+            "private_anonymous_upper_kib": 138592,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 138592,
+            "rss_kib": 138592,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 712880
+          },
+          "driver_device": {
+            "anonymous_kib": 0,
+            "count": 0,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 0,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 0
+          },
+          "file_backed": {
+            "anonymous_kib": 8964,
+            "count": 923,
+            "private_anonymous_lower_kib": 8944,
+            "private_anonymous_upper_kib": 8964,
+            "private_clean_kib": 29096,
+            "private_dirty_kib": 8964,
+            "rss_kib": 89008,
+            "shared_clean_kib": 50948,
+            "shared_dirty_kib": 0,
+            "size_kib": 395260
+          },
+          "heap": {
+            "anonymous_kib": 296,
+            "count": 1,
+            "private_anonymous_lower_kib": 296,
+            "private_anonymous_upper_kib": 296,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 296,
+            "rss_kib": 296,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 500
+          },
+          "kernel_named_stack": {
+            "anonymous_kib": 24,
+            "count": 1,
+            "private_anonymous_lower_kib": 24,
+            "private_anonymous_upper_kib": 24,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 24,
+            "rss_kib": 24,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 136
+          },
+          "other": {
+            "anonymous_kib": 0,
+            "count": 0,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 0,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 0
+          },
+          "special": {
+            "anonymous_kib": 0,
+            "count": 4,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 16,
+            "shared_clean_kib": 16,
+            "shared_dirty_kib": 0,
+            "size_kib": 36
+          }
+        },
+        "mapping_count": 1079,
+        "mapping_count_source": "VMA headers in /proc/self/smaps, corresponding to /proc/self/maps entries; unnamed cached stacks remain anonymous_non_heap, not guessed",
+        "metric_scope": "smaps_rollup.Anonymous is the historical conservative anonymous-resident HWM metric, not intrinsically an exclusive private-page census; per-mapping shared/private fields remain available for attribution. Private_Dirty may also include private file-backed pages.",
+        "private_anonymous_kib": 147876,
+        "private_anonymous_lower_kib": 147856,
+        "private_anonymous_upper_kib": 147876,
+        "private_clean_kib": 29096,
+        "private_dirty_kib": 147876,
+        "pss_kib": 181164,
+        "rss_kib": 227936,
+        "smaps_rollup_anonymous_kib": 147876,
+        "snapshot_scope": "Sequential correlated reads, not atomic; JSON/XML observer allocations are ephemeral but allocator retention is included",
+        "swap_kib": 0,
+        "thread_count": 2
+      },
+      "final_allocator": {
+        "arena_bytes": 131342336,
+        "fastbin_free_bytes": 0,
+        "free_retained_arena_bytes": 129165184,
+        "in_use_arena_bytes": 2177152,
+        "in_use_including_mmap_bytes": 10840192,
+        "mapped_bytes": 140005376,
+        "mmap_bytes": 8663040,
+        "mmap_regions": 3,
+        "scope": "glibc accounting, not application-live bytes or RSS; tcache may count as in-use; mmap bytes include allocation overhead"
+      },
+      "final_high_water_kib": 147876,
+      "final_private_anonymous_kib": 147876,
+      "hwm_events": 65,
+      "id": "process-06",
+      "initial": {
+        "allocator": {
+          "arena_bytes": 647168,
+          "fastbin_free_bytes": 0,
+          "free_retained_arena_bytes": 243520,
+          "in_use_arena_bytes": 403648,
+          "in_use_including_mmap_bytes": 9066688,
+          "mapped_bytes": 9310208,
+          "mmap_bytes": 8663040,
+          "mmap_regions": 3,
+          "scope": "glibc accounting, not application-live bytes or RSS; tcache may count as in-use; mmap bytes include allocation overhead"
+        },
+        "boundary": "initial",
+        "complete_cycles_without_new_hwm": 0,
+        "cycle": 0,
+        "fd_count": 7,
+        "hwm_event": {
+          "delta_kib": 15712,
+          "new_kib": 15712,
+          "previous_kib": 0,
+          "resource_evidence": "Initial process observation, before any job"
+        },
+        "job_index": 0,
+        "job_type": "initial",
+        "last_hwm_cycle": 0,
+        "mapping_categories": {
+          "anonymous_non_heap": {
+            "anonymous_kib": 9448,
+            "count": 122,
+            "private_anonymous_lower_kib": 9448,
+            "private_anonymous_upper_kib": 9448,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 9448,
+            "rss_kib": 9448,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 91512
+          },
+          "driver_device": {
+            "anonymous_kib": 0,
+            "count": 0,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 0,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 0
+          },
+          "file_backed": {
+            "anonymous_kib": 5944,
+            "count": 896,
+            "private_anonymous_lower_kib": 5924,
+            "private_anonymous_upper_kib": 5944,
+            "private_clean_kib": 13900,
+            "private_dirty_kib": 5944,
+            "rss_kib": 42360,
+            "shared_clean_kib": 22516,
+            "shared_dirty_kib": 0,
+            "size_kib": 204996
+          },
+          "heap": {
+            "anonymous_kib": 296,
+            "count": 1,
+            "private_anonymous_lower_kib": 296,
+            "private_anonymous_upper_kib": 296,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 296,
+            "rss_kib": 296,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 500
+          },
+          "kernel_named_stack": {
+            "anonymous_kib": 24,
+            "count": 1,
+            "private_anonymous_lower_kib": 24,
+            "private_anonymous_upper_kib": 24,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 24,
+            "rss_kib": 24,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 136
+          },
+          "other": {
+            "anonymous_kib": 0,
+            "count": 0,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 0,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 0
+          },
+          "special": {
+            "anonymous_kib": 0,
+            "count": 4,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 16,
+            "shared_clean_kib": 16,
+            "shared_dirty_kib": 0,
+            "size_kib": 36
+          }
+        },
+        "mapping_count": 1024,
+        "mapping_count_source": "VMA headers in /proc/self/smaps, corresponding to /proc/self/maps entries; unnamed cached stacks remain anonymous_non_heap, not guessed",
+        "metric_scope": "smaps_rollup.Anonymous is the historical conservative anonymous-resident HWM metric, not intrinsically an exclusive private-page census; per-mapping shared/private fields remain available for attribution. Private_Dirty may also include private file-backed pages.",
+        "private_anonymous_kib": 15712,
+        "private_anonymous_lower_kib": 15692,
+        "private_anonymous_upper_kib": 15712,
+        "private_clean_kib": 13900,
+        "private_dirty_kib": 15712,
+        "pss_kib": 31777,
+        "rss_kib": 52144,
+        "smaps_rollup_anonymous_kib": 15712,
+        "snapshot_scope": "Sequential correlated reads, not atomic; JSON/XML observer allocations are ephemeral but allocator retention is included",
+        "swap_kib": 0,
+        "thread_count": 2
+      },
+      "initial_private_anonymous_kib": 15712,
+      "interpretation": "Operational finite-workload plateau only; allocation/mapping/live-byte review still required; not an automatic seal",
+      "job_boundary_records": 2040,
+      "job_outcomes": {
+        "Cancelled": 20,
+        "InjectedFailure": 20,
+        "Success": 2000
+      },
+      "jobs": 2040,
+      "largest_hwm_increment_kib": 43064,
+      "last_hwm_cycle": 482,
+      "late_100_cycle_live_range_bytes": [
+        10828480,
+        10848112
+      ],
+      "observed_plateau": false,
+      "observer_fixed_proc_buffer_bytes": 8650752,
+      "process_id": 331233,
+      "raw_sha256": {
+        "hwm.jsonl": "09091b65e0c56a637adb17727df542e90457d11b228ab3f5c0d54ad17fb37680",
+        "jobs.jsonl": "02aa0a87933aade3ac4e34fb88bbf78245af6edfcbef2615edfb1a205196df10",
+        "memory.jsonl": "68ed24e4ea26bf8e0af1667094cef1bd12fc09d735d565d747a426537f53555c",
+        "plateau-result.json": "22f46d351fd14ca016b5b76fde6b07947e2d64efbe51c9ceaa767f79320f5a3b"
+      },
+      "reference_configurations": 4,
+      "retained_reference_bytes": 928880,
+      "schema": "asciiflow-default-memory-plateau-v1"
+    },
+    {
+      "all_lifecycle_checks_pass": true,
+      "allocator_policy": "unchanged glibc default; read-only mallinfo2/malloc_info; no trim/tuning",
+      "complete_cycles_without_new_hwm": 100,
+      "configurations": {
+        "Pq10Hevc-freetype-colortrue-SingleAac-frames3": {
+          "input_sha256": "87288c82fa7eaafdae2dfa1051b0aec53ba3942fa2304c006856f7a56df55f89",
+          "oracle": {
+            "audio_streams": 1,
+            "bit_depth": 10,
+            "codec": "Hevc",
+            "color_space": "ColorSpace { matrix: Bt2020, range: Limited, primaries: Bt2020, transfer: Pq, chroma_location: Left }",
+            "decoded_frames": 3,
+            "oracle": "independent FFmpeg software decode plus media metadata"
+          },
+          "output_sha256": "499e7736f1fdadb8653fe488f6e2cd9ba9611c83228cc0b213fddd1331f577ba",
+          "plan": {
+            "backend": "Vulkan",
+            "buffer_capacity": 3,
+            "color_processing": "HdrPqPreserve",
+            "decode": "Hardware",
+            "encode": "Hardware",
+            "hardware_download": false,
+            "hardware_input_interop": true,
+            "hardware_output_interop": true,
+            "hardware_upload": false,
+            "output": {
+              "bit_depth": 10,
+              "chroma_subsampling": "Yuv420",
+              "codec": "Hevc",
+              "color_space": "ColorSpace { matrix: Bt2020, range: Limited, primaries: Bt2020, transfer: Pq, chroma_location: Left }",
+              "pixel_format": "P010Le",
+              "profile": "HevcMain10"
+            },
+            "pixel_path": "GpuResident",
+            "reasons": [
+              "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+              "input interop avoids the expensive hardware download path",
+              "output interop avoids Host readback and encoder hwupload"
+            ]
+          }
+        },
+        "PqToSdr10Hevc-freetype-colorfalse-None-frames3": {
+          "input_sha256": "eb8d8c42cd99369b99031900e8861c08f611bfcc662b8d0eb741eb695a0c366a",
+          "oracle": {
+            "audio_streams": 0,
+            "bit_depth": 10,
+            "codec": "Hevc",
+            "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+            "decoded_frames": 3,
+            "oracle": "independent FFmpeg software decode plus media metadata"
+          },
+          "output_sha256": "387f68bd1ac3b05b3334543e558a69bb1b49b6052d72a9edbc43bbe97b08c15a",
+          "plan": {
+            "backend": "Vulkan",
+            "buffer_capacity": 3,
+            "color_processing": "HdrPqToSdrBt709",
+            "decode": "Hardware",
+            "encode": "Hardware",
+            "hardware_download": false,
+            "hardware_input_interop": true,
+            "hardware_output_interop": true,
+            "hardware_upload": false,
+            "output": {
+              "bit_depth": 10,
+              "chroma_subsampling": "Yuv420",
+              "codec": "Hevc",
+              "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+              "pixel_format": "P010Le",
+              "profile": "HevcMain10"
+            },
+            "pixel_path": "GpuResident",
+            "reasons": [
+              "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+              "input interop avoids the expensive hardware download path",
+              "output interop avoids Host readback and encoder hwupload",
+              "explicit PQ HDR \u2192 BT.709 SDR request; sealed BT.2446-1 0\u20131000 cd/m\u00b2 input domain, no implicit highlight clipping"
+            ]
+          }
+        },
+        "PqToSdr8H264-builtin-colorfalse-DualAac-frames3": {
+          "input_sha256": "8f7dcd9aaf6a5061ee3f36a3cfa686f7fbb74356bbeb016b80658c87e556c443",
+          "oracle": {
+            "audio_streams": 2,
+            "bit_depth": 8,
+            "codec": "H264",
+            "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+            "decoded_frames": 3,
+            "oracle": "independent FFmpeg software decode plus media metadata"
+          },
+          "output_sha256": "16e34a0ce0a4cad545ffdda473fd2cf258da4fd4dd39bf6dff61c39bf73111be",
+          "plan": {
+            "backend": "Vulkan",
+            "buffer_capacity": 3,
+            "color_processing": "HdrPqToSdrBt709",
+            "decode": "Hardware",
+            "encode": "Hardware",
+            "hardware_download": false,
+            "hardware_input_interop": true,
+            "hardware_output_interop": true,
+            "hardware_upload": false,
+            "output": {
+              "bit_depth": 8,
+              "chroma_subsampling": "Yuv420",
+              "codec": "H264",
+              "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+              "pixel_format": "Nv12",
+              "profile": null
+            },
+            "pixel_path": "GpuResident",
+            "reasons": [
+              "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+              "input interop avoids the expensive hardware download path",
+              "output interop avoids Host readback and encoder hwupload",
+              "explicit PQ HDR \u2192 BT.709 SDR request; sealed BT.2446-1 0\u20131000 cd/m\u00b2 input domain, no implicit highlight clipping"
+            ]
+          }
+        },
+        "Sdr8H264-builtin-colortrue-None-frames3": {
+          "input_sha256": "bf61c8e035aecce8901a636dcb76a6ccc7c28f243d22f20340fb2b6f8e487dfb",
+          "oracle": {
+            "audio_streams": 0,
+            "bit_depth": 8,
+            "codec": "H264",
+            "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+            "decoded_frames": 3,
+            "oracle": "independent FFmpeg software decode plus media metadata"
+          },
+          "output_sha256": "356a26767343eb9106d3bd979947021511d41a627e14e69f97d8c7d30008dab7",
+          "plan": {
+            "backend": "Vulkan",
+            "buffer_capacity": 3,
+            "color_processing": "Sdr",
+            "decode": "Hardware",
+            "encode": "Hardware",
+            "hardware_download": false,
+            "hardware_input_interop": true,
+            "hardware_output_interop": true,
+            "hardware_upload": false,
+            "output": {
+              "bit_depth": 8,
+              "chroma_subsampling": "Yuv420",
+              "codec": "H264",
+              "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+              "pixel_format": "Nv12",
+              "profile": null
+            },
+            "pixel_path": "GpuResident",
+            "reasons": [
+              "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+              "input interop avoids the expensive hardware download path",
+              "output interop avoids Host readback and encoder hwupload"
+            ]
+          }
+        }
+      },
+      "cycle_records": 328,
+      "cycles": 328,
+      "extended": false,
+      "final": {
+        "allocator": {
+          "arena_bytes": 130596864,
+          "fastbin_free_bytes": 0,
+          "free_retained_arena_bytes": 128408608,
+          "in_use_arena_bytes": 2188256,
+          "in_use_including_mmap_bytes": 10851296,
+          "mapped_bytes": 139259904,
+          "mmap_bytes": 8663040,
+          "mmap_regions": 3,
+          "scope": "glibc accounting, not application-live bytes or RSS; tcache may count as in-use; mmap bytes include allocation overhead"
+        },
+        "boundary": "cycle-end",
+        "complete_cycles_without_new_hwm": 100,
+        "cycle": 328,
+        "fd_count": 7,
+        "job_index": 1337,
+        "job_type": "complete-fixed-mixed-cycle",
+        "last_hwm_cycle": 228,
+        "mapping_categories": {
+          "anonymous_non_heap": {
+            "anonymous_kib": 137864,
+            "count": 152,
+            "private_anonymous_lower_kib": 137864,
+            "private_anonymous_upper_kib": 137864,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 137864,
+            "rss_kib": 137864,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 712880
+          },
+          "driver_device": {
+            "anonymous_kib": 0,
+            "count": 0,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 0,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 0
+          },
+          "file_backed": {
+            "anonymous_kib": 8964,
+            "count": 923,
+            "private_anonymous_lower_kib": 8944,
+            "private_anonymous_upper_kib": 8964,
+            "private_clean_kib": 29284,
+            "private_dirty_kib": 8964,
+            "rss_kib": 89196,
+            "shared_clean_kib": 50948,
+            "shared_dirty_kib": 0,
+            "size_kib": 395260
+          },
+          "heap": {
+            "anonymous_kib": 296,
+            "count": 1,
+            "private_anonymous_lower_kib": 296,
+            "private_anonymous_upper_kib": 296,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 296,
+            "rss_kib": 296,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 500
+          },
+          "kernel_named_stack": {
+            "anonymous_kib": 24,
+            "count": 1,
+            "private_anonymous_lower_kib": 24,
+            "private_anonymous_upper_kib": 24,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 24,
+            "rss_kib": 24,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 136
+          },
+          "other": {
+            "anonymous_kib": 0,
+            "count": 0,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 0,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 0
+          },
+          "special": {
+            "anonymous_kib": 0,
+            "count": 4,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 16,
+            "shared_clean_kib": 16,
+            "shared_dirty_kib": 0,
+            "size_kib": 36
+          }
+        },
+        "mapping_count": 1081,
+        "mapping_count_source": "VMA headers in /proc/self/smaps, corresponding to /proc/self/maps entries; unnamed cached stacks remain anonymous_non_heap, not guessed",
+        "metric_scope": "smaps_rollup.Anonymous is the historical conservative anonymous-resident HWM metric, not intrinsically an exclusive private-page census; per-mapping shared/private fields remain available for attribution. Private_Dirty may also include private file-backed pages.",
+        "private_anonymous_kib": 147148,
+        "private_anonymous_lower_kib": 147128,
+        "private_anonymous_upper_kib": 147148,
+        "private_clean_kib": 29284,
+        "private_dirty_kib": 147148,
+        "pss_kib": 180934,
+        "rss_kib": 227396,
+        "smaps_rollup_anonymous_kib": 147148,
+        "snapshot_scope": "Sequential correlated reads, not atomic; JSON/XML observer allocations are ephemeral but allocator retention is included",
+        "swap_kib": 0,
+        "thread_count": 2
+      },
+      "final_allocator": {
+        "arena_bytes": 130596864,
+        "fastbin_free_bytes": 0,
+        "free_retained_arena_bytes": 128408608,
+        "in_use_arena_bytes": 2188256,
+        "in_use_including_mmap_bytes": 10851296,
+        "mapped_bytes": 139259904,
+        "mmap_bytes": 8663040,
+        "mmap_regions": 3,
+        "scope": "glibc accounting, not application-live bytes or RSS; tcache may count as in-use; mmap bytes include allocation overhead"
+      },
+      "final_high_water_kib": 147148,
+      "final_private_anonymous_kib": 147148,
+      "hwm_events": 57,
+      "id": "process-07",
+      "initial": {
+        "allocator": {
+          "arena_bytes": 647168,
+          "fastbin_free_bytes": 0,
+          "free_retained_arena_bytes": 243520,
+          "in_use_arena_bytes": 403648,
+          "in_use_including_mmap_bytes": 9066688,
+          "mapped_bytes": 9310208,
+          "mmap_bytes": 8663040,
+          "mmap_regions": 3,
+          "scope": "glibc accounting, not application-live bytes or RSS; tcache may count as in-use; mmap bytes include allocation overhead"
+        },
+        "boundary": "initial",
+        "complete_cycles_without_new_hwm": 0,
+        "cycle": 0,
+        "fd_count": 7,
+        "hwm_event": {
+          "delta_kib": 15712,
+          "new_kib": 15712,
+          "previous_kib": 0,
+          "resource_evidence": "Initial process observation, before any job"
+        },
+        "job_index": 0,
+        "job_type": "initial",
+        "last_hwm_cycle": 0,
+        "mapping_categories": {
+          "anonymous_non_heap": {
+            "anonymous_kib": 9448,
+            "count": 125,
+            "private_anonymous_lower_kib": 9448,
+            "private_anonymous_upper_kib": 9448,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 9448,
+            "rss_kib": 9448,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 91512
+          },
+          "driver_device": {
+            "anonymous_kib": 0,
+            "count": 0,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 0,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 0
+          },
+          "file_backed": {
+            "anonymous_kib": 5944,
+            "count": 896,
+            "private_anonymous_lower_kib": 5924,
+            "private_anonymous_upper_kib": 5944,
+            "private_clean_kib": 13924,
+            "private_dirty_kib": 5944,
+            "rss_kib": 42488,
+            "shared_clean_kib": 22620,
+            "shared_dirty_kib": 0,
+            "size_kib": 204996
+          },
+          "heap": {
+            "anonymous_kib": 296,
+            "count": 1,
+            "private_anonymous_lower_kib": 296,
+            "private_anonymous_upper_kib": 296,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 296,
+            "rss_kib": 296,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 500
+          },
+          "kernel_named_stack": {
+            "anonymous_kib": 24,
+            "count": 1,
+            "private_anonymous_lower_kib": 24,
+            "private_anonymous_upper_kib": 24,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 24,
+            "rss_kib": 24,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 136
+          },
+          "other": {
+            "anonymous_kib": 0,
+            "count": 0,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 0,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 0
+          },
+          "special": {
+            "anonymous_kib": 0,
+            "count": 4,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 16,
+            "shared_clean_kib": 16,
+            "shared_dirty_kib": 0,
+            "size_kib": 36
+          }
+        },
+        "mapping_count": 1027,
+        "mapping_count_source": "VMA headers in /proc/self/smaps, corresponding to /proc/self/maps entries; unnamed cached stacks remain anonymous_non_heap, not guessed",
+        "metric_scope": "smaps_rollup.Anonymous is the historical conservative anonymous-resident HWM metric, not intrinsically an exclusive private-page census; per-mapping shared/private fields remain available for attribution. Private_Dirty may also include private file-backed pages.",
+        "private_anonymous_kib": 15712,
+        "private_anonymous_lower_kib": 15692,
+        "private_anonymous_upper_kib": 15712,
+        "private_clean_kib": 13924,
+        "private_dirty_kib": 15712,
+        "pss_kib": 31816,
+        "rss_kib": 52272,
+        "smaps_rollup_anonymous_kib": 15712,
+        "snapshot_scope": "Sequential correlated reads, not atomic; JSON/XML observer allocations are ephemeral but allocator retention is included",
+        "swap_kib": 0,
+        "thread_count": 2
+      },
+      "initial_private_anonymous_kib": 15712,
+      "interpretation": "Operational finite-workload plateau only; allocation/mapping/live-byte review still required; not an automatic seal",
+      "job_boundary_records": 1338,
+      "job_outcomes": {
+        "Cancelled": 13,
+        "InjectedFailure": 13,
+        "Success": 1312
+      },
+      "jobs": 1338,
+      "largest_hwm_increment_kib": 41540,
+      "last_hwm_cycle": 228,
+      "late_100_cycle_live_range_bytes": [
+        10833776,
+        10858240
+      ],
+      "observed_plateau": true,
+      "observer_fixed_proc_buffer_bytes": 8650752,
+      "process_id": 382219,
+      "raw_sha256": {
+        "hwm.jsonl": "a046b6223662cd68b1c84942b66c01eb4a55e3a6373de6a6a22631ec58abc136",
+        "jobs.jsonl": "0f928b8a280c42662bd665782545f1043289f19b0a2c80dcc68bee479149a141",
+        "memory.jsonl": "4fd1b3f7f1ee0c402e245c647a954c460839f4e2436b255629c17c12f9ec9a52",
+        "plateau-result.json": "52254c3c32b895ee05b150359fdc2f9a45af658e3df98691423673564920ebac"
+      },
+      "reference_configurations": 4,
+      "retained_reference_bytes": 928880,
+      "schema": "asciiflow-default-memory-plateau-v1"
+    },
+    {
+      "all_lifecycle_checks_pass": true,
+      "allocator_policy": "unchanged glibc default; read-only mallinfo2/malloc_info; no trim/tuning",
+      "complete_cycles_without_new_hwm": 41,
+      "configurations": {
+        "Pq10Hevc-freetype-colortrue-SingleAac-frames3": {
+          "input_sha256": "87288c82fa7eaafdae2dfa1051b0aec53ba3942fa2304c006856f7a56df55f89",
+          "oracle": {
+            "audio_streams": 1,
+            "bit_depth": 10,
+            "codec": "Hevc",
+            "color_space": "ColorSpace { matrix: Bt2020, range: Limited, primaries: Bt2020, transfer: Pq, chroma_location: Left }",
+            "decoded_frames": 3,
+            "oracle": "independent FFmpeg software decode plus media metadata"
+          },
+          "output_sha256": "499e7736f1fdadb8653fe488f6e2cd9ba9611c83228cc0b213fddd1331f577ba",
+          "plan": {
+            "backend": "Vulkan",
+            "buffer_capacity": 3,
+            "color_processing": "HdrPqPreserve",
+            "decode": "Hardware",
+            "encode": "Hardware",
+            "hardware_download": false,
+            "hardware_input_interop": true,
+            "hardware_output_interop": true,
+            "hardware_upload": false,
+            "output": {
+              "bit_depth": 10,
+              "chroma_subsampling": "Yuv420",
+              "codec": "Hevc",
+              "color_space": "ColorSpace { matrix: Bt2020, range: Limited, primaries: Bt2020, transfer: Pq, chroma_location: Left }",
+              "pixel_format": "P010Le",
+              "profile": "HevcMain10"
+            },
+            "pixel_path": "GpuResident",
+            "reasons": [
+              "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+              "input interop avoids the expensive hardware download path",
+              "output interop avoids Host readback and encoder hwupload"
+            ]
+          }
+        },
+        "PqToSdr10Hevc-freetype-colorfalse-None-frames3": {
+          "input_sha256": "eb8d8c42cd99369b99031900e8861c08f611bfcc662b8d0eb741eb695a0c366a",
+          "oracle": {
+            "audio_streams": 0,
+            "bit_depth": 10,
+            "codec": "Hevc",
+            "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+            "decoded_frames": 3,
+            "oracle": "independent FFmpeg software decode plus media metadata"
+          },
+          "output_sha256": "387f68bd1ac3b05b3334543e558a69bb1b49b6052d72a9edbc43bbe97b08c15a",
+          "plan": {
+            "backend": "Vulkan",
+            "buffer_capacity": 3,
+            "color_processing": "HdrPqToSdrBt709",
+            "decode": "Hardware",
+            "encode": "Hardware",
+            "hardware_download": false,
+            "hardware_input_interop": true,
+            "hardware_output_interop": true,
+            "hardware_upload": false,
+            "output": {
+              "bit_depth": 10,
+              "chroma_subsampling": "Yuv420",
+              "codec": "Hevc",
+              "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+              "pixel_format": "P010Le",
+              "profile": "HevcMain10"
+            },
+            "pixel_path": "GpuResident",
+            "reasons": [
+              "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+              "input interop avoids the expensive hardware download path",
+              "output interop avoids Host readback and encoder hwupload",
+              "explicit PQ HDR \u2192 BT.709 SDR request; sealed BT.2446-1 0\u20131000 cd/m\u00b2 input domain, no implicit highlight clipping"
+            ]
+          }
+        },
+        "PqToSdr8H264-builtin-colorfalse-DualAac-frames3": {
+          "input_sha256": "8f7dcd9aaf6a5061ee3f36a3cfa686f7fbb74356bbeb016b80658c87e556c443",
+          "oracle": {
+            "audio_streams": 2,
+            "bit_depth": 8,
+            "codec": "H264",
+            "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+            "decoded_frames": 3,
+            "oracle": "independent FFmpeg software decode plus media metadata"
+          },
+          "output_sha256": "16e34a0ce0a4cad545ffdda473fd2cf258da4fd4dd39bf6dff61c39bf73111be",
+          "plan": {
+            "backend": "Vulkan",
+            "buffer_capacity": 3,
+            "color_processing": "HdrPqToSdrBt709",
+            "decode": "Hardware",
+            "encode": "Hardware",
+            "hardware_download": false,
+            "hardware_input_interop": true,
+            "hardware_output_interop": true,
+            "hardware_upload": false,
+            "output": {
+              "bit_depth": 8,
+              "chroma_subsampling": "Yuv420",
+              "codec": "H264",
+              "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+              "pixel_format": "Nv12",
+              "profile": null
+            },
+            "pixel_path": "GpuResident",
+            "reasons": [
+              "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+              "input interop avoids the expensive hardware download path",
+              "output interop avoids Host readback and encoder hwupload",
+              "explicit PQ HDR \u2192 BT.709 SDR request; sealed BT.2446-1 0\u20131000 cd/m\u00b2 input domain, no implicit highlight clipping"
+            ]
+          }
+        },
+        "Sdr8H264-builtin-colortrue-None-frames3": {
+          "input_sha256": "bf61c8e035aecce8901a636dcb76a6ccc7c28f243d22f20340fb2b6f8e487dfb",
+          "oracle": {
+            "audio_streams": 0,
+            "bit_depth": 8,
+            "codec": "H264",
+            "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+            "decoded_frames": 3,
+            "oracle": "independent FFmpeg software decode plus media metadata"
+          },
+          "output_sha256": "356a26767343eb9106d3bd979947021511d41a627e14e69f97d8c7d30008dab7",
+          "plan": {
+            "backend": "Vulkan",
+            "buffer_capacity": 3,
+            "color_processing": "Sdr",
+            "decode": "Hardware",
+            "encode": "Hardware",
+            "hardware_download": false,
+            "hardware_input_interop": true,
+            "hardware_output_interop": true,
+            "hardware_upload": false,
+            "output": {
+              "bit_depth": 8,
+              "chroma_subsampling": "Yuv420",
+              "codec": "H264",
+              "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+              "pixel_format": "Nv12",
+              "profile": null
+            },
+            "pixel_path": "GpuResident",
+            "reasons": [
+              "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+              "input interop avoids the expensive hardware download path",
+              "output interop avoids Host readback and encoder hwupload"
+            ]
+          }
+        }
+      },
+      "cycle_records": 500,
+      "cycles": 500,
+      "extended": false,
+      "final": {
+        "allocator": {
+          "arena_bytes": 133148672,
+          "fastbin_free_bytes": 0,
+          "free_retained_arena_bytes": 130948624,
+          "in_use_arena_bytes": 2200048,
+          "in_use_including_mmap_bytes": 10863088,
+          "mapped_bytes": 141811712,
+          "mmap_bytes": 8663040,
+          "mmap_regions": 3,
+          "scope": "glibc accounting, not application-live bytes or RSS; tcache may count as in-use; mmap bytes include allocation overhead"
+        },
+        "boundary": "cycle-end",
+        "complete_cycles_without_new_hwm": 41,
+        "cycle": 500,
+        "fd_count": 7,
+        "job_index": 2039,
+        "job_type": "complete-fixed-mixed-cycle",
+        "last_hwm_cycle": 459,
+        "mapping_categories": {
+          "anonymous_non_heap": {
+            "anonymous_kib": 140356,
+            "count": 150,
+            "private_anonymous_lower_kib": 140356,
+            "private_anonymous_upper_kib": 140356,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 140356,
+            "rss_kib": 140356,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 712880
+          },
+          "driver_device": {
+            "anonymous_kib": 0,
+            "count": 0,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 0,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 0
+          },
+          "file_backed": {
+            "anonymous_kib": 8964,
+            "count": 923,
+            "private_anonymous_lower_kib": 8916,
+            "private_anonymous_upper_kib": 8964,
+            "private_clean_kib": 18148,
+            "private_dirty_kib": 8964,
+            "rss_kib": 88876,
+            "shared_clean_kib": 61764,
+            "shared_dirty_kib": 0,
+            "size_kib": 395260
+          },
+          "heap": {
+            "anonymous_kib": 296,
+            "count": 1,
+            "private_anonymous_lower_kib": 296,
+            "private_anonymous_upper_kib": 296,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 296,
+            "rss_kib": 296,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 500
+          },
+          "kernel_named_stack": {
+            "anonymous_kib": 28,
+            "count": 1,
+            "private_anonymous_lower_kib": 28,
+            "private_anonymous_upper_kib": 28,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 28,
+            "rss_kib": 28,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 136
+          },
+          "other": {
+            "anonymous_kib": 0,
+            "count": 0,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 0,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 0
+          },
+          "special": {
+            "anonymous_kib": 0,
+            "count": 4,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 16,
+            "shared_clean_kib": 16,
+            "shared_dirty_kib": 0,
+            "size_kib": 36
+          }
+        },
+        "mapping_count": 1079,
+        "mapping_count_source": "VMA headers in /proc/self/smaps, corresponding to /proc/self/maps entries; unnamed cached stacks remain anonymous_non_heap, not guessed",
+        "metric_scope": "smaps_rollup.Anonymous is the historical conservative anonymous-resident HWM metric, not intrinsically an exclusive private-page census; per-mapping shared/private fields remain available for attribution. Private_Dirty may also include private file-backed pages.",
+        "private_anonymous_kib": 149644,
+        "private_anonymous_lower_kib": 149596,
+        "private_anonymous_upper_kib": 149644,
+        "private_clean_kib": 18148,
+        "private_dirty_kib": 149644,
+        "pss_kib": 177328,
+        "rss_kib": 229572,
+        "smaps_rollup_anonymous_kib": 149644,
+        "snapshot_scope": "Sequential correlated reads, not atomic; JSON/XML observer allocations are ephemeral but allocator retention is included",
+        "swap_kib": 0,
+        "thread_count": 2
+      },
+      "final_allocator": {
+        "arena_bytes": 133148672,
+        "fastbin_free_bytes": 0,
+        "free_retained_arena_bytes": 130948624,
+        "in_use_arena_bytes": 2200048,
+        "in_use_including_mmap_bytes": 10863088,
+        "mapped_bytes": 141811712,
+        "mmap_bytes": 8663040,
+        "mmap_regions": 3,
+        "scope": "glibc accounting, not application-live bytes or RSS; tcache may count as in-use; mmap bytes include allocation overhead"
+      },
+      "final_high_water_kib": 149644,
+      "final_private_anonymous_kib": 149644,
+      "hwm_events": 63,
+      "id": "process-08",
+      "initial": {
+        "allocator": {
+          "arena_bytes": 647168,
+          "fastbin_free_bytes": 0,
+          "free_retained_arena_bytes": 243520,
+          "in_use_arena_bytes": 403648,
+          "in_use_including_mmap_bytes": 9066688,
+          "mapped_bytes": 9310208,
+          "mmap_bytes": 8663040,
+          "mmap_regions": 3,
+          "scope": "glibc accounting, not application-live bytes or RSS; tcache may count as in-use; mmap bytes include allocation overhead"
+        },
+        "boundary": "initial",
+        "complete_cycles_without_new_hwm": 0,
+        "cycle": 0,
+        "fd_count": 7,
+        "hwm_event": {
+          "delta_kib": 15716,
+          "new_kib": 15716,
+          "previous_kib": 0,
+          "resource_evidence": "Initial process observation, before any job"
+        },
+        "job_index": 0,
+        "job_type": "initial",
+        "last_hwm_cycle": 0,
+        "mapping_categories": {
+          "anonymous_non_heap": {
+            "anonymous_kib": 9448,
+            "count": 123,
+            "private_anonymous_lower_kib": 9448,
+            "private_anonymous_upper_kib": 9448,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 9448,
+            "rss_kib": 9448,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 91512
+          },
+          "driver_device": {
+            "anonymous_kib": 0,
+            "count": 0,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 0,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 0
+          },
+          "file_backed": {
+            "anonymous_kib": 5944,
+            "count": 896,
+            "private_anonymous_lower_kib": 5924,
+            "private_anonymous_upper_kib": 5944,
+            "private_clean_kib": 13772,
+            "private_dirty_kib": 5944,
+            "rss_kib": 42212,
+            "shared_clean_kib": 22496,
+            "shared_dirty_kib": 0,
+            "size_kib": 204996
+          },
+          "heap": {
+            "anonymous_kib": 296,
+            "count": 1,
+            "private_anonymous_lower_kib": 296,
+            "private_anonymous_upper_kib": 296,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 296,
+            "rss_kib": 296,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 500
+          },
+          "kernel_named_stack": {
+            "anonymous_kib": 28,
+            "count": 1,
+            "private_anonymous_lower_kib": 28,
+            "private_anonymous_upper_kib": 28,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 28,
+            "rss_kib": 28,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 136
+          },
+          "other": {
+            "anonymous_kib": 0,
+            "count": 0,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 0,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 0
+          },
+          "special": {
+            "anonymous_kib": 0,
+            "count": 4,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 16,
+            "shared_clean_kib": 16,
+            "shared_dirty_kib": 0,
+            "size_kib": 36
+          }
+        },
+        "mapping_count": 1025,
+        "mapping_count_source": "VMA headers in /proc/self/smaps, corresponding to /proc/self/maps entries; unnamed cached stacks remain anonymous_non_heap, not guessed",
+        "metric_scope": "smaps_rollup.Anonymous is the historical conservative anonymous-resident HWM metric, not intrinsically an exclusive private-page census; per-mapping shared/private fields remain available for attribution. Private_Dirty may also include private file-backed pages.",
+        "private_anonymous_kib": 15716,
+        "private_anonymous_lower_kib": 15696,
+        "private_anonymous_upper_kib": 15716,
+        "private_clean_kib": 13772,
+        "private_dirty_kib": 15716,
+        "pss_kib": 31687,
+        "rss_kib": 52000,
+        "smaps_rollup_anonymous_kib": 15716,
+        "snapshot_scope": "Sequential correlated reads, not atomic; JSON/XML observer allocations are ephemeral but allocator retention is included",
+        "swap_kib": 0,
+        "thread_count": 2
+      },
+      "initial_private_anonymous_kib": 15716,
+      "interpretation": "Operational finite-workload plateau only; allocation/mapping/live-byte review still required; not an automatic seal",
+      "job_boundary_records": 2040,
+      "job_outcomes": {
+        "Cancelled": 20,
+        "InjectedFailure": 20,
+        "Success": 2000
+      },
+      "jobs": 2040,
+      "largest_hwm_increment_kib": 42588,
+      "last_hwm_cycle": 459,
+      "late_100_cycle_live_range_bytes": [
+        10849680,
+        10873440
+      ],
+      "observed_plateau": false,
+      "observer_fixed_proc_buffer_bytes": 8650752,
+      "process_id": 414515,
+      "raw_sha256": {
+        "hwm.jsonl": "410ca0aad411106eea05d4ab4a263a07bcf9d7df30f053f75fffb83d5f7cdd09",
+        "jobs.jsonl": "71090e022c9e7c08a89eb72340110ea0e4603d2e62823e7d61b494cf93239507",
+        "memory.jsonl": "a2589765a2f2f57e31797bf80549d40dd2ff0ba7f2ccbe69f282b0d941e4f522",
+        "plateau-result.json": "a65716966c640ac40bd67dbb76fe178933649142aabc1d84f3548746e6e2de89"
+      },
+      "reference_configurations": 4,
+      "retained_reference_bytes": 928880,
+      "schema": "asciiflow-default-memory-plateau-v1"
+    },
+    {
+      "all_lifecycle_checks_pass": true,
+      "allocator_policy": "unchanged glibc default; read-only mallinfo2/malloc_info; no trim/tuning",
+      "complete_cycles_without_new_hwm": 100,
+      "configurations": {
+        "Pq10Hevc-freetype-colortrue-SingleAac-frames3": {
+          "input_sha256": "87288c82fa7eaafdae2dfa1051b0aec53ba3942fa2304c006856f7a56df55f89",
+          "oracle": {
+            "audio_streams": 1,
+            "bit_depth": 10,
+            "codec": "Hevc",
+            "color_space": "ColorSpace { matrix: Bt2020, range: Limited, primaries: Bt2020, transfer: Pq, chroma_location: Left }",
+            "decoded_frames": 3,
+            "oracle": "independent FFmpeg software decode plus media metadata"
+          },
+          "output_sha256": "499e7736f1fdadb8653fe488f6e2cd9ba9611c83228cc0b213fddd1331f577ba",
+          "plan": {
+            "backend": "Vulkan",
+            "buffer_capacity": 3,
+            "color_processing": "HdrPqPreserve",
+            "decode": "Hardware",
+            "encode": "Hardware",
+            "hardware_download": false,
+            "hardware_input_interop": true,
+            "hardware_output_interop": true,
+            "hardware_upload": false,
+            "output": {
+              "bit_depth": 10,
+              "chroma_subsampling": "Yuv420",
+              "codec": "Hevc",
+              "color_space": "ColorSpace { matrix: Bt2020, range: Limited, primaries: Bt2020, transfer: Pq, chroma_location: Left }",
+              "pixel_format": "P010Le",
+              "profile": "HevcMain10"
+            },
+            "pixel_path": "GpuResident",
+            "reasons": [
+              "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+              "input interop avoids the expensive hardware download path",
+              "output interop avoids Host readback and encoder hwupload"
+            ]
+          }
+        },
+        "PqToSdr10Hevc-freetype-colorfalse-None-frames3": {
+          "input_sha256": "eb8d8c42cd99369b99031900e8861c08f611bfcc662b8d0eb741eb695a0c366a",
+          "oracle": {
+            "audio_streams": 0,
+            "bit_depth": 10,
+            "codec": "Hevc",
+            "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+            "decoded_frames": 3,
+            "oracle": "independent FFmpeg software decode plus media metadata"
+          },
+          "output_sha256": "387f68bd1ac3b05b3334543e558a69bb1b49b6052d72a9edbc43bbe97b08c15a",
+          "plan": {
+            "backend": "Vulkan",
+            "buffer_capacity": 3,
+            "color_processing": "HdrPqToSdrBt709",
+            "decode": "Hardware",
+            "encode": "Hardware",
+            "hardware_download": false,
+            "hardware_input_interop": true,
+            "hardware_output_interop": true,
+            "hardware_upload": false,
+            "output": {
+              "bit_depth": 10,
+              "chroma_subsampling": "Yuv420",
+              "codec": "Hevc",
+              "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+              "pixel_format": "P010Le",
+              "profile": "HevcMain10"
+            },
+            "pixel_path": "GpuResident",
+            "reasons": [
+              "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+              "input interop avoids the expensive hardware download path",
+              "output interop avoids Host readback and encoder hwupload",
+              "explicit PQ HDR \u2192 BT.709 SDR request; sealed BT.2446-1 0\u20131000 cd/m\u00b2 input domain, no implicit highlight clipping"
+            ]
+          }
+        },
+        "PqToSdr8H264-builtin-colorfalse-DualAac-frames3": {
+          "input_sha256": "8f7dcd9aaf6a5061ee3f36a3cfa686f7fbb74356bbeb016b80658c87e556c443",
+          "oracle": {
+            "audio_streams": 2,
+            "bit_depth": 8,
+            "codec": "H264",
+            "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+            "decoded_frames": 3,
+            "oracle": "independent FFmpeg software decode plus media metadata"
+          },
+          "output_sha256": "16e34a0ce0a4cad545ffdda473fd2cf258da4fd4dd39bf6dff61c39bf73111be",
+          "plan": {
+            "backend": "Vulkan",
+            "buffer_capacity": 3,
+            "color_processing": "HdrPqToSdrBt709",
+            "decode": "Hardware",
+            "encode": "Hardware",
+            "hardware_download": false,
+            "hardware_input_interop": true,
+            "hardware_output_interop": true,
+            "hardware_upload": false,
+            "output": {
+              "bit_depth": 8,
+              "chroma_subsampling": "Yuv420",
+              "codec": "H264",
+              "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+              "pixel_format": "Nv12",
+              "profile": null
+            },
+            "pixel_path": "GpuResident",
+            "reasons": [
+              "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+              "input interop avoids the expensive hardware download path",
+              "output interop avoids Host readback and encoder hwupload",
+              "explicit PQ HDR \u2192 BT.709 SDR request; sealed BT.2446-1 0\u20131000 cd/m\u00b2 input domain, no implicit highlight clipping"
+            ]
+          }
+        },
+        "Sdr8H264-builtin-colortrue-None-frames3": {
+          "input_sha256": "bf61c8e035aecce8901a636dcb76a6ccc7c28f243d22f20340fb2b6f8e487dfb",
+          "oracle": {
+            "audio_streams": 0,
+            "bit_depth": 8,
+            "codec": "H264",
+            "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+            "decoded_frames": 3,
+            "oracle": "independent FFmpeg software decode plus media metadata"
+          },
+          "output_sha256": "356a26767343eb9106d3bd979947021511d41a627e14e69f97d8c7d30008dab7",
+          "plan": {
+            "backend": "Vulkan",
+            "buffer_capacity": 3,
+            "color_processing": "Sdr",
+            "decode": "Hardware",
+            "encode": "Hardware",
+            "hardware_download": false,
+            "hardware_input_interop": true,
+            "hardware_output_interop": true,
+            "hardware_upload": false,
+            "output": {
+              "bit_depth": 8,
+              "chroma_subsampling": "Yuv420",
+              "codec": "H264",
+              "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+              "pixel_format": "Nv12",
+              "profile": null
+            },
+            "pixel_path": "GpuResident",
+            "reasons": [
+              "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+              "input interop avoids the expensive hardware download path",
+              "output interop avoids Host readback and encoder hwupload"
+            ]
+          }
+        }
+      },
+      "cycle_records": 477,
+      "cycles": 477,
+      "extended": false,
+      "final": {
+        "allocator": {
+          "arena_bytes": 128446464,
+          "fastbin_free_bytes": 0,
+          "free_retained_arena_bytes": 126251792,
+          "in_use_arena_bytes": 2194672,
+          "in_use_including_mmap_bytes": 10857712,
+          "mapped_bytes": 137109504,
+          "mmap_bytes": 8663040,
+          "mmap_regions": 3,
+          "scope": "glibc accounting, not application-live bytes or RSS; tcache may count as in-use; mmap bytes include allocation overhead"
+        },
+        "boundary": "cycle-end",
+        "complete_cycles_without_new_hwm": 100,
+        "cycle": 477,
+        "fd_count": 7,
+        "job_index": 1945,
+        "job_type": "complete-fixed-mixed-cycle",
+        "last_hwm_cycle": 377,
+        "mapping_categories": {
+          "anonymous_non_heap": {
+            "anonymous_kib": 135764,
+            "count": 149,
+            "private_anonymous_lower_kib": 135764,
+            "private_anonymous_upper_kib": 135764,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 135764,
+            "rss_kib": 135764,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 712880
+          },
+          "driver_device": {
+            "anonymous_kib": 0,
+            "count": 0,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 0,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 0
+          },
+          "file_backed": {
+            "anonymous_kib": 8964,
+            "count": 923,
+            "private_anonymous_lower_kib": 8944,
+            "private_anonymous_upper_kib": 8964,
+            "private_clean_kib": 29128,
+            "private_dirty_kib": 8964,
+            "rss_kib": 88992,
+            "shared_clean_kib": 50900,
+            "shared_dirty_kib": 0,
+            "size_kib": 395260
+          },
+          "heap": {
+            "anonymous_kib": 296,
+            "count": 1,
+            "private_anonymous_lower_kib": 296,
+            "private_anonymous_upper_kib": 296,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 296,
+            "rss_kib": 296,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 500
+          },
+          "kernel_named_stack": {
+            "anonymous_kib": 24,
+            "count": 1,
+            "private_anonymous_lower_kib": 24,
+            "private_anonymous_upper_kib": 24,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 24,
+            "rss_kib": 24,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 136
+          },
+          "other": {
+            "anonymous_kib": 0,
+            "count": 0,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 0,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 0
+          },
+          "special": {
+            "anonymous_kib": 0,
+            "count": 4,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 16,
+            "shared_clean_kib": 16,
+            "shared_dirty_kib": 0,
+            "size_kib": 36
+          }
+        },
+        "mapping_count": 1078,
+        "mapping_count_source": "VMA headers in /proc/self/smaps, corresponding to /proc/self/maps entries; unnamed cached stacks remain anonymous_non_heap, not guessed",
+        "metric_scope": "smaps_rollup.Anonymous is the historical conservative anonymous-resident HWM metric, not intrinsically an exclusive private-page census; per-mapping shared/private fields remain available for attribution. Private_Dirty may also include private file-backed pages.",
+        "private_anonymous_kib": 145048,
+        "private_anonymous_lower_kib": 145028,
+        "private_anonymous_upper_kib": 145048,
+        "private_clean_kib": 29128,
+        "private_dirty_kib": 145048,
+        "pss_kib": 178545,
+        "rss_kib": 225092,
+        "smaps_rollup_anonymous_kib": 145048,
+        "snapshot_scope": "Sequential correlated reads, not atomic; JSON/XML observer allocations are ephemeral but allocator retention is included",
+        "swap_kib": 0,
+        "thread_count": 2
+      },
+      "final_allocator": {
+        "arena_bytes": 128446464,
+        "fastbin_free_bytes": 0,
+        "free_retained_arena_bytes": 126251792,
+        "in_use_arena_bytes": 2194672,
+        "in_use_including_mmap_bytes": 10857712,
+        "mapped_bytes": 137109504,
+        "mmap_bytes": 8663040,
+        "mmap_regions": 3,
+        "scope": "glibc accounting, not application-live bytes or RSS; tcache may count as in-use; mmap bytes include allocation overhead"
+      },
+      "final_high_water_kib": 145048,
+      "final_private_anonymous_kib": 145048,
+      "hwm_events": 68,
+      "id": "process-09",
+      "initial": {
+        "allocator": {
+          "arena_bytes": 647168,
+          "fastbin_free_bytes": 0,
+          "free_retained_arena_bytes": 243520,
+          "in_use_arena_bytes": 403648,
+          "in_use_including_mmap_bytes": 9066688,
+          "mapped_bytes": 9310208,
+          "mmap_bytes": 8663040,
+          "mmap_regions": 3,
+          "scope": "glibc accounting, not application-live bytes or RSS; tcache may count as in-use; mmap bytes include allocation overhead"
+        },
+        "boundary": "initial",
+        "complete_cycles_without_new_hwm": 0,
+        "cycle": 0,
+        "fd_count": 7,
+        "hwm_event": {
+          "delta_kib": 15712,
+          "new_kib": 15712,
+          "previous_kib": 0,
+          "resource_evidence": "Initial process observation, before any job"
+        },
+        "job_index": 0,
+        "job_type": "initial",
+        "last_hwm_cycle": 0,
+        "mapping_categories": {
+          "anonymous_non_heap": {
+            "anonymous_kib": 9448,
+            "count": 121,
+            "private_anonymous_lower_kib": 9448,
+            "private_anonymous_upper_kib": 9448,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 9448,
+            "rss_kib": 9448,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 91512
+          },
+          "driver_device": {
+            "anonymous_kib": 0,
+            "count": 0,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 0,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 0
+          },
+          "file_backed": {
+            "anonymous_kib": 5944,
+            "count": 896,
+            "private_anonymous_lower_kib": 5896,
+            "private_anonymous_upper_kib": 5944,
+            "private_clean_kib": 2852,
+            "private_dirty_kib": 5944,
+            "rss_kib": 42320,
+            "shared_clean_kib": 33524,
+            "shared_dirty_kib": 0,
+            "size_kib": 204996
+          },
+          "heap": {
+            "anonymous_kib": 296,
+            "count": 1,
+            "private_anonymous_lower_kib": 296,
+            "private_anonymous_upper_kib": 296,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 296,
+            "rss_kib": 296,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 500
+          },
+          "kernel_named_stack": {
+            "anonymous_kib": 24,
+            "count": 1,
+            "private_anonymous_lower_kib": 24,
+            "private_anonymous_upper_kib": 24,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 24,
+            "rss_kib": 24,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 136
+          },
+          "other": {
+            "anonymous_kib": 0,
+            "count": 0,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 0,
+            "shared_clean_kib": 0,
+            "shared_dirty_kib": 0,
+            "size_kib": 0
+          },
+          "special": {
+            "anonymous_kib": 0,
+            "count": 4,
+            "private_anonymous_lower_kib": 0,
+            "private_anonymous_upper_kib": 0,
+            "private_clean_kib": 0,
+            "private_dirty_kib": 0,
+            "rss_kib": 16,
+            "shared_clean_kib": 16,
+            "shared_dirty_kib": 0,
+            "size_kib": 36
+          }
+        },
+        "mapping_count": 1023,
+        "mapping_count_source": "VMA headers in /proc/self/smaps, corresponding to /proc/self/maps entries; unnamed cached stacks remain anonymous_non_heap, not guessed",
+        "metric_scope": "smaps_rollup.Anonymous is the historical conservative anonymous-resident HWM metric, not intrinsically an exclusive private-page census; per-mapping shared/private fields remain available for attribution. Private_Dirty may also include private file-backed pages.",
+        "private_anonymous_kib": 15712,
+        "private_anonymous_lower_kib": 15664,
+        "private_anonymous_upper_kib": 15712,
+        "private_clean_kib": 2852,
+        "private_dirty_kib": 15712,
+        "pss_kib": 25782,
+        "rss_kib": 52104,
+        "smaps_rollup_anonymous_kib": 15712,
+        "snapshot_scope": "Sequential correlated reads, not atomic; JSON/XML observer allocations are ephemeral but allocator retention is included",
+        "swap_kib": 0,
+        "thread_count": 2
+      },
+      "initial_private_anonymous_kib": 15712,
+      "interpretation": "Operational finite-workload plateau only; allocation/mapping/live-byte review still required; not an automatic seal",
+      "job_boundary_records": 1946,
+      "job_outcomes": {
+        "Cancelled": 19,
+        "InjectedFailure": 19,
+        "Success": 1908
+      },
+      "jobs": 1946,
+      "largest_hwm_increment_kib": 49656,
+      "last_hwm_cycle": 377,
+      "late_100_cycle_live_range_bytes": [
+        10844288,
+        10867232
+      ],
+      "observed_plateau": true,
+      "observer_fixed_proc_buffer_bytes": 8650752,
+      "process_id": 463507,
+      "raw_sha256": {
+        "hwm.jsonl": "3910207ea0a773ba04e00978a554ba0c7bd9c2448c2f999b4480c854fdc22cf0",
+        "jobs.jsonl": "3f0ee605b66da137805aac7cdcf439bb0377e96b0f5a9bb802c97c4cf1c9a5d3",
+        "memory.jsonl": "a900bc418e10bb1a614a304eab848c6b33bd06a9a4b3c662e5fde2392099a62d",
+        "plateau-result.json": "8ae85c9c5b3f278733dfe84ecce2f4fd3c815349cd05216ead9d7f6a9e072688"
+      },
+      "reference_configurations": 4,
+      "retained_reference_bytes": 928880,
+      "schema": "asciiflow-default-memory-plateau-v1"
+    }
+  ],
+  "protocol": {
+    "decision": "ObservationOnly; all-process plateau plus allocator/live/mapping review required",
+    "fault_schedule": "Repeat original50-cycle macro: cancel at10/30, injected encoder failure+cancel20/40, none at50",
+    "forced_500_process": "process-00",
+    "historical_cycle48_652kib": "Unresolved retained; no historical full smaps/allocator snapshot exists",
+    "maximum_cycles": 500,
+    "metric": "smaps_rollup.Anonymous conservative resident-anonymous HWM, raw shared/private VMA fields retained; not inherently exclusive private-page census",
+    "minimum_cycles": 200,
+    "no_new_hwm_complete_cycles": 100,
+    "policy": "Default allocator and Release; no validation layers, tuning, trim or instrumented allocator",
+    "processes": 10,
+    "selection": "All ten consecutive fresh processes retained; no result-dependent replacement runs"
+  }
+}

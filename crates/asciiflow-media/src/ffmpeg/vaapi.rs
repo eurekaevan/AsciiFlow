@@ -189,8 +189,7 @@ pub fn probe_vaapi_build() -> VaapiBuildCapabilities {
         !unsafe { ffi::avcodec_find_decoder(ffi::AVCodecID::AV_CODEC_ID_H264) }.is_null();
     let software_name = CString::new("libx264").expect("literal has no NUL");
     let software_h264_encoder =
-        !unsafe { ffi::avcodec_find_encoder_by_name(software_name.as_ptr()) }.is_null()
-            || !unsafe { ffi::avcodec_find_encoder(ffi::AVCodecID::AV_CODEC_ID_H264) }.is_null();
+        !unsafe { ffi::avcodec_find_encoder_by_name(software_name.as_ptr()) }.is_null();
     VaapiBuildCapabilities {
         device,
         h264_decoder,

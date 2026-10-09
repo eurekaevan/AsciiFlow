@@ -147,7 +147,11 @@ impl SdrPackResources {
         format: SdrPackFormat,
         fault: Option<SdrPackFault>,
     ) -> Result<Self> {
-        if context.is_abandoned() || width == 0 || height == 0 || width % 2 != 0 || height % 2 != 0
+        if context.is_abandoned()
+            || width == 0
+            || height == 0
+            || !width.is_multiple_of(2)
+            || !height.is_multiple_of(2)
         {
             return Err(Error::Vulkan(
                 "SDR pack requires an active device and nonzero even dimensions".into(),

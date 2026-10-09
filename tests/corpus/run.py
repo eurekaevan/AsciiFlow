@@ -2,6 +2,7 @@
 """Production corpus orchestrator. Never promotes or overwrites retained evidence."""
 import argparse
 from collections import Counter
+from contextlib import contextmanager
 from fractions import Fraction
 import hashlib
 import importlib.util
@@ -28,6 +29,28 @@ def digest(path):
 
 def load(path):
     return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
+@contextmanager
+def managed_process(argv, **options):
+    """Observation/report failures must not orphan a detached qualification job."""
+    process = subprocess.Popen(argv, **options)
+    try:
+        yield process
+    except BaseException:
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        process.wait(timeout=5)
+        raise
+    finally:
+        if process.poll() is None:
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            process.wait(timeout=5)
 
 
 def save(path, document):
@@ -137,13 +160,19 @@ class Run:
         peak_rss_kib = 0
         loaded_driver_paths = set()
         attest_native_maps = (os.environ if env is None else env).get("ASCIIFLOW_ATTEST_NATIVE_MAPS") == "1"
+        sample_interval = getattr(self.args, "proc_sample_interval_seconds", None)
+        if sample_interval is not None and (not math.isfinite(sample_interval) or sample_interval <= 0):
+            raise ValueError("process sample interval must be finite and positive")
         from contextlib import ExitStack
         with ExitStack() as resources:
             stream = resources.enter_context(logfile.open("x"))
             errors = resources.enter_context(Path(stderr_log).open("x")) if stderr_log else subprocess.STDOUT
-            process = subprocess.Popen([str(x) for x in argv], cwd=ROOT, env=env,
+            sample_path = self.out / f"command-{index:03d}-process.jsonl"
+            samples = resources.enter_context(sample_path.open("x")) if sample_interval is not None else None
+            next_sample = started
+            process = resources.enter_context(managed_process([str(x) for x in argv], cwd=ROOT, env=env,
                                        stdout=stream, stderr=errors,
-                                       start_new_session=True)
+                                       start_new_session=True))
             deadline = started + timeout
             while process.poll() is None:
                 try:
@@ -151,6 +180,38 @@ class Run:
                     for line in status.splitlines():
                         if line.startswith("VmHWM:"):
                             peak_rss_kib = max(peak_rss_kib, int(line.split()[1]))
+                    if samples is not None and time.monotonic() >= next_sample:
+                        fields = dict(line.split(":", 1) for line in status.splitlines() if ":" in line)
+                        row = {"elapsed_seconds": time.monotonic() - started, "pid": process.pid,
+                               "rss_kib": int(fields["VmRSS"].split()[0]) if "VmRSS" in fields else None,
+                               "anonymous_kib": int(fields["RssAnon"].split()[0]) if "RssAnon" in fields else None,
+                               "threads": int(fields["Threads"]) if "Threads" in fields else None,
+                               "fd_count": len(list(Path(f"/proc/{process.pid}/fd").iterdir()))}
+                        try:
+                            rollup = dict(line.split(":", 1) for line in
+                                          Path(f"/proc/{process.pid}/smaps_rollup").read_text().splitlines()[1:] if ":" in line)
+                            for key in ("Pss", "Anonymous"):
+                                row[key.lower() + "_kib"] = int(rollup[key].split()[0])
+                        except (FileNotFoundError, ProcessLookupError, PermissionError):
+                            pass
+                        # Correlate external memory/time samples to the latest flushed
+                        # measurement frame boundary, using a bounded tail read.
+                        report = (os.environ if env is None else env).get("ASCIIFLOW_RELIABILITY_REPORT")
+                        if report:
+                            try:
+                                with Path(report).open("rb") as report_stream:
+                                    report_stream.seek(0, 2)
+                                    size = report_stream.tell()
+                                    report_stream.seek(max(0, size - 65536))
+                                    lines = report_stream.read().splitlines()
+                                last = json.loads(lines[-1])
+                                row["frames_processed"] = last["frames_processed"]
+                                row["frame_correlation"] = "latest flushed observation, not atomic"
+                            except (FileNotFoundError, IndexError, json.JSONDecodeError):
+                                pass
+                        samples.write(json.dumps(row) + "\n")
+                        samples.flush()
+                        next_sample = time.monotonic() + sample_interval
                     if attest_native_maps:
                         for line in Path(f"/proc/{process.pid}/maps").read_text().splitlines():
                             fields = line.split(maxsplit=5)
@@ -187,6 +248,8 @@ class Run:
                               "elapsed_seconds": time.monotonic() - started})
         if attest_native_maps:
             self.commands[-1]["loaded_driver_files"] = {path: {"sha256": digest(path)} for path in sorted(loaded_driver_paths)}
+        if samples is not None:
+            self.commands[-1]["process_samples"] = sample_path.name
         if stderr_log:
             self.commands[-1]["stderr_log"] = Path(stderr_log).name
         if timed_out:

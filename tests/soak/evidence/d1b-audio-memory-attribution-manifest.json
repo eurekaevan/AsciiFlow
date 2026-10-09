@@ -1,0 +1,184 @@
+{
+  "archive": {
+    "path": "tests/soak/evidence/d1b-audio-memory-attribution-evidence.tar.gz",
+    "bytes": 37778240,
+    "sha256": "c3ff7caef8b8a7c31ec2d6bc7ba2d9b98d700a0939ea1034f2be7354611a51ed"
+  },
+  "members": [
+    {
+      "path": "target/stage54d1b-audio-attribution/audio-lifetime/correlated-samples.json",
+      "bytes": 771746,
+      "sha256": "e46c7f9f7b3d8bf4a4e23de345c749dc9efb0cac630f9704d54186b8bb87a78e"
+    },
+    {
+      "path": "target/stage54d1b-audio-attribution/audio-lifetime/diagnostic.json",
+      "bytes": 6044,
+      "sha256": "50316aa7f048359e64dd0a9cd9c0645e1df97b6089cc5c606f33a817ea4df23f"
+    },
+    {
+      "path": "target/stage54d1b-audio-attribution/audio-lifetime/lifetime.jsonl",
+      "bytes": 3093,
+      "sha256": "8a00cbf0426305b31d896d00ab8874f94ecbadf0504b2ff4093a48742d29ea9c"
+    },
+    {
+      "path": "target/stage54d1b-audio-attribution/audio-lifetime/packets.json",
+      "bytes": 137515436,
+      "sha256": "85b47940b1d5a0a58ade6696a19879b3cd595b2ff07b72ac2729f47f8058e3c6"
+    },
+    {
+      "path": "target/stage54d1b-audio-attribution/audio-lifetime/summary.json",
+      "bytes": 4802,
+      "sha256": "80f1debef9e67026750aec15d609cd1dc57e4b4b3aaabf7ef4cac0d9e7552edc"
+    },
+    {
+      "path": "target/stage54d1b-audio-attribution/audio-lifetime-external.jsonl",
+      "bytes": 408036,
+      "sha256": "0cc5032205ca10bd5846ab95a863bc00ba0edbe129e5bde467054c2e8b911ffa"
+    },
+    {
+      "path": "target/stage54d1b-audio-attribution/audio-lifetime-process.log",
+      "bytes": 3462,
+      "sha256": "43ba60fd14c86065423de9a5380ab6556c923d75b3f7b414b16c1f07163de3a7"
+    },
+    {
+      "path": "target/stage54d1b-audio-attribution/payload-census-final-unit.jsonl",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "target/stage54d1b-audio-attribution/payload-census-final-unit.log",
+      "bytes": 213,
+      "sha256": "64518c1eeff511043e0ba747ac9bfbd121e43858540602708164f9ac8d5ca883"
+    },
+    {
+      "path": "target/stage54d1b-audio-attribution/payload-census-unit.jsonl",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "target/stage54d1b-audio-attribution/replay-aac/capture-ready.json",
+      "bytes": 80,
+      "sha256": "47f4b2c92fedfd406e225a66069c2a357d7ca7d33ef2e9e272ea29eb5a1e2656"
+    },
+    {
+      "path": "target/stage54d1b-audio-attribution/replay-aac/correlated-samples.json",
+      "bytes": 774290,
+      "sha256": "fd80bdca954abcb57eb2642825301376b05619901b82173faee6b0735b786dec"
+    },
+    {
+      "path": "target/stage54d1b-audio-attribution/replay-aac/diagnostic.json",
+      "bytes": 6044,
+      "sha256": "50316aa7f048359e64dd0a9cd9c0645e1df97b6089cc5c606f33a817ea4df23f"
+    },
+    {
+      "path": "target/stage54d1b-audio-attribution/replay-aac/executed-audio-reader.rs",
+      "bytes": 16014,
+      "sha256": "7fe3cb11ff658e9fe4f55fac805d166bab7d07b4770a5eb696cd4dee3bf1df05"
+    },
+    {
+      "path": "target/stage54d1b-audio-attribution/replay-aac/packets.json",
+      "bytes": 137515432,
+      "sha256": "fbcf258492bb43d1df75a81c9436a5a71f17d3bb80337bdadd259b812ec527aa"
+    },
+    {
+      "path": "target/stage54d1b-audio-attribution/replay-aac/summary.json",
+      "bytes": 4786,
+      "sha256": "3ddc0c8802ebee282f64c9612b0b136618162a64856a39f0ba15a07bccbbc004"
+    },
+    {
+      "path": "target/stage54d1b-audio-attribution/replay-aac-external.jsonl",
+      "bytes": 409741,
+      "sha256": "5b1b654e45ec270d4c5074e6ec156b9530794981193ad8ca685487e79f6dfa17"
+    },
+    {
+      "path": "target/stage54d1b-audio-attribution/replay-aac-process.log",
+      "bytes": 3462,
+      "sha256": "f433596de8cc0ce469ffc37b257a701f28ae0d4b4d9c822fba4ef41502a52d92"
+    },
+    {
+      "path": "crates/asciiflow-media/src/ffmpeg/audio_reader.rs",
+      "bytes": 20778,
+      "sha256": "b6d5a70b8d105faf98ca338db3e06acd8bb7f0a8ba1043c9edf5bba40c13caab"
+    },
+    {
+      "path": "crates/asciiflow-media/src/ffmpeg/audio.rs",
+      "bytes": 18826,
+      "sha256": "5721eb8c9dac2a211e2a8bc133a7c078d44883f96b15199b43564de810a3e6dc"
+    },
+    {
+      "path": "crates/asciiflow-media/src/ffmpeg/encoder.rs",
+      "bytes": 116547,
+      "sha256": "6efa8911a8f19c217fffd56a840cf227adc69c632670f84f00f44e016a8332ae"
+    },
+    {
+      "path": "crates/asciiflow-media/src/ffmpeg/mod.rs",
+      "bytes": 1103,
+      "sha256": "8ff8f0349f3847179cc742c3e02a23780a9c25e28e9751ba3d53602df9951113"
+    },
+    {
+      "path": "apps/asciiflow-cli/src/main.rs",
+      "bytes": 101648,
+      "sha256": "6b6faf1f8269f714e89a4e8d438423962169330f3c25ee25717691361dffe13a"
+    },
+    {
+      "path": "tests/soak/stage54d1b-audio-memory-attribution.json",
+      "bytes": 21845,
+      "sha256": "e575f32239c87671c18b23164c2f495187fb66c34f93eef19703c8973ac9e7d7"
+    },
+    {
+      "path": "target/d1b-isolation.py",
+      "bytes": 8358,
+      "sha256": "494c56ddfbb7a3da4c4c885b97cb66dbf4e9af10eb677dfd76f443cba7746cd3"
+    },
+    {
+      "path": "target/d1b-audio-attribution-receipt.py",
+      "bytes": 11241,
+      "sha256": "d1597d3576dbdc27fcc5ae79424f64a75a89211074fade45353ae4d4b49ca271"
+    },
+    {
+      "path": "target/stage54d1b-mov-attribution/source/ffmpeg-8.1.3/libavformat/mov.c",
+      "bytes": 409104,
+      "sha256": "9c56ef3c8c3cae88a48a0e194f74591ef74a942ea5c8177a313650a1a65d47d5"
+    },
+    {
+      "path": "target/stage54d1b-mov-attribution/source/ffmpeg-8.1.3/libavformat/demux.c",
+      "bytes": 125018,
+      "sha256": "5f26b45237cac1f823900118a3be6ba9a382bb89f4e59ab5dc5458f92982876e"
+    },
+    {
+      "path": "target/stage54d1b-mov-attribution/source/ffmpeg-8.1.3/libavformat/mux.c",
+      "bytes": 48534,
+      "sha256": "57b64d7a1d6d81d7ac05d79085e5f9b282bf1bba773b4200a64aeede6599b55a"
+    },
+    {
+      "path": "target/stage54d1b-mov-attribution/source/ffmpeg-8.1.3/libavformat/avformat.c",
+      "bytes": 31262,
+      "sha256": "cdbce6737521bcdd5995d28ca9f761cc2510e5c8c739c6855023d1860d61912c"
+    },
+    {
+      "path": "target/stage54d1b-mov-attribution/source/ffmpeg-8.1.3/libavcodec/av1_parser.c",
+      "bytes": 7498,
+      "sha256": "ca6c75f7a18a37ed723e3590b1056f67760c7175da839b9363479b6c08722106"
+    },
+    {
+      "path": "target/stage54d1b-mov-attribution/source/ffmpeg-8.1.3/libavcodec/cbs.c",
+      "bytes": 30475,
+      "sha256": "e16b00191256d9c1ed5f4e2f06301aefee049cfdea2865dc9285c71edd4056b1"
+    },
+    {
+      "path": "target/stage54d1b-mov-attribution/source/ffmpeg-8.1.3/libavcodec/cbs_av1.c",
+      "bytes": 41765,
+      "sha256": "3bd22ce9070cb264e43ec4386f288d1744fd85912ada0bac1c82fd54ec88438d"
+    },
+    {
+      "path": "target/stage54d1b-mov-attribution/source/ffmpeg-8.1.3/libavcodec/packet.c",
+      "bytes": 21794,
+      "sha256": "bcea76b84b6aef6492cd4a315b790a69d8ce34ac9db082134f939f20db4ffa53"
+    },
+    {
+      "path": "target/stage54d1b-mov-attribution/source/ffmpeg-8.1.3/libavutil/buffer.c",
+      "bytes": 10042,
+      "sha256": "810049e1ac054af6870a5c58c02903f29a210732ecfe724b79ece8c8a18ad2ac"
+    }
+  ]
+}

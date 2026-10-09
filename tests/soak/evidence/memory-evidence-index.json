@@ -1,0 +1,197 @@
+{
+  "schema": "asciiflow-memory-evidence-index-v1",
+  "decision": "NOT SEALED",
+  "scope": "Final durable memory evidence and closure documents; index excludes itself; no raw video preservation claim",
+  "artifacts": [
+    {
+      "path": "tests/soak/evidence/memory-archive-manifests.json",
+      "bytes": 419052,
+      "sha256": "d73c0f9a3df5cfc5320a155e22267b99069f86783222e7b7ab6d2ef9b003a7b9"
+    },
+    {
+      "path": "tests/soak/evidence/memory-archive-review.py.txt",
+      "bytes": 16112,
+      "sha256": "41a90853d1c268632e13d0f8bc41fafb29546d55a3fe9bee69464900873bf881"
+    },
+    {
+      "path": "tests/soak/evidence/memory-campaign-common.tar.gz",
+      "bytes": 1926613,
+      "sha256": "3f0a32309079ac359afe36320d72cdc3d9de52fbb8d6820c7683cb72e9824323"
+    },
+    {
+      "path": "tests/soak/evidence/memory-captured-output-diagnostic-execution.json",
+      "bytes": 987,
+      "sha256": "4c43ad071e7095878f2c0d1cf36521cfa780962ce1bee3702f947b4c65a4b0d6"
+    },
+    {
+      "path": "tests/soak/evidence/memory-captured-output-diagnostic.tar.gz",
+      "bytes": 4075972,
+      "sha256": "2eb7ce4c1fb658526f8c82778792ef2e6e09edda8dc62bd81a29a9da4bd31d95"
+    },
+    {
+      "path": "tests/soak/evidence/memory-clean-builds.json",
+      "bytes": 10321,
+      "sha256": "c0f0ddc9125a60bfe7e337c2cad62cfbf324ded282b352d071468061c147c773"
+    },
+    {
+      "path": "tests/soak/evidence/memory-control-manifest.json",
+      "bytes": 58132,
+      "sha256": "e3d52cc2b9218f7c8f775863a4d5f0d2e52217b420da28055d0783803120a8d7"
+    },
+    {
+      "path": "tests/soak/evidence/memory-controls.tar.gz",
+      "bytes": 6862152,
+      "sha256": "038f8481d7d10a0b13993c0841c342fd84fcc873913c9849e34778de6d1083fe"
+    },
+    {
+      "path": "tests/soak/evidence/memory-corpus-results.json",
+      "bytes": 80833,
+      "sha256": "2eab668823a866be75571f5f114670df44a53c7d96c409a6b2124ed8b2c3c14b"
+    },
+    {
+      "path": "tests/soak/evidence/memory-corpus-unit-tests.log",
+      "bytes": 651,
+      "sha256": "90f462fd82bc5ae0de3c0bf0893d38708895251e610a449b024c22e43905483e"
+    },
+    {
+      "path": "tests/soak/evidence/memory-final-diff.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "tests/soak/evidence/memory-final-format.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "tests/soak/evidence/memory-final-mechanical-evidence.json",
+      "bytes": 29867,
+      "sha256": "538cafa6c08818091f60abc95b20465e2db863fa1d175a00e375fa7d42901a3a"
+    },
+    {
+      "path": "tests/soak/evidence/memory-final-spirv.json",
+      "bytes": 179879,
+      "sha256": "0044898cc6d4d02f76683932e95cdafd1262956ffa4f7aae95fb119f0369caee"
+    },
+    {
+      "path": "tests/soak/evidence/memory-final-static.json",
+      "bytes": 8555,
+      "sha256": "184aa4e98603a4a907875eb070bee5a5466f67c7682cfb21f235c6ebf8be2ee7"
+    },
+    {
+      "path": "tests/soak/evidence/memory-finalize-evidence.py.txt",
+      "bytes": 6388,
+      "sha256": "8088cf0aef2e7183c7c0cdb240306f5f5e8f1a31010b007bce9e13b2f2cac321"
+    },
+    {
+      "path": "tests/soak/evidence/memory-hwm-review.json",
+      "bytes": 2312563,
+      "sha256": "e93fb0a9c27e6e251263bf9efa41b5e704fddde1a9e7374f2bc433a17afb536d"
+    },
+    {
+      "path": "tests/soak/evidence/memory-process-00.tar.gz",
+      "bytes": 5497099,
+      "sha256": "9047f286d44ce6ffcb905ac7a08ed054760c2abb812b8e0637afb5c27df902c8"
+    },
+    {
+      "path": "tests/soak/evidence/memory-process-01.tar.gz",
+      "bytes": 5687640,
+      "sha256": "bbf4eb6801c00d56ea66116963138acc5a73b703ec3c7e15b1982e504b0067b4"
+    },
+    {
+      "path": "tests/soak/evidence/memory-process-02.tar.gz",
+      "bytes": 5740398,
+      "sha256": "375c78dd2e7b653a521f8f46484c6d5ca94b9672ca308c95a1e726d679f538ba"
+    },
+    {
+      "path": "tests/soak/evidence/memory-process-03.tar.gz",
+      "bytes": 5506413,
+      "sha256": "44fb66b11b1359a9f6c3d74340c27c50897b1fb5a417becca6b895aa027aff4c"
+    },
+    {
+      "path": "tests/soak/evidence/memory-process-04.tar.gz",
+      "bytes": 5131547,
+      "sha256": "085060670a188924a4bb83654975b3085195ee87680dd72cd1d1d9c0b99c6ec6"
+    },
+    {
+      "path": "tests/soak/evidence/memory-process-05.tar.gz",
+      "bytes": 5006833,
+      "sha256": "2b7a16b0059b83dbc07ed8d33d8fa34fba2e6eeba5527bf7b00bd41cdba418a6"
+    },
+    {
+      "path": "tests/soak/evidence/memory-process-06.tar.gz",
+      "bytes": 5843000,
+      "sha256": "cfc1dd1f234762b361490c75cb179b5432c4b6f8d5f67ea286cdde05fc612b71"
+    },
+    {
+      "path": "tests/soak/evidence/memory-process-07.tar.gz",
+      "bytes": 5215228,
+      "sha256": "d297a95de6531767dad484e5eef7a64497d0e8549d87d047d10c378c4443a1ed"
+    },
+    {
+      "path": "tests/soak/evidence/memory-process-08.tar.gz",
+      "bytes": 5776797,
+      "sha256": "37e5f9e7068c734eeff35f320996f7b5300f341bae495312f487b2f56abad168"
+    },
+    {
+      "path": "tests/soak/evidence/memory-process-09.tar.gz",
+      "bytes": 5899598,
+      "sha256": "7a27637ad7dc58afc255f8e13c494eece6daeb58636139678818ec75ac646a99"
+    },
+    {
+      "path": "tests/soak/evidence/memory-process-observations.json",
+      "bytes": 183975,
+      "sha256": "9b760715e66cf2f92563bb4b4abd62214662e62a2c3780731945b8ffb2b83c3a"
+    },
+    {
+      "path": "tests/soak/evidence/memory-process00-review.json",
+      "bytes": 12011,
+      "sha256": "87ba9f44b22c31086e16296e94d2d67705bbe6f463f2ebb9038d1630bd1b7dc3"
+    },
+    {
+      "path": "tests/soak/evidence/memory-process01-review.json",
+      "bytes": 20637,
+      "sha256": "392e5feaa63dd1b4d46bf957e9ef2f6a14635f6d0ac5ae9de6bf586a2304003e"
+    },
+    {
+      "path": "tests/soak/evidence/memory-soak-unit-tests.log",
+      "bytes": 306,
+      "sha256": "eba93c016a1749fccdbcb613a88ae7bc62cfe38bd5c6dd3beadabac7393fde82"
+    },
+    {
+      "path": "tests/soak/evidence/memory-spirv-summary.json",
+      "bytes": 1367,
+      "sha256": "d29948ec74710677ffb2d8cc785f63d7c6cebe104b2e882a58fa9f0966de0ba8"
+    },
+    {
+      "path": "tests/soak/stage54d1a-memory-plateau.json",
+      "bytes": 11713,
+      "sha256": "1a7162259c0f3b791b5fb40bc20b6cff7bdd6dda3b066a069b67004fd60ce5ff"
+    },
+    {
+      "path": "tests/soak/stage54d1a-final-closure.json",
+      "bytes": 65374,
+      "sha256": "38b00b8b9d3935f953efdd6c54e2162953407bfb7f0126772c4cbcae2e8e2eb1"
+    },
+    {
+      "path": "docs/stage5.4d1a-resource-failure.md",
+      "bytes": 49964,
+      "sha256": "a1cb0013d7e2345875bc8d8dc44b58170307ef73b469ff57d2e02bae33d5ab52"
+    },
+    {
+      "path": "tests/soak/memory-plateau.py",
+      "bytes": 7632,
+      "sha256": "2adcbcea5344eb9a716448bbcb2b79f3392114d9ae58dba815ca9188853f1bba"
+    },
+    {
+      "path": "tests/soak/test_memory_plateau.py",
+      "bytes": 6896,
+      "sha256": "15ee50660b088732947e5d13e1f4f39cf517a3371601af4b8dfc6d55ef7b1389"
+    },
+    {
+      "path": "apps/asciiflow-cli/src/memory_plateau.rs",
+      "bytes": 20366,
+      "sha256": "0abaa2ecbfd7d96994cba22397023930309e4988db5d205c867d61a45b5c504e"
+    }
+  ]
+}

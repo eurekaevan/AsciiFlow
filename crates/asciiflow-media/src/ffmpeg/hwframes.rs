@@ -153,6 +153,10 @@ impl VaapiSdrQualificationPool {
     pub fn acquire(&self) -> Result<VaapiEncoderFrame> {
         let mut hardware = HardwareFrame::new()?;
         hardware.allocate(&self.pool)?;
+        #[cfg(feature = "reliability-measurement")]
+        hardware
+            .frame
+            .observe_surface_reference("vaapi_encoder_acquired_frame_refs");
         Ok(VaapiEncoderFrame {
             hardware,
             desc: self.desc.clone(),
@@ -286,6 +290,10 @@ impl VaapiEncoderFrames {
     pub fn acquire(&self, pts: i64) -> Result<VaapiEncoderFrame> {
         let mut hardware = HardwareFrame::new()?;
         hardware.allocate(&self.pool)?;
+        #[cfg(feature = "reliability-measurement")]
+        hardware
+            .frame
+            .observe_surface_reference("vaapi_encoder_acquired_frame_refs");
         let native = unsafe { &mut *hardware.as_mut_ptr() };
         native.pts = pts;
         native.color_range = ffi::AVColorRange::AVCOL_RANGE_MPEG;

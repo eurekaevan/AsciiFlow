@@ -177,7 +177,11 @@ impl<T> DrmPrimeMapping<T> {
             ),
         };
         let desc = &self.descriptor;
-        if desc.width == 0 || desc.height == 0 || desc.width % 2 != 0 || desc.height % 2 != 0 {
+        if desc.width == 0
+            || desc.height == 0
+            || !desc.width.is_multiple_of(2)
+            || !desc.height.is_multiple_of(2)
+        {
             return Err(Error::UnsupportedFrame(
                 "VAAPI/Vulkan interop requires non-zero even-sized frames".into(),
             ));

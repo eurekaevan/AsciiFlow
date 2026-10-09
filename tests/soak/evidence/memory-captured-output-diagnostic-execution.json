@@ -1,0 +1,30 @@
+{
+  "binary_sha256": "6bf01425881c71cb924dbefbca1c34986144b1ef9f987a0a665868e18e0e78ee",
+  "commands": [
+    {
+      "argv": [
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v1/target/memory-plateau/production-asciiflow",
+        "--ignored",
+        "--exact",
+        "native_reliability_tests::memory_plateau::default_memory_plateau",
+        "--test-threads=1"
+      ],
+      "elapsed_seconds": 283.40922948799926,
+      "exit_code": -2,
+      "id": "process-00",
+      "loaded_driver_files": {
+        "/usr/lib64/dri-nonfree/iHD_drv_video.so": {
+          "sha256": "98942f2f651c99e6874c108107a34e0f6335fefae777faca1454ca14311b950f"
+        },
+        "/usr/lib64/libvulkan_intel.so": {
+          "sha256": "11ef9334499bd78b0010cb4f1462d59042a76d9bf49cf2bc0a08f02b3f9c01bd"
+        }
+      },
+      "log": "command-000.log",
+      "peak_process_rss_kib": 248608,
+      "watchdog": "completed"
+    }
+  ],
+  "processes_completed": 0,
+  "source_unchanged": true
+}

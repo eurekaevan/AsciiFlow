@@ -1,0 +1,186 @@
+{
+  "schema": "asciiflow-ab-clean-builds-v1",
+  "result": "PASS",
+  "clean_origin": "Two independent targets created empty with frozen source; original parallel builds later confirmed exit 0, resumed complete suites and a separate lock-wait retry interrupted with exit 130 are distinguished",
+  "campaigns": [
+    {
+      "commands": [
+        {
+          "command": "cargo build --offline --release --workspace -j4",
+          "exit_code": 0,
+          "log": "build.log",
+          "log_path": "target/stage54d1a-ab-final-v1/target/resumed-clean-evidence/default/build.log",
+          "log_sha256": "06d4326bbcfbd30f9201513b3bd6703e9979c029e8afa0fde18bb9d3828dee46"
+        },
+        {
+          "command": "cargo test --offline --release --workspace -- --test-threads=1",
+          "exit_code": 0,
+          "log": "test-release.log",
+          "log_path": "target/stage54d1a-ab-final-v1/target/resumed-clean-evidence/default/test-release.log",
+          "log_sha256": "61a2ff10e38619816f1fed7f5c02b4c19ced462fc0a248a00554d6adcc698ed5",
+          "aggregate_test_result_lines": {
+            "passed": 256,
+            "failed": 0,
+            "ignored": 102,
+            "result_lines": 47,
+            "semantics": "Sum of emitted suite/doc-test result lines, not unique tests across modes"
+          }
+        },
+        {
+          "command": "cargo clippy --offline --release --workspace --all-targets -- -D warnings",
+          "exit_code": 0,
+          "log": "clippy-release.log",
+          "log_path": "target/stage54d1a-ab-final-v1/target/resumed-clean-evidence/default/clippy-release.log",
+          "log_sha256": "6ca67c9adea8caf3377b9c365c77f0f643306eb983e2a31464fc2a9184a1ad06"
+        },
+        {
+          "command": "cargo test --offline --workspace -- --test-threads=1",
+          "exit_code": 0,
+          "log": "test-debug.log",
+          "log_path": "target/stage54d1a-ab-final-v1/target/resumed-clean-evidence/default/test-debug.log",
+          "log_sha256": "778eab97e1dd23548118d0c78e2e4138bdbddd5debcf5a0c81b1efac83bcb3cf",
+          "aggregate_test_result_lines": {
+            "passed": 256,
+            "failed": 0,
+            "ignored": 102,
+            "result_lines": 47,
+            "semantics": "Sum of emitted suite/doc-test result lines, not unique tests across modes"
+          }
+        },
+        {
+          "command": "cargo clippy --offline --workspace --all-targets -- -D warnings",
+          "exit_code": 0,
+          "log": "clippy-debug.log",
+          "log_path": "target/stage54d1a-ab-final-v1/target/resumed-clean-evidence/default/clippy-debug.log",
+          "log_sha256": "a55eeb18d691f353da8401df3e57c6064af903f81568e8a73bde1db9af9a3420"
+        },
+        {
+          "command": "cargo fmt --all --check",
+          "exit_code": 0,
+          "log": "fmt.log",
+          "log_path": "target/stage54d1a-ab-final-v1/target/resumed-clean-evidence/default/fmt.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "duplicate_retry": {
+        "log": "build-retry1.log",
+        "status": "interrupted by agent with exit 130 while waiting on the existing target lock"
+      },
+      "initial_parallel_attempt": {
+        "command": "cargo build --offline --release --workspace -j4",
+        "log": "build.log",
+        "status": "completed; exit code 0",
+        "resolution_note": "The original parallel session later returned build exit=0; the earlier unavailable-session classification was provisional and mistaken."
+      },
+      "mode": "default",
+      "release_binary": {
+        "bytes": 4130448,
+        "path": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-ab-final-v1/target/clean-default/release/asciiflow",
+        "sha256": "92fc20d079c8067872e88ba6f1d67949e952f630b07d1ac7f6441245f831fe02"
+      },
+      "source_identity_equal": true,
+      "target_dir": "target/clean-default",
+      "qualified_source_identity_reference": "tests/soak/evidence/ab-qualified-source.json",
+      "source_identity_header": {
+        "cargo_lock_sha256": "675c339488902831907e094b3261d0c8de491d6d329e30322ee9198cfc952fd2",
+        "dirty_diff_sha256": "2d9cb18b057fa00379bcc40b4dac5627622cb8103691a9eef32d431a198b13de",
+        "head": "5dbe199825cb7aad8093e3cd8f940ba115a497b8"
+      },
+      "campaign_artifact": {
+        "path": "target/stage54d1a-ab-final-v1/target/resumed-clean-evidence/default/campaign.json",
+        "sha256": "853930529ac810aad507aa567e6019d081404fa42b1480da66c5600a55e26abe"
+      }
+    },
+    {
+      "commands": [
+        {
+          "command": "cargo build --offline --release --workspace --features asciiflow-cli/reliability-measurement -j4",
+          "exit_code": 0,
+          "log": "build.log",
+          "log_path": "target/stage54d1a-ab-final-v1/target/resumed-clean-evidence/measurement/build.log",
+          "log_sha256": "31feb8739e27565b24a4b9bfac543ec6f4f8ed54cd4c856bbc8d2666e2d907b0"
+        },
+        {
+          "command": "cargo test --offline --release --workspace --features asciiflow-cli/reliability-measurement -- --test-threads=1",
+          "exit_code": 0,
+          "log": "test-release.log",
+          "log_path": "target/stage54d1a-ab-final-v1/target/resumed-clean-evidence/measurement/test-release.log",
+          "log_sha256": "435893d72508befae745ca1bb88f74ab30effec23483b619402c48d797aedb4b",
+          "aggregate_test_result_lines": {
+            "passed": 259,
+            "failed": 0,
+            "ignored": 102,
+            "result_lines": 48,
+            "semantics": "Sum of emitted suite/doc-test result lines, not unique tests across modes"
+          }
+        },
+        {
+          "command": "cargo clippy --offline --release --workspace --features asciiflow-cli/reliability-measurement --all-targets -- -D warnings",
+          "exit_code": 0,
+          "log": "clippy-release.log",
+          "log_path": "target/stage54d1a-ab-final-v1/target/resumed-clean-evidence/measurement/clippy-release.log",
+          "log_sha256": "72b0fcadcf8ef8da63a4e6e4c8267a2aef1c060dbb6142df54461c9f93ba9c23"
+        },
+        {
+          "command": "cargo test --offline --workspace --features asciiflow-cli/reliability-measurement -- --test-threads=1",
+          "exit_code": 0,
+          "log": "test-debug.log",
+          "log_path": "target/stage54d1a-ab-final-v1/target/resumed-clean-evidence/measurement/test-debug.log",
+          "log_sha256": "e0ceb98cc2262cb970c7fa88cecc10814db9821485ac2f70d014f7f95a06195b",
+          "aggregate_test_result_lines": {
+            "passed": 259,
+            "failed": 0,
+            "ignored": 102,
+            "result_lines": 48,
+            "semantics": "Sum of emitted suite/doc-test result lines, not unique tests across modes"
+          }
+        },
+        {
+          "command": "cargo clippy --offline --workspace --features asciiflow-cli/reliability-measurement --all-targets -- -D warnings",
+          "exit_code": 0,
+          "log": "clippy-debug.log",
+          "log_path": "target/stage54d1a-ab-final-v1/target/resumed-clean-evidence/measurement/clippy-debug.log",
+          "log_sha256": "93a9c75834a932a1cdfd23db32382da11a728a5f78c23d978abc64440be47230"
+        }
+      ],
+      "duplicate_retry": null,
+      "initial_parallel_attempt": {
+        "command": "cargo build --offline --release --workspace --features asciiflow-cli/reliability-measurement -j4",
+        "log": "build.log",
+        "status": "completed; exit code 0",
+        "resolution_note": "The original parallel session later returned build exit=0; the earlier unavailable-session classification was provisional and mistaken."
+      },
+      "mode": "measurement",
+      "release_binary": {
+        "bytes": 4259832,
+        "path": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-ab-final-v1/target/clean-measurement/release/asciiflow",
+        "sha256": "b23d695d578a4da7a816648f3c13f6bfe2e28012a6a8ade25653146db71717b8"
+      },
+      "source_identity_equal": true,
+      "target_dir": "target/clean-measurement",
+      "qualified_source_identity_reference": "tests/soak/evidence/ab-qualified-source.json",
+      "source_identity_header": {
+        "cargo_lock_sha256": "675c339488902831907e094b3261d0c8de491d6d329e30322ee9198cfc952fd2",
+        "dirty_diff_sha256": "2d9cb18b057fa00379bcc40b4dac5627622cb8103691a9eef32d431a198b13de",
+        "head": "5dbe199825cb7aad8093e3cd8f940ba115a497b8"
+      },
+      "campaign_artifact": {
+        "path": "target/stage54d1a-ab-final-v1/target/resumed-clean-evidence/measurement/campaign.json",
+        "sha256": "057188d928a0618219763c85dc0f5361de2c8540ed8fb4c8e5a5fba7d576e10c"
+      }
+    }
+  ],
+  "release_binary_hashes": {
+    "command": "sha256sum target/clean-default/release/asciiflow target/clean-measurement/release/asciiflow",
+    "final_after_campaigns": {
+      "default": "92fc20d079c8067872e88ba6f1d67949e952f630b07d1ac7f6441245f831fe02",
+      "measurement": "b23d695d578a4da7a816648f3c13f6bfe2e28012a6a8ade25653146db71717b8"
+    },
+    "initial_after_release_build_before_test": {
+      "default": "b372018a5e4584d2159b2f9ecaafe313eab98bff38b990af735a2c8acfbb9a78",
+      "measurement": "8ff20f48ca3f3b66f9d06c5e2f53402fbdcdf35d4060276cb2ed0d240d92f007"
+    },
+    "note": "Build artifacts changed after release tests/clippy; both timepoints are retained explicitly."
+  },
+  "formatting": "Shared cargo fmt check PASS; does not change dependency-feature identities"
+}

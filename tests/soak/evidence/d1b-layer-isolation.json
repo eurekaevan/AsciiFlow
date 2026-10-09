@@ -1,0 +1,497 @@
+{
+  "schema": "asciiflow-d1b-layer-isolation-v1",
+  "date": "2026-10-09",
+  "result": "Layer isolation completed; stage NOT SEALED",
+  "experiments": [
+    {
+      "experiment": "full C default Release, dual AAC (preserved)",
+      "frames": [
+        50000,
+        99940
+      ],
+      "observed_delta_kib": 18456,
+      "known_index_delta_kib": 10152,
+      "residual_kib": 8304,
+      "layer_attribution": "Audio-enabled complete path; retained observed residual"
+    },
+    {
+      "experiment": "mux-only actual C packets",
+      "frames": [
+        49974,
+        99900
+      ],
+      "observed_delta_kib": 10100,
+      "known_index_delta_kib": 10152.0,
+      "residual_kib": -52.0,
+      "layer_attribution": "Required MOV index accounts for late-interval replay growth; production residual not reproduced"
+    },
+    {
+      "experiment": "C audio-off actual full GPU",
+      "frames": [
+        50000,
+        99938
+      ],
+      "observed_delta_kib": 3552,
+      "known_index_delta_kib": 3528.0,
+      "residual_kib": 24.0,
+      "layer_attribution": "Video chain residual disappears at this observational resolution; small checkpoint variation only"
+    },
+    {
+      "experiment": "preserve vs tone-map differential",
+      "result": "Not run: conditional prerequisite absent; audio-off removes residual",
+      "layer_attribution": "No further Vulkan or video-mode investigation"
+    }
+  ],
+  "mux": {
+    "experiment": "mux",
+    "result": "PASS",
+    "source": "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/production-v1/pq-to-sdr.mp4",
+    "source_sha256": "3d9f4a69f6f930e4155238dc72080464f1096829b0a2176053da6bd31f4dfe4d",
+    "command": [
+      "/home/eureka/Documents/AsciiFlow/target/release/deps/asciiflow_media-8f4f14f39a1f6827",
+      "--exact",
+      "ffmpeg::encoder::mux_replay::d1b_path_c_mux_memory_replay",
+      "--ignored",
+      "--test-threads=1",
+      "--nocapture"
+    ],
+    "binary_sha256_post_run_verification": "580e15a2c6c5c2ded6c1465bf3882bcccd8c64b6f8dbdb783aa9a4bbabb9ad94",
+    "binary_identity_scope": "Post-run hash of the just-built final replay binary; no rebuild after final replay. Not a separately captured live-map attestation.",
+    "native_libavformat_sha256_post_run_verification": "68196d2f4f8127d324764e9061c91eb578313caab1c92a016d4225615030d1c4",
+    "probe_command": [
+      "ffprobe",
+      "-v",
+      "error",
+      "-show_packets",
+      "-show_streams",
+      "-show_format",
+      "-show_data_hash",
+      "sha256",
+      "-of",
+      "json",
+      "/home/eureka/Documents/AsciiFlow/target/stage54d1b-isolation/mux-final/output.mp4"
+    ],
+    "probe_sha256": "36190c4c163fcc83a654965892dfe5f47da2dcccd7a317e985127f30e6c21469",
+    "test_wall_seconds_from_native_test_log": 4.63,
+    "output_sha256": "3d9f4a69f6f930e4155238dc72080464f1096829b0a2176053da6bd31f4dfe4d",
+    "byte_identical_to_production": true,
+    "exact_payload_pts_dts_duration_flags_codec_parameters_time_bases_metadata": true,
+    "milestones": [
+      {
+        "elapsed_seconds": 0.9326320250002027,
+        "capture_ready": true,
+        "mux_complete": false,
+        "VmRSS": 904880,
+        "RssAnon": 861356,
+        "VmHWM": 904880,
+        "Pss": 874706,
+        "Anonymous": 861364,
+        "fd_count": 5,
+        "written_file_bytes": 72613932,
+        "written_video_frames": 9968,
+        "entries_by_stream": {
+          "0": 9968,
+          "1": 9346,
+          "2": 9346
+        },
+        "MOV_cluster_kib": 2160.0
+      },
+      {
+        "elapsed_seconds": 1.41842670799997,
+        "capture_ready": true,
+        "mux_complete": false,
+        "VmRSS": 911048,
+        "RssAnon": 867524,
+        "VmHWM": 911048,
+        "Pss": 880866,
+        "Anonymous": 867524,
+        "fd_count": 5,
+        "written_file_bytes": 181665836,
+        "written_video_frames": 24971,
+        "entries_by_stream": {
+          "0": 24971,
+          "1": 23412,
+          "2": 23412
+        },
+        "MOV_cluster_kib": 5112.0
+      },
+      {
+        "elapsed_seconds": 2.226462291000189,
+        "capture_ready": true,
+        "mux_complete": false,
+        "VmRSS": 917196,
+        "RssAnon": 873672,
+        "VmHWM": 917196,
+        "Pss": 887014,
+        "Anonymous": 873672,
+        "fd_count": 5,
+        "written_file_bytes": 363331628,
+        "written_video_frames": 49974,
+        "entries_by_stream": {
+          "0": 49974,
+          "1": 46852,
+          "2": 46852
+        },
+        "MOV_cluster_kib": 10152.0
+      },
+      {
+        "elapsed_seconds": 3.2882773040000757,
+        "capture_ready": true,
+        "mux_complete": false,
+        "VmRSS": 923900,
+        "RssAnon": 880376,
+        "VmHWM": 923900,
+        "Pss": 893718,
+        "Anonymous": 880376,
+        "fd_count": 5,
+        "written_file_bytes": 544997420,
+        "written_video_frames": 74962,
+        "entries_by_stream": {
+          "0": 74962,
+          "1": 70278,
+          "2": 70278
+        },
+        "MOV_cluster_kib": 15264.0
+      },
+      {
+        "elapsed_seconds": 4.067183018999913,
+        "capture_ready": true,
+        "mux_complete": false,
+        "VmRSS": 927296,
+        "RssAnon": 883772,
+        "VmHWM": 927296,
+        "Pss": 897114,
+        "Anonymous": 883772,
+        "fd_count": 5,
+        "written_file_bytes": 726401068,
+        "written_video_frames": 99900,
+        "entries_by_stream": {
+          "0": 99900,
+          "1": 93658,
+          "2": 93658
+        },
+        "MOV_cluster_kib": 20304.0
+      }
+    ],
+    "observed_delta_kib": {
+      "VmRSS": 10100,
+      "Pss": 10100,
+      "Anonymous": 10100
+    },
+    "known_index_delta_kib": 10152.0,
+    "residual_delta_kib": {
+      "VmRSS": -52.0,
+      "Pss": -52.0,
+      "Anonymous": -52.0
+    },
+    "reliability_measurement": false,
+    "test_receipt": {
+      "exact_payload_pts_dts_duration_flags": true,
+      "fd_before": 4,
+      "fd_final": 4,
+      "packets_per_stream": [
+        100000,
+        93751,
+        93751
+      ],
+      "production_code_changed": false,
+      "result": "PASS",
+      "source": "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/production-v1/pq-to-sdr.mp4"
+    },
+    "scope": "Same real captured Path C packet interval, existing deterministic mux owner; fixed preloaded capture excluded from measured growth.",
+    "limitations": "Fixed capture changes allocation scheduling; external written-frame observations lag accepted packets and are not atomic live cluster state.",
+    "interpretation": "Outcome U: mux-only does not reproduce the approximately 8304 KiB production residual; next authorized comparison is C audio-off."
+  },
+  "audio_off": {
+    "experiment": "audio-off",
+    "result": "PASS",
+    "command": [
+      "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/production-v1/production-asciiflow",
+      "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/measurement-v1/source-pq-to-sdr/input-aac.mp4",
+      "/home/eureka/Documents/AsciiFlow/target/stage54d1b-isolation/audio-off/output.mp4",
+      "--width",
+      "80",
+      "--charset",
+      "standard",
+      "--font",
+      "builtin-8x8",
+      "--color",
+      "true",
+      "--audio",
+      "none",
+      "--decode",
+      "vaapi",
+      "--backend",
+      "vulkan",
+      "--vulkan-mapping",
+      "gpu",
+      "--encode",
+      "vaapi",
+      "--hw-device",
+      "/dev/dri/renderD128",
+      "--vaapi-vulkan-input-interop",
+      "on",
+      "--vaapi-vulkan-output-interop",
+      "on",
+      "--output-codec",
+      "hevc",
+      "--output-bit-depth",
+      "10",
+      "--output-dynamic-range",
+      "sdr",
+      "--no-progress",
+      "--diagnostic-report",
+      "/home/eureka/Documents/AsciiFlow/target/stage54d1b-isolation/audio-off/diagnostic.json"
+    ],
+    "binary_sha256": "92fc20d079c8067872e88ba6f1d67949e952f630b07d1ac7f6441245f831fe02",
+    "source": "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/measurement-v1/source-pq-to-sdr/input-aac.mp4",
+    "source_sha256": "38d24a0360d3bbfba5710e5cc85823a8bdad01c1ca065b2386dbd81261cae6b6",
+    "output_sha256": "967110cd05d1ece2c279207e6c681c143ac313be105256c1b371d2c4ab6da998",
+    "probe_command": [
+      "ffprobe",
+      "-v",
+      "error",
+      "-show_packets",
+      "-show_streams",
+      "-show_format",
+      "-show_data_hash",
+      "sha256",
+      "-of",
+      "json",
+      "/home/eureka/Documents/AsciiFlow/target/stage54d1b-isolation/audio-off/output.mp4"
+    ],
+    "probe_sha256": "cc7f2e78aca3f838351562c1554cf39e9cec4a0c767feef1b2cd9adc7a8df5b1",
+    "wall_seconds": 467.3052810480003,
+    "milestones": [
+      {
+        "elapsed_seconds": 50.63510269700009,
+        "capture_ready": true,
+        "mux_complete": false,
+        "VmRSS": 142804,
+        "RssAnon": 83384,
+        "VmHWM": 142804,
+        "Pss": 117304,
+        "Anonymous": 83384,
+        "fd_count": 21,
+        "written_file_bytes": 66846764,
+        "written_video_frames": 10000,
+        "entries_by_stream": {
+          "0": 10000
+        },
+        "MOV_cluster_kib": 720.0
+      },
+      {
+        "elapsed_seconds": 124.00806693100003,
+        "capture_ready": true,
+        "mux_complete": false,
+        "VmRSS": 143872,
+        "RssAnon": 84452,
+        "VmHWM": 143872,
+        "Pss": 118368,
+        "Anonymous": 84452,
+        "fd_count": 23,
+        "written_file_bytes": 166461484,
+        "written_video_frames": 25025,
+        "entries_by_stream": {
+          "0": 25025
+        },
+        "MOV_cluster_kib": 1800.0
+      },
+      {
+        "elapsed_seconds": 237.98818714000026,
+        "capture_ready": true,
+        "mux_complete": false,
+        "VmRSS": 145628,
+        "RssAnon": 86208,
+        "VmHWM": 145628,
+        "Pss": 120128,
+        "Anonymous": 86208,
+        "fd_count": 21,
+        "written_file_bytes": 331874348,
+        "written_video_frames": 50000,
+        "entries_by_stream": {
+          "0": 50000
+        },
+        "MOV_cluster_kib": 3528.0
+      },
+      {
+        "elapsed_seconds": 352.6214716520003,
+        "capture_ready": true,
+        "mux_complete": false,
+        "VmRSS": 147428,
+        "RssAnon": 88008,
+        "VmHWM": 147428,
+        "Pss": 121928,
+        "Anonymous": 88008,
+        "fd_count": 23,
+        "written_file_bytes": 497811500,
+        "written_video_frames": 75007,
+        "entries_by_stream": {
+          "0": 75007
+        },
+        "MOV_cluster_kib": 5328.0
+      },
+      {
+        "elapsed_seconds": 466.80040719,
+        "capture_ready": true,
+        "mux_complete": false,
+        "VmRSS": 149180,
+        "RssAnon": 89760,
+        "VmHWM": 149180,
+        "Pss": 123680,
+        "Anonymous": 89760,
+        "fd_count": 23,
+        "written_file_bytes": 662700076,
+        "written_video_frames": 99938,
+        "entries_by_stream": {
+          "0": 99938
+        },
+        "MOV_cluster_kib": 7056.0
+      }
+    ],
+    "observed_delta_kib": {
+      "VmRSS": 3552,
+      "Pss": 3552,
+      "Anonymous": 3552
+    },
+    "known_index_delta_kib": 3528.0,
+    "residual_delta_kib": {
+      "VmRSS": 24.0,
+      "Pss": 24.0,
+      "Anonymous": 24.0
+    },
+    "sample_method": "External /proc status and smaps_rollup, final actual packet-end offsets versus pre-trailer file size; written-frame correlation is not atomic native state.",
+    "limitations": "External written-frame observations are not atomic processed-frame/native-allocation state; Anonymous is not exclusive Private Anonymous census.",
+    "reliability_measurement": false,
+    "same_100000_video_packets_and_probed_video_stream": true,
+    "live_native_identity": {
+      "pid": 26059,
+      "command": [
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/production-v1/production-asciiflow",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/measurement-v1/source-pq-to-sdr/input-aac.mp4",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1b-isolation/audio-off/output.mp4",
+        "--width",
+        "80",
+        "--charset",
+        "standard",
+        "--font",
+        "builtin-8x8",
+        "--color",
+        "true",
+        "--audio",
+        "none",
+        "--decode",
+        "vaapi",
+        "--backend",
+        "vulkan",
+        "--vulkan-mapping",
+        "gpu",
+        "--encode",
+        "vaapi",
+        "--hw-device",
+        "/dev/dri/renderD128",
+        "--vaapi-vulkan-input-interop",
+        "on",
+        "--vaapi-vulkan-output-interop",
+        "on",
+        "--output-codec",
+        "hevc",
+        "--output-bit-depth",
+        "10",
+        "--output-dynamic-range",
+        "sdr",
+        "--no-progress",
+        "--diagnostic-report",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1b-isolation/audio-off/diagnostic.json"
+      ],
+      "loaded_native_files": {
+        "/usr/lib64/libvulkan_intel.so": {
+          "sha256": "11ef9334499bd78b0010cb4f1462d59042a76d9bf49cf2bc0a08f02b3f9c01bd"
+        },
+        "/usr/lib64/dri-nonfree/iHD_drv_video.so": {
+          "sha256": "98942f2f651c99e6874c108107a34e0f6335fefae777faca1454ca14311b950f"
+        },
+        "/usr/lib64/libavformat.so.62.12.103": {
+          "sha256": "68196d2f4f8127d324764e9061c91eb578313caab1c92a016d4225615030d1c4"
+        }
+      }
+    }
+  },
+  "audit": {
+    "measurement": {
+      "per_frame_retained_history": "Not found",
+      "state": "Fixed-category resource/queue BTreeMaps, errors capped32, replace-only mux Value; synchronous JSONL file writes; scalar timing/metric aggregates.",
+      "default_build": "reliability module/hooks compiled out; prior default external-only C repeat already reproduced residual.",
+      "full_GPU": "Two slots; outstanding timing deque bounded by submissions; geometry/format packer cache fixed for this fixture.",
+      "classification": "No basis for QualificationInstrumentationGrowth"
+    },
+    "audio": {
+      "owned_O_frames_containers": "Not found in AudioReader, AudioPacketSender, attach/route or mux inbox.",
+      "input_context": "AudioReader opens and probes a second AVFormatContext, reads entire input without per-stream discard configuration; unused AV1 video packets are dropped after native av_read_frame returns.",
+      "ownership": "Selected AAC packets move to bounded channel16; retry holds one message; unused packet RAII av_packet_free; input guard avformat_close_input; cancellation/drop joins worker.",
+      "source_locations": [
+        "audio_reader.rs:100-166",
+        "audio.rs:219-407",
+        "decoder.rs:380-407,725-779",
+        "packet.rs:Drop",
+        "mux_inbox.rs:14-89"
+      ],
+      "native_scope": "Static source does not identify growing native demux/parser buffers, live allocation identity or allocator/cache attribution. No native input-state telemetry captured in these experiments."
+    }
+  },
+  "audio_associated_residual_difference_kib": 8280.0,
+  "interpretation": "Outcome U; residual associated with upstream audio-enabled independent input traversal/copy path or its allocation interaction with mux. Same encoded video with audio removed and identical-packet mux-only replay do not reproduce it.",
+  "layer_limit": "This is not a proof of a specific AAC packet leak or native parser cause. Fixed preloaded capture changes native allocation scheduling; an audio/mux runtime interaction is not categorically excluded.",
+  "final_classification": "UnexplainedResidualGrowth, narrowed to audio-enabled upstream/native input path; no allowed whole-production closure classification established.",
+  "diagnostic_classification": {
+    "mux_only": "ExpectedContainerWorkingSetGrowth for recorded late interval",
+    "audio_off": "ExpectedContainerWorkingSetGrowth plus small non-monotonic runtime noise; not a new whole-production qualification"
+  },
+  "production_Rust_changed": false,
+  "test_Rust_changed": [
+    "crates/asciiflow-media/src/ffmpeg/mux_replay.rs: ignored real-packet replay and strengthened flag comparison"
+  ],
+  "regressions": {
+    "production_Rust_changed": false,
+    "test_only_Rust_changed": [
+      "crates/asciiflow-media/src/ffmpeg/mux_replay.rs"
+    ],
+    "original_file_restored_hash_after_removing_new_test_and_flags_assertion": "13b0d06893ef7c399b922ffb51487ce7bd953eb704f77864e3b55851a509791c",
+    "other_runtime_files_unchanged": 131,
+    "feature_scope": "encoder.rs:1439 cfg(all(test, feature=mux-qualification)); absent in normal production builds",
+    "production_binary_sha256": "92fc20d079c8067872e88ba6f1d67949e952f630b07d1ac7f6441245f831fe02",
+    "checks": [
+      {
+        "command": "cargo test -p asciiflow-media --release --features mux-qualification --lib",
+        "result": "PASS",
+        "passed": 29,
+        "ignored": 23,
+        "failed": 0
+      },
+      {
+        "command": "cargo clippy -p asciiflow-media --features mux-qualification --tests -- -D warnings",
+        "result": "PASS"
+      },
+      {
+        "command": "cargo fmt --all",
+        "result": "PASS"
+      },
+      {
+        "command": "git diff --check",
+        "result": "PASS"
+      }
+    ],
+    "prior_build_static_SPIRV": "Reused recorded unchanged-production evidence; no new 100k Validation or shader qualification claimed"
+  },
+  "existing_gates": "Prior A/B/C100k,51kcontrols,alternate10k,17x3,compatibility,portability,build/static/SPIRV retained; production code/binary unchanged. No expensive matrix rerun.",
+  "setup_history": {
+    "initial_mux_trial": "Execution/payload tests passed but track names were not restored; excluded as matched metadata evidence, retained unchanged in mux/.",
+    "final_mux": "Title mapping restored exact whole-file identity. First observer review compared nb_read_packets from unlike probe modes; re-reviewed the same run with source count_packets. No further media replay or oracle weakening."
+  },
+  "remaining_gate": "Identify and account for the audio-enabled native input/copy residual, or minimally fix an identified production lifecycle bug and verify affected C/regressions. No leak/root-cause fix claimed.",
+  "D1A": "SEALED",
+  "D1B": "NOT SEALED",
+  "D1": "NOT SEALED",
+  "D2_justified": false,
+  "D2_started": false
+}

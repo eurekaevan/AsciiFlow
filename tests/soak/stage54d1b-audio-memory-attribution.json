@@ -1,0 +1,812 @@
+{
+  "schema": "asciiflow-stage54d1b-audio-memory-attribution-v1",
+  "date": "2026-10-09",
+  "historical_full_C": {
+    "observed_delta_kib": 18456,
+    "known_index_delta_kib": 10152,
+    "residual_kib": 8304
+  },
+  "experiment_A": {
+    "experiment": "replay-aac",
+    "result": "PASS",
+    "command": [
+      "/home/eureka/Documents/AsciiFlow/target/release/asciiflow",
+      "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/measurement-v1/source-pq-to-sdr/input-aac.mp4",
+      "/home/eureka/Documents/AsciiFlow/target/stage54d1b-audio-attribution/replay-aac/output.mp4",
+      "--width",
+      "80",
+      "--charset",
+      "standard",
+      "--font",
+      "builtin-8x8",
+      "--color",
+      "true",
+      "--audio",
+      "copy",
+      "--decode",
+      "vaapi",
+      "--backend",
+      "vulkan",
+      "--vulkan-mapping",
+      "gpu",
+      "--encode",
+      "vaapi",
+      "--hw-device",
+      "/dev/dri/renderD128",
+      "--vaapi-vulkan-input-interop",
+      "on",
+      "--vaapi-vulkan-output-interop",
+      "on",
+      "--output-codec",
+      "hevc",
+      "--output-bit-depth",
+      "10",
+      "--output-dynamic-range",
+      "sdr",
+      "--no-progress",
+      "--diagnostic-report",
+      "/home/eureka/Documents/AsciiFlow/target/stage54d1b-audio-attribution/replay-aac/diagnostic.json"
+    ],
+    "binary_sha256": "09f14a6e5b2a874f08b7e771ce6c36fe6db910f24b02b3c0a2eb061600bf3739",
+    "source": "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/measurement-v1/source-pq-to-sdr/input-aac.mp4",
+    "source_sha256": "38d24a0360d3bbfba5710e5cc85823a8bdad01c1ca065b2386dbd81261cae6b6",
+    "output_sha256": "3d9f4a69f6f930e4155238dc72080464f1096829b0a2176053da6bd31f4dfe4d",
+    "probe_command": [
+      "ffprobe",
+      "-v",
+      "error",
+      "-show_packets",
+      "-show_streams",
+      "-show_format",
+      "-show_data_hash",
+      "sha256",
+      "-of",
+      "json",
+      "/home/eureka/Documents/AsciiFlow/target/stage54d1b-audio-attribution/replay-aac/output.mp4"
+    ],
+    "probe_sha256": "fbcf258492bb43d1df75a81c9436a5a71f17d3bb80337bdadd259b812ec527aa",
+    "wall_seconds": 469.28599124799985,
+    "milestones": [
+      {
+        "elapsed_seconds": 50.06375077100029,
+        "capture_ready": true,
+        "mux_complete": false,
+        "VmRSS": 310960,
+        "RssAnon": 251280,
+        "VmHWM": 310960,
+        "Pss": 285341,
+        "Anonymous": 251280,
+        "fd_count": 23,
+        "written_file_bytes": 73138220,
+        "written_video_frames": 10000,
+        "entries_by_stream": {
+          "0": 10000,
+          "1": 9376,
+          "2": 9376
+        },
+        "MOV_cluster_kib": 2160.0
+      },
+      {
+        "elapsed_seconds": 123.58200418300021,
+        "capture_ready": true,
+        "mux_complete": false,
+        "VmRSS": 317184,
+        "RssAnon": 257504,
+        "VmHWM": 317184,
+        "Pss": 291565,
+        "Anonymous": 257504,
+        "fd_count": 21,
+        "written_file_bytes": 182452268,
+        "written_video_frames": 25021,
+        "entries_by_stream": {
+          "0": 25021,
+          "1": 23459,
+          "2": 23459
+        },
+        "MOV_cluster_kib": 5112.0
+      },
+      {
+        "elapsed_seconds": 239.17974595000032,
+        "capture_ready": true,
+        "mux_complete": false,
+        "VmRSS": 326604,
+        "RssAnon": 266924,
+        "VmHWM": 326604,
+        "Pss": 300985,
+        "Anonymous": 266924,
+        "fd_count": 23,
+        "written_file_bytes": 363855916,
+        "written_video_frames": 50000,
+        "entries_by_stream": {
+          "0": 50000,
+          "1": 46876,
+          "2": 46876
+        },
+        "MOV_cluster_kib": 10152.0
+      },
+      {
+        "elapsed_seconds": 354.13840648099995,
+        "capture_ready": true,
+        "mux_complete": false,
+        "VmRSS": 336780,
+        "RssAnon": 277100,
+        "VmHWM": 336780,
+        "Pss": 311161,
+        "Anonymous": 277100,
+        "fd_count": 23,
+        "written_file_bytes": 545783852,
+        "written_video_frames": 75003,
+        "entries_by_stream": {
+          "0": 75003,
+          "1": 70317,
+          "2": 70317
+        },
+        "MOV_cluster_kib": 15264.0
+      },
+      {
+        "elapsed_seconds": 468.7784624730002,
+        "capture_ready": true,
+        "mux_complete": false,
+        "VmRSS": 345068,
+        "RssAnon": 285388,
+        "VmHWM": 345068,
+        "Pss": 319449,
+        "Anonymous": 285388,
+        "fd_count": 21,
+        "written_file_bytes": 726663212,
+        "written_video_frames": 99940,
+        "entries_by_stream": {
+          "0": 99940,
+          "1": 93695,
+          "2": 93695
+        },
+        "MOV_cluster_kib": 20304.0
+      }
+    ],
+    "observed_delta_kib": {
+      "VmRSS": 18464,
+      "Pss": 18464,
+      "Anonymous": 18464
+    },
+    "known_index_delta_kib": 10152.0,
+    "residual_delta_kib": {
+      "VmRSS": 8312.0,
+      "Pss": 8312.0,
+      "Anonymous": 8312.0
+    },
+    "sample_method": "External /proc status and smaps_rollup, final actual packet-end offsets versus pre-trailer file size; written-frame correlation is not atomic native state.",
+    "limitations": "Mux replay retains a fixed immutable packet capture before baseline; differing native allocation scheduling can affect resident memory. Anonymous is not exclusive private-allocation census.",
+    "reliability_measurement": false
+  },
+  "A_outcome": "A2: residual retained with native live input removed; full output byte-identical",
+  "experiment_B": {
+    "result": "NOT RUN",
+    "reason": "A2 branch explicitly skips native demux-only experiment"
+  },
+  "input": {
+    "container_demuxer": "MOV/MP4 mov,mp4,m4a,3gp,3g2,mj2; ordinary nonfragmented input",
+    "native": "ffmpeg-libs-8.1.3-1.fc44.x86_64; libavformat62.12.103",
+    "identity": "38d24a0360d3bbfba5710e5cc85823a8bdad01c1ca065b2386dbd81261cae6b6",
+    "path": "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/measurement-v1/source-pq-to-sdr/input-aac.mp4"
+  },
+  "ownership_control": {
+    "experiment": "audio-lifetime",
+    "result": "PASS",
+    "command": [
+      "/home/eureka/Documents/AsciiFlow/target/release/asciiflow",
+      "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/measurement-v1/source-pq-to-sdr/input-aac.mp4",
+      "/home/eureka/Documents/AsciiFlow/target/stage54d1b-audio-attribution/audio-lifetime/output.mp4",
+      "--width",
+      "80",
+      "--charset",
+      "standard",
+      "--font",
+      "builtin-8x8",
+      "--color",
+      "true",
+      "--audio",
+      "copy",
+      "--decode",
+      "vaapi",
+      "--backend",
+      "vulkan",
+      "--vulkan-mapping",
+      "gpu",
+      "--encode",
+      "vaapi",
+      "--hw-device",
+      "/dev/dri/renderD128",
+      "--vaapi-vulkan-input-interop",
+      "on",
+      "--vaapi-vulkan-output-interop",
+      "on",
+      "--output-codec",
+      "hevc",
+      "--output-bit-depth",
+      "10",
+      "--output-dynamic-range",
+      "sdr",
+      "--no-progress",
+      "--diagnostic-report",
+      "/home/eureka/Documents/AsciiFlow/target/stage54d1b-audio-attribution/audio-lifetime/diagnostic.json"
+    ],
+    "binary_sha256": "feb95ea876dc9514db1ce7529a793b955c37305042b2f34aacad7a4b7a4aba42",
+    "source": "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/measurement-v1/source-pq-to-sdr/input-aac.mp4",
+    "source_sha256": "38d24a0360d3bbfba5710e5cc85823a8bdad01c1ca065b2386dbd81261cae6b6",
+    "output_sha256": "3d9f4a69f6f930e4155238dc72080464f1096829b0a2176053da6bd31f4dfe4d",
+    "probe_command": [
+      "ffprobe",
+      "-v",
+      "error",
+      "-show_packets",
+      "-show_streams",
+      "-show_format",
+      "-show_data_hash",
+      "sha256",
+      "-of",
+      "json",
+      "/home/eureka/Documents/AsciiFlow/target/stage54d1b-audio-attribution/audio-lifetime/output.mp4"
+    ],
+    "probe_sha256": "85b47940b1d5a0a58ade6696a19879b3cd595b2ff07b72ac2729f47f8058e3c6",
+    "wall_seconds": 465.1139854619996,
+    "milestones": [
+      {
+        "elapsed_seconds": 49.619144219999725,
+        "capture_ready": true,
+        "mux_complete": false,
+        "VmRSS": 162256,
+        "RssAnon": 103092,
+        "VmHWM": 162256,
+        "Pss": 137011,
+        "Anonymous": 103092,
+        "fd_count": 25,
+        "written_file_bytes": 73400364,
+        "written_video_frames": 10018,
+        "entries_by_stream": {
+          "0": 10018,
+          "1": 9393,
+          "2": 9393
+        },
+        "MOV_cluster_kib": 2160.0
+      },
+      {
+        "elapsed_seconds": 121.18988777899995,
+        "capture_ready": true,
+        "mux_complete": false,
+        "VmRSS": 168500,
+        "RssAnon": 109336,
+        "VmHWM": 168500,
+        "Pss": 143255,
+        "Anonymous": 109336,
+        "fd_count": 25,
+        "written_file_bytes": 182190124,
+        "written_video_frames": 25000,
+        "entries_by_stream": {
+          "0": 25000,
+          "1": 23439,
+          "2": 23439
+        },
+        "MOV_cluster_kib": 5112.0
+      },
+      {
+        "elapsed_seconds": 234.59601149299942,
+        "capture_ready": true,
+        "mux_complete": false,
+        "VmRSS": 177844,
+        "RssAnon": 118680,
+        "VmHWM": 177844,
+        "Pss": 152599,
+        "Anonymous": 118680,
+        "fd_count": 25,
+        "written_file_bytes": 363855916,
+        "written_video_frames": 50000,
+        "entries_by_stream": {
+          "0": 50000,
+          "1": 46876,
+          "2": 46876
+        },
+        "MOV_cluster_kib": 10152.0
+      },
+      {
+        "elapsed_seconds": 350.06106305999947,
+        "capture_ready": true,
+        "mux_complete": false,
+        "VmRSS": 188084,
+        "RssAnon": 128920,
+        "VmHWM": 188084,
+        "Pss": 162840,
+        "Anonymous": 128920,
+        "fd_count": 25,
+        "written_file_bytes": 545783852,
+        "written_video_frames": 75003,
+        "entries_by_stream": {
+          "0": 75003,
+          "1": 70317,
+          "2": 70317
+        },
+        "MOV_cluster_kib": 15264.0
+      },
+      {
+        "elapsed_seconds": 464.8607753639999,
+        "capture_ready": true,
+        "mux_complete": false,
+        "VmRSS": 196364,
+        "RssAnon": 137200,
+        "VmHWM": 196364,
+        "Pss": 171120,
+        "Anonymous": 137200,
+        "fd_count": 25,
+        "written_file_bytes": 726663212,
+        "written_video_frames": 99940,
+        "entries_by_stream": {
+          "0": 99940,
+          "1": 93695,
+          "2": 93695
+        },
+        "MOV_cluster_kib": 20304.0
+      }
+    ],
+    "observed_delta_kib": {
+      "VmRSS": 18520,
+      "Pss": 18521,
+      "Anonymous": 18520
+    },
+    "known_index_delta_kib": 10152.0,
+    "residual_delta_kib": {
+      "VmRSS": 8368.0,
+      "Pss": 8369.0,
+      "Anonymous": 8368.0
+    },
+    "sample_method": "External /proc status and smaps_rollup, final actual packet-end offsets versus pre-trailer file size; written-frame correlation is not atomic native state.",
+    "limitations": "Mux replay retains a fixed immutable packet capture before baseline; differing native allocation scheduling can affect resident memory. Anonymous is not exclusive private-allocation census.",
+    "reliability_measurement": false
+  },
+  "ownership_samples": [
+    {
+      "phase": "checkpoint",
+      "rss_kib": 162256,
+      "pss_kib": 137011,
+      "anonymous_kib": 103092,
+      "private_dirty_kib": 103092,
+      "current_packets": [
+        9,
+        9
+      ],
+      "current_bytes": [
+        3091,
+        3061
+      ],
+      "peak_packets": [
+        10,
+        10
+      ],
+      "peak_bytes": [
+        3482,
+        3488
+      ],
+      "read": [
+        9377,
+        9376
+      ],
+      "mux_consumed": [
+        9368,
+        9368
+      ],
+      "total_side_data_bytes_read": [
+        10,
+        10
+      ],
+      "queue_peak": 16,
+      "accounting_error": false
+    },
+    {
+      "phase": "checkpoint",
+      "rss_kib": 168500,
+      "pss_kib": 143255,
+      "anonymous_kib": 109336,
+      "private_dirty_kib": 109336,
+      "current_packets": [
+        9,
+        9
+      ],
+      "current_bytes": [
+        3088,
+        3069
+      ],
+      "peak_packets": [
+        10,
+        10
+      ],
+      "peak_bytes": [
+        3482,
+        3488
+      ],
+      "read": [
+        23440,
+        23439
+      ],
+      "mux_consumed": [
+        23431,
+        23431
+      ],
+      "total_side_data_bytes_read": [
+        10,
+        10
+      ],
+      "queue_peak": 16,
+      "accounting_error": false
+    },
+    {
+      "phase": "checkpoint",
+      "rss_kib": 177844,
+      "pss_kib": 152599,
+      "anonymous_kib": 118680,
+      "private_dirty_kib": 118680,
+      "current_packets": [
+        9,
+        9
+      ],
+      "current_bytes": [
+        3091,
+        3061
+      ],
+      "peak_packets": [
+        10,
+        10
+      ],
+      "peak_bytes": [
+        3482,
+        3488
+      ],
+      "read": [
+        46877,
+        46876
+      ],
+      "mux_consumed": [
+        46868,
+        46868
+      ],
+      "total_side_data_bytes_read": [
+        10,
+        10
+      ],
+      "queue_peak": 16,
+      "accounting_error": false
+    },
+    {
+      "phase": "checkpoint",
+      "rss_kib": 188084,
+      "pss_kib": 162840,
+      "anonymous_kib": 128920,
+      "private_dirty_kib": 128920,
+      "current_packets": [
+        9,
+        9
+      ],
+      "current_bytes": [
+        3088,
+        3073
+      ],
+      "peak_packets": [
+        10,
+        10
+      ],
+      "peak_bytes": [
+        3482,
+        3488
+      ],
+      "read": [
+        70315,
+        70314
+      ],
+      "mux_consumed": [
+        70306,
+        70306
+      ],
+      "total_side_data_bytes_read": [
+        10,
+        10
+      ],
+      "queue_peak": 16,
+      "accounting_error": false
+    },
+    {
+      "phase": "checkpoint",
+      "rss_kib": 196364,
+      "pss_kib": 171120,
+      "anonymous_kib": 137200,
+      "private_dirty_kib": 137200,
+      "current_packets": [
+        9,
+        9
+      ],
+      "current_bytes": [
+        3036,
+        3065
+      ],
+      "peak_packets": [
+        10,
+        10
+      ],
+      "peak_bytes": [
+        3482,
+        3488
+      ],
+      "read": [
+        93696,
+        93695
+      ],
+      "mux_consumed": [
+        93687,
+        93687
+      ],
+      "total_side_data_bytes_read": [
+        10,
+        10
+      ],
+      "queue_peak": 16,
+      "accounting_error": false
+    },
+    {
+      "phase": "before_close_input",
+      "rss_kib": 196364,
+      "pss_kib": 171120,
+      "anonymous_kib": 137200,
+      "private_dirty_kib": 137200,
+      "current_packets": [
+        8,
+        9
+      ],
+      "current_bytes": [
+        2709,
+        3029
+      ],
+      "peak_packets": [
+        10,
+        10
+      ],
+      "peak_bytes": [
+        3482,
+        3488
+      ],
+      "read": [
+        93751,
+        93751
+      ],
+      "mux_consumed": [
+        93743,
+        93743
+      ],
+      "total_side_data_bytes_read": [
+        10,
+        10
+      ],
+      "queue_peak": 16,
+      "accounting_error": false
+    },
+    {
+      "phase": "after_close_input",
+      "rss_kib": 196364,
+      "pss_kib": 171120,
+      "anonymous_kib": 137200,
+      "private_dirty_kib": 137200,
+      "current_packets": [
+        7,
+        8
+      ],
+      "current_bytes": [
+        2363,
+        2695
+      ],
+      "peak_packets": [
+        10,
+        10
+      ],
+      "peak_bytes": [
+        3482,
+        3488
+      ],
+      "read": [
+        93751,
+        93751
+      ],
+      "mux_consumed": [
+        93744,
+        93744
+      ],
+      "total_side_data_bytes_read": [
+        10,
+        10
+      ],
+      "queue_peak": 16,
+      "accounting_error": false
+    },
+    {
+      "phase": "after_job_teardown",
+      "rss_kib": 190024,
+      "pss_kib": 166936,
+      "anonymous_kib": 136564,
+      "private_dirty_kib": 136564,
+      "current_packets": [
+        0,
+        0
+      ],
+      "current_bytes": [
+        0,
+        0
+      ],
+      "peak_packets": [
+        10,
+        10
+      ],
+      "peak_bytes": [
+        3482,
+        3488
+      ],
+      "read": [
+        93751,
+        93751
+      ],
+      "mux_consumed": [
+        93751,
+        93751
+      ],
+      "total_side_data_bytes_read": [
+        10,
+        10
+      ],
+      "queue_peak": 16,
+      "accounting_error": false
+    },
+    {
+      "phase": "after_diagnostic_trim",
+      "rss_kib": 122320,
+      "pss_kib": 99232,
+      "anonymous_kib": 68860,
+      "private_dirty_kib": 68860,
+      "current_packets": [
+        0,
+        0
+      ],
+      "current_bytes": [
+        0,
+        0
+      ],
+      "peak_packets": [
+        10,
+        10
+      ],
+      "peak_bytes": [
+        3482,
+        3488
+      ],
+      "read": [
+        93751,
+        93751
+      ],
+      "mux_consumed": [
+        93751,
+        93751
+      ],
+      "total_side_data_bytes_read": [
+        10,
+        10
+      ],
+      "queue_peak": 16,
+      "accounting_error": false
+    }
+  ],
+  "close_input_reclaimed_kib": {
+    "rss_kib": 0,
+    "pss_kib": 0,
+    "anonymous_kib": 0,
+    "private_dirty_kib": 0
+  },
+  "post_teardown_trim_reclaimed_kib": {
+    "rss_kib": 67704,
+    "pss_kib": 67704,
+    "anonymous_kib": 67704,
+    "private_dirty_kib": 67704
+  },
+  "per_track_packets": [
+    93751,
+    93751
+  ],
+  "live_packets_final": [
+    0,
+    0
+  ],
+  "live_payload_bytes_final": [
+    0,
+    0
+  ],
+  "peak_packets": [
+    10,
+    10
+  ],
+  "peak_payload_bytes": [
+    3482,
+    3488
+  ],
+  "queue_observed_peak": 16,
+  "queue_capacity": 16,
+  "side_data": {
+    "total_bytes_read": [
+      10,
+      10
+    ],
+    "scope": "Cumulative input side-data, not a native live-side-data census"
+  },
+  "mechanism": "Live audio producer to mux cross-owner allocation/release working set: bounded live payload refs and queues, packet/list headers explicitly freed, no packet history; released process pages retained until diagnostic trim. Differential A2 excludes ongoing native audio input as necessary cause.",
+  "final_classification": "BoundedAudioPacketAllocatorRetention",
+  "classification_scope": "Pragmatic causal classification for the recorded single-job workload from matched differentials, last-reference census, exact source ownership paths and post-teardown reclaim. Not audio-specific tagging of every freed heap page, a constant-RSS proof or persistent-process qualification.",
+  "numerical_residual": "Observed residuals remain as measured; trim bytes are not subtracted from them. No byte-perfect residual==0 claim. The remaining audio-enabled component is classified allocator retention, not increasing live audio ownership.",
+  "logical_container_audit": "Two selected descriptors/routes; channel16; one retry message; one audio mux head; native interleaver nodes freed on pop/unref/trailer. Census uses only two-track arrays/scalars and streamed fixed checkpoints.",
+  "source_evidence": [
+    "mov.c:4794-4804 input index built from full sample_count",
+    "av1_parser.c:181-182 CBS fragment reset",
+    "cbs.c:171-201 unref/reset/free",
+    "mux.c:845,856,1013 interleaver node alloc/move/pop",
+    "packet.c:595-619 node free and queue cleanup",
+    "mux.c:1087-1088 packet unref;1255 trailer flush"
+  ],
+  "limitations": [
+    "Readonly AVBuffer wrapper adds diagnostic allocations and may affect allocator scheduling; matching output and reproduced residual are controls.",
+    "Tracks wrapped references including native aliases; pre-existing aliases or later copied buffers are not a complete native heap census.",
+    "Before/after input close may overlap final mux packet releases; joined job teardown is definitive zero-live observation.",
+    "One whole-process trim can reclaim video/index/runtime pages too; its delta is not an audio-specific allocation sum.",
+    "Bounded describes live audio ownership for the recorded workload, not a proof of persistent-process RSS plateau."
+  ],
+  "production_fix": null,
+  "production_behavior_changed": false,
+  "qualification_source_identities": [
+    {
+      "path": "crates/asciiflow-media/src/ffmpeg/audio_reader.rs",
+      "bytes": 20778,
+      "sha256": "b6d5a70b8d105faf98ca338db3e06acd8bb7f0a8ba1043c9edf5bba40c13caab"
+    },
+    {
+      "path": "crates/asciiflow-media/src/ffmpeg/audio.rs",
+      "bytes": 18826,
+      "sha256": "5721eb8c9dac2a211e2a8bc133a7c078d44883f96b15199b43564de810a3e6dc"
+    },
+    {
+      "path": "crates/asciiflow-media/src/ffmpeg/encoder.rs",
+      "bytes": 116547,
+      "sha256": "6efa8911a8f19c217fffd56a840cf227adc69c632670f84f00f44e016a8332ae"
+    },
+    {
+      "path": "crates/asciiflow-media/src/ffmpeg/mod.rs",
+      "bytes": 1103,
+      "sha256": "8ff8f0349f3847179cc742c3e02a23780a9c25e28e9751ba3d53602df9951113"
+    },
+    {
+      "path": "apps/asciiflow-cli/src/main.rs",
+      "bytes": 101648,
+      "sha256": "6b6faf1f8269f714e89a4e8d438423962169330f3c25ee25717691361dffe13a"
+    }
+  ],
+  "checks": {
+    "payload_last_reference_native_unit": "PASS, explicit isolated ignored test",
+    "media_release_library": "29 PASS,24 ignored; payload unit separately executed",
+    "cli_qualification_unit": "31 PASS,3 ignored",
+    "clippy_media_and_cli_qualification": "PASS",
+    "default_CLI_check": "PASS",
+    "default_Release_build": "PASS",
+    "format_diff": "PASS",
+    "retained_17x3_and_compatibility": "Existing unchanged-production evidence reused; not rerun",
+    "mux_determinism": "A and census output whole-file identical to retained full C",
+    "prior_hardware_static_SPIRV": "Preserved; no shader/default production behavior change"
+  },
+  "D1A": "SEALED",
+  "D1B": "SEALED",
+  "D1": "SEALED",
+  "D2_justified": true,
+  "D2_started": false,
+  "reliability_claim": "Qualified for the recorded single-job CLI workloads and long-run production paths.",
+  "default_Release_binary": {
+    "path": "target/release/asciiflow",
+    "bytes": 4130472,
+    "sha256": "11d5655b36d1c4e1a9fd5532ee0daa9531f2225f286aca42e079a95bd307d1ce"
+  }
+}

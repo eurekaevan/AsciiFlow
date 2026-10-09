@@ -14,12 +14,93 @@ use std::collections::BTreeMap;
 struct Contract {
     schema_version: u32,
     support_contract_version: String,
+    release_profiles: BTreeMap<String, ReleaseProfile>,
     states: BTreeMap<String, String>,
     hardware_scope: HardwareScope,
     production_limits: ProductionLimits,
     evidence: Vec<Evidence>,
     dimensions: BTreeMap<String, Vec<DimensionValue>>,
     cases: Vec<Case>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ReleaseProfile {
+    description: String,
+    ffmpeg_license: String,
+    exclusions: Vec<ReleaseExclusion>,
+    retained_base_qualification: String,
+    runtime_requirement: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ReleaseExclusion {
+    #[serde(rename = "match")]
+    matching: BTreeMap<String, String>,
+    availability: String,
+    reason: String,
+}
+
+#[test]
+fn lgpl_distribution_overlay_preserves_base_and_excludes_software_encoding() {
+    let contract: Contract = serde_json::from_str(include_str!(
+        "../../../tests/support/production-support-v1.json"
+    ))
+    .unwrap();
+    assert_eq!(contract.states.len(), 4);
+    let profile = &contract.release_profiles["lgpl-prebuilt"];
+    assert_eq!(profile.ffmpeg_license, "LGPL-2.1-or-later");
+    assert!(!profile.description.is_empty());
+    assert!(!profile.retained_base_qualification.is_empty());
+    assert!(!profile.runtime_requirement.is_empty());
+    assert_eq!(profile.exclusions.len(), 1);
+    let exclusion = &profile.exclusions[0];
+    assert_eq!(
+        exclusion.matching,
+        BTreeMap::from([("encode".into(), "software".into())])
+    );
+    assert_eq!(exclusion.availability, "Excluded");
+    assert!(exclusion.reason.contains("libx264"));
+    let software = contract
+        .cases
+        .iter()
+        .find(|case| case.id == "portable-h264-sdr")
+        .unwrap();
+    assert_eq!(software.status, "Supported");
+    let mut capabilities = qualified_capabilities();
+    assert!(
+        PipelinePlanner::select(&capabilities, &requirements(software), policy(software)).is_ok()
+    );
+    capabilities.media.software_encode = CapabilitySupport::unsupported(&exclusion.reason);
+    assert!(
+        PipelinePlanner::select(&capabilities, &requirements(software), policy(software)).is_err()
+    );
+    let hardware = contract
+        .cases
+        .iter()
+        .find(|case| case.id == "sdr-h264-8")
+        .unwrap();
+    let plan =
+        PipelinePlanner::select(&capabilities, &requirements(hardware), policy(hardware)).unwrap();
+    assert_eq!(
+        plan.selected.encode,
+        asciiflow_core::MediaImplementation::Hardware
+    );
+    let auto = PipelinePolicy {
+        encode: MediaRequest::Auto,
+        ..policy(hardware)
+    };
+    assert_eq!(
+        PipelinePlanner::select(&capabilities, &requirements(hardware), auto.clone())
+            .unwrap()
+            .selected
+            .encode,
+        asciiflow_core::MediaImplementation::Hardware
+    );
+    capabilities.media.h264_vaapi_encode =
+        CapabilitySupport::unsupported("no qualified hardware encoder");
+    assert!(PipelinePlanner::select(&capabilities, &requirements(hardware), auto).is_err());
 }
 
 #[derive(Debug, Deserialize)]

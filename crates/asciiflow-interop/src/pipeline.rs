@@ -152,6 +152,8 @@ pub fn run_interop_pipeline_with_cancellation(
                 match decoder.next_vaapi_frame() {
                     Ok(Some(frame)) => {
                         m.record(MetricStage::Decode, begin.elapsed());
+                        #[cfg(feature = "native-reliability")]
+                        asciiflow_core::reliability_hooks::checkpoint("DecoderActive");
                         let timings = FrameSource::take_timings(decoder);
                         m.record(MetricStage::DecodePacketSubmit, timings.packet_submit);
                         m.record(MetricStage::DecodeFrameReceive, timings.frame_receive);
@@ -163,8 +165,22 @@ pub fn run_interop_pipeline_with_cancellation(
                             started_at: begin,
                         };
                         loop {
+                            #[cfg(feature = "reliability-measurement")]
+                            asciiflow_core::reliability::observe_queue(
+                                "pipeline_decoded",
+                                decoded_tx.len(),
+                                decoded_tx.capacity(),
+                            );
                             match decoded_tx.send_timeout(pending, POLL) {
-                                Ok(()) => break,
+                                Ok(()) => {
+                                    #[cfg(feature = "reliability-measurement")]
+                                    asciiflow_core::reliability::observe_queue_boundary(
+                                        "pipeline_decoded",
+                                        decoded_tx.len(),
+                                        decoded_tx.capacity(),
+                                    );
+                                    break;
+                                }
                                 Err(SendTimeoutError::Timeout(frame)) if !cancel.is_cancelled() => {
                                     pending = frame;
                                 }
@@ -206,8 +222,20 @@ pub fn run_interop_pipeline_with_cancellation(
             let mut processor = processor;
             let mut pending_started = VecDeque::new();
             loop {
+                #[cfg(feature = "reliability-measurement")]
+                asciiflow_core::reliability::observe_queue(
+                    "pipeline_decoded",
+                    decoded_rx.len(),
+                    decoded_rx.capacity(),
+                );
                 match decoded_rx.recv_timeout(POLL) {
                     Ok(decoded) => {
+                        #[cfg(feature = "reliability-measurement")]
+                        asciiflow_core::reliability::observe_queue_boundary(
+                            "pipeline_decoded",
+                            decoded_rx.len(),
+                            decoded_rx.capacity(),
+                        );
                         pending_started.push_back(decoded.started_at);
                         match processor.submit(decoded.frame) {
                             Ok(Some(output)) => {
@@ -287,8 +315,20 @@ pub fn run_interop_pipeline_with_cancellation(
             let _panic_guard =
                 WorkerPanicGuard::new(&errors, &cancel, PipelineStage::EncodeRuntime);
             loop {
+                #[cfg(feature = "reliability-measurement")]
+                asciiflow_core::reliability::observe_queue(
+                    "pipeline_processed",
+                    processed_rx.len(),
+                    processed_rx.capacity(),
+                );
                 match processed_rx.recv_timeout(POLL) {
                     Ok(frame) => {
+                        #[cfg(feature = "reliability-measurement")]
+                        asciiflow_core::reliability::observe_queue_boundary(
+                            "pipeline_processed",
+                            processed_rx.len(),
+                            processed_rx.capacity(),
+                        );
                         let begin = Instant::now();
                         if let Err(error) = encoder.encode(frame.frame) {
                             cancel.cancel();
@@ -458,6 +498,8 @@ fn run_hardware_output_pipeline(
                 };
                 match next {
                     Ok(Some(frame)) => {
+                        #[cfg(feature = "native-reliability")]
+                        asciiflow_core::reliability_hooks::checkpoint("DecoderActive");
                         m.record(MetricStage::Decode, begin.elapsed());
                         let timings = FrameSource::take_timings(decoder);
                         m.record(MetricStage::DecodePacketSubmit, timings.packet_submit);
@@ -470,8 +512,22 @@ fn run_hardware_output_pipeline(
                             started_at: begin,
                         };
                         loop {
+                            #[cfg(feature = "reliability-measurement")]
+                            asciiflow_core::reliability::observe_queue(
+                                "pipeline_decoded",
+                                decoded_tx.len(),
+                                decoded_tx.capacity(),
+                            );
                             match decoded_tx.send_timeout(pending, POLL) {
-                                Ok(()) => break,
+                                Ok(()) => {
+                                    #[cfg(feature = "reliability-measurement")]
+                                    asciiflow_core::reliability::observe_queue_boundary(
+                                        "pipeline_decoded",
+                                        decoded_tx.len(),
+                                        decoded_tx.capacity(),
+                                    );
+                                    break;
+                                }
                                 Err(SendTimeoutError::Timeout(frame)) if !cancel.is_cancelled() => {
                                     pending = frame;
                                 }
@@ -513,8 +569,20 @@ fn run_hardware_output_pipeline(
             let mut processor = processor;
             let mut pending_started = VecDeque::new();
             loop {
+                #[cfg(feature = "reliability-measurement")]
+                asciiflow_core::reliability::observe_queue(
+                    "pipeline_decoded",
+                    decoded_rx.len(),
+                    decoded_rx.capacity(),
+                );
                 match decoded_rx.recv_timeout(POLL) {
                     Ok(decoded) => {
+                        #[cfg(feature = "reliability-measurement")]
+                        asciiflow_core::reliability::observe_queue_boundary(
+                            "pipeline_decoded",
+                            decoded_rx.len(),
+                            decoded_rx.capacity(),
+                        );
                         pending_started.push_back(decoded.started_at);
                         match processor.submit(decoded.frame) {
                             Ok(Some(output)) => {
@@ -601,8 +669,20 @@ fn run_hardware_output_pipeline(
             let _panic_guard =
                 WorkerPanicGuard::new(&errors, &cancel, PipelineStage::EncodeRuntime);
             loop {
+                #[cfg(feature = "reliability-measurement")]
+                asciiflow_core::reliability::observe_queue(
+                    "pipeline_processed",
+                    processed_rx.len(),
+                    processed_rx.capacity(),
+                );
                 match processed_rx.recv_timeout(POLL) {
                     Ok(processed) => {
+                        #[cfg(feature = "reliability-measurement")]
+                        asciiflow_core::reliability::observe_queue_boundary(
+                            "pipeline_processed",
+                            processed_rx.len(),
+                            processed_rx.capacity(),
+                        );
                         let begin = Instant::now();
                         if let Err(error) = encoder.encode_hardware_frame(processed.output.frame) {
                             cancel.cancel();
@@ -665,8 +745,22 @@ fn send_hardware_output(
 ) -> bool {
     let mut pending = HardwareProcessedFrame { output, started_at };
     loop {
+        #[cfg(feature = "reliability-measurement")]
+        asciiflow_core::reliability::observe_queue(
+            "pipeline_processed",
+            processed.len(),
+            processed.capacity(),
+        );
         match processed.send_timeout(pending, POLL) {
-            Ok(()) => return true,
+            Ok(()) => {
+                #[cfg(feature = "reliability-measurement")]
+                asciiflow_core::reliability::observe_queue_boundary(
+                    "pipeline_processed",
+                    processed.len(),
+                    processed.capacity(),
+                );
+                return true;
+            }
             Err(SendTimeoutError::Timeout(value)) if !cancelled.is_cancelled() => {
                 pending = value;
             }
@@ -699,6 +793,10 @@ fn join_workers<'scope>(
                 "worker thread panicked",
             ));
         }
+        #[cfg(feature = "native-reliability")]
+        if stage == PipelineStage::DecodeRuntime {
+            asciiflow_core::reliability_hooks::checkpoint("DuringWorkerShutdown");
+        }
     }
 }
 
@@ -716,8 +814,22 @@ fn forward(
         started_at,
     };
     loop {
+        #[cfg(feature = "reliability-measurement")]
+        asciiflow_core::reliability::observe_queue(
+            "pipeline_processed",
+            processed.len(),
+            processed.capacity(),
+        );
         match processed.send_timeout(pending, POLL) {
-            Ok(()) => return true,
+            Ok(()) => {
+                #[cfg(feature = "reliability-measurement")]
+                asciiflow_core::reliability::observe_queue_boundary(
+                    "pipeline_processed",
+                    processed.len(),
+                    processed.capacity(),
+                );
+                return true;
+            }
             Err(SendTimeoutError::Timeout(frame)) if !cancelled.is_cancelled() => {
                 pending = frame;
             }

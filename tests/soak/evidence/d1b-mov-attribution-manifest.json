@@ -1,0 +1,86 @@
+{
+  "schema": "asciiflow-d1b-MOV-attribution-evidence-v1",
+  "archive": "tests/soak/evidence/d1b-mov-attribution-evidence.tar.gz",
+  "archive_sha256": "c202dca084944d4ed864f32a5469ad93d72376d06773965bdfb153aa163b4941",
+  "archive_bytes": 146140,
+  "members": [
+    {
+      "path": "result.json",
+      "bytes": 21427,
+      "sha256": "037b3508ceb32ef9248fddecdddb55f60deaefe5dde92f793c208fbfcafdc505"
+    },
+    {
+      "path": "reproduction/d1b-mov-attribution.py",
+      "bytes": 11161,
+      "sha256": "c620bdbca3341c4df9fa8f41fb5979418f9d73454283fbb2c3b0a95963237c8f"
+    },
+    {
+      "path": "reproduction/d1b-retain-mov-attribution.py",
+      "bytes": 4473,
+      "sha256": "14f34f4fc6dab0ac6c1ef6eeb28e8b87ae1676dad83225567357a43f4e8d8c41"
+    },
+    {
+      "path": "reproduction/sizeof.c",
+      "bytes": 647,
+      "sha256": "50c39462d6ab5bf30648d95632f81503032fcf1fba77856c6c1c2103bd99f8bf"
+    },
+    {
+      "path": "source/provenance.json",
+      "bytes": 3613,
+      "sha256": "e06efa1d10675e9c8810bfb053671a14c90a6af459e86eb920631f0f9148a7d9"
+    },
+    {
+      "path": "source/ffmpeg.spec",
+      "bytes": 71568,
+      "sha256": "b9b514a8cd4a18e6d33785e120f981eeffdfb6901373faac2631d6ba9817838a"
+    },
+    {
+      "path": "source/ffmpeg-chromium.patch",
+      "bytes": 1371,
+      "sha256": "f79c0e3bd2faf7a9e78d267bd8ffc2829c7de5be3808e132c1467d94f027efdd"
+    },
+    {
+      "path": "source/ffmpeg-allow-fdk-aac-free.patch",
+      "bytes": 742,
+      "sha256": "58fc0eb43dfac7c733c47e6f2bc08267b4f6431c643301661d65a107e7125833"
+    },
+    {
+      "path": "source/25e187f8494966377a4b9d077260ce7b501a911c.patch",
+      "bytes": 24727,
+      "sha256": "bc73afa946be4821db70f17078777ce0a4a0a27ec2667ddb0880baaf51c959dc"
+    },
+    {
+      "path": "source/ffmpeg-8.1.3/libavformat/movenc.c",
+      "bytes": 345100,
+      "sha256": "2bf6468f311937a4abc3e5e1480f2c670b345108f58196f3578d72362b3a97bd"
+    },
+    {
+      "path": "source/ffmpeg-8.1.3/libavformat/movenc.h",
+      "bytes": 8959,
+      "sha256": "71dfdfa9d500bb8cc0ba01eb491deb9abb2e898d7f6d18705c06d92e8d59bcbd"
+    },
+    {
+      "path": "source/ffmpeg-8.1.3/libavformat/mux.c",
+      "bytes": 48534,
+      "sha256": "57b64d7a1d6d81d7ac05d79085e5f9b282bf1bba773b4200a64aeede6599b55a"
+    },
+    {
+      "path": "source/ffmpeg-8.1.3/libavformat/avformat.c",
+      "bytes": 31262,
+      "sha256": "cdbce6737521bcdd5995d28ca9f761cc2510e5c8c739c6855023d1860d61912c"
+    },
+    {
+      "path": "source/ffmpeg-8.1.3/COPYING.GPLv3",
+      "bytes": 35147,
+      "sha256": "8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903"
+    },
+    {
+      "path": "source/ffmpeg-8.1.3/COPYING.LGPLv2.1",
+      "bytes": 26517,
+      "sha256": "246041b6ecf9bc32d718a62c57877c78b5eb397b6467e74ed7ae2626ab189c30"
+    }
+  ],
+  "original_soak_evidence": "tests/soak/evidence/d1b-long-soak-manifest.json",
+  "exclusions": "No media, executables, full SRPM or full native tree retained; exact signed source RPM URL/hash and relevant package source/patches retained.",
+  "reproduce": "Extract matching signed SRPM from recorded URL, apply declared spec patches, compile recorded sizeof command, restore old non-media evidence to its recorded root, then run the retained attribution script. Large output is needed only for the small -show_format probe, not for packet-count/model arithmetic."
+}

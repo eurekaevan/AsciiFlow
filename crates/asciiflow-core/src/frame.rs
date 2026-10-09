@@ -171,7 +171,7 @@ impl FrameDesc {
     }
 
     fn host(width: u32, height: u32, format: PixelFormat, color_space: ColorSpace) -> Result<Self> {
-        if width == 0 || height == 0 || width % 2 != 0 || height % 2 != 0 {
+        if width == 0 || height == 0 || !width.is_multiple_of(2) || !height.is_multiple_of(2) {
             return Err(Error::UnsupportedFrame(format!(
                 "{format:?} requires non-zero even dimensions, got {width}x{height}"
             )));

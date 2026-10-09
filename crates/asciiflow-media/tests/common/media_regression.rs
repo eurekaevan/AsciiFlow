@@ -534,16 +534,15 @@ fn mask_approved_version_tags(
         if let (Some(x), Some(y)) = (
             reference.format_tags.get("encoder"),
             candidate.format_tags.get("encoder"),
-        ) {
-            if same_ffmpeg_family_patch(x, y, "Lavf") {
-                values.push((x.as_bytes(), y.as_bytes()));
-            }
+        ) && same_ffmpeg_family_patch(x, y, "Lavf")
+        {
+            values.push((x.as_bytes(), y.as_bytes()));
         }
         for (x, y) in reference.streams.iter().zip(&candidate.streams) {
-            if let (Some(before), Some(after)) = (x.tags.get("encoder"), y.tags.get("encoder")) {
-                if same_ffmpeg_family_patch(before, after, "Lavc") {
-                    values.push((before.as_bytes(), after.as_bytes()));
-                }
+            if let (Some(before), Some(after)) = (x.tags.get("encoder"), y.tags.get("encoder"))
+                && same_ffmpeg_family_patch(before, after, "Lavc")
+            {
+                values.push((before.as_bytes(), after.as_bytes()));
             }
         }
     }

@@ -1,10 +1,20 @@
 # AsciiFlow
 
+AsciiFlow **2.0.0** is the final qualified v2 engineering milestone. Stage 5.4
+is SEALED; the [final milestone receipt](docs/asciiflow-2.0.0-final.md) records
+the artifact identity, inherited qualification and unchanged limitations.
+
 AsciiFlow is a Rust CLI that converts video into color or monochrome ASCII
 video. It has a portable CPU path and, on qualified Linux hardware, a Vulkan
 processing path with VAAPI decode/encode and optional DMA-BUF interop. The
 former C# implementation is no longer part of the active project; its
 remaining feature gaps are recorded in the [Rust follow-up inventory](docs/legacy-feature-parity.md).
+
+The official LGPL prebuilt release does not support software H.264 encoding.
+Software decode and qualified VAAPI H.264/HEVC/AV1 encoding remain available
+subject to runtime probes. Source/developer builds retain the libx264 backend;
+availability depends on their FFmpeg build capabilities. GPL-capable custom
+builds are outside this LGPL release qualification.
 
 ## Current support
 
@@ -22,8 +32,9 @@ changes this support contract without reviewed qualification. The additive
 Tier 1B-P gate permits only an attested iHD build identifier in one known SEI;
 it does not relax same-stack packet identity or admit SPS/PPS/VCL/color/timing
 changes. No universal driver portability is implied. [Stage 5.4D-1 reliability
-hardening](docs/stage5.4d1-soak-failure-hardening.md) is now in progress and
-NOT SEALED; long-run resource qualification remains open.
+hardening](docs/stage5.4d1-soak-failure-hardening.md) is SEALED for the recorded
+single-job CLI workloads. Ordinary MP4 sample indexes and bounded allocator
+retention can grow its working set; constant memory is not promised.
 
 <!-- production-support-contract:begin -->
 Support contract `1.1.0`. Hardware conditions and evidence: [production support contract](docs/production-support.md).
@@ -49,6 +60,9 @@ Support contract `1.1.0`. Hardware conditions and evidence: [production support 
 | output_profile | av1-main | ConditionallySupported | AV1 8-bit SDR or 10-bit SDR conversion/PQ preserve requires the matching scoped VAAPI profile and format probe. |
 | output_dynamic_range | preserve | ConditionallySupported | SDR preserve is qualified for the five 8/10-bit output profiles; PQ preserve only for HEVC Main10 and AV1 Main 10-bit. The 1000 cd/m2 limit does not apply to PQ preservation. |
 | output_dynamic_range | sdr | ConditionallySupported | Explicit PQ-to-SDR conversion is qualified only for canonical input with every source pixel at or below 1000 cd/m2. |
+
+Release profile `lgpl-prebuilt`: Official LGPL prebuilt Linux release; opt-in distribution restrictions, not a replacement for the base support contract.
+- Software H.264 encoding requires GPL dependency libx264 and is excluded from the official LGPL prebuilt release.
 <!-- production-support-contract:end -->
 
 The generated rows classify dimensions, not all combinations. Complete paths
@@ -78,16 +92,17 @@ and [failure semantics](docs/failure-semantics.md) for precise boundaries.
 
 The Rust workspace needs Rust, `clang`/`libclang`, FFmpeg development headers
 and libraries, FreeType, and Linux `libva`/`libdrm` headers for the hardware
-path. The FFmpeg build must provide `libx264`; VAAPI H.264 also depends on
+path. Software H.264 encoding in a developer build requires `libx264`; the
+official `lgpl-prebuilt` profile excludes that route. VAAPI H.264 depends on
 the driver exposing its H.264 encode profiles. For a pinned FFmpeg source
 build, see [`third_party/ffmpeg/`](third_party/ffmpeg/) and the
 [native dependency notes](docs/architecture.md).
 
 ```bash
-cargo build --release --workspace
+cargo build --release --locked --workspace
 cargo test --workspace
 
-# Portable conversion; automatic planning chooses a legal local path.
+# Automatic planning chooses a legal available path; LGPL prebuilt requires VAAPI encoding.
 cargo run --release --bin asciiflow -- input.mp4 output.mp4 --width 160
 
 # Inspect detected capabilities and the selected plan without creating output.
@@ -126,6 +141,58 @@ include `--width`, `--height`, `--charset`, `--font`, `--font-face-index`,
 `--no-progress`, and `--verbose`. The input is positional; output is
 positional except for capability/plan inspection. Run `asciiflow --help`
 for the exact installed CLI.
+
+## Installing the Linux release candidate
+
+The RC is a dynamically linked Linux x86-64 executable, not a universal Linux
+bundle. Extract the archive and put `asciiflow` in a directory on your `PATH`
+(or invoke its absolute path). Keep its license/notice and release-note files
+when redistributing it. Shaders and the builtin font are embedded; no source
+checkout, shader cache or fixture directory is needed at runtime. Native
+FFmpeg, FreeType, Vulkan loader and VAAPI/driver libraries are system
+prerequisites, not bundled libraries. Use the recorded release dependency and
+hardware receipts rather than assuming another FFmpeg major or driver is
+compatible. The tested build toolchain is Rust1.97.1; the manifest's1.88 floor
+reflects language features and is not a separately qualified minimum-toolchain
+claim. Offline builds are not a release promise.
+
+```bash
+asciiflow --version
+asciiflow input.mp4 output.mp4 --width 160 --audio auto
+asciiflow input.mp4 --capabilities
+```
+
+See [RC notes and installation boundaries](docs/release-notes-v2-rc1.md), the
+[generated scenario matrix](docs/production-support.md#complete-scenario-inventory)
+and the [release qualification report](docs/stage5.4d2-release-qualification.md).
+AsciiFlow source is MIT; the executable's distribution also has obligations
+from its actual native FFmpeg configuration. Do not describe a GPL-enabled
+FFmpeg-linked executable as an MIT-only or LGPL-only distribution.
+
+## Known limitations and diagnosing failures
+
+- Production is one process, one media job, then exit. Persistent multi-job
+  process memory is not qualified; there is no daemon/24/7 guarantee.
+- HDR means canonical limited BT.2020 / PQ / BT.2020 NCL P010 on the recorded
+  GPU path, not HLG, full-range HDR or arbitrary colorimetry. Explicit PQ→SDR
+  additionally requires every decoded source pixel to be at most1000 cd/m².
+- Audio is compressed passthrough, not transcoding. Copy needs the original
+  CFR video grid and a qualified MP4/audio tuple; VFR/discontinuous copy rejects.
+  MOV/Matroska acceptance is not a preservation qualification.
+- Hardware qualification is limited to the recorded stacks. Absence from the
+  table does not prove incompatibility; historical FailedQualification remains
+  in engineering records.
+- Missing GPU/driver capabilities fail explicit hardware requests. Inspect
+  `--capabilities`/`--explain-plan`; use software only where the support contract
+  permits it. A nonexistent font path fails; `builtin-8x8` needs no external font.
+- Failure or Ctrl+C before commit cleans staging and preserves an existing
+  target. Success atomically replaces an existing target. Diagnostics written
+  after commit cannot roll the successful output back.
+
+For a bug report include `asciiflow --version`, OS/kernel, the full invocation,
+stderr and an optional `--diagnostic-report report.json` (new path), plus FFmpeg,
+Vulkan and VAAPI versions. Remove private paths/media details before sharing.
+There is no telemetry or automatic upload.
 
 ## Project map and verification
 

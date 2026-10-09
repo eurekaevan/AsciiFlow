@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "scope": "Fresh independent clean Release workspace builds and generated SPIR-V validation; evidence only, not a Stage D1A seal claim.",
+  "network": "All builds used Cargo offline mode; no dependency fetch was attempted.",
+  "builds": [
+    {
+      "kind": "default",
+      "directory": "/tmp/asciiflow-d1a-clean-6r5QRE",
+      "target_directory": "/tmp/asciiflow-d1a-clean-6r5QRE/target",
+      "command": "CARGO_BUILD_JOBS=4 CARGO_TARGET_DIR=/tmp/asciiflow-d1a-clean-6r5QRE/target cargo build --offline --release --workspace",
+      "started_at_local_approx": "2026-10-07T11:46:08+08:00",
+      "start_basis": "Temporary directory creation immediately before launching the build.",
+      "finished_at_local": "2026-10-07T11:51:45.031721092+08:00",
+      "finish_basis": "Release binary modification time; Cargo reported 5m32s.",
+      "result": "PASS",
+      "binary": "/tmp/asciiflow-d1a-clean-6r5QRE/target/release/asciiflow",
+      "binary_bytes": 4118352,
+      "binary_sha256": "2364a8c97a374822fa68b237e29c482b31c17e53f97681b8a1b66ec39c3d09d7",
+      "spirv_files": 25,
+      "unique_spirv_basenames": 25,
+      "spirv_val": "PASS: every generated file passed spirv-val --target-env vulkan1.3",
+      "source_scope_note": "This default-feature build finished before the final report-path guard change. That change is in the reliability module, which is cfg-gated out of this default build."
+    },
+    {
+      "kind": "reliability-measurement",
+      "directory": "/tmp/asciiflow-d1a-clean-bRHLAy",
+      "target_directory": "/tmp/asciiflow-d1a-clean-bRHLAy/target",
+      "command": "CARGO_BUILD_JOBS=4 CARGO_TARGET_DIR=/tmp/asciiflow-d1a-clean-bRHLAy/target cargo build --offline --release --workspace --features asciiflow-cli/reliability-measurement",
+      "started_at_local_approx": "2026-10-07T11:57:38+08:00",
+      "start_basis": "Temporary directory creation immediately before launching the build.",
+      "finished_at_local": "2026-10-07T12:02:45.057643444+08:00",
+      "finish_basis": "Release binary modification time; Cargo reported 5m02s.",
+      "result": "PASS",
+      "binary": "/tmp/asciiflow-d1a-clean-bRHLAy/target/release/asciiflow",
+      "binary_bytes": 4244592,
+      "binary_sha256": "6ea0eaf35e93c194bd24b86bcb827ac49f81c8218c1166c060b2e86a3216ac36",
+      "spirv_files": 25,
+      "unique_spirv_basenames": 25,
+      "spirv_val": "PASS: every generated file passed spirv-val --target-env vulkan1.3",
+      "source_hashes": {
+        "captured_at_local": "2026-10-07T12:03+08:00",
+        "apps/asciiflow-cli/src/main.rs": "6c595686b4a4bab654268c7cc4f4f6a0400f299d466f8a2611bbb3c528d74f0d",
+        "apps/asciiflow-cli/Cargo.toml": "969368640eaedf559ceff41f95f115cf70cbd1936e2690855cb1b4f5b6688a4b",
+        "crates/asciiflow-core/src/reliability.rs": "8674022eb3735f4a8dd5ba5b11a263b7e6f86ab7197aa3855949082c94481fd4",
+        "crates/asciiflow-core/src/lib.rs": "7595d74354b060f7f34fbe374a6c5fad50e98d8319d9f3906d2caaa9a95b620d",
+        "crates/asciiflow-core/src/pipeline.rs": "5d89f66efc0913c13ebfacad26714950698d88961ea3734e29e2baa2275cebff",
+        "crates/asciiflow-core/src/metrics.rs": "72283d119cfe855a84092b4758f5315f2e89985cb6795ad85aa8dfed0cf3795e",
+        "crates/asciiflow-core/Cargo.toml": "b5eb496f934bade9817b5d8e1c435c1880495b210d6677b12da77b8d61ea171b",
+        "crates/asciiflow-media/src/ffmpeg/frame.rs": "b3fd27b88aa421962325ac1b207cae4782298a00b21d13c7870ca19c6a40422b",
+        "crates/asciiflow-media/src/ffmpeg/hwframes.rs": "201df49cb82e47be7337b3ce02d162cf8a4ef694b4f55896f0e287687183cb63",
+        "crates/asciiflow-media/src/ffmpeg/decoder.rs": "985921986c4e7072ff8260eebc3eea8e10ffa2f0d53990771e1b955443196c3a",
+        "crates/asciiflow-media/src/ffmpeg/encoder.rs": "46ca190e0d1cc34590a74ace640add896e6270da6bf03a5bbba0561aeca357d1",
+        "crates/asciiflow-media/Cargo.toml": "a02060c3d8e31c1f6c1ec549996efd7b16c755a8c5866e4d61c68e8100564d8a",
+        "crates/asciiflow-vulkan/src/buffer.rs": "06d8b7622d7abb2796c309ad49c044d459cb73241ece6edaadee080e24aa6687",
+        "crates/asciiflow-vulkan/src/external.rs": "6df5bdd605136496edbbcc8dc673652b297e5d16e652d3c3928fa8d861c4411c",
+        "crates/asciiflow-vulkan/Cargo.toml": "1b1fe05fbe6102aaf3f7020101b0644bff2ca1c4ffd77c960dbd175b7486a4d8",
+        "crates/asciiflow-interop/src/pipeline.rs": "e66f5cd612cf0a557c4e325ea9fdddb782e6e288c3bb12eb4d2a1b6eb0502288",
+        "crates/asciiflow-interop/src/output_processor.rs": "9e81bef558ed0b38b9815cd59879b0342e4a51cf3f86bdac08dab6caeabdbd24",
+        "crates/asciiflow-interop/Cargo.toml": "acb033f6c46615e2faea6347c1dd1c96ea5b9cba765ee258ab51d142e8fd99a7",
+        "Cargo.lock": "675c339488902831907e094b3261d0c8de491d6d329e30322ee9198cfc952fd2"
+      }
+    }
+  ],
+  "historical_builds": [
+    {
+      "kind": "default",
+      "directory": "/tmp/asciiflow-d1a-clean-u7fZ3D",
+      "command": "CARGO_TARGET_DIR=/tmp/asciiflow-d1a-clean-u7fZ3D/target cargo build --offline --release --workspace",
+      "result": "PASS; superseded by current default build",
+      "cargo_duration": "4m27s",
+      "binary_sha256": "a733d36ad23443dccbb5883318ab639303b43cbbc278c1a7e39b2b0a32b67ea1",
+      "spirv_files": 25,
+      "spirv_val": "PASS"
+    },
+    {
+      "kind": "reliability-measurement",
+      "directory": "/tmp/asciiflow-d1a-clean-sYx3kq",
+      "command": "CARGO_TARGET_DIR=/tmp/asciiflow-d1a-clean-sYx3kq/target cargo build --offline --release --workspace --features asciiflow-cli/reliability-measurement",
+      "result": "PASS; superseded by current measurement build",
+      "cargo_duration": "4m34s",
+      "binary_sha256": "9efdd0ee7c39e4a8a5127c926426c1c89dbc03986ddb8f6651c9d226bdaf588e",
+      "spirv_files": 25,
+      "spirv_val": "PASS"
+    },
+    {
+      "kind": "default",
+      "directory": "/tmp/asciiflow-d1a-clean-6r5QRE",
+      "command": "CARGO_BUILD_JOBS=4 CARGO_TARGET_DIR=/tmp/asciiflow-d1a-clean-6r5QRE/target cargo build --offline --release --workspace",
+      "result": "PASS; pre-final report-guard source, default feature excludes reliability module",
+      "cargo_duration": "5m32s",
+      "binary_sha256": "2364a8c97a374822fa68b237e29c482b31c17e53f97681b8a1b66ec39c3d09d7",
+      "spirv_files": 25,
+      "spirv_val": "PASS"
+    },
+    {
+      "kind": "reliability-measurement",
+      "directory": "/tmp/asciiflow-d1a-clean-oqSOtf",
+      "command": "CARGO_BUILD_JOBS=4 CARGO_TARGET_DIR=/tmp/asciiflow-d1a-clean-oqSOtf/target cargo build --offline --release --workspace --features asciiflow-cli/reliability-measurement",
+      "result": "PASS; pre-final report-guard source, superseded",
+      "cargo_duration": "5m16s",
+      "binary_sha256": "6ea0eaf35e93c194bd24b86bcb827ac49f81c8218c1166c060b2e86a3216ac36",
+      "spirv_files": 25,
+      "spirv_val": "PASS"
+    }
+  ],
+  "disk": {
+    "latest_run_initial_workspace_free_kib": 67813324,
+    "latest_run_final_workspace_free_kib": 67517092,
+    "latest_run_initial_tmp_free_kib": 14320080,
+    "latest_run_minimum_tmp_free_kib": 11633672,
+    "stop_threshold_kib": 15728640,
+    "threshold_note": "The requested stop threshold was 15 GiB on the workspace filesystem, which remained above 64 GiB free. /tmp was a separate 16 GiB tmpfs and remained above 11 GiB free."
+  },
+  "variant_census": {
+    "source_authoritative_unconditional_variants": 25,
+    "optional_hdr_to_sdr_fp64_experiment_variants": 1,
+    "clean_build_variants": 25,
+    "note": "Both current commands omit hdr-to-sdr-fp64-experiment, so each emitted the 25 unconditional build.rs modules."
+  }
+}

@@ -1,0 +1,658 @@
+{
+  "schema": "asciiflow-memory-final-mechanical-evidence-v1",
+  "decision": "NOT SEALED",
+  "classification": "Unresolved",
+  "processes": 10,
+  "cycles": 4418,
+  "jobs": 18025,
+  "outcomes": {
+    "Cancelled": 177,
+    "InjectedFailure": 176,
+    "Success": 17672
+  },
+  "unmet_hwm_gate": [
+    "process-01",
+    "process-02",
+    "process-03",
+    "process-06",
+    "process-08"
+  ],
+  "source_unchanged_after_all_regressions": true,
+  "binary_sha256": "6d40cd42946581a189caa0a83231eb693a5e9126ae4304e301707e4a4f82964f",
+  "loaded_drivers_identical_all_ten": {
+    "/usr/lib64/dri-nonfree/iHD_drv_video.so": {
+      "sha256": "98942f2f651c99e6874c108107a34e0f6335fefae777faca1454ca14311b950f"
+    },
+    "/usr/lib64/libvulkan_intel.so": {
+      "sha256": "11ef9334499bd78b0010cb4f1462d59042a76d9bf49cf2bc0a08f02b3f9c01bd"
+    }
+  },
+  "raw_archives": [
+    {
+      "path": "tests/soak/evidence/memory-process-00.tar.gz",
+      "bytes": 5497099,
+      "sha256": "9047f286d44ce6ffcb905ac7a08ed054760c2abb812b8e0637afb5c27df902c8"
+    },
+    {
+      "path": "tests/soak/evidence/memory-process-01.tar.gz",
+      "bytes": 5687640,
+      "sha256": "bbf4eb6801c00d56ea66116963138acc5a73b703ec3c7e15b1982e504b0067b4"
+    },
+    {
+      "path": "tests/soak/evidence/memory-process-02.tar.gz",
+      "bytes": 5740398,
+      "sha256": "375c78dd2e7b653a521f8f46484c6d5ca94b9672ca308c95a1e726d679f538ba"
+    },
+    {
+      "path": "tests/soak/evidence/memory-process-03.tar.gz",
+      "bytes": 5506413,
+      "sha256": "44fb66b11b1359a9f6c3d74340c27c50897b1fb5a417becca6b895aa027aff4c"
+    },
+    {
+      "path": "tests/soak/evidence/memory-process-04.tar.gz",
+      "bytes": 5131547,
+      "sha256": "085060670a188924a4bb83654975b3085195ee87680dd72cd1d1d9c0b99c6ec6"
+    },
+    {
+      "path": "tests/soak/evidence/memory-process-05.tar.gz",
+      "bytes": 5006833,
+      "sha256": "2b7a16b0059b83dbc07ed8d33d8fa34fba2e6eeba5527bf7b00bd41cdba418a6"
+    },
+    {
+      "path": "tests/soak/evidence/memory-process-06.tar.gz",
+      "bytes": 5843000,
+      "sha256": "cfc1dd1f234762b361490c75cb179b5432c4b6f8d5f67ea286cdde05fc612b71"
+    },
+    {
+      "path": "tests/soak/evidence/memory-process-07.tar.gz",
+      "bytes": 5215228,
+      "sha256": "d297a95de6531767dad484e5eef7a64497d0e8549d87d047d10c378c4443a1ed"
+    },
+    {
+      "path": "tests/soak/evidence/memory-process-08.tar.gz",
+      "bytes": 5776797,
+      "sha256": "37e5f9e7068c734eeff35f320996f7b5300f341bae495312f487b2f56abad168"
+    },
+    {
+      "path": "tests/soak/evidence/memory-process-09.tar.gz",
+      "bytes": 5899598,
+      "sha256": "7a27637ad7dc58afc255f8e13c494eece6daeb58636139678818ec75ac646a99"
+    }
+  ],
+  "raw_common_archive": {
+    "path": "tests/soak/evidence/memory-campaign-common.tar.gz",
+    "bytes": 1926613,
+    "sha256": "3f0a32309079ac359afe36320d72cdc3d9de52fbb8d6820c7683cb72e9824323"
+  },
+  "retained": [
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-sdr/av1-10-run1.mp4",
+      "bytes": 36190392,
+      "sha256": "b69c68525ac6ab2464e04b8fc1f123d887b45bba580377bafad99dc74cf62ad7",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-sdr/av1-10-run1.mp4",
+        "bytes": 36190392,
+        "sha256": "b69c68525ac6ab2464e04b8fc1f123d887b45bba580377bafad99dc74cf62ad7"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-sdr/av1-10-run2.mp4",
+      "bytes": 36190392,
+      "sha256": "b69c68525ac6ab2464e04b8fc1f123d887b45bba580377bafad99dc74cf62ad7",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-sdr/av1-10-run2.mp4",
+        "bytes": 36190392,
+        "sha256": "b69c68525ac6ab2464e04b8fc1f123d887b45bba580377bafad99dc74cf62ad7"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-sdr/av1-10-run3.mp4",
+      "bytes": 36190392,
+      "sha256": "b69c68525ac6ab2464e04b8fc1f123d887b45bba580377bafad99dc74cf62ad7",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-sdr/av1-10-run3.mp4",
+        "bytes": 36190392,
+        "sha256": "b69c68525ac6ab2464e04b8fc1f123d887b45bba580377bafad99dc74cf62ad7"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-sdr/av1-8-run1.mp4",
+      "bytes": 5228408,
+      "sha256": "1531e29f52ae4e747251cf1889003dfd420303c523fb0ddc55cc9140e3bf2a4c",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-sdr/av1-8-run1.mp4",
+        "bytes": 5228408,
+        "sha256": "1531e29f52ae4e747251cf1889003dfd420303c523fb0ddc55cc9140e3bf2a4c"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-sdr/av1-8-run2.mp4",
+      "bytes": 5228408,
+      "sha256": "1531e29f52ae4e747251cf1889003dfd420303c523fb0ddc55cc9140e3bf2a4c",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-sdr/av1-8-run2.mp4",
+        "bytes": 5228408,
+        "sha256": "1531e29f52ae4e747251cf1889003dfd420303c523fb0ddc55cc9140e3bf2a4c"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-sdr/av1-8-run3.mp4",
+      "bytes": 5228408,
+      "sha256": "1531e29f52ae4e747251cf1889003dfd420303c523fb0ddc55cc9140e3bf2a4c",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-sdr/av1-8-run3.mp4",
+        "bytes": 5228408,
+        "sha256": "1531e29f52ae4e747251cf1889003dfd420303c523fb0ddc55cc9140e3bf2a4c"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-sdr/h264-8-run1.mp4",
+      "bytes": 4229552,
+      "sha256": "7c8a7572320b8c6c999143dfece4a76d487d6c9e7788206b7af52df9acd4e1cc",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-sdr/h264-8-run1.mp4",
+        "bytes": 4229552,
+        "sha256": "7c8a7572320b8c6c999143dfece4a76d487d6c9e7788206b7af52df9acd4e1cc"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-sdr/h264-8-run2.mp4",
+      "bytes": 4229552,
+      "sha256": "7c8a7572320b8c6c999143dfece4a76d487d6c9e7788206b7af52df9acd4e1cc",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-sdr/h264-8-run2.mp4",
+        "bytes": 4229552,
+        "sha256": "7c8a7572320b8c6c999143dfece4a76d487d6c9e7788206b7af52df9acd4e1cc"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-sdr/h264-8-run3.mp4",
+      "bytes": 4229552,
+      "sha256": "7c8a7572320b8c6c999143dfece4a76d487d6c9e7788206b7af52df9acd4e1cc",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-sdr/h264-8-run3.mp4",
+        "bytes": 4229552,
+        "sha256": "7c8a7572320b8c6c999143dfece4a76d487d6c9e7788206b7af52df9acd4e1cc"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-sdr/hevc-10-run1.mp4",
+      "bytes": 15757994,
+      "sha256": "f213a9f75542421bb816550cd7a93796db98ae36296a00636f7273492740a142",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-sdr/hevc-10-run1.mp4",
+        "bytes": 15757994,
+        "sha256": "f213a9f75542421bb816550cd7a93796db98ae36296a00636f7273492740a142"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-sdr/hevc-10-run2.mp4",
+      "bytes": 15757994,
+      "sha256": "f213a9f75542421bb816550cd7a93796db98ae36296a00636f7273492740a142",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-sdr/hevc-10-run2.mp4",
+        "bytes": 15757994,
+        "sha256": "f213a9f75542421bb816550cd7a93796db98ae36296a00636f7273492740a142"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-sdr/hevc-10-run3.mp4",
+      "bytes": 15757994,
+      "sha256": "f213a9f75542421bb816550cd7a93796db98ae36296a00636f7273492740a142",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-sdr/hevc-10-run3.mp4",
+        "bytes": 15757994,
+        "sha256": "f213a9f75542421bb816550cd7a93796db98ae36296a00636f7273492740a142"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-sdr/hevc-8-run1.mp4",
+      "bytes": 4064735,
+      "sha256": "294a1b63ac5b0e440dcf60c4c60f975594c6e944829478b69f09f981d268ff71",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-sdr/hevc-8-run1.mp4",
+        "bytes": 4064735,
+        "sha256": "294a1b63ac5b0e440dcf60c4c60f975594c6e944829478b69f09f981d268ff71"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-sdr/hevc-8-run2.mp4",
+      "bytes": 4064735,
+      "sha256": "294a1b63ac5b0e440dcf60c4c60f975594c6e944829478b69f09f981d268ff71",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-sdr/hevc-8-run2.mp4",
+        "bytes": 4064735,
+        "sha256": "294a1b63ac5b0e440dcf60c4c60f975594c6e944829478b69f09f981d268ff71"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-sdr/hevc-8-run3.mp4",
+      "bytes": 4064735,
+      "sha256": "294a1b63ac5b0e440dcf60c4c60f975594c6e944829478b69f09f981d268ff71",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-sdr/hevc-8-run3.mp4",
+        "bytes": 4064735,
+        "sha256": "294a1b63ac5b0e440dcf60c4c60f975594c6e944829478b69f09f981d268ff71"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-pq/av1-10-run1.mp4",
+      "bytes": 5239237,
+      "sha256": "41a8af52985a6be0121cfe7c4f4160a3ebdecd0acc908882774d2a0151185388",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-pq/av1-10-run1.mp4",
+        "bytes": 5239237,
+        "sha256": "41a8af52985a6be0121cfe7c4f4160a3ebdecd0acc908882774d2a0151185388"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-pq/av1-10-run2.mp4",
+      "bytes": 5239237,
+      "sha256": "41a8af52985a6be0121cfe7c4f4160a3ebdecd0acc908882774d2a0151185388",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-pq/av1-10-run2.mp4",
+        "bytes": 5239237,
+        "sha256": "41a8af52985a6be0121cfe7c4f4160a3ebdecd0acc908882774d2a0151185388"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-pq/av1-10-run3.mp4",
+      "bytes": 5239237,
+      "sha256": "41a8af52985a6be0121cfe7c4f4160a3ebdecd0acc908882774d2a0151185388",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-pq/av1-10-run3.mp4",
+        "bytes": 5239237,
+        "sha256": "41a8af52985a6be0121cfe7c4f4160a3ebdecd0acc908882774d2a0151185388"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-pq/hevc-10-run1.mp4",
+      "bytes": 2101434,
+      "sha256": "0e8de23d5d222ab0476ea816d27b18e37dc73bf1f824e79bedc1070c409ded63",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-pq/hevc-10-run1.mp4",
+        "bytes": 2101434,
+        "sha256": "0e8de23d5d222ab0476ea816d27b18e37dc73bf1f824e79bedc1070c409ded63"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-pq/hevc-10-run2.mp4",
+      "bytes": 2101434,
+      "sha256": "0e8de23d5d222ab0476ea816d27b18e37dc73bf1f824e79bedc1070c409ded63",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-pq/hevc-10-run2.mp4",
+        "bytes": 2101434,
+        "sha256": "0e8de23d5d222ab0476ea816d27b18e37dc73bf1f824e79bedc1070c409ded63"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-pq/hevc-10-run3.mp4",
+      "bytes": 2101434,
+      "sha256": "0e8de23d5d222ab0476ea816d27b18e37dc73bf1f824e79bedc1070c409ded63",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-pq/hevc-10-run3.mp4",
+        "bytes": 2101434,
+        "sha256": "0e8de23d5d222ab0476ea816d27b18e37dc73bf1f824e79bedc1070c409ded63"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-c/av1-to-av1-10-run1.mp4",
+      "bytes": 5649428,
+      "sha256": "739193a9553b81fa8ceb66f730b944ed66a74180bf7d58de7db8bdb956f17894",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-c/av1-to-av1-10-run1.mp4",
+        "bytes": 5649428,
+        "sha256": "739193a9553b81fa8ceb66f730b944ed66a74180bf7d58de7db8bdb956f17894"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-c/av1-to-av1-10-run2.mp4",
+      "bytes": 5649428,
+      "sha256": "739193a9553b81fa8ceb66f730b944ed66a74180bf7d58de7db8bdb956f17894",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-c/av1-to-av1-10-run2.mp4",
+        "bytes": 5649428,
+        "sha256": "739193a9553b81fa8ceb66f730b944ed66a74180bf7d58de7db8bdb956f17894"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-c/av1-to-av1-10-run3.mp4",
+      "bytes": 5649428,
+      "sha256": "739193a9553b81fa8ceb66f730b944ed66a74180bf7d58de7db8bdb956f17894",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-c/av1-to-av1-10-run3.mp4",
+        "bytes": 5649428,
+        "sha256": "739193a9553b81fa8ceb66f730b944ed66a74180bf7d58de7db8bdb956f17894"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-c/av1-to-av1-8-run1.mp4",
+      "bytes": 4429174,
+      "sha256": "284723f0fe4ec1afd632b4a64773f9d85ee56c4c37d2b5260b3dae4c170d2176",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-c/av1-to-av1-8-run1.mp4",
+        "bytes": 4429174,
+        "sha256": "284723f0fe4ec1afd632b4a64773f9d85ee56c4c37d2b5260b3dae4c170d2176"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-c/av1-to-av1-8-run2.mp4",
+      "bytes": 4429174,
+      "sha256": "284723f0fe4ec1afd632b4a64773f9d85ee56c4c37d2b5260b3dae4c170d2176",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-c/av1-to-av1-8-run2.mp4",
+        "bytes": 4429174,
+        "sha256": "284723f0fe4ec1afd632b4a64773f9d85ee56c4c37d2b5260b3dae4c170d2176"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-c/av1-to-av1-8-run3.mp4",
+      "bytes": 4429174,
+      "sha256": "284723f0fe4ec1afd632b4a64773f9d85ee56c4c37d2b5260b3dae4c170d2176",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-c/av1-to-av1-8-run3.mp4",
+        "bytes": 4429174,
+        "sha256": "284723f0fe4ec1afd632b4a64773f9d85ee56c4c37d2b5260b3dae4c170d2176"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-c/av1-to-h264-8-run1.mp4",
+      "bytes": 3712699,
+      "sha256": "866cd722e7969994c91e2d0647abd82a1b6be5f29929205baa25040742feda12",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-c/av1-to-h264-8-run1.mp4",
+        "bytes": 3712699,
+        "sha256": "866cd722e7969994c91e2d0647abd82a1b6be5f29929205baa25040742feda12"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-c/av1-to-h264-8-run2.mp4",
+      "bytes": 3712699,
+      "sha256": "866cd722e7969994c91e2d0647abd82a1b6be5f29929205baa25040742feda12",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-c/av1-to-h264-8-run2.mp4",
+        "bytes": 3712699,
+        "sha256": "866cd722e7969994c91e2d0647abd82a1b6be5f29929205baa25040742feda12"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-c/av1-to-h264-8-run3.mp4",
+      "bytes": 3712699,
+      "sha256": "866cd722e7969994c91e2d0647abd82a1b6be5f29929205baa25040742feda12",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-c/av1-to-h264-8-run3.mp4",
+        "bytes": 3712699,
+        "sha256": "866cd722e7969994c91e2d0647abd82a1b6be5f29929205baa25040742feda12"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-c/av1-to-hevc-10-run1.mp4",
+      "bytes": 2410909,
+      "sha256": "2e8d7e8e48390b42b875f47bca756521d1a63489651d81ddb633ad7c50f0e151",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-c/av1-to-hevc-10-run1.mp4",
+        "bytes": 2410909,
+        "sha256": "2e8d7e8e48390b42b875f47bca756521d1a63489651d81ddb633ad7c50f0e151"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-c/av1-to-hevc-10-run2.mp4",
+      "bytes": 2410909,
+      "sha256": "2e8d7e8e48390b42b875f47bca756521d1a63489651d81ddb633ad7c50f0e151",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-c/av1-to-hevc-10-run2.mp4",
+        "bytes": 2410909,
+        "sha256": "2e8d7e8e48390b42b875f47bca756521d1a63489651d81ddb633ad7c50f0e151"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-c/av1-to-hevc-10-run3.mp4",
+      "bytes": 2410909,
+      "sha256": "2e8d7e8e48390b42b875f47bca756521d1a63489651d81ddb633ad7c50f0e151",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-c/av1-to-hevc-10-run3.mp4",
+        "bytes": 2410909,
+        "sha256": "2e8d7e8e48390b42b875f47bca756521d1a63489651d81ddb633ad7c50f0e151"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-c/av1-to-hevc-8-run1.mp4",
+      "bytes": 2743894,
+      "sha256": "12213439b789a482504592b9c703a2f78afeef2795dcc3f16a0f5c3764a99c20",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-c/av1-to-hevc-8-run1.mp4",
+        "bytes": 2743894,
+        "sha256": "12213439b789a482504592b9c703a2f78afeef2795dcc3f16a0f5c3764a99c20"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-c/av1-to-hevc-8-run2.mp4",
+      "bytes": 2743894,
+      "sha256": "12213439b789a482504592b9c703a2f78afeef2795dcc3f16a0f5c3764a99c20",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-c/av1-to-hevc-8-run2.mp4",
+        "bytes": 2743894,
+        "sha256": "12213439b789a482504592b9c703a2f78afeef2795dcc3f16a0f5c3764a99c20"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-c/av1-to-hevc-8-run3.mp4",
+      "bytes": 2743894,
+      "sha256": "12213439b789a482504592b9c703a2f78afeef2795dcc3f16a0f5c3764a99c20",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-c/av1-to-hevc-8-run3.mp4",
+        "bytes": 2743894,
+        "sha256": "12213439b789a482504592b9c703a2f78afeef2795dcc3f16a0f5c3764a99c20"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-c/hevc-to-av1-10-run1.mp4",
+      "bytes": 5649428,
+      "sha256": "739193a9553b81fa8ceb66f730b944ed66a74180bf7d58de7db8bdb956f17894",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-c/hevc-to-av1-10-run1.mp4",
+        "bytes": 5649428,
+        "sha256": "739193a9553b81fa8ceb66f730b944ed66a74180bf7d58de7db8bdb956f17894"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-c/hevc-to-av1-10-run2.mp4",
+      "bytes": 5649428,
+      "sha256": "739193a9553b81fa8ceb66f730b944ed66a74180bf7d58de7db8bdb956f17894",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-c/hevc-to-av1-10-run2.mp4",
+        "bytes": 5649428,
+        "sha256": "739193a9553b81fa8ceb66f730b944ed66a74180bf7d58de7db8bdb956f17894"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-c/hevc-to-av1-10-run3.mp4",
+      "bytes": 5649428,
+      "sha256": "739193a9553b81fa8ceb66f730b944ed66a74180bf7d58de7db8bdb956f17894",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-c/hevc-to-av1-10-run3.mp4",
+        "bytes": 5649428,
+        "sha256": "739193a9553b81fa8ceb66f730b944ed66a74180bf7d58de7db8bdb956f17894"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-c/hevc-to-av1-8-run1.mp4",
+      "bytes": 4429174,
+      "sha256": "284723f0fe4ec1afd632b4a64773f9d85ee56c4c37d2b5260b3dae4c170d2176",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-c/hevc-to-av1-8-run1.mp4",
+        "bytes": 4429174,
+        "sha256": "284723f0fe4ec1afd632b4a64773f9d85ee56c4c37d2b5260b3dae4c170d2176"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-c/hevc-to-av1-8-run2.mp4",
+      "bytes": 4429174,
+      "sha256": "284723f0fe4ec1afd632b4a64773f9d85ee56c4c37d2b5260b3dae4c170d2176",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-c/hevc-to-av1-8-run2.mp4",
+        "bytes": 4429174,
+        "sha256": "284723f0fe4ec1afd632b4a64773f9d85ee56c4c37d2b5260b3dae4c170d2176"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-c/hevc-to-av1-8-run3.mp4",
+      "bytes": 4429174,
+      "sha256": "284723f0fe4ec1afd632b4a64773f9d85ee56c4c37d2b5260b3dae4c170d2176",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-c/hevc-to-av1-8-run3.mp4",
+        "bytes": 4429174,
+        "sha256": "284723f0fe4ec1afd632b4a64773f9d85ee56c4c37d2b5260b3dae4c170d2176"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-c/hevc-to-h264-8-run1.mp4",
+      "bytes": 3712699,
+      "sha256": "866cd722e7969994c91e2d0647abd82a1b6be5f29929205baa25040742feda12",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-c/hevc-to-h264-8-run1.mp4",
+        "bytes": 3712699,
+        "sha256": "866cd722e7969994c91e2d0647abd82a1b6be5f29929205baa25040742feda12"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-c/hevc-to-h264-8-run2.mp4",
+      "bytes": 3712699,
+      "sha256": "866cd722e7969994c91e2d0647abd82a1b6be5f29929205baa25040742feda12",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-c/hevc-to-h264-8-run2.mp4",
+        "bytes": 3712699,
+        "sha256": "866cd722e7969994c91e2d0647abd82a1b6be5f29929205baa25040742feda12"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-c/hevc-to-h264-8-run3.mp4",
+      "bytes": 3712699,
+      "sha256": "866cd722e7969994c91e2d0647abd82a1b6be5f29929205baa25040742feda12",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-c/hevc-to-h264-8-run3.mp4",
+        "bytes": 3712699,
+        "sha256": "866cd722e7969994c91e2d0647abd82a1b6be5f29929205baa25040742feda12"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-c/hevc-to-hevc-10-run1.mp4",
+      "bytes": 2410909,
+      "sha256": "2e8d7e8e48390b42b875f47bca756521d1a63489651d81ddb633ad7c50f0e151",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-c/hevc-to-hevc-10-run1.mp4",
+        "bytes": 2410909,
+        "sha256": "2e8d7e8e48390b42b875f47bca756521d1a63489651d81ddb633ad7c50f0e151"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-c/hevc-to-hevc-10-run2.mp4",
+      "bytes": 2410909,
+      "sha256": "2e8d7e8e48390b42b875f47bca756521d1a63489651d81ddb633ad7c50f0e151",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-c/hevc-to-hevc-10-run2.mp4",
+        "bytes": 2410909,
+        "sha256": "2e8d7e8e48390b42b875f47bca756521d1a63489651d81ddb633ad7c50f0e151"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-c/hevc-to-hevc-10-run3.mp4",
+      "bytes": 2410909,
+      "sha256": "2e8d7e8e48390b42b875f47bca756521d1a63489651d81ddb633ad7c50f0e151",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-c/hevc-to-hevc-10-run3.mp4",
+        "bytes": 2410909,
+        "sha256": "2e8d7e8e48390b42b875f47bca756521d1a63489651d81ddb633ad7c50f0e151"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-c/hevc-to-hevc-8-run1.mp4",
+      "bytes": 2743894,
+      "sha256": "12213439b789a482504592b9c703a2f78afeef2795dcc3f16a0f5c3764a99c20",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-c/hevc-to-hevc-8-run1.mp4",
+        "bytes": 2743894,
+        "sha256": "12213439b789a482504592b9c703a2f78afeef2795dcc3f16a0f5c3764a99c20"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-c/hevc-to-hevc-8-run2.mp4",
+      "bytes": 2743894,
+      "sha256": "12213439b789a482504592b9c703a2f78afeef2795dcc3f16a0f5c3764a99c20",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-c/hevc-to-hevc-8-run2.mp4",
+        "bytes": 2743894,
+        "sha256": "12213439b789a482504592b9c703a2f78afeef2795dcc3f16a0f5c3764a99c20"
+      },
+      "byte_exact": true
+    },
+    {
+      "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-c/hevc-to-hevc-8-run3.mp4",
+      "bytes": 2743894,
+      "sha256": "12213439b789a482504592b9c703a2f78afeef2795dcc3f16a0f5c3764a99c20",
+      "previous_same_driver": {
+        "path": "target/stage54d1a-ab-final-v1/target/ab-canonical-regression/retained-c/hevc-to-hevc-8-run3.mp4",
+        "bytes": 2743894,
+        "sha256": "12213439b789a482504592b9c703a2f78afeef2795dcc3f16a0f5c3764a99c20"
+      },
+      "byte_exact": true
+    }
+  ],
+  "corpus_results": {
+    "path": "target/stage54d1a-memory-v2/target/memory-canonical-regression/results.json",
+    "bytes": 80833,
+    "sha256": "2eab668823a866be75571f5f114670df44a53c7d96c409a6b2124ed8b2c3c14b"
+  },
+  "spirv_files": 300,
+  "spirv_unique_hashes": 25,
+  "all_tracked_lifecycle_checks_pass": true
+}

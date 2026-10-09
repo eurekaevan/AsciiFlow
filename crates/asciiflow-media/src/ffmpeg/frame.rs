@@ -4,12 +4,18 @@ use std::ptr::NonNull;
 
 pub(crate) struct Frame {
     pointer: NonNull<ffi::AVFrame>,
+    #[cfg(feature = "reliability-measurement")]
+    observation: Option<asciiflow_core::reliability::ResourceToken>,
 }
 
 impl Frame {
     pub(crate) fn new() -> Result<Self> {
         NonNull::new(unsafe { ffi::av_frame_alloc() })
-            .map(|pointer| Self { pointer })
+            .map(|pointer| Self {
+                pointer,
+                #[cfg(feature = "reliability-measurement")]
+                observation: None,
+            })
             .ok_or_else(|| Error::Media("failed to allocate FFmpeg frame".into()))
     }
     pub(crate) fn as_mut_ptr(&mut self) -> *mut ffi::AVFrame {
@@ -20,11 +26,26 @@ impl Frame {
     }
     pub(crate) fn try_clone(&self) -> Result<Self> {
         NonNull::new(unsafe { ffi::av_frame_clone(self.pointer.as_ptr()) })
-            .map(|pointer| Self { pointer })
+            .map(|pointer| Self {
+                pointer,
+                #[cfg(feature = "reliability-measurement")]
+                observation: None,
+            })
             .ok_or_else(|| Error::Media("failed to retain FFmpeg frame reference".into()))
     }
     pub(crate) fn unref(&mut self) {
         unsafe { ffi::av_frame_unref(self.pointer.as_ptr()) }
+        #[cfg(feature = "reliability-measurement")]
+        if let Some(mut observation) = self.observation.take() {
+            observation.release();
+        }
+    }
+    #[cfg(feature = "reliability-measurement")]
+    pub(crate) fn observe_surface_reference(&mut self, name: &'static str) {
+        debug_assert!(self.observation.is_none());
+        self.observation = Some(asciiflow_core::reliability::ResourceToken::acquire(
+            name, None,
+        ));
     }
     pub(crate) fn make_writable(&mut self) -> Result<()> {
         let result = unsafe { ffi::av_frame_make_writable(self.pointer.as_ptr()) };
@@ -43,6 +64,10 @@ impl Drop for Frame {
     fn drop(&mut self) {
         let mut pointer = self.pointer.as_ptr();
         unsafe { ffi::av_frame_free(&mut pointer) };
+        #[cfg(feature = "reliability-measurement")]
+        if let Some(observation) = self.observation.as_mut() {
+            observation.release();
+        }
     }
 }
 

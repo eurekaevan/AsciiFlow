@@ -364,6 +364,23 @@ impl AudioPacketSender {
             match channel.send_timeout(message, SEND_POLL) {
                 Ok(()) => {
                     #[cfg(feature = "mux-qualification")]
+                    if channel.same_channel(&self.sender) {
+                        super::audio_reader::packet_lifetime::queue_observed(
+                            channel.len(),
+                            channel.capacity(),
+                        );
+                    }
+                    #[cfg(feature = "reliability-measurement")]
+                    asciiflow_core::reliability::observe_queue_boundary(
+                        if channel.same_channel(&self.sender) {
+                            "mux_audio"
+                        } else {
+                            "mux_video"
+                        },
+                        channel.len(),
+                        channel.capacity(),
+                    );
+                    #[cfg(feature = "mux-qualification")]
                     if let (Some(trace), Some((stream, audio, fields))) = (&self.trace, accepted) {
                         trace.accepted("B-accepted", stream, audio, fields)?;
                     }

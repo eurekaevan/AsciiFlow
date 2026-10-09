@@ -1,0 +1,2450 @@
+{
+  "commands": [
+    {
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "asciiflow-core",
+        "--test",
+        "support_contract"
+      ],
+      "elapsed_seconds": 1.4363845859988942,
+      "exit_code": 0,
+      "id": "support-planner",
+      "log": "command-000.log",
+      "peak_process_rss_kib": 35812,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "python3",
+        "tests/support/matrix.py",
+        "check"
+      ],
+      "elapsed_seconds": 0.03215118900152447,
+      "exit_code": 0,
+      "id": "support-document",
+      "log": "command-001.log",
+      "peak_process_rss_kib": 208,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/production-asciiflow",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/tests/fixtures/codecs/av1-main10-pq-c3-legal-v1.mp4",
+        "--explain-plan",
+        "--capabilities",
+        "--audio",
+        "none",
+        "--output-codec",
+        "av1",
+        "--output-bit-depth",
+        "10",
+        "--output-dynamic-range",
+        "preserve",
+        "--hw-device",
+        "/dev/dri/renderD128",
+        "--diagnostic-report",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/av1-pq10-plan.json"
+      ],
+      "elapsed_seconds": 0.2644759149989113,
+      "exit_code": 0,
+      "id": "plan-av1-pq10",
+      "log": "command-002.log",
+      "peak_process_rss_kib": 147616,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/production-asciiflow",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/tests/fixtures/codecs/av1-main10-pq-c3-legal-v1.mp4",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/av1-pq10-output.mp4",
+        "--audio",
+        "none",
+        "--output-codec",
+        "av1",
+        "--output-bit-depth",
+        "10",
+        "--output-dynamic-range",
+        "preserve",
+        "--hw-device",
+        "/dev/dri/renderD128",
+        "--no-progress",
+        "--diagnostic-report",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/av1-pq10-runtime.json"
+      ],
+      "elapsed_seconds": 1.2195985319995089,
+      "exit_code": 0,
+      "id": "runtime-av1-pq10",
+      "log": "command-003.log",
+      "peak_process_rss_kib": 147072,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "ffprobe",
+        "-v",
+        "error",
+        "-show_streams",
+        "-show_frames",
+        "-of",
+        "json",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/av1-pq10-output.mp4"
+      ],
+      "elapsed_seconds": 1.1037216999993689,
+      "exit_code": 0,
+      "id": "decode-back-probe-av1-pq10",
+      "log": "command-004.log",
+      "peak_process_rss_kib": 87440,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "ffmpeg",
+        "-v",
+        "error",
+        "-xerror",
+        "-nostdin",
+        "-i",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/av1-pq10-output.mp4",
+        "-map",
+        "0:v:0",
+        "-an",
+        "-pix_fmt",
+        "yuv420p10le",
+        "-f",
+        "framehash",
+        "-hash",
+        "sha256",
+        "-"
+      ],
+      "elapsed_seconds": 4.828917132999777,
+      "exit_code": 0,
+      "id": "decode-back-frames-av1-pq10",
+      "log": "command-005.log",
+      "peak_process_rss_kib": 364228,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/production-asciiflow",
+        "/home/eureka/Documents/AsciiFlow/target/stage54c1-evidence/inputs/av1-sdr10-canonical-v1.mp4",
+        "--explain-plan",
+        "--capabilities",
+        "--audio",
+        "none",
+        "--output-codec",
+        "av1",
+        "--output-bit-depth",
+        "10",
+        "--output-dynamic-range",
+        "sdr",
+        "--hw-device",
+        "/dev/dri/renderD128",
+        "--diagnostic-report",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/av1-sdr10-plan.json"
+      ],
+      "elapsed_seconds": 0.33274715799961996,
+      "exit_code": 0,
+      "id": "plan-av1-sdr10",
+      "log": "command-006.log",
+      "peak_process_rss_kib": 148608,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/production-asciiflow",
+        "/home/eureka/Documents/AsciiFlow/target/stage54c1-evidence/inputs/av1-sdr10-canonical-v1.mp4",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/av1-sdr10-output.mp4",
+        "--audio",
+        "none",
+        "--output-codec",
+        "av1",
+        "--output-bit-depth",
+        "10",
+        "--output-dynamic-range",
+        "sdr",
+        "--hw-device",
+        "/dev/dri/renderD128",
+        "--no-progress",
+        "--diagnostic-report",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/av1-sdr10-runtime.json"
+      ],
+      "elapsed_seconds": 2.0374521470002946,
+      "exit_code": 0,
+      "id": "runtime-av1-sdr10",
+      "log": "command-007.log",
+      "peak_process_rss_kib": 147644,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "ffprobe",
+        "-v",
+        "error",
+        "-show_streams",
+        "-show_frames",
+        "-of",
+        "json",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/av1-sdr10-output.mp4"
+      ],
+      "elapsed_seconds": 6.4509588979999535,
+      "exit_code": 0,
+      "id": "decode-back-probe-av1-sdr10",
+      "log": "command-008.log",
+      "peak_process_rss_kib": 88752,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "ffmpeg",
+        "-v",
+        "error",
+        "-xerror",
+        "-nostdin",
+        "-i",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/av1-sdr10-output.mp4",
+        "-map",
+        "0:v:0",
+        "-an",
+        "-pix_fmt",
+        "yuv420p10le",
+        "-f",
+        "framehash",
+        "-hash",
+        "sha256",
+        "-"
+      ],
+      "elapsed_seconds": 5.982159210001555,
+      "exit_code": 0,
+      "id": "decode-back-frames-av1-sdr10",
+      "log": "command-009.log",
+      "peak_process_rss_kib": 349460,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/production-asciiflow",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/tests/fixtures/codecs/av1-main8-nofilmgrain.mp4",
+        "--explain-plan",
+        "--capabilities",
+        "--audio",
+        "none",
+        "--output-codec",
+        "h264",
+        "--output-bit-depth",
+        "8",
+        "--output-dynamic-range",
+        "sdr",
+        "--hw-device",
+        "/dev/dri/renderD128",
+        "--diagnostic-report",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/av1-sdr8-plan.json"
+      ],
+      "elapsed_seconds": 0.16416329399908136,
+      "exit_code": 0,
+      "id": "plan-av1-sdr8",
+      "log": "command-010.log",
+      "peak_process_rss_kib": 109772,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/production-asciiflow",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/tests/fixtures/codecs/av1-main8-nofilmgrain.mp4",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/av1-sdr8-output.mp4",
+        "--audio",
+        "none",
+        "--output-codec",
+        "h264",
+        "--output-bit-depth",
+        "8",
+        "--output-dynamic-range",
+        "sdr",
+        "--hw-device",
+        "/dev/dri/renderD128",
+        "--no-progress",
+        "--diagnostic-report",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/av1-sdr8-runtime.json"
+      ],
+      "elapsed_seconds": 0.2643716680013313,
+      "exit_code": 0,
+      "id": "runtime-av1-sdr8",
+      "log": "command-011.log",
+      "peak_process_rss_kib": 118972,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "ffprobe",
+        "-v",
+        "error",
+        "-show_streams",
+        "-show_frames",
+        "-of",
+        "json",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/av1-sdr8-output.mp4"
+      ],
+      "elapsed_seconds": 0.10081014999923354,
+      "exit_code": 0,
+      "id": "decode-back-probe-av1-sdr8",
+      "log": "command-012.log",
+      "peak_process_rss_kib": 232,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "ffmpeg",
+        "-v",
+        "error",
+        "-xerror",
+        "-nostdin",
+        "-i",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/av1-sdr8-output.mp4",
+        "-map",
+        "0:v:0",
+        "-an",
+        "-pix_fmt",
+        "yuv420p",
+        "-f",
+        "framehash",
+        "-hash",
+        "sha256",
+        "-"
+      ],
+      "elapsed_seconds": 0.10080134400050156,
+      "exit_code": 0,
+      "id": "decode-back-frames-av1-sdr8",
+      "log": "command-013.log",
+      "peak_process_rss_kib": 312,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/production-asciiflow",
+        "/home/eureka/Documents/AsciiFlow/target/stage54c1-evidence/inputs/canonical-h2648.mp4",
+        "--explain-plan",
+        "--capabilities",
+        "--audio",
+        "none",
+        "--output-codec",
+        "h264",
+        "--output-bit-depth",
+        "8",
+        "--output-dynamic-range",
+        "sdr",
+        "--hw-device",
+        "/dev/dri/renderD128",
+        "--diagnostic-report",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/canonical-h2648-plan.json"
+      ],
+      "elapsed_seconds": 0.20122198900025978,
+      "exit_code": 0,
+      "id": "plan-canonical-h2648",
+      "log": "command-014.log",
+      "peak_process_rss_kib": 116608,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/production-asciiflow",
+        "/home/eureka/Documents/AsciiFlow/target/stage54c1-evidence/inputs/canonical-h2648.mp4",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/canonical-h2648-output.mp4",
+        "--audio",
+        "none",
+        "--output-codec",
+        "h264",
+        "--output-bit-depth",
+        "8",
+        "--output-dynamic-range",
+        "sdr",
+        "--hw-device",
+        "/dev/dri/renderD128",
+        "--no-progress",
+        "--diagnostic-report",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/canonical-h2648-runtime.json"
+      ],
+      "elapsed_seconds": 0.9672974220011383,
+      "exit_code": 0,
+      "id": "runtime-canonical-h2648",
+      "log": "command-015.log",
+      "peak_process_rss_kib": 146752,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "ffprobe",
+        "-v",
+        "error",
+        "-show_streams",
+        "-show_frames",
+        "-of",
+        "json",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/canonical-h2648-output.mp4"
+      ],
+      "elapsed_seconds": 1.066671860000497,
+      "exit_code": 0,
+      "id": "decode-back-probe-canonical-h2648",
+      "log": "command-016.log",
+      "peak_process_rss_kib": 74324,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "ffmpeg",
+        "-v",
+        "error",
+        "-xerror",
+        "-nostdin",
+        "-i",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/canonical-h2648-output.mp4",
+        "-map",
+        "0:v:0",
+        "-an",
+        "-pix_fmt",
+        "yuv420p",
+        "-f",
+        "framehash",
+        "-hash",
+        "sha256",
+        "-"
+      ],
+      "elapsed_seconds": 2.9086991229996784,
+      "exit_code": 0,
+      "id": "decode-back-frames-canonical-h2648",
+      "log": "command-017.log",
+      "peak_process_rss_kib": 262276,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/production-asciiflow",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/tests/fixtures/codecs/hevc-main10-pq-c3-legal-v1.mp4",
+        "--explain-plan",
+        "--capabilities",
+        "--audio",
+        "none",
+        "--output-codec",
+        "hevc",
+        "--output-bit-depth",
+        "10",
+        "--output-dynamic-range",
+        "preserve",
+        "--hw-device",
+        "/dev/dri/renderD128",
+        "--diagnostic-report",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/hevc-pq10-plan.json"
+      ],
+      "elapsed_seconds": 0.2648016259990982,
+      "exit_code": 0,
+      "id": "plan-hevc-pq10",
+      "log": "command-018.log",
+      "peak_process_rss_kib": 148748,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/production-asciiflow",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/tests/fixtures/codecs/hevc-main10-pq-c3-legal-v1.mp4",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/hevc-pq10-output.mp4",
+        "--audio",
+        "none",
+        "--output-codec",
+        "hevc",
+        "--output-bit-depth",
+        "10",
+        "--output-dynamic-range",
+        "preserve",
+        "--hw-device",
+        "/dev/dri/renderD128",
+        "--no-progress",
+        "--diagnostic-report",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/hevc-pq10-runtime.json"
+      ],
+      "elapsed_seconds": 1.268365175001236,
+      "exit_code": 0,
+      "id": "runtime-hevc-pq10",
+      "log": "command-019.log",
+      "peak_process_rss_kib": 154064,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "ffprobe",
+        "-v",
+        "error",
+        "-show_streams",
+        "-show_frames",
+        "-of",
+        "json",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/hevc-pq10-output.mp4"
+      ],
+      "elapsed_seconds": 1.3682930510003644,
+      "exit_code": 0,
+      "id": "decode-back-probe-hevc-pq10",
+      "log": "command-020.log",
+      "peak_process_rss_kib": 86712,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "ffmpeg",
+        "-v",
+        "error",
+        "-xerror",
+        "-nostdin",
+        "-i",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/hevc-pq10-output.mp4",
+        "-map",
+        "0:v:0",
+        "-an",
+        "-pix_fmt",
+        "yuv420p10le",
+        "-f",
+        "framehash",
+        "-hash",
+        "sha256",
+        "-"
+      ],
+      "elapsed_seconds": 4.745454744001108,
+      "exit_code": 0,
+      "id": "decode-back-frames-hevc-pq10",
+      "log": "command-021.log",
+      "peak_process_rss_kib": 417792,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/production-asciiflow",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/tests/fixtures/codecs/hevc-main10-canonical-v1.mp4",
+        "--explain-plan",
+        "--capabilities",
+        "--audio",
+        "none",
+        "--output-codec",
+        "hevc",
+        "--output-bit-depth",
+        "10",
+        "--output-dynamic-range",
+        "sdr",
+        "--hw-device",
+        "/dev/dri/renderD128",
+        "--diagnostic-report",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/hevc-sdr10-plan.json"
+      ],
+      "elapsed_seconds": 0.2325122790007299,
+      "exit_code": 0,
+      "id": "plan-hevc-sdr10",
+      "log": "command-022.log",
+      "peak_process_rss_kib": 148808,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/production-asciiflow",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/tests/fixtures/codecs/hevc-main10-canonical-v1.mp4",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/hevc-sdr10-output.mp4",
+        "--audio",
+        "none",
+        "--output-codec",
+        "hevc",
+        "--output-bit-depth",
+        "10",
+        "--output-dynamic-range",
+        "sdr",
+        "--hw-device",
+        "/dev/dri/renderD128",
+        "--no-progress",
+        "--diagnostic-report",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/hevc-sdr10-runtime.json"
+      ],
+      "elapsed_seconds": 0.9662891060015681,
+      "exit_code": 0,
+      "id": "runtime-hevc-sdr10",
+      "log": "command-023.log",
+      "peak_process_rss_kib": 152068,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "ffprobe",
+        "-v",
+        "error",
+        "-show_streams",
+        "-show_frames",
+        "-of",
+        "json",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/hevc-sdr10-output.mp4"
+      ],
+      "elapsed_seconds": 3.4107110909990297,
+      "exit_code": 0,
+      "id": "decode-back-probe-hevc-sdr10",
+      "log": "command-024.log",
+      "peak_process_rss_kib": 87492,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "ffmpeg",
+        "-v",
+        "error",
+        "-xerror",
+        "-nostdin",
+        "-i",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/hevc-sdr10-output.mp4",
+        "-map",
+        "0:v:0",
+        "-an",
+        "-pix_fmt",
+        "yuv420p10le",
+        "-f",
+        "framehash",
+        "-hash",
+        "sha256",
+        "-"
+      ],
+      "elapsed_seconds": 4.777283006000289,
+      "exit_code": 0,
+      "id": "decode-back-frames-hevc-sdr10",
+      "log": "command-025.log",
+      "peak_process_rss_kib": 421752,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/production-asciiflow",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/tests/fixtures/codecs/hevc-main8-bframes.mp4",
+        "--explain-plan",
+        "--capabilities",
+        "--audio",
+        "none",
+        "--output-codec",
+        "h264",
+        "--output-bit-depth",
+        "8",
+        "--output-dynamic-range",
+        "sdr",
+        "--hw-device",
+        "/dev/dri/renderD128",
+        "--diagnostic-report",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/hevc-sdr8-bframes-audio-plan.json"
+      ],
+      "elapsed_seconds": 0.16416665699944133,
+      "exit_code": 0,
+      "id": "plan-hevc-sdr8-bframes-audio",
+      "log": "command-026.log",
+      "peak_process_rss_kib": 110300,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/production-asciiflow",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/tests/fixtures/codecs/hevc-main8-bframes.mp4",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/hevc-sdr8-bframes-audio-output.mp4",
+        "--audio",
+        "none",
+        "--output-codec",
+        "h264",
+        "--output-bit-depth",
+        "8",
+        "--output-dynamic-range",
+        "sdr",
+        "--hw-device",
+        "/dev/dri/renderD128",
+        "--no-progress",
+        "--diagnostic-report",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/hevc-sdr8-bframes-audio-runtime.json"
+      ],
+      "elapsed_seconds": 0.2322691080007644,
+      "exit_code": 0,
+      "id": "runtime-hevc-sdr8-bframes-audio",
+      "log": "command-027.log",
+      "peak_process_rss_kib": 116364,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "ffprobe",
+        "-v",
+        "error",
+        "-show_streams",
+        "-show_frames",
+        "-of",
+        "json",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/hevc-sdr8-bframes-audio-output.mp4"
+      ],
+      "elapsed_seconds": 0.10060365100071067,
+      "exit_code": 0,
+      "id": "decode-back-probe-hevc-sdr8-bframes-audio",
+      "log": "command-028.log",
+      "peak_process_rss_kib": 16,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "ffmpeg",
+        "-v",
+        "error",
+        "-xerror",
+        "-nostdin",
+        "-i",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/hevc-sdr8-bframes-audio-output.mp4",
+        "-map",
+        "0:v:0",
+        "-an",
+        "-pix_fmt",
+        "yuv420p",
+        "-f",
+        "framehash",
+        "-hash",
+        "sha256",
+        "-"
+      ],
+      "elapsed_seconds": 0.1007204779998574,
+      "exit_code": 0,
+      "id": "decode-back-frames-hevc-sdr8-bframes-audio",
+      "log": "command-029.log",
+      "peak_process_rss_kib": 8,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/production-asciiflow",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/tests/fixtures/codecs/hevc-main10-pq-bt709-conflict.mp4",
+        "--explain-plan",
+        "--capabilities",
+        "--audio",
+        "none",
+        "--output-codec",
+        "h264",
+        "--output-bit-depth",
+        "8",
+        "--output-dynamic-range",
+        "sdr",
+        "--hw-device",
+        "/dev/dri/renderD128",
+        "--diagnostic-report",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/negative-color-conflict-plan.json"
+      ],
+      "elapsed_seconds": 0.06375408399981097,
+      "exit_code": 1,
+      "id": "plan-negative-color-conflict",
+      "log": "command-030.log",
+      "peak_process_rss_kib": 16,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/production-asciiflow",
+        "/home/eureka/Documents/AsciiFlow/target/stage54c1-evidence/inputs/full-range-pq.mp4",
+        "--explain-plan",
+        "--capabilities",
+        "--audio",
+        "none",
+        "--output-codec",
+        "h264",
+        "--output-bit-depth",
+        "8",
+        "--output-dynamic-range",
+        "sdr",
+        "--hw-device",
+        "/dev/dri/renderD128",
+        "--diagnostic-report",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/negative-full-range-pq-plan.json"
+      ],
+      "elapsed_seconds": 0.10052574700057448,
+      "exit_code": 1,
+      "id": "plan-negative-full-range-pq",
+      "log": "command-031.log",
+      "peak_process_rss_kib": 20,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/production-asciiflow",
+        "/home/eureka/Documents/AsciiFlow/target/stage54c1-evidence/inputs/canonical-h2648.mp4",
+        "--explain-plan",
+        "--capabilities",
+        "--audio",
+        "none",
+        "--output-codec",
+        "h264",
+        "--output-bit-depth",
+        "10",
+        "--output-dynamic-range",
+        "sdr",
+        "--hw-device",
+        "/dev/dri/renderD128",
+        "--diagnostic-report",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/negative-h264-high10-plan.json"
+      ],
+      "elapsed_seconds": 0.0643432209999446,
+      "exit_code": 1,
+      "id": "plan-negative-h264-high10",
+      "log": "command-032.log",
+      "peak_process_rss_kib": 24,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/production-asciiflow",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/tests/fixtures/codecs/hevc-main10-hlg.mp4",
+        "--explain-plan",
+        "--capabilities",
+        "--audio",
+        "none",
+        "--output-codec",
+        "h264",
+        "--output-bit-depth",
+        "8",
+        "--output-dynamic-range",
+        "sdr",
+        "--hw-device",
+        "/dev/dri/renderD128",
+        "--diagnostic-report",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/negative-hlg-plan.json"
+      ],
+      "elapsed_seconds": 0.06401240800005326,
+      "exit_code": 1,
+      "id": "plan-negative-hlg",
+      "log": "command-033.log",
+      "peak_process_rss_kib": 16,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/production-asciiflow",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/tests/fixtures/codecs/hevc-main10-unspecified.mp4",
+        "--explain-plan",
+        "--capabilities",
+        "--audio",
+        "none",
+        "--output-codec",
+        "h264",
+        "--output-bit-depth",
+        "8",
+        "--output-dynamic-range",
+        "sdr",
+        "--hw-device",
+        "/dev/dri/renderD128",
+        "--diagnostic-report",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/negative-unknown-color-plan.json"
+      ],
+      "elapsed_seconds": 0.06425572800071677,
+      "exit_code": 1,
+      "id": "plan-negative-unknown-color",
+      "log": "command-034.log",
+      "peak_process_rss_kib": 344,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/production-asciiflow",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/tests/fixtures/codecs/hevc-main10-bt2020-sdr.mp4",
+        "--explain-plan",
+        "--capabilities",
+        "--audio",
+        "none",
+        "--output-codec",
+        "h264",
+        "--output-bit-depth",
+        "8",
+        "--output-dynamic-range",
+        "sdr",
+        "--hw-device",
+        "/dev/dri/renderD128",
+        "--diagnostic-report",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/negative-wide-sdr-plan.json"
+      ],
+      "elapsed_seconds": 0.06375140700038173,
+      "exit_code": 1,
+      "id": "plan-negative-wide-sdr",
+      "log": "command-035.log",
+      "peak_process_rss_kib": 16,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "asciiflow-media",
+        "--test",
+        "media_regression"
+      ],
+      "elapsed_seconds": 1.504402515000038,
+      "exit_code": 0,
+      "id": "media-oracle-controls",
+      "log": "command-036.log",
+      "peak_process_rss_kib": 39656,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "bash",
+        "scripts/qualify-tone-map-cpu.sh",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/c1"
+      ],
+      "elapsed_seconds": 4.1120148959998915,
+      "exit_code": 0,
+      "id": "c1",
+      "log": "command-037.log",
+      "peak_process_rss_kib": 3632,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "bash",
+        "scripts/qualify-target-volume-cpu.sh",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/c1/method-a-run1.bin",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/c2b"
+      ],
+      "elapsed_seconds": 46.317744191999736,
+      "exit_code": 0,
+      "id": "c2b",
+      "log": "command-038.log",
+      "peak_process_rss_kib": 3808,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/production-asciiflow",
+        "/home/eureka/Documents/AsciiFlow/target/stage54c1-evidence/inputs/canonical-h2648.mp4",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/smoke-sdr.mp4",
+        "--width",
+        "80",
+        "--charset",
+        "standard",
+        "--font",
+        "builtin-8x8",
+        "--color",
+        "true",
+        "--audio",
+        "none",
+        "--max-frames",
+        "300",
+        "--decode",
+        "vaapi",
+        "--backend",
+        "vulkan",
+        "--vulkan-mapping",
+        "gpu",
+        "--encode",
+        "vaapi",
+        "--hw-device",
+        "/dev/dri/renderD128",
+        "--vaapi-vulkan-input-interop",
+        "on",
+        "--vaapi-vulkan-output-interop",
+        "on",
+        "--output-codec",
+        "h264",
+        "--output-bit-depth",
+        "8",
+        "--output-dynamic-range",
+        "preserve",
+        "--no-progress",
+        "--diagnostic-report",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/smoke-sdr-plan.json",
+        "--explain-plan",
+        "--capabilities"
+      ],
+      "elapsed_seconds": 0.20095628000126453,
+      "exit_code": 0,
+      "id": "smoke-sdr-plan",
+      "log": "command-039.log",
+      "peak_process_rss_kib": 113036,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/production-asciiflow",
+        "/home/eureka/Documents/AsciiFlow/target/stage54c1-evidence/inputs/canonical-h2648.mp4",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/smoke-sdr.mp4",
+        "--width",
+        "80",
+        "--charset",
+        "standard",
+        "--font",
+        "builtin-8x8",
+        "--color",
+        "true",
+        "--audio",
+        "none",
+        "--max-frames",
+        "300",
+        "--decode",
+        "vaapi",
+        "--backend",
+        "vulkan",
+        "--vulkan-mapping",
+        "gpu",
+        "--encode",
+        "vaapi",
+        "--hw-device",
+        "/dev/dri/renderD128",
+        "--vaapi-vulkan-input-interop",
+        "on",
+        "--vaapi-vulkan-output-interop",
+        "on",
+        "--output-codec",
+        "h264",
+        "--output-bit-depth",
+        "8",
+        "--output-dynamic-range",
+        "preserve",
+        "--no-progress",
+        "--diagnostic-report",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/smoke-sdr.json"
+      ],
+      "elapsed_seconds": 0.9664580790013133,
+      "exit_code": 0,
+      "id": "smoke-sdr",
+      "log": "command-040.log",
+      "peak_process_rss_kib": 146532,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/production-asciiflow",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/tests/fixtures/codecs/hevc-main10-pq-canonical-v1.mp4",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/smoke-pq-preserve.mp4",
+        "--width",
+        "80",
+        "--charset",
+        "standard",
+        "--font",
+        "builtin-8x8",
+        "--color",
+        "true",
+        "--audio",
+        "none",
+        "--max-frames",
+        "300",
+        "--decode",
+        "vaapi",
+        "--backend",
+        "vulkan",
+        "--vulkan-mapping",
+        "gpu",
+        "--encode",
+        "vaapi",
+        "--hw-device",
+        "/dev/dri/renderD128",
+        "--vaapi-vulkan-input-interop",
+        "on",
+        "--vaapi-vulkan-output-interop",
+        "on",
+        "--output-codec",
+        "hevc",
+        "--output-bit-depth",
+        "10",
+        "--output-dynamic-range",
+        "preserve",
+        "--no-progress",
+        "--diagnostic-report",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/smoke-pq-preserve-plan.json",
+        "--explain-plan",
+        "--capabilities"
+      ],
+      "elapsed_seconds": 0.2649622669996461,
+      "exit_code": 0,
+      "id": "smoke-pq-preserve-plan",
+      "log": "command-041.log",
+      "peak_process_rss_kib": 146844,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/production-asciiflow",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/tests/fixtures/codecs/hevc-main10-pq-canonical-v1.mp4",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/smoke-pq-preserve.mp4",
+        "--width",
+        "80",
+        "--charset",
+        "standard",
+        "--font",
+        "builtin-8x8",
+        "--color",
+        "true",
+        "--audio",
+        "none",
+        "--max-frames",
+        "300",
+        "--decode",
+        "vaapi",
+        "--backend",
+        "vulkan",
+        "--vulkan-mapping",
+        "gpu",
+        "--encode",
+        "vaapi",
+        "--hw-device",
+        "/dev/dri/renderD128",
+        "--vaapi-vulkan-input-interop",
+        "on",
+        "--vaapi-vulkan-output-interop",
+        "on",
+        "--output-codec",
+        "hevc",
+        "--output-bit-depth",
+        "10",
+        "--output-dynamic-range",
+        "preserve",
+        "--no-progress",
+        "--diagnostic-report",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/smoke-pq-preserve.json"
+      ],
+      "elapsed_seconds": 1.2672841700004938,
+      "exit_code": 0,
+      "id": "smoke-pq-preserve",
+      "log": "command-042.log",
+      "peak_process_rss_kib": 152496,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/production-asciiflow",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/tests/fixtures/codecs/hevc-main10-pq-c3-legal-v1.mp4",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/smoke-pq-to-sdr.mp4",
+        "--width",
+        "80",
+        "--charset",
+        "standard",
+        "--font",
+        "builtin-8x8",
+        "--color",
+        "true",
+        "--audio",
+        "none",
+        "--max-frames",
+        "300",
+        "--decode",
+        "vaapi",
+        "--backend",
+        "vulkan",
+        "--vulkan-mapping",
+        "gpu",
+        "--encode",
+        "vaapi",
+        "--hw-device",
+        "/dev/dri/renderD128",
+        "--vaapi-vulkan-input-interop",
+        "on",
+        "--vaapi-vulkan-output-interop",
+        "on",
+        "--output-codec",
+        "hevc",
+        "--output-bit-depth",
+        "10",
+        "--output-dynamic-range",
+        "sdr",
+        "--no-progress",
+        "--diagnostic-report",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/smoke-pq-to-sdr-plan.json",
+        "--explain-plan",
+        "--capabilities"
+      ],
+      "elapsed_seconds": 0.8668339329997252,
+      "exit_code": 0,
+      "id": "smoke-pq-to-sdr-plan",
+      "log": "command-043.log",
+      "peak_process_rss_kib": 158920,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/production-asciiflow",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/tests/fixtures/codecs/hevc-main10-pq-c3-legal-v1.mp4",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/smoke-pq-to-sdr.mp4",
+        "--width",
+        "80",
+        "--charset",
+        "standard",
+        "--font",
+        "builtin-8x8",
+        "--color",
+        "true",
+        "--audio",
+        "none",
+        "--max-frames",
+        "300",
+        "--decode",
+        "vaapi",
+        "--backend",
+        "vulkan",
+        "--vulkan-mapping",
+        "gpu",
+        "--encode",
+        "vaapi",
+        "--hw-device",
+        "/dev/dri/renderD128",
+        "--vaapi-vulkan-input-interop",
+        "on",
+        "--vaapi-vulkan-output-interop",
+        "on",
+        "--output-codec",
+        "hevc",
+        "--output-bit-depth",
+        "10",
+        "--output-dynamic-range",
+        "sdr",
+        "--no-progress",
+        "--diagnostic-report",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/smoke-pq-to-sdr.json"
+      ],
+      "elapsed_seconds": 2.671568722000302,
+      "exit_code": 0,
+      "id": "smoke-pq-to-sdr",
+      "log": "command-044.log",
+      "peak_process_rss_kib": 159624,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/production-asciiflow",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/tests/fixtures/codecs/hevc-main10-pq-c3-legal-v1.mp4",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/smoke-pq-to-sdr8.mp4",
+        "--width",
+        "80",
+        "--charset",
+        "standard",
+        "--font",
+        "builtin-8x8",
+        "--color",
+        "true",
+        "--audio",
+        "none",
+        "--max-frames",
+        "300",
+        "--decode",
+        "vaapi",
+        "--backend",
+        "vulkan",
+        "--vulkan-mapping",
+        "gpu",
+        "--encode",
+        "vaapi",
+        "--hw-device",
+        "/dev/dri/renderD128",
+        "--vaapi-vulkan-input-interop",
+        "on",
+        "--vaapi-vulkan-output-interop",
+        "on",
+        "--output-codec",
+        "h264",
+        "--output-bit-depth",
+        "8",
+        "--output-dynamic-range",
+        "sdr",
+        "--no-progress",
+        "--diagnostic-report",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/smoke-pq-to-sdr8-plan.json",
+        "--explain-plan",
+        "--capabilities"
+      ],
+      "elapsed_seconds": 0.8660568380000768,
+      "exit_code": 0,
+      "id": "smoke-pq-to-sdr8-plan",
+      "log": "command-045.log",
+      "peak_process_rss_kib": 158852,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/production-asciiflow",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/tests/fixtures/codecs/hevc-main10-pq-c3-legal-v1.mp4",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/smoke-pq-to-sdr8.mp4",
+        "--width",
+        "80",
+        "--charset",
+        "standard",
+        "--font",
+        "builtin-8x8",
+        "--color",
+        "true",
+        "--audio",
+        "none",
+        "--max-frames",
+        "300",
+        "--decode",
+        "vaapi",
+        "--backend",
+        "vulkan",
+        "--vulkan-mapping",
+        "gpu",
+        "--encode",
+        "vaapi",
+        "--hw-device",
+        "/dev/dri/renderD128",
+        "--vaapi-vulkan-input-interop",
+        "on",
+        "--vaapi-vulkan-output-interop",
+        "on",
+        "--output-codec",
+        "h264",
+        "--output-bit-depth",
+        "8",
+        "--output-dynamic-range",
+        "sdr",
+        "--no-progress",
+        "--diagnostic-report",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/smoke-pq-to-sdr8.json"
+      ],
+      "elapsed_seconds": 2.608478334999745,
+      "exit_code": 0,
+      "id": "smoke-pq-to-sdr8",
+      "log": "command-046.log",
+      "peak_process_rss_kib": 158436,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "bash",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/tests/baselines/media/generate-post-polarity-v2.sh",
+        "/home/eureka/Documents/AsciiFlow/target/stage54c1-evidence/inputs/canonical-h2648.mp4",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/tests/fixtures/codecs/hevc-main10-canonical-v1.mp4",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-sdr"
+      ],
+      "elapsed_seconds": 13.268465708000804,
+      "exit_code": 0,
+      "id": "generate-retained-sdr",
+      "log": "command-047.log",
+      "peak_process_rss_kib": 3768,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "bash",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/tests/baselines/media/generate-pq-production-v1.sh",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/tests/fixtures/codecs",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-pq"
+      ],
+      "elapsed_seconds": 6.536810421001064,
+      "exit_code": 0,
+      "id": "generate-retained-pq",
+      "log": "command-048.log",
+      "peak_process_rss_kib": 3608,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "bash",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/tests/baselines/media/generate-hdr-to-sdr-production-v1.sh",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/tests/fixtures/codecs",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-c"
+      ],
+      "elapsed_seconds": 114.83962161099953,
+      "exit_code": 0,
+      "id": "generate-retained-c",
+      "log": "command-049.log",
+      "peak_process_rss_kib": 3608,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "python3",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/tests/baselines/media/verify-pq-production.py",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-pq",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-pq-oracle.json",
+        "--input-directory",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/tests/fixtures/codecs",
+        "--check-baseline",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/tests/baselines/media/pq-production-v1.json",
+        "--binary",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/production-asciiflow"
+      ],
+      "elapsed_seconds": 45.95772259899968,
+      "exit_code": 0,
+      "id": "retained-pq-oracle",
+      "log": "command-050.log",
+      "peak_process_rss_kib": 28524,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "python3",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/tests/baselines/media/verify-hdr-to-sdr-production.py",
+        "verify",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-c",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-canonical-regression/retained-c-oracle.json",
+        "--input-directory",
+        "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/tests/fixtures/codecs"
+      ],
+      "elapsed_seconds": 175.81263902700084,
+      "exit_code": 0,
+      "id": "retained-c-oracle",
+      "log": "command-051.log",
+      "peak_process_rss_kib": 51352,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "asciiflow-media",
+        "--test",
+        "media_regression"
+      ],
+      "elapsed_seconds": 0.11654749499939498,
+      "exit_code": 0,
+      "id": "h264-semantic-oracle",
+      "log": "command-052.log",
+      "peak_process_rss_kib": 38948,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "asciiflow-media",
+        "--test",
+        "media_regression",
+        "compare_pair_from_env",
+        "--",
+        "--ignored",
+        "--nocapture"
+      ],
+      "elapsed_seconds": 6.728104591998999,
+      "exit_code": 0,
+      "id": "h264-production-pair",
+      "log": "command-053.log",
+      "peak_process_rss_kib": 39380,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "asciiflow-vulkan",
+        "--release",
+        "--features",
+        "hdr-to-sdr-qualification",
+        "--test",
+        "c3_qualification",
+        "canonical_f64_and_f32_input_oracles",
+        "--",
+        "--ignored",
+        "--test-threads=1"
+      ],
+      "elapsed_seconds": 12.241631609000251,
+      "exit_code": 0,
+      "id": "c3-retained-reference",
+      "log": "command-054.log",
+      "peak_process_rss_kib": 38248,
+      "watchdog": "completed"
+    },
+    {
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "asciiflow-vulkan",
+        "--release",
+        "--features",
+        "hdr-to-sdr-qualification",
+        "--test",
+        "c4a_quantization",
+        "--",
+        "--ignored",
+        "--test-threads=1"
+      ],
+      "elapsed_seconds": 3.811432167000021,
+      "exit_code": 0,
+      "id": "c4a-retained-reference",
+      "log": "command-055.log",
+      "peak_process_rss_kib": 38292,
+      "watchdog": "completed"
+    }
+  ],
+  "fixture_setups": [
+    {
+      "fixture": "av1-sdr10",
+      "mode": "identity-checked generated input reuse",
+      "path": "/home/eureka/Documents/AsciiFlow/target/stage54c1-evidence/inputs/av1-sdr10-canonical-v1.mp4",
+      "sha256": "900216775400e6af237ed93b6dffde6fe76aacd88d9529507b8d720de3d800ee"
+    },
+    {
+      "fixture": "canonical-h2648",
+      "mode": "identity-checked generated input reuse",
+      "path": "/home/eureka/Documents/AsciiFlow/target/stage54c1-evidence/inputs/canonical-h2648.mp4",
+      "sha256": "6e5c214b813dca3e1db65629b1241cfb663166eb565cda1c48b5ee74ed0dce6b"
+    },
+    {
+      "fixture": "canonical-h2648",
+      "mode": "identity-checked generated input reuse",
+      "path": "/home/eureka/Documents/AsciiFlow/target/stage54c1-evidence/inputs/canonical-h2648.mp4",
+      "sha256": "6e5c214b813dca3e1db65629b1241cfb663166eb565cda1c48b5ee74ed0dce6b"
+    },
+    {
+      "fixture": "negative-full-range-pq",
+      "mode": "identity-checked generated input reuse",
+      "path": "/home/eureka/Documents/AsciiFlow/target/stage54c1-evidence/inputs/full-range-pq.mp4",
+      "sha256": "f99c5a77113468edb2a24fc3339eb7f65f2d624f38ff2b47815638082c0529dd"
+    },
+    {
+      "fixture": "negative-h264-high10",
+      "mode": "identity-checked generated input reuse",
+      "path": "/home/eureka/Documents/AsciiFlow/target/stage54c1-evidence/inputs/canonical-h2648.mp4",
+      "sha256": "6e5c214b813dca3e1db65629b1241cfb663166eb565cda1c48b5ee74ed0dce6b"
+    }
+  ],
+  "mode": "hardware",
+  "results": [
+    {
+      "category": "media oracle",
+      "evidence": {
+        "hdr_to_sdr_paths": 10,
+        "historical_build_attestation": "not transferred to new build",
+        "pq_paths": 2,
+        "retained_artifact_identity": "identical",
+        "runs_each": 3,
+        "sdr_paths": 5
+      },
+      "id": "all-retained-production",
+      "result": "PASS"
+    },
+    {
+      "category": "classification",
+      "evidence": {
+        "actual_plan": {
+          "backend": "Vulkan",
+          "buffer_capacity": 3,
+          "color_processing": "HdrPqPreserve",
+          "decode": "Hardware",
+          "encode": "Hardware",
+          "hardware_download": false,
+          "hardware_input_interop": true,
+          "hardware_output_interop": true,
+          "hardware_upload": false,
+          "output": {
+            "bit_depth": 10,
+            "chroma_subsampling": "Yuv420",
+            "codec": "Av1",
+            "color_space": "ColorSpace { matrix: Bt2020, range: Limited, primaries: Bt2020, transfer: Pq, chroma_location: Left }",
+            "pixel_format": "P010Le",
+            "profile": "Av1Main"
+          },
+          "pixel_path": "GpuResident",
+          "reasons": [
+            "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+            "input interop avoids the expensive hardware download path",
+            "output interop avoids Host readback and encoder hwupload"
+          ]
+        },
+        "classification": {
+          "observed": "HdrPq",
+          "scope": "resolved first-frame semantics"
+        },
+        "decode_back": {
+          "codec": "av1",
+          "frames": 300,
+          "pixel_format": "yuv420p10le",
+          "scope": "full decode, geometry, depth and color metadata; no lossy pixel equivalence claim"
+        },
+        "diagnostic": "av1-pq10-plan.json",
+        "expected_rejection": false,
+        "input_sha256": "7eb4fd7e7513fc181ad8489e13edbac10a88a8f3a7947d2f958d36a0ce08e7c4",
+        "output_sha256": "c8eb9c8ae8d32aee64ca1f07aba5bb7643f880d74d3075cc1066e7c2e7f9c6f9",
+        "runtime_diagnostic": "av1-pq10-runtime.json",
+        "selected_plan": {
+          "backend": "Vulkan",
+          "buffer_capacity": 3,
+          "color_processing": "HdrPqPreserve",
+          "decode": "Hardware",
+          "encode": "Hardware",
+          "hardware_download": false,
+          "hardware_input_interop": true,
+          "hardware_output_interop": true,
+          "hardware_upload": false,
+          "output": {
+            "bit_depth": 10,
+            "chroma_subsampling": "Yuv420",
+            "codec": "Av1",
+            "color_space": "ColorSpace { matrix: Bt2020, range: Limited, primaries: Bt2020, transfer: Pq, chroma_location: Left }",
+            "pixel_format": "P010Le",
+            "profile": "Av1Main"
+          },
+          "pixel_path": "GpuResident",
+          "reasons": [
+            "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+            "input interop avoids the expensive hardware download path",
+            "output interop avoids Host readback and encoder hwupload"
+          ]
+        }
+      },
+      "id": "av1-pq10",
+      "result": "PASS"
+    },
+    {
+      "category": "classification",
+      "evidence": {
+        "actual_plan": {
+          "backend": "Vulkan",
+          "buffer_capacity": 3,
+          "color_processing": "Sdr",
+          "decode": "Hardware",
+          "encode": "Hardware",
+          "hardware_download": false,
+          "hardware_input_interop": true,
+          "hardware_output_interop": true,
+          "hardware_upload": false,
+          "output": {
+            "bit_depth": 10,
+            "chroma_subsampling": "Yuv420",
+            "codec": "Av1",
+            "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+            "pixel_format": "P010Le",
+            "profile": "Av1Main"
+          },
+          "pixel_path": "GpuResident",
+          "reasons": [
+            "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+            "input interop avoids the expensive hardware download path",
+            "output interop avoids Host readback and encoder hwupload"
+          ]
+        },
+        "classification": {
+          "observed": "Sdr",
+          "scope": "resolved first-frame semantics"
+        },
+        "decode_back": {
+          "codec": "av1",
+          "frames": 300,
+          "pixel_format": "yuv420p10le",
+          "scope": "full decode, geometry, depth and color metadata; no lossy pixel equivalence claim"
+        },
+        "diagnostic": "av1-sdr10-plan.json",
+        "expected_rejection": false,
+        "input_sha256": "900216775400e6af237ed93b6dffde6fe76aacd88d9529507b8d720de3d800ee",
+        "output_sha256": "80fcf2bf979edf49f0db41285d5a33aa432f41f6aa598d9bbfe17e8a6dc3e3a4",
+        "runtime_diagnostic": "av1-sdr10-runtime.json",
+        "selected_plan": {
+          "backend": "Vulkan",
+          "buffer_capacity": 3,
+          "color_processing": "Sdr",
+          "decode": "Hardware",
+          "encode": "Hardware",
+          "hardware_download": false,
+          "hardware_input_interop": true,
+          "hardware_output_interop": true,
+          "hardware_upload": false,
+          "output": {
+            "bit_depth": 10,
+            "chroma_subsampling": "Yuv420",
+            "codec": "Av1",
+            "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+            "pixel_format": "P010Le",
+            "profile": "Av1Main"
+          },
+          "pixel_path": "GpuResident",
+          "reasons": [
+            "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+            "input interop avoids the expensive hardware download path",
+            "output interop avoids Host readback and encoder hwupload"
+          ]
+        }
+      },
+      "id": "av1-sdr10",
+      "result": "PASS"
+    },
+    {
+      "category": "classification",
+      "evidence": {
+        "actual_plan": {
+          "backend": "Vulkan",
+          "buffer_capacity": 3,
+          "color_processing": "Sdr",
+          "decode": "Hardware",
+          "encode": "Hardware",
+          "hardware_download": false,
+          "hardware_input_interop": true,
+          "hardware_output_interop": true,
+          "hardware_upload": false,
+          "output": {
+            "bit_depth": 8,
+            "chroma_subsampling": "Yuv420",
+            "codec": "H264",
+            "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+            "pixel_format": "Nv12",
+            "profile": null
+          },
+          "pixel_path": "GpuResident",
+          "reasons": [
+            "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+            "input interop avoids the expensive hardware download path",
+            "output interop avoids Host readback and encoder hwupload"
+          ]
+        },
+        "classification": {
+          "observed": "Sdr",
+          "scope": "resolved first-frame semantics"
+        },
+        "decode_back": {
+          "codec": "h264",
+          "frames": 36,
+          "pixel_format": "yuv420p",
+          "scope": "full decode, geometry, depth and color metadata; no lossy pixel equivalence claim"
+        },
+        "diagnostic": "av1-sdr8-plan.json",
+        "expected_rejection": false,
+        "input_sha256": "b2dbbab4ed59384edd810ff74b13365a412e933d78d47afc1a12443000b3639e",
+        "output_sha256": "9a1f698b0fc3e5eb84c5503e3b8bbd2e00e80a105157cfe3742dc0478b9c1e0b",
+        "runtime_diagnostic": "av1-sdr8-runtime.json",
+        "selected_plan": {
+          "backend": "Vulkan",
+          "buffer_capacity": 3,
+          "color_processing": "Sdr",
+          "decode": "Hardware",
+          "encode": "Hardware",
+          "hardware_download": false,
+          "hardware_input_interop": true,
+          "hardware_output_interop": true,
+          "hardware_upload": false,
+          "output": {
+            "bit_depth": 8,
+            "chroma_subsampling": "Yuv420",
+            "codec": "H264",
+            "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+            "pixel_format": "Nv12",
+            "profile": null
+          },
+          "pixel_path": "GpuResident",
+          "reasons": [
+            "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+            "input interop avoids the expensive hardware download path",
+            "output interop avoids Host readback and encoder hwupload"
+          ]
+        }
+      },
+      "id": "av1-sdr8",
+      "result": "PASS"
+    },
+    {
+      "category": "runtime",
+      "evidence": {
+        "command": "c1"
+      },
+      "id": "c1-cpu-reference",
+      "result": "PASS"
+    },
+    {
+      "category": "runtime",
+      "evidence": {
+        "command": "c2b"
+      },
+      "id": "c2b-cpu-reference",
+      "result": "PASS"
+    },
+    {
+      "category": "hardware",
+      "evidence": {
+        "command": "c3-retained-reference"
+      },
+      "id": "c3-retained-reference",
+      "result": "PASS"
+    },
+    {
+      "category": "hardware",
+      "evidence": {
+        "command": "c4a-retained-reference"
+      },
+      "id": "c4a-retained-reference",
+      "result": "PASS"
+    },
+    {
+      "category": "classification",
+      "evidence": {
+        "actual_plan": {
+          "backend": "Vulkan",
+          "buffer_capacity": 3,
+          "color_processing": "Sdr",
+          "decode": "Hardware",
+          "encode": "Hardware",
+          "hardware_download": false,
+          "hardware_input_interop": true,
+          "hardware_output_interop": true,
+          "hardware_upload": false,
+          "output": {
+            "bit_depth": 8,
+            "chroma_subsampling": "Yuv420",
+            "codec": "H264",
+            "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+            "pixel_format": "Nv12",
+            "profile": null
+          },
+          "pixel_path": "GpuResident",
+          "reasons": [
+            "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+            "input interop avoids the expensive hardware download path",
+            "output interop avoids Host readback and encoder hwupload"
+          ]
+        },
+        "classification": {
+          "observed": "Sdr",
+          "scope": "resolved first-frame semantics"
+        },
+        "decode_back": {
+          "codec": "h264",
+          "frames": 300,
+          "pixel_format": "yuv420p",
+          "scope": "full decode, geometry, depth and color metadata; no lossy pixel equivalence claim"
+        },
+        "diagnostic": "canonical-h2648-plan.json",
+        "expected_rejection": false,
+        "input_sha256": "6e5c214b813dca3e1db65629b1241cfb663166eb565cda1c48b5ee74ed0dce6b",
+        "output_sha256": "82da1c2bbb3073e392abe8720c720cdb7b7b4ba52b8361ce54bfa81f176224a8",
+        "runtime_diagnostic": "canonical-h2648-runtime.json",
+        "selected_plan": {
+          "backend": "Vulkan",
+          "buffer_capacity": 3,
+          "color_processing": "Sdr",
+          "decode": "Hardware",
+          "encode": "Hardware",
+          "hardware_download": false,
+          "hardware_input_interop": true,
+          "hardware_output_interop": true,
+          "hardware_upload": false,
+          "output": {
+            "bit_depth": 8,
+            "chroma_subsampling": "Yuv420",
+            "codec": "H264",
+            "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+            "pixel_format": "Nv12",
+            "profile": null
+          },
+          "pixel_path": "GpuResident",
+          "reasons": [
+            "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+            "input interop avoids the expensive hardware download path",
+            "output interop avoids Host readback and encoder hwupload"
+          ]
+        }
+      },
+      "id": "canonical-h2648",
+      "result": "PASS"
+    },
+    {
+      "category": "static",
+      "evidence": null,
+      "id": "corpus-schema",
+      "result": "PASS"
+    },
+    {
+      "category": "static",
+      "evidence": {
+        "input_sha256": "6e5c214b813dca3e1db65629b1241cfb663166eb565cda1c48b5ee74ed0dce6b"
+      },
+      "id": "hardware-sdr-input-identity",
+      "result": "PASS"
+    },
+    {
+      "category": "classification",
+      "evidence": {
+        "actual_plan": {
+          "backend": "Vulkan",
+          "buffer_capacity": 3,
+          "color_processing": "HdrPqPreserve",
+          "decode": "Hardware",
+          "encode": "Hardware",
+          "hardware_download": false,
+          "hardware_input_interop": true,
+          "hardware_output_interop": true,
+          "hardware_upload": false,
+          "output": {
+            "bit_depth": 10,
+            "chroma_subsampling": "Yuv420",
+            "codec": "Hevc",
+            "color_space": "ColorSpace { matrix: Bt2020, range: Limited, primaries: Bt2020, transfer: Pq, chroma_location: Left }",
+            "pixel_format": "P010Le",
+            "profile": "HevcMain10"
+          },
+          "pixel_path": "GpuResident",
+          "reasons": [
+            "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+            "input interop avoids the expensive hardware download path",
+            "output interop avoids Host readback and encoder hwupload"
+          ]
+        },
+        "classification": {
+          "observed": "HdrPq",
+          "scope": "resolved first-frame semantics"
+        },
+        "decode_back": {
+          "codec": "hevc",
+          "frames": 300,
+          "pixel_format": "yuv420p10le",
+          "scope": "full decode, geometry, depth and color metadata; no lossy pixel equivalence claim"
+        },
+        "diagnostic": "hevc-pq10-plan.json",
+        "expected_rejection": false,
+        "input_sha256": "eb8d8c42cd99369b99031900e8861c08f611bfcc662b8d0eb741eb695a0c366a",
+        "output_sha256": "af1fbeadd4939c8cb28b2f2346fabea37e371bdcdbb7aa6b509cac953f139e26",
+        "runtime_diagnostic": "hevc-pq10-runtime.json",
+        "selected_plan": {
+          "backend": "Vulkan",
+          "buffer_capacity": 3,
+          "color_processing": "HdrPqPreserve",
+          "decode": "Hardware",
+          "encode": "Hardware",
+          "hardware_download": false,
+          "hardware_input_interop": true,
+          "hardware_output_interop": true,
+          "hardware_upload": false,
+          "output": {
+            "bit_depth": 10,
+            "chroma_subsampling": "Yuv420",
+            "codec": "Hevc",
+            "color_space": "ColorSpace { matrix: Bt2020, range: Limited, primaries: Bt2020, transfer: Pq, chroma_location: Left }",
+            "pixel_format": "P010Le",
+            "profile": "HevcMain10"
+          },
+          "pixel_path": "GpuResident",
+          "reasons": [
+            "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+            "input interop avoids the expensive hardware download path",
+            "output interop avoids Host readback and encoder hwupload"
+          ]
+        }
+      },
+      "id": "hevc-pq10",
+      "result": "PASS"
+    },
+    {
+      "category": "classification",
+      "evidence": {
+        "actual_plan": {
+          "backend": "Vulkan",
+          "buffer_capacity": 3,
+          "color_processing": "Sdr",
+          "decode": "Hardware",
+          "encode": "Hardware",
+          "hardware_download": false,
+          "hardware_input_interop": true,
+          "hardware_output_interop": true,
+          "hardware_upload": false,
+          "output": {
+            "bit_depth": 10,
+            "chroma_subsampling": "Yuv420",
+            "codec": "Hevc",
+            "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+            "pixel_format": "P010Le",
+            "profile": "HevcMain10"
+          },
+          "pixel_path": "GpuResident",
+          "reasons": [
+            "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+            "input interop avoids the expensive hardware download path",
+            "output interop avoids Host readback and encoder hwupload"
+          ]
+        },
+        "classification": {
+          "observed": "Sdr",
+          "scope": "resolved first-frame semantics"
+        },
+        "decode_back": {
+          "codec": "hevc",
+          "frames": 300,
+          "pixel_format": "yuv420p10le",
+          "scope": "full decode, geometry, depth and color metadata; no lossy pixel equivalence claim"
+        },
+        "diagnostic": "hevc-sdr10-plan.json",
+        "expected_rejection": false,
+        "input_sha256": "df69c98ca6592b08c6bc34127b2bb5cf4125c759fd852b830e5426d5818fccda",
+        "output_sha256": "55a4f5ad40ddbde49adbb10890234a1b67df867af96a744302986940da075936",
+        "runtime_diagnostic": "hevc-sdr10-runtime.json",
+        "selected_plan": {
+          "backend": "Vulkan",
+          "buffer_capacity": 3,
+          "color_processing": "Sdr",
+          "decode": "Hardware",
+          "encode": "Hardware",
+          "hardware_download": false,
+          "hardware_input_interop": true,
+          "hardware_output_interop": true,
+          "hardware_upload": false,
+          "output": {
+            "bit_depth": 10,
+            "chroma_subsampling": "Yuv420",
+            "codec": "Hevc",
+            "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+            "pixel_format": "P010Le",
+            "profile": "HevcMain10"
+          },
+          "pixel_path": "GpuResident",
+          "reasons": [
+            "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+            "input interop avoids the expensive hardware download path",
+            "output interop avoids Host readback and encoder hwupload"
+          ]
+        }
+      },
+      "id": "hevc-sdr10",
+      "result": "PASS"
+    },
+    {
+      "category": "classification",
+      "evidence": {
+        "actual_plan": {
+          "backend": "Vulkan",
+          "buffer_capacity": 3,
+          "color_processing": "Sdr",
+          "decode": "Hardware",
+          "encode": "Hardware",
+          "hardware_download": false,
+          "hardware_input_interop": true,
+          "hardware_output_interop": true,
+          "hardware_upload": false,
+          "output": {
+            "bit_depth": 8,
+            "chroma_subsampling": "Yuv420",
+            "codec": "H264",
+            "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+            "pixel_format": "Nv12",
+            "profile": null
+          },
+          "pixel_path": "GpuResident",
+          "reasons": [
+            "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+            "input interop avoids the expensive hardware download path",
+            "output interop avoids Host readback and encoder hwupload"
+          ]
+        },
+        "classification": {
+          "observed": "Sdr",
+          "scope": "resolved first-frame semantics"
+        },
+        "decode_back": {
+          "codec": "h264",
+          "frames": 36,
+          "pixel_format": "yuv420p",
+          "scope": "full decode, geometry, depth and color metadata; no lossy pixel equivalence claim"
+        },
+        "diagnostic": "hevc-sdr8-bframes-audio-plan.json",
+        "expected_rejection": false,
+        "input_sha256": "e84d8108e6de4f925b87eb1d5168d1d2f38af2eadfe59c7fec9fbe8ba30827ae",
+        "output_sha256": "9a1f698b0fc3e5eb84c5503e3b8bbd2e00e80a105157cfe3742dc0478b9c1e0b",
+        "runtime_diagnostic": "hevc-sdr8-bframes-audio-runtime.json",
+        "selected_plan": {
+          "backend": "Vulkan",
+          "buffer_capacity": 3,
+          "color_processing": "Sdr",
+          "decode": "Hardware",
+          "encode": "Hardware",
+          "hardware_download": false,
+          "hardware_input_interop": true,
+          "hardware_output_interop": true,
+          "hardware_upload": false,
+          "output": {
+            "bit_depth": 8,
+            "chroma_subsampling": "Yuv420",
+            "codec": "H264",
+            "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+            "pixel_format": "Nv12",
+            "profile": null
+          },
+          "pixel_path": "GpuResident",
+          "reasons": [
+            "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+            "input interop avoids the expensive hardware download path",
+            "output interop avoids Host readback and encoder hwupload"
+          ]
+        }
+      },
+      "id": "hevc-sdr8-bframes-audio",
+      "result": "PASS"
+    },
+    {
+      "category": "media oracle",
+      "evidence": {
+        "command": "media-oracle-controls"
+      },
+      "id": "media-oracle-controls",
+      "result": "PASS"
+    },
+    {
+      "category": "classification",
+      "evidence": {
+        "classification": {
+          "observed": "Conflicting",
+          "scope": "resolved first-frame semantics"
+        },
+        "diagnostic": "negative-color-conflict-plan.json",
+        "expected_rejection": true,
+        "input_sha256": "3356bf8527db8e039c8b4c7afd4711aee6e629f5620a8c5eec22971a9dd32d07",
+        "selected_plan": null
+      },
+      "id": "negative-color-conflict",
+      "result": "PASS"
+    },
+    {
+      "category": "classification",
+      "evidence": {
+        "classification": {
+          "observed": "HdrPq",
+          "scope": "resolved first-frame semantics"
+        },
+        "diagnostic": "negative-full-range-pq-plan.json",
+        "expected_rejection": true,
+        "input_sha256": "f99c5a77113468edb2a24fc3339eb7f65f2d624f38ff2b47815638082c0529dd",
+        "selected_plan": null
+      },
+      "id": "negative-full-range-pq",
+      "result": "PASS"
+    },
+    {
+      "category": "classification",
+      "evidence": {
+        "classification": {
+          "observed": null,
+          "scope": "not observed: policy may reject before input probing, or first-frame color rejection may leave semantics unresolved"
+        },
+        "diagnostic": "negative-h264-high10-plan.json",
+        "expected_rejection": true,
+        "input_sha256": "6e5c214b813dca3e1db65629b1241cfb663166eb565cda1c48b5ee74ed0dce6b",
+        "selected_plan": null
+      },
+      "id": "negative-h264-high10",
+      "result": "PASS"
+    },
+    {
+      "category": "classification",
+      "evidence": {
+        "classification": {
+          "observed": "HdrHlg",
+          "scope": "resolved first-frame semantics"
+        },
+        "diagnostic": "negative-hlg-plan.json",
+        "expected_rejection": true,
+        "input_sha256": "822ba58834bc47d08761a7150061acd1f8d2e2bca4d69e4528f158cee75d0116",
+        "selected_plan": null
+      },
+      "id": "negative-hlg",
+      "result": "PASS"
+    },
+    {
+      "category": "classification",
+      "evidence": {
+        "classification": {
+          "observed": "Unknown",
+          "scope": "resolved first-frame semantics"
+        },
+        "diagnostic": "negative-unknown-color-plan.json",
+        "expected_rejection": true,
+        "input_sha256": "f284d22322fe44234103ba650e70ea9a52640c566f179412fb7fa65277736ae3",
+        "selected_plan": null
+      },
+      "id": "negative-unknown-color",
+      "result": "PASS"
+    },
+    {
+      "category": "classification",
+      "evidence": {
+        "classification": {
+          "observed": "Sdr",
+          "scope": "resolved first-frame semantics"
+        },
+        "diagnostic": "negative-wide-sdr-plan.json",
+        "expected_rejection": true,
+        "input_sha256": "0de024a7e0de373d8efe70d5afcd07834852dc661e014c6238189744c2ee1f0c",
+        "selected_plan": null
+      },
+      "id": "negative-wide-sdr",
+      "result": "PASS"
+    },
+    {
+      "category": "hardware",
+      "evidence": {
+        "actual_path": {
+          "backend": "Vulkan",
+          "buffer_capacity": 3,
+          "color_processing": "HdrPqPreserve",
+          "decode": "Hardware",
+          "encode": "Hardware",
+          "hardware_download": false,
+          "hardware_input_interop": true,
+          "hardware_output_interop": true,
+          "hardware_upload": false,
+          "output": {
+            "bit_depth": 10,
+            "chroma_subsampling": "Yuv420",
+            "codec": "Hevc",
+            "color_space": "ColorSpace { matrix: Bt2020, range: Limited, primaries: Bt2020, transfer: Pq, chroma_location: Left }",
+            "pixel_format": "P010Le",
+            "profile": "HevcMain10"
+          },
+          "pixel_path": "GpuResident",
+          "reasons": [
+            "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+            "input interop avoids the expensive hardware download path",
+            "output interop avoids Host readback and encoder hwupload"
+          ]
+        },
+        "decoded_frames": 300,
+        "oracle": "smoke-pq-preserve-oracle.json",
+        "output_sha256": "0e8de23d5d222ab0476ea816d27b18e37dc73bf1f824e79bedc1070c409ded63"
+      },
+      "id": "smoke-pq-preserve",
+      "result": "PASS"
+    },
+    {
+      "category": "hardware",
+      "evidence": {
+        "actual_path": {
+          "backend": "Vulkan",
+          "buffer_capacity": 3,
+          "color_processing": "HdrPqToSdrBt709",
+          "decode": "Hardware",
+          "encode": "Hardware",
+          "hardware_download": false,
+          "hardware_input_interop": true,
+          "hardware_output_interop": true,
+          "hardware_upload": false,
+          "output": {
+            "bit_depth": 10,
+            "chroma_subsampling": "Yuv420",
+            "codec": "Hevc",
+            "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+            "pixel_format": "P010Le",
+            "profile": "HevcMain10"
+          },
+          "pixel_path": "GpuResident",
+          "reasons": [
+            "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+            "input interop avoids the expensive hardware download path",
+            "output interop avoids Host readback and encoder hwupload",
+            "explicit PQ HDR \u2192 BT.709 SDR request; sealed BT.2446-1 0\u20131000 cd/m\u00b2 input domain, no implicit highlight clipping"
+          ]
+        },
+        "decoded_frames": 300,
+        "oracle": "smoke-pq-to-sdr-oracle.json",
+        "output_sha256": "2e8d7e8e48390b42b875f47bca756521d1a63489651d81ddb633ad7c50f0e151"
+      },
+      "id": "smoke-pq-to-sdr",
+      "result": "PASS"
+    },
+    {
+      "category": "hardware",
+      "evidence": {
+        "actual_path": {
+          "backend": "Vulkan",
+          "buffer_capacity": 3,
+          "color_processing": "HdrPqToSdrBt709",
+          "decode": "Hardware",
+          "encode": "Hardware",
+          "hardware_download": false,
+          "hardware_input_interop": true,
+          "hardware_output_interop": true,
+          "hardware_upload": false,
+          "output": {
+            "bit_depth": 8,
+            "chroma_subsampling": "Yuv420",
+            "codec": "H264",
+            "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+            "pixel_format": "Nv12",
+            "profile": null
+          },
+          "pixel_path": "GpuResident",
+          "reasons": [
+            "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+            "input interop avoids the expensive hardware download path",
+            "output interop avoids Host readback and encoder hwupload",
+            "explicit PQ HDR \u2192 BT.709 SDR request; sealed BT.2446-1 0\u20131000 cd/m\u00b2 input domain, no implicit highlight clipping"
+          ]
+        },
+        "decoded_frames": 300,
+        "oracle": "smoke-pq-to-sdr8-oracle.json",
+        "output_sha256": "866cd722e7969994c91e2d0647abd82a1b6be5f29929205baa25040742feda12"
+      },
+      "id": "smoke-pq-to-sdr8",
+      "result": "PASS"
+    },
+    {
+      "category": "hardware",
+      "evidence": {
+        "actual_path": {
+          "backend": "Vulkan",
+          "buffer_capacity": 3,
+          "color_processing": "Sdr",
+          "decode": "Hardware",
+          "encode": "Hardware",
+          "hardware_download": false,
+          "hardware_input_interop": true,
+          "hardware_output_interop": true,
+          "hardware_upload": false,
+          "output": {
+            "bit_depth": 8,
+            "chroma_subsampling": "Yuv420",
+            "codec": "H264",
+            "color_space": "ColorSpace { matrix: Bt709, range: Limited, primaries: Bt709, transfer: Bt709, chroma_location: Left }",
+            "pixel_format": "Nv12",
+            "profile": null
+          },
+          "pixel_path": "GpuResident",
+          "reasons": [
+            "Vulkan processing is supported on Intel(R) Arc(tm) Graphics (MTL)",
+            "input interop avoids the expensive hardware download path",
+            "output interop avoids Host readback and encoder hwupload"
+          ]
+        },
+        "decoded_frames": 300,
+        "oracle": "smoke-sdr-oracle.json",
+        "output_sha256": "7c8a7572320b8c6c999143dfece4a76d487d6c9e7788206b7af52df9acd4e1cc"
+      },
+      "id": "smoke-sdr",
+      "result": "PASS"
+    },
+    {
+      "category": "static",
+      "evidence": {
+        "command": "support-document"
+      },
+      "id": "support-document-consistency",
+      "result": "PASS"
+    },
+    {
+      "category": "planner",
+      "evidence": {
+        "command": "support-planner"
+      },
+      "id": "support-planner-consistency",
+      "result": "PASS"
+    }
+  ],
+  "schema_version": 1,
+  "summary": {
+    "classification": {
+      "PASS": 13
+    },
+    "decode-back": {
+      "PASS": 7
+    },
+    "hardware": {
+      "PASS": 6
+    },
+    "media oracle": {
+      "PASS": 2
+    },
+    "planner": {
+      "PASS": 8
+    },
+    "runtime": {
+      "PASS": 9
+    },
+    "static": {
+      "PASS": 3
+    }
+  },
+  "summary_semantics": "overlapping verification surfaces; not unique-test counts",
+  "verified_surfaces": [
+    {
+      "fixture": "av1-pq10",
+      "result": "PASS",
+      "surface": "planner"
+    },
+    {
+      "fixture": "av1-pq10",
+      "result": "PASS",
+      "surface": "runtime"
+    },
+    {
+      "fixture": "av1-pq10",
+      "result": "PASS",
+      "surface": "decode-back"
+    },
+    {
+      "fixture": "av1-sdr10",
+      "result": "PASS",
+      "surface": "planner"
+    },
+    {
+      "fixture": "av1-sdr10",
+      "result": "PASS",
+      "surface": "runtime"
+    },
+    {
+      "fixture": "av1-sdr10",
+      "result": "PASS",
+      "surface": "decode-back"
+    },
+    {
+      "fixture": "av1-sdr8",
+      "result": "PASS",
+      "surface": "planner"
+    },
+    {
+      "fixture": "av1-sdr8",
+      "result": "PASS",
+      "surface": "runtime"
+    },
+    {
+      "fixture": "av1-sdr8",
+      "result": "PASS",
+      "surface": "decode-back"
+    },
+    {
+      "fixture": "canonical-h2648",
+      "result": "PASS",
+      "surface": "planner"
+    },
+    {
+      "fixture": "canonical-h2648",
+      "result": "PASS",
+      "surface": "runtime"
+    },
+    {
+      "fixture": "canonical-h2648",
+      "result": "PASS",
+      "surface": "decode-back"
+    },
+    {
+      "fixture": "hevc-pq10",
+      "result": "PASS",
+      "surface": "planner"
+    },
+    {
+      "fixture": "hevc-pq10",
+      "result": "PASS",
+      "surface": "runtime"
+    },
+    {
+      "fixture": "hevc-pq10",
+      "result": "PASS",
+      "surface": "decode-back"
+    },
+    {
+      "fixture": "hevc-sdr10",
+      "result": "PASS",
+      "surface": "planner"
+    },
+    {
+      "fixture": "hevc-sdr10",
+      "result": "PASS",
+      "surface": "runtime"
+    },
+    {
+      "fixture": "hevc-sdr10",
+      "result": "PASS",
+      "surface": "decode-back"
+    },
+    {
+      "fixture": "hevc-sdr8-bframes-audio",
+      "result": "PASS",
+      "surface": "planner"
+    },
+    {
+      "fixture": "hevc-sdr8-bframes-audio",
+      "result": "PASS",
+      "surface": "runtime"
+    },
+    {
+      "fixture": "hevc-sdr8-bframes-audio",
+      "result": "PASS",
+      "surface": "decode-back"
+    }
+  ]
+}

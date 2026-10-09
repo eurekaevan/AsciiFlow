@@ -1,0 +1,1992 @@
+{
+  "schema": "asciiflow-stage54d1b-long-soak-v1",
+  "measurement_date": "2026-10-08",
+  "review_date": "2026-10-09",
+  "status": "SEALED",
+  "execution_state": "Required finite campaigns completed; final audio-memory attribution completed and reviewed",
+  "product_contract": "one CLI process -> one media job -> process exit",
+  "d1a": "SEALED",
+  "d1a_scope_closure": "tests/soak/stage54d1a-product-scope-closure.json",
+  "persistent_process_limitation": "NonBlockingOutOfScopeObservation: persistent-process allocator/runtime retention not fully bounded; historical FAIL unchanged",
+  "historical_evidence_sha256": {
+    "tests/soak/evidence/stage54d1a-resource-failure-historical.json": "63b0417bb2666662914c28d0af734c2588def5c0e3b7ab2c63bcc86db62a77bd",
+    "tests/soak/evidence/stage54d1a-ab-final-closure-historical.json": "c854ff9adf724b90e302369dc75ef13d69dbd58b608d018e00db7098f5ff4ed3",
+    "tests/soak/stage54d1a-final-closure.json": "38b00b8b9d3935f953efdd6c54e2162953407bfb7f0126772c4cbcae2e8e2eb1"
+  },
+  "required_frames_per_path": 100000,
+  "paths": {
+    "A": {
+      "kind": "sdr",
+      "frames": 100000,
+      "media_seconds": 2000,
+      "artifact_and_lifecycle_result": "PASS",
+      "input": {
+        "schema_version": 1,
+        "kind": "sdr",
+        "frames": 100000,
+        "media_seconds": 2000.0,
+        "audio_tracks": 1,
+        "audio": "copy",
+        "status": "GeneratedNotQualified",
+        "source": {
+          "path": "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/measurement-v1/source-sdr/source-300.mp4",
+          "sha256": "6e5c214b813dca3e1db65629b1241cfb663166eb565cda1c48b5ee74ed0dce6b",
+          "bytes": 19672925
+        },
+        "generators": [
+          {
+            "path": "/home/eureka/Documents/AsciiFlow/tests/soak/generate.py",
+            "sha256": "04a744fe2e47fc8be4c213530b1ebba9f0be760d5b0dbff56cdd4b4aa459e744"
+          },
+          {
+            "path": "/home/eureka/Documents/AsciiFlow/tests/fixtures/codecs/generate-8bit-production-baseline.sh",
+            "sha256": "7962394e54915e6db67c55018a4cfd27562d65f3c5bff81c4b6f2f3c876bbe3c"
+          }
+        ],
+        "ffmpeg_version": "ffmpeg version 8.1.3 Copyright (c) 2000-2026 the FFmpeg developers\nbuilt with gcc 16 (GCC)\nconfiguration: --prefix=/usr --bindir=/usr/bin --datadir=/usr/share/ffmpeg --docdir=/usr/share/doc/ffmpeg --incdir=/usr/include/ffmpeg --libdir=/usr/lib64 --mandir=/usr/share/man --arch=x86_64 --optflags='-O2 -flto=auto -ffat-lto-objects -fexceptions -g -grecord-gcc-switches -pipe -Wall -Wno-complain-wrong-lang -Werror=format-security -Wp,-U_FORTIFY_SOURCE,-D_FORTIFY_SOURCE=3 -Wp,-D_GLIBCXX_ASSERTIONS -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -fstack-protector-strong -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -m64 -march=x86-64 -mtune=generic -fasynchronous-unwind-tables -fstack-clash-protection -fcf-protection -mtls-dialect=gnu2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer' --extra-ldflags='-Wl,-z,relro -Wl,--as-needed -Wl,-z,pack-relative-relocs -Wl,-z,now -specs=/usr/lib/rpm/redhat/redhat-hardened-ld -specs=/usr/lib/rpm/redhat/redhat-hardened-ld-errors -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -Wl,--build-id=sha1 -specs=/usr/lib/rpm/redhat/redhat-package-notes ' --extra-cflags=' -I/usr/include/rav1e' --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libvo-amrwbenc --enable-version3 --enable-bzlib --enable-chromaprint --enable-fontconfig --enable-frei0r --enable-gcrypt --enable-gnutls --enable-ladspa --enable-lcms2 --enable-libaom --enable-libaribb24 --enable-libaribcaption --enable-libdav1d --enable-libass --enable-libbluray --enable-libbs2b --enable-libcodec2 --enable-cuda --enable-cuda-llvm --enable-cuvid --enable-libcdio --enable-libdrm --enable-libfdk-aac --enable-libjack --enable-libjxl --enable-libklvanc --enable-libfreetype --enable-libfribidi --enable-libgme --enable-libgsm --enable-libharfbuzz --enable-libilbc --enable-liblc3 --enable-libmp3lame --enable-libmysofa --enable-nvenc --enable-nvdec --enable-openal --enable-liboapv --enable-opencl --enable-opengl --enable-libopenh264 --enable-libopenjpeg --enable-libopenmpt --enable-libopus --enable-libpulse --enable-libplacebo --enable-librsvg --enable-librav1e --enable-librubberband --enable-libqrencode --enable-libsmbclient --enable-version3 --enable-libsnappy --enable-libsoxr --enable-libspeex --enable-libsrt --enable-libssh --enable-libsvtav1 --enable-libtesseract --enable-libtheora --enable-libtwolame --enable-libvorbis --enable-libv4l2 --enable-libvidstab --enable-libvmaf --enable-version3 --enable-vapoursynth --enable-libvpx --enable-libvvenc --enable-vulkan --enable-libshaderc --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxvid --enable-libxml2 --enable-libzimg --enable-libzmq --enable-libzvbi --enable-lv2 --enable-avfilter --enable-libmodplug --enable-pthreads --disable-static --enable-shared --enable-gpl --disable-debug --disable-stripping --shlibdir=/usr/lib64 --enable-lto --enable-libvpl --enable-runtime-cpudetect\nlibavutil      60. 26.103 / 60. 26.103\nlibavcodec     62. 28.103 / 62. 28.103\nlibavformat    62. 12.103 / 62. 12.103\nlibavdevice    62.  3.103 / 62.  3.103\nlibavfilter    11. 14.103 / 11. 14.103\nlibswscale      9.  5.103 /  9.  5.103\nlibswresample   6.  3.103 /  6.  3.103\n\nExiting with exit code 0\n",
+        "ffprobe_version": "ffprobe version 8.1.3 Copyright (c) 2007-2026 the FFmpeg developers\nbuilt with gcc 16 (GCC)\nconfiguration: --prefix=/usr --bindir=/usr/bin --datadir=/usr/share/ffmpeg --docdir=/usr/share/doc/ffmpeg --incdir=/usr/include/ffmpeg --libdir=/usr/lib64 --mandir=/usr/share/man --arch=x86_64 --optflags='-O2 -flto=auto -ffat-lto-objects -fexceptions -g -grecord-gcc-switches -pipe -Wall -Wno-complain-wrong-lang -Werror=format-security -Wp,-U_FORTIFY_SOURCE,-D_FORTIFY_SOURCE=3 -Wp,-D_GLIBCXX_ASSERTIONS -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -fstack-protector-strong -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -m64 -march=x86-64 -mtune=generic -fasynchronous-unwind-tables -fstack-clash-protection -fcf-protection -mtls-dialect=gnu2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer' --extra-ldflags='-Wl,-z,relro -Wl,--as-needed -Wl,-z,pack-relative-relocs -Wl,-z,now -specs=/usr/lib/rpm/redhat/redhat-hardened-ld -specs=/usr/lib/rpm/redhat/redhat-hardened-ld-errors -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -Wl,--build-id=sha1 -specs=/usr/lib/rpm/redhat/redhat-package-notes ' --extra-cflags=' -I/usr/include/rav1e' --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libvo-amrwbenc --enable-version3 --enable-bzlib --enable-chromaprint --enable-fontconfig --enable-frei0r --enable-gcrypt --enable-gnutls --enable-ladspa --enable-lcms2 --enable-libaom --enable-libaribb24 --enable-libaribcaption --enable-libdav1d --enable-libass --enable-libbluray --enable-libbs2b --enable-libcodec2 --enable-cuda --enable-cuda-llvm --enable-cuvid --enable-libcdio --enable-libdrm --enable-libfdk-aac --enable-libjack --enable-libjxl --enable-libklvanc --enable-libfreetype --enable-libfribidi --enable-libgme --enable-libgsm --enable-libharfbuzz --enable-libilbc --enable-liblc3 --enable-libmp3lame --enable-libmysofa --enable-nvenc --enable-nvdec --enable-openal --enable-liboapv --enable-opencl --enable-opengl --enable-libopenh264 --enable-libopenjpeg --enable-libopenmpt --enable-libopus --enable-libpulse --enable-libplacebo --enable-librsvg --enable-librav1e --enable-librubberband --enable-libqrencode --enable-libsmbclient --enable-version3 --enable-libsnappy --enable-libsoxr --enable-libspeex --enable-libsrt --enable-libssh --enable-libsvtav1 --enable-libtesseract --enable-libtheora --enable-libtwolame --enable-libvorbis --enable-libv4l2 --enable-libvidstab --enable-libvmaf --enable-version3 --enable-vapoursynth --enable-libvpx --enable-libvvenc --enable-vulkan --enable-libshaderc --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxvid --enable-libxml2 --enable-libzimg --enable-libzmq --enable-libzvbi --enable-lv2 --enable-avfilter --enable-libmodplug --enable-pthreads --disable-static --enable-shared --enable-gpl --disable-debug --disable-stripping --shlibdir=/usr/lib64 --enable-lto --enable-libvpl --enable-runtime-cpudetect\nlibavutil      60. 26.103 / 60. 26.103\nlibavcodec     62. 28.103 / 62. 28.103\nlibavformat    62. 12.103 / 62. 12.103\nlibavdevice    62.  3.103 / 62.  3.103\nlibavfilter    11. 14.103 / 11. 14.103\nlibswscale      9.  5.103 /  9.  5.103\nlibswresample   6.  3.103 /  6.  3.103\n",
+        "tools": {
+          "ffmpeg": {
+            "path": "/usr/bin/ffmpeg",
+            "sha256": "c71eb1c6b9d57114ea567b1525c393295285df3ad21b17ad8144e02832d8ed92"
+          },
+          "ffprobe": {
+            "path": "/usr/bin/ffprobe",
+            "sha256": "f21cb84ff7cbdd97940118b2c7e23c3075ee0172d065fb5b05f16c2d333d50ef"
+          }
+        },
+        "commands": [
+          {
+            "argv": [
+              "ffmpeg",
+              "-version"
+            ],
+            "exit_status": 0,
+            "stdout": "ffmpeg version 8.1.3 Copyright (c) 2000-2026 the FFmpeg developers\nbuilt with gcc 16 (GCC)\nconfiguration: --prefix=/usr --bindir=/usr/bin --datadir=/usr/share/ffmpeg --docdir=/usr/share/doc/ffmpeg --incdir=/usr/include/ffmpeg --libdir=/usr/lib64 --mandir=/usr/share/man --arch=x86_64 --optflags='-O2 -flto=auto -ffat-lto-objects -fexceptions -g -grecord-gcc-switches -pipe -Wall -Wno-complain-wrong-lang -Werror=format-security -Wp,-U_FORTIFY_SOURCE,-D_FORTIFY_SOURCE=3 -Wp,-D_GLIBCXX_ASSERTIONS -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -fstack-protector-strong -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -m64 -march=x86-64 -mtune=generic -fasynchronous-unwind-tables -fstack-clash-protection -fcf-protection -mtls-dialect=gnu2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer' --extra-ldflags='-Wl,-z,relro -Wl,--as-needed -Wl,-z,pack-relative-relocs -Wl,-z,now -specs=/usr/lib/rpm/redhat/redhat-hardened-ld -specs=/usr/lib/rpm/redhat/redhat-hardened-ld-errors -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -Wl,--build-id=sha1 -specs=/usr/lib/rpm/redhat/redhat-package-notes ' --extra-cflags=' -I/usr/include/rav1e' --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libvo-amrwbenc --enable-version3 --enable-bzlib --enable-chromaprint --enable-fontconfig --enable-frei0r --enable-gcrypt --enable-gnutls --enable-ladspa --enable-lcms2 --enable-libaom --enable-libaribb24 --enable-libaribcaption --enable-libdav1d --enable-libass --enable-libbluray --enable-libbs2b --enable-libcodec2 --enable-cuda --enable-cuda-llvm --enable-cuvid --enable-libcdio --enable-libdrm --enable-libfdk-aac --enable-libjack --enable-libjxl --enable-libklvanc --enable-libfreetype --enable-libfribidi --enable-libgme --enable-libgsm --enable-libharfbuzz --enable-libilbc --enable-liblc3 --enable-libmp3lame --enable-libmysofa --enable-nvenc --enable-nvdec --enable-openal --enable-liboapv --enable-opencl --enable-opengl --enable-libopenh264 --enable-libopenjpeg --enable-libopenmpt --enable-libopus --enable-libpulse --enable-libplacebo --enable-librsvg --enable-librav1e --enable-librubberband --enable-libqrencode --enable-libsmbclient --enable-version3 --enable-libsnappy --enable-libsoxr --enable-libspeex --enable-libsrt --enable-libssh --enable-libsvtav1 --enable-libtesseract --enable-libtheora --enable-libtwolame --enable-libvorbis --enable-libv4l2 --enable-libvidstab --enable-libvmaf --enable-version3 --enable-vapoursynth --enable-libvpx --enable-libvvenc --enable-vulkan --enable-libshaderc --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxvid --enable-libxml2 --enable-libzimg --enable-libzmq --enable-libzvbi --enable-lv2 --enable-avfilter --enable-libmodplug --enable-pthreads --disable-static --enable-shared --enable-gpl --disable-debug --disable-stripping --shlibdir=/usr/lib64 --enable-lto --enable-libvpl --enable-runtime-cpudetect\nlibavutil      60. 26.103 / 60. 26.103\nlibavcodec     62. 28.103 / 62. 28.103\nlibavformat    62. 12.103 / 62. 12.103\nlibavdevice    62.  3.103 / 62.  3.103\nlibavfilter    11. 14.103 / 11. 14.103\nlibswscale      9.  5.103 /  9.  5.103\nlibswresample   6.  3.103 /  6.  3.103\n\nExiting with exit code 0\n",
+            "stderr": ""
+          },
+          {
+            "argv": [
+              "ffprobe",
+              "-version"
+            ],
+            "exit_status": 0,
+            "stdout": "ffprobe version 8.1.3 Copyright (c) 2007-2026 the FFmpeg developers\nbuilt with gcc 16 (GCC)\nconfiguration: --prefix=/usr --bindir=/usr/bin --datadir=/usr/share/ffmpeg --docdir=/usr/share/doc/ffmpeg --incdir=/usr/include/ffmpeg --libdir=/usr/lib64 --mandir=/usr/share/man --arch=x86_64 --optflags='-O2 -flto=auto -ffat-lto-objects -fexceptions -g -grecord-gcc-switches -pipe -Wall -Wno-complain-wrong-lang -Werror=format-security -Wp,-U_FORTIFY_SOURCE,-D_FORTIFY_SOURCE=3 -Wp,-D_GLIBCXX_ASSERTIONS -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -fstack-protector-strong -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -m64 -march=x86-64 -mtune=generic -fasynchronous-unwind-tables -fstack-clash-protection -fcf-protection -mtls-dialect=gnu2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer' --extra-ldflags='-Wl,-z,relro -Wl,--as-needed -Wl,-z,pack-relative-relocs -Wl,-z,now -specs=/usr/lib/rpm/redhat/redhat-hardened-ld -specs=/usr/lib/rpm/redhat/redhat-hardened-ld-errors -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -Wl,--build-id=sha1 -specs=/usr/lib/rpm/redhat/redhat-package-notes ' --extra-cflags=' -I/usr/include/rav1e' --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libvo-amrwbenc --enable-version3 --enable-bzlib --enable-chromaprint --enable-fontconfig --enable-frei0r --enable-gcrypt --enable-gnutls --enable-ladspa --enable-lcms2 --enable-libaom --enable-libaribb24 --enable-libaribcaption --enable-libdav1d --enable-libass --enable-libbluray --enable-libbs2b --enable-libcodec2 --enable-cuda --enable-cuda-llvm --enable-cuvid --enable-libcdio --enable-libdrm --enable-libfdk-aac --enable-libjack --enable-libjxl --enable-libklvanc --enable-libfreetype --enable-libfribidi --enable-libgme --enable-libgsm --enable-libharfbuzz --enable-libilbc --enable-liblc3 --enable-libmp3lame --enable-libmysofa --enable-nvenc --enable-nvdec --enable-openal --enable-liboapv --enable-opencl --enable-opengl --enable-libopenh264 --enable-libopenjpeg --enable-libopenmpt --enable-libopus --enable-libpulse --enable-libplacebo --enable-librsvg --enable-librav1e --enable-librubberband --enable-libqrencode --enable-libsmbclient --enable-version3 --enable-libsnappy --enable-libsoxr --enable-libspeex --enable-libsrt --enable-libssh --enable-libsvtav1 --enable-libtesseract --enable-libtheora --enable-libtwolame --enable-libvorbis --enable-libv4l2 --enable-libvidstab --enable-libvmaf --enable-version3 --enable-vapoursynth --enable-libvpx --enable-libvvenc --enable-vulkan --enable-libshaderc --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxvid --enable-libxml2 --enable-libzimg --enable-libzmq --enable-libzvbi --enable-lv2 --enable-avfilter --enable-libmodplug --enable-pthreads --disable-static --enable-shared --enable-gpl --disable-debug --disable-stripping --shlibdir=/usr/lib64 --enable-lto --enable-libvpl --enable-runtime-cpudetect\nlibavutil      60. 26.103 / 60. 26.103\nlibavcodec     62. 28.103 / 62. 28.103\nlibavformat    62. 12.103 / 62. 12.103\nlibavdevice    62.  3.103 / 62.  3.103\nlibavfilter    11. 14.103 / 11. 14.103\nlibswscale      9.  5.103 /  9.  5.103\nlibswresample   6.  3.103 /  6.  3.103\n",
+            "stderr": ""
+          },
+          {
+            "argv": [
+              "bash",
+              "/home/eureka/Documents/AsciiFlow/tests/fixtures/codecs/generate-8bit-production-baseline.sh",
+              "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/measurement-v1/source-sdr/source-300.mp4"
+            ],
+            "exit_status": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "argv": [
+              "ffmpeg",
+              "-v",
+              "error",
+              "-nostdin",
+              "-n",
+              "-stream_loop",
+              "-1",
+              "-i",
+              "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/measurement-v1/source-sdr/source-300.mp4",
+              "-map",
+              "0:v:0",
+              "-an",
+              "-c:v",
+              "copy",
+              "-frames:v",
+              "100000",
+              "-color_primaries",
+              "bt709",
+              "-color_trc",
+              "bt709",
+              "-colorspace",
+              "bt709",
+              "-color_range",
+              "tv",
+              "-map_metadata",
+              "-1",
+              "-fflags",
+              "+bitexact",
+              "-video_track_timescale",
+              "90000",
+              "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/measurement-v1/source-sdr/input.mp4"
+            ],
+            "exit_status": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "argv": [
+              "ffprobe",
+              "-v",
+              "error",
+              "-select_streams",
+              "v:0",
+              "-count_packets",
+              "-show_streams",
+              "-of",
+              "json",
+              "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/measurement-v1/source-sdr/input.mp4"
+            ],
+            "exit_status": 0,
+            "stdout": "{\n    \"streams\": [\n        {\n            \"index\": 0,\n            \"codec_name\": \"h264\",\n            \"codec_long_name\": \"H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10\",\n            \"profile\": \"Constrained Baseline\",\n            \"codec_type\": \"video\",\n            \"codec_tag_string\": \"avc1\",\n            \"codec_tag\": \"0x31637661\",\n            \"mime_codec_string\": \"avc1.42c02a\",\n            \"width\": 1920,\n            \"height\": 1080,\n            \"coded_width\": 1920,\n            \"coded_height\": 1080,\n            \"has_b_frames\": 0,\n            \"sample_aspect_ratio\": \"1:1\",\n            \"display_aspect_ratio\": \"16:9\",\n            \"pix_fmt\": \"yuv420p\",\n            \"level\": 42,\n            \"color_range\": \"tv\",\n            \"color_space\": \"bt709\",\n            \"color_transfer\": \"bt709\",\n            \"color_primaries\": \"bt709\",\n            \"chroma_location\": \"left\",\n            \"field_order\": \"progressive\",\n            \"is_avc\": \"true\",\n            \"nal_length_size\": \"4\",\n            \"id\": \"0x1\",\n            \"r_frame_rate\": \"50/1\",\n            \"avg_frame_rate\": \"50/1\",\n            \"time_base\": \"1/90000\",\n            \"start_pts\": 0,\n            \"start_time\": \"0.000000\",\n            \"duration_ts\": 180000000,\n            \"duration\": \"2000.000000\",\n            \"bit_rate\": \"26227465\",\n            \"bits_per_raw_sample\": \"8\",\n            \"nb_frames\": \"100000\",\n            \"nb_read_packets\": \"100000\",\n            \"extradata_size\": 43,\n            \"disposition\": {\n                \"default\": 1,\n                \"dub\": 0,\n                \"original\": 0,\n                \"comment\": 0,\n                \"lyrics\": 0,\n                \"karaoke\": 0,\n                \"forced\": 0,\n                \"hearing_impaired\": 0,\n                \"visual_impaired\": 0,\n                \"clean_effects\": 0,\n                \"attached_pic\": 0,\n                \"timed_thumbnails\": 0,\n                \"non_diegetic\": 0,\n                \"captions\": 0,\n                \"descriptions\": 0,\n                \"metadata\": 0,\n                \"dependent\": 0,\n                \"still_image\": 0,\n                \"multilayer\": 0\n            },\n            \"tags\": {\n                \"language\": \"und\",\n                \"handler_name\": \"VideoHandler\"\n            }\n        }\n    ]\n}\n",
+            "stderr": ""
+          },
+          {
+            "argv": [
+              "ffmpeg",
+              "-v",
+              "error",
+              "-nostdin",
+              "-n",
+              "-i",
+              "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/measurement-v1/source-sdr/input.mp4",
+              "-f",
+              "lavfi",
+              "-i",
+              "sine=frequency=440:sample_rate=48000:duration=2000.00",
+              "-map",
+              "0:v:0",
+              "-map",
+              "1:a:0",
+              "-c:v",
+              "copy",
+              "-c:a",
+              "aac",
+              "-b:a",
+              "128k",
+              "-ar",
+              "48000",
+              "-ac",
+              "2",
+              "-threads",
+              "1",
+              "-map_metadata",
+              "-1",
+              "-fflags",
+              "+bitexact",
+              "-flags:a",
+              "+bitexact",
+              "-video_track_timescale",
+              "90000",
+              "-metadata:s:a:0",
+              "language=eng",
+              "-metadata:s:a:0",
+              "title=Soak track 1",
+              "-disposition:a:0",
+              "default",
+              "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/measurement-v1/source-sdr/input-aac.mp4"
+            ],
+            "exit_status": 0,
+            "stdout": "",
+            "stderr": ""
+          }
+        ],
+        "output": {
+          "path": "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/measurement-v1/source-sdr/input-aac.mp4",
+          "sha256": "003472712461b548853fc294e4503c7d7c0fa040dc18560190268af1e83e120c",
+          "bytes": 6591288176
+        },
+        "probe": {
+          "streams": [
+            {
+              "index": 0,
+              "codec_name": "h264",
+              "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+              "profile": "Constrained Baseline",
+              "codec_type": "video",
+              "codec_tag_string": "avc1",
+              "codec_tag": "0x31637661",
+              "mime_codec_string": "avc1.42c02a",
+              "width": 1920,
+              "height": 1080,
+              "coded_width": 1920,
+              "coded_height": 1080,
+              "has_b_frames": 0,
+              "sample_aspect_ratio": "1:1",
+              "display_aspect_ratio": "16:9",
+              "pix_fmt": "yuv420p",
+              "level": 42,
+              "color_range": "tv",
+              "color_space": "bt709",
+              "color_transfer": "bt709",
+              "color_primaries": "bt709",
+              "chroma_location": "left",
+              "field_order": "progressive",
+              "is_avc": "true",
+              "nal_length_size": "4",
+              "id": "0x1",
+              "r_frame_rate": "50/1",
+              "avg_frame_rate": "50/1",
+              "time_base": "1/90000",
+              "start_pts": 0,
+              "start_time": "0.000000",
+              "duration_ts": 180000000,
+              "duration": "2000.000000",
+              "bit_rate": "26227465",
+              "bits_per_raw_sample": "8",
+              "nb_frames": "100000",
+              "nb_read_packets": "100000",
+              "extradata_size": 43,
+              "disposition": {
+                "default": 1,
+                "dub": 0,
+                "original": 0,
+                "comment": 0,
+                "lyrics": 0,
+                "karaoke": 0,
+                "forced": 0,
+                "hearing_impaired": 0,
+                "visual_impaired": 0,
+                "clean_effects": 0,
+                "attached_pic": 0,
+                "timed_thumbnails": 0,
+                "non_diegetic": 0,
+                "captions": 0,
+                "descriptions": 0,
+                "metadata": 0,
+                "dependent": 0,
+                "still_image": 0,
+                "multilayer": 0
+              },
+              "tags": {
+                "language": "und",
+                "handler_name": "VideoHandler"
+              }
+            }
+          ]
+        }
+      },
+      "output": {
+        "path": "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/production-v1/sdr.mp4",
+        "sha256": "92383dd193791e65a3640396dc4eb81019185d40dacbbb3a090813c09c7a6ec7"
+      },
+      "production_command": {
+        "argv": [
+          "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/production-v1/production-asciiflow",
+          "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/measurement-v1/source-sdr/input-aac.mp4",
+          "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/production-v1/sdr.mp4",
+          "--width",
+          "80",
+          "--charset",
+          "standard",
+          "--font",
+          "builtin-8x8",
+          "--color",
+          "true",
+          "--audio",
+          "copy",
+          "--decode",
+          "vaapi",
+          "--backend",
+          "vulkan",
+          "--vulkan-mapping",
+          "gpu",
+          "--encode",
+          "vaapi",
+          "--hw-device",
+          "/dev/dri/renderD128",
+          "--vaapi-vulkan-input-interop",
+          "on",
+          "--vaapi-vulkan-output-interop",
+          "on",
+          "--output-codec",
+          "h264",
+          "--output-bit-depth",
+          "8",
+          "--output-dynamic-range",
+          "preserve",
+          "--no-progress",
+          "--diagnostic-report",
+          "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/production-v1/sdr-diagnostic.json"
+        ],
+        "elapsed_seconds": 203.4423012979969,
+        "exit_code": 0,
+        "id": "sdr-production",
+        "loaded_driver_files": {
+          "/usr/lib64/dri-nonfree/iHD_drv_video.so": {
+            "sha256": "98942f2f651c99e6874c108107a34e0f6335fefae777faca1454ca14311b950f"
+          },
+          "/usr/lib64/libvulkan_intel.so": {
+            "sha256": "11ef9334499bd78b0010cb4f1462d59042a76d9bf49cf2bc0a08f02b3f9c01bd"
+          }
+        },
+        "log": "command-000.log",
+        "peak_process_rss_kib": 161104,
+        "process_samples": "command-000-process.jsonl",
+        "watchdog": "completed"
+      },
+      "stream": {
+        "index": 0,
+        "codec_name": "h264",
+        "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+        "profile": "High",
+        "codec_type": "video",
+        "codec_tag_string": "avc1",
+        "codec_tag": "0x31637661",
+        "mime_codec_string": "avc1.640c2a",
+        "width": 1920,
+        "height": 1080,
+        "coded_width": 1920,
+        "coded_height": 1088,
+        "has_b_frames": 0,
+        "pix_fmt": "yuv420p",
+        "level": 42,
+        "color_range": "tv",
+        "color_space": "bt709",
+        "color_transfer": "bt709",
+        "color_primaries": "bt709",
+        "chroma_location": "left",
+        "field_order": "progressive",
+        "refs": 1,
+        "is_avc": "true",
+        "nal_length_size": "4",
+        "id": "0x1",
+        "r_frame_rate": "50/1",
+        "avg_frame_rate": "50/1",
+        "time_base": "1/12800",
+        "start_pts": 0,
+        "start_time": "0.000000",
+        "duration_ts": 25600000,
+        "duration": "2000.000000",
+        "bit_rate": "4823942",
+        "bits_per_raw_sample": "8",
+        "nb_frames": "100000",
+        "nb_read_frames": "100000",
+        "nb_read_packets": "100000",
+        "extradata_size": 50,
+        "disposition": {
+          "default": 1,
+          "dub": 0,
+          "original": 0,
+          "comment": 0,
+          "lyrics": 0,
+          "karaoke": 0,
+          "forced": 0,
+          "hearing_impaired": 0,
+          "visual_impaired": 0,
+          "clean_effects": 0,
+          "attached_pic": 0,
+          "timed_thumbnails": 0,
+          "non_diegetic": 0,
+          "captions": 0,
+          "descriptions": 0,
+          "metadata": 0,
+          "dependent": 0,
+          "still_image": 0,
+          "multilayer": 0
+        },
+        "tags": {
+          "language": "und",
+          "handler_name": "VideoHandler"
+        }
+      },
+      "audio": {
+        "oracle": "strict payload/timestamps/stream metadata",
+        "result": "PASS",
+        "packet_counts": [
+          93751
+        ]
+      },
+      "resource_summary": {
+        "milestones": {
+          "0": {
+            "rss_kib": 43536,
+            "fd_count": 4,
+            "nearest_external_observation": {
+              "elapsed_seconds": 1.0282214250000834,
+              "pid": 561369,
+              "rss_kib": 140540,
+              "anonymous_kib": 54956,
+              "threads": 11,
+              "fd_count": 24,
+              "pss_kib": 89374,
+              "frames_processed": 1,
+              "frame_correlation": "latest flushed observation, not atomic"
+            }
+          },
+          "10000": {
+            "rss_kib": 143296,
+            "fd_count": 22,
+            "nearest_external_observation": {
+              "elapsed_seconds": 19.56364552499872,
+              "pid": 561369,
+              "rss_kib": 143316,
+              "anonymous_kib": 57732,
+              "threads": 11,
+              "fd_count": 24,
+              "pss_kib": 92153,
+              "frames_processed": 10000,
+              "frame_correlation": "latest flushed observation, not atomic"
+            }
+          },
+          "25000": {
+            "rss_kib": 145084,
+            "fd_count": 22,
+            "nearest_external_observation": {
+              "elapsed_seconds": 48.417133054997976,
+              "pid": 561369,
+              "rss_kib": 145084,
+              "anonymous_kib": 59500,
+              "threads": 11,
+              "fd_count": 24,
+              "pss_kib": 93920,
+              "frames_processed": 25000,
+              "frame_correlation": "latest flushed observation, not atomic"
+            }
+          },
+          "50000": {
+            "rss_kib": 154152,
+            "fd_count": 22,
+            "nearest_external_observation": {
+              "elapsed_seconds": 95.79453156399904,
+              "pid": 561369,
+              "rss_kib": 154164,
+              "anonymous_kib": 68580,
+              "threads": 11,
+              "fd_count": 22,
+              "pss_kib": 103002,
+              "frames_processed": 50000,
+              "frame_correlation": "latest flushed observation, not atomic"
+            }
+          },
+          "75000": {
+            "rss_kib": 154160,
+            "fd_count": 22,
+            "nearest_external_observation": {
+              "elapsed_seconds": 143.20918702400013,
+              "pid": 561369,
+              "rss_kib": 154160,
+              "anonymous_kib": 68580,
+              "threads": 11,
+              "fd_count": 24,
+              "pss_kib": 102997,
+              "frames_processed": 75000,
+              "frame_correlation": "latest flushed observation, not atomic"
+            }
+          },
+          "100000": {
+            "rss_kib": 150796,
+            "fd_count": 8,
+            "nearest_external_observation": {
+              "elapsed_seconds": 189.60545568999805,
+              "pid": 561369,
+              "rss_kib": 160648,
+              "anonymous_kib": 75068,
+              "threads": 11,
+              "fd_count": 24,
+              "pss_kib": 108808,
+              "frames_processed": 99000,
+              "frame_correlation": "latest flushed observation, not atomic"
+            }
+          }
+        },
+        "rss_peak_kib": 160624,
+        "rss_final_kib": 150796,
+        "fd": {
+          "before": 4,
+          "peak": 24,
+          "after": 4
+        },
+        "resources_after_cleanup": {
+          "dma_buf_imported_plane_bindings": {
+            "active_bytes": 0,
+            "active_count": 0,
+            "peak_bytes": 20889600,
+            "peak_count": 8
+          },
+          "vaapi_decoder_exported_frame_refs": {
+            "active_bytes": null,
+            "active_count": 0,
+            "peak_bytes": null,
+            "peak_count": 7
+          },
+          "vaapi_encoder_acquired_frame_refs": {
+            "active_bytes": null,
+            "active_count": 0,
+            "peak_bytes": null,
+            "peak_count": 7
+          },
+          "vulkan_buffer_bindings": {
+            "active_bytes": 0,
+            "active_count": 0,
+            "peak_bytes": 25164928,
+            "peak_count": 18
+          }
+        },
+        "queue_observations": {
+          "mux_audio": {
+            "atomic_exact_high_water_mark": false,
+            "boundary_observations": 187504,
+            "bytes": null,
+            "capacity": 16,
+            "depth": 0,
+            "peak_depth": 16,
+            "peak_kind": "MeasuredPeakAtOperationBoundary",
+            "pre_operation_depth": 0,
+            "pre_operation_peak_depth": 16,
+            "scope": "maximum len snapshots after each successful enqueue/dequeue; concurrent operations may race the snapshot; depth is last boundary observation, not cleanup-time depth"
+          },
+          "mux_video": {
+            "atomic_exact_high_water_mark": false,
+            "boundary_observations": 200004,
+            "bytes": null,
+            "capacity": 16,
+            "depth": 0,
+            "peak_depth": 16,
+            "peak_kind": "MeasuredPeakAtOperationBoundary",
+            "pre_operation_depth": 1,
+            "pre_operation_peak_depth": 16,
+            "scope": "maximum len snapshots after each successful enqueue/dequeue; concurrent operations may race the snapshot; depth is last boundary observation, not cleanup-time depth"
+          },
+          "pipeline_decoded": {
+            "atomic_exact_high_water_mark": false,
+            "boundary_observations": 200000,
+            "bytes": null,
+            "capacity": 3,
+            "depth": 0,
+            "peak_depth": 3,
+            "peak_kind": "MeasuredPeakAtOperationBoundary",
+            "pre_operation_depth": 0,
+            "pre_operation_peak_depth": 3,
+            "scope": "maximum len snapshots after each successful enqueue/dequeue; concurrent operations may race the snapshot; depth is last boundary observation, not cleanup-time depth"
+          },
+          "pipeline_processed": {
+            "atomic_exact_high_water_mark": false,
+            "boundary_observations": 200000,
+            "bytes": null,
+            "capacity": 3,
+            "depth": 0,
+            "peak_depth": 3,
+            "peak_kind": "MeasuredPeakAtOperationBoundary",
+            "pre_operation_depth": 0,
+            "pre_operation_peak_depth": 3,
+            "scope": "maximum len snapshots after each successful enqueue/dequeue; concurrent operations may race the snapshot; depth is last boundary observation, not cleanup-time depth"
+          }
+        },
+        "mux": {
+          "bytes_written_since_explicit_flush": 0,
+          "flush_count": 3028,
+          "internal_pending_bytes": null,
+          "internal_pending_packets": null,
+          "last_flush_reason": "final-eof",
+          "writes_since_explicit_flush": 0
+        },
+        "throughput": {
+          "first_10k": {
+            "fps": 511.15217699185206,
+            "observed_start_frame": 0,
+            "observed_end_frame": 10000,
+            "elapsed_seconds": 19.56364552499872
+          },
+          "middle_10k": {
+            "fps": 539.069897745993,
+            "observed_start_frame": 45000,
+            "observed_end_frame": 55000,
+            "elapsed_seconds": 18.550470062997192
+          },
+          "last_10k": {
+            "fps": 530.8658862480042,
+            "observed_start_frame": 90000,
+            "observed_end_frame": 100000,
+            "elapsed_seconds": 18.837149380000483
+          }
+        },
+        "memory_verdict": "Requires media-length trend review; no arbitrary MiB gate",
+        "limitations": "External PSS/Anonymous/time and flushed 1000-frame observations are correlated, not atomic; throughput endpoints include process startup/finalization when wall duration is supplied; queue observations are not exact high-water census"
+      },
+      "measurement_full_decode": {
+        "argv": [
+          "ffmpeg",
+          "-v",
+          "error",
+          "-nostdin",
+          "-xerror",
+          "-i",
+          "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/measurement-v1/sdr.mp4",
+          "-map",
+          "0",
+          "-f",
+          "null",
+          "-"
+        ],
+        "elapsed_seconds": 73.80801263799731,
+        "exit_code": 0,
+        "id": "sdr-full-decode",
+        "log": "command-002.log",
+        "peak_process_rss_kib": 206044,
+        "process_samples": "command-002-process.jsonl",
+        "watchdog": "completed"
+      },
+      "production_receipt": "production-v1/sdr-record.json",
+      "memory_qualification": "No additional sustained unexplained growth identified in recorded workload; mux index is not a total-memory bound"
+    },
+    "B": {
+      "kind": "pq-preserve",
+      "frames": 100000,
+      "media_seconds": 2000,
+      "artifact_and_lifecycle_result": "PASS",
+      "input": {
+        "schema_version": 1,
+        "kind": "pq-preserve",
+        "frames": 100000,
+        "media_seconds": 2000.0,
+        "audio_tracks": 0,
+        "audio": "none",
+        "status": "GeneratedNotQualified",
+        "source": {
+          "path": "/home/eureka/Documents/AsciiFlow/tests/fixtures/codecs/hevc-main10-pq-c3-legal-v1.mp4",
+          "sha256": "eb8d8c42cd99369b99031900e8861c08f611bfcc662b8d0eb741eb695a0c366a",
+          "bytes": 1927266
+        },
+        "generators": [
+          {
+            "path": "/home/eureka/Documents/AsciiFlow/tests/soak/generate.py",
+            "sha256": "04a744fe2e47fc8be4c213530b1ebba9f0be760d5b0dbff56cdd4b4aa459e744"
+          },
+          {
+            "path": "/home/eureka/Documents/AsciiFlow/tests/fixtures/codecs/SHA256SUMS",
+            "sha256": "4d315580d1da2b9329e86fb510d80240e7448266c9f721cb9fe4fa6a2b782575"
+          }
+        ],
+        "ffmpeg_version": "ffmpeg version 8.1.3 Copyright (c) 2000-2026 the FFmpeg developers\nbuilt with gcc 16 (GCC)\nconfiguration: --prefix=/usr --bindir=/usr/bin --datadir=/usr/share/ffmpeg --docdir=/usr/share/doc/ffmpeg --incdir=/usr/include/ffmpeg --libdir=/usr/lib64 --mandir=/usr/share/man --arch=x86_64 --optflags='-O2 -flto=auto -ffat-lto-objects -fexceptions -g -grecord-gcc-switches -pipe -Wall -Wno-complain-wrong-lang -Werror=format-security -Wp,-U_FORTIFY_SOURCE,-D_FORTIFY_SOURCE=3 -Wp,-D_GLIBCXX_ASSERTIONS -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -fstack-protector-strong -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -m64 -march=x86-64 -mtune=generic -fasynchronous-unwind-tables -fstack-clash-protection -fcf-protection -mtls-dialect=gnu2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer' --extra-ldflags='-Wl,-z,relro -Wl,--as-needed -Wl,-z,pack-relative-relocs -Wl,-z,now -specs=/usr/lib/rpm/redhat/redhat-hardened-ld -specs=/usr/lib/rpm/redhat/redhat-hardened-ld-errors -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -Wl,--build-id=sha1 -specs=/usr/lib/rpm/redhat/redhat-package-notes ' --extra-cflags=' -I/usr/include/rav1e' --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libvo-amrwbenc --enable-version3 --enable-bzlib --enable-chromaprint --enable-fontconfig --enable-frei0r --enable-gcrypt --enable-gnutls --enable-ladspa --enable-lcms2 --enable-libaom --enable-libaribb24 --enable-libaribcaption --enable-libdav1d --enable-libass --enable-libbluray --enable-libbs2b --enable-libcodec2 --enable-cuda --enable-cuda-llvm --enable-cuvid --enable-libcdio --enable-libdrm --enable-libfdk-aac --enable-libjack --enable-libjxl --enable-libklvanc --enable-libfreetype --enable-libfribidi --enable-libgme --enable-libgsm --enable-libharfbuzz --enable-libilbc --enable-liblc3 --enable-libmp3lame --enable-libmysofa --enable-nvenc --enable-nvdec --enable-openal --enable-liboapv --enable-opencl --enable-opengl --enable-libopenh264 --enable-libopenjpeg --enable-libopenmpt --enable-libopus --enable-libpulse --enable-libplacebo --enable-librsvg --enable-librav1e --enable-librubberband --enable-libqrencode --enable-libsmbclient --enable-version3 --enable-libsnappy --enable-libsoxr --enable-libspeex --enable-libsrt --enable-libssh --enable-libsvtav1 --enable-libtesseract --enable-libtheora --enable-libtwolame --enable-libvorbis --enable-libv4l2 --enable-libvidstab --enable-libvmaf --enable-version3 --enable-vapoursynth --enable-libvpx --enable-libvvenc --enable-vulkan --enable-libshaderc --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxvid --enable-libxml2 --enable-libzimg --enable-libzmq --enable-libzvbi --enable-lv2 --enable-avfilter --enable-libmodplug --enable-pthreads --disable-static --enable-shared --enable-gpl --disable-debug --disable-stripping --shlibdir=/usr/lib64 --enable-lto --enable-libvpl --enable-runtime-cpudetect\nlibavutil      60. 26.103 / 60. 26.103\nlibavcodec     62. 28.103 / 62. 28.103\nlibavformat    62. 12.103 / 62. 12.103\nlibavdevice    62.  3.103 / 62.  3.103\nlibavfilter    11. 14.103 / 11. 14.103\nlibswscale      9.  5.103 /  9.  5.103\nlibswresample   6.  3.103 /  6.  3.103\n\nExiting with exit code 0\n",
+        "ffprobe_version": "ffprobe version 8.1.3 Copyright (c) 2007-2026 the FFmpeg developers\nbuilt with gcc 16 (GCC)\nconfiguration: --prefix=/usr --bindir=/usr/bin --datadir=/usr/share/ffmpeg --docdir=/usr/share/doc/ffmpeg --incdir=/usr/include/ffmpeg --libdir=/usr/lib64 --mandir=/usr/share/man --arch=x86_64 --optflags='-O2 -flto=auto -ffat-lto-objects -fexceptions -g -grecord-gcc-switches -pipe -Wall -Wno-complain-wrong-lang -Werror=format-security -Wp,-U_FORTIFY_SOURCE,-D_FORTIFY_SOURCE=3 -Wp,-D_GLIBCXX_ASSERTIONS -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -fstack-protector-strong -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -m64 -march=x86-64 -mtune=generic -fasynchronous-unwind-tables -fstack-clash-protection -fcf-protection -mtls-dialect=gnu2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer' --extra-ldflags='-Wl,-z,relro -Wl,--as-needed -Wl,-z,pack-relative-relocs -Wl,-z,now -specs=/usr/lib/rpm/redhat/redhat-hardened-ld -specs=/usr/lib/rpm/redhat/redhat-hardened-ld-errors -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -Wl,--build-id=sha1 -specs=/usr/lib/rpm/redhat/redhat-package-notes ' --extra-cflags=' -I/usr/include/rav1e' --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libvo-amrwbenc --enable-version3 --enable-bzlib --enable-chromaprint --enable-fontconfig --enable-frei0r --enable-gcrypt --enable-gnutls --enable-ladspa --enable-lcms2 --enable-libaom --enable-libaribb24 --enable-libaribcaption --enable-libdav1d --enable-libass --enable-libbluray --enable-libbs2b --enable-libcodec2 --enable-cuda --enable-cuda-llvm --enable-cuvid --enable-libcdio --enable-libdrm --enable-libfdk-aac --enable-libjack --enable-libjxl --enable-libklvanc --enable-libfreetype --enable-libfribidi --enable-libgme --enable-libgsm --enable-libharfbuzz --enable-libilbc --enable-liblc3 --enable-libmp3lame --enable-libmysofa --enable-nvenc --enable-nvdec --enable-openal --enable-liboapv --enable-opencl --enable-opengl --enable-libopenh264 --enable-libopenjpeg --enable-libopenmpt --enable-libopus --enable-libpulse --enable-libplacebo --enable-librsvg --enable-librav1e --enable-librubberband --enable-libqrencode --enable-libsmbclient --enable-version3 --enable-libsnappy --enable-libsoxr --enable-libspeex --enable-libsrt --enable-libssh --enable-libsvtav1 --enable-libtesseract --enable-libtheora --enable-libtwolame --enable-libvorbis --enable-libv4l2 --enable-libvidstab --enable-libvmaf --enable-version3 --enable-vapoursynth --enable-libvpx --enable-libvvenc --enable-vulkan --enable-libshaderc --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxvid --enable-libxml2 --enable-libzimg --enable-libzmq --enable-libzvbi --enable-lv2 --enable-avfilter --enable-libmodplug --enable-pthreads --disable-static --enable-shared --enable-gpl --disable-debug --disable-stripping --shlibdir=/usr/lib64 --enable-lto --enable-libvpl --enable-runtime-cpudetect\nlibavutil      60. 26.103 / 60. 26.103\nlibavcodec     62. 28.103 / 62. 28.103\nlibavformat    62. 12.103 / 62. 12.103\nlibavdevice    62.  3.103 / 62.  3.103\nlibavfilter    11. 14.103 / 11. 14.103\nlibswscale      9.  5.103 /  9.  5.103\nlibswresample   6.  3.103 /  6.  3.103\n",
+        "tools": {
+          "ffmpeg": {
+            "path": "/usr/bin/ffmpeg",
+            "sha256": "c71eb1c6b9d57114ea567b1525c393295285df3ad21b17ad8144e02832d8ed92"
+          },
+          "ffprobe": {
+            "path": "/usr/bin/ffprobe",
+            "sha256": "f21cb84ff7cbdd97940118b2c7e23c3075ee0172d065fb5b05f16c2d333d50ef"
+          }
+        },
+        "commands": [
+          {
+            "argv": [
+              "ffmpeg",
+              "-version"
+            ],
+            "exit_status": 0,
+            "stdout": "ffmpeg version 8.1.3 Copyright (c) 2000-2026 the FFmpeg developers\nbuilt with gcc 16 (GCC)\nconfiguration: --prefix=/usr --bindir=/usr/bin --datadir=/usr/share/ffmpeg --docdir=/usr/share/doc/ffmpeg --incdir=/usr/include/ffmpeg --libdir=/usr/lib64 --mandir=/usr/share/man --arch=x86_64 --optflags='-O2 -flto=auto -ffat-lto-objects -fexceptions -g -grecord-gcc-switches -pipe -Wall -Wno-complain-wrong-lang -Werror=format-security -Wp,-U_FORTIFY_SOURCE,-D_FORTIFY_SOURCE=3 -Wp,-D_GLIBCXX_ASSERTIONS -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -fstack-protector-strong -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -m64 -march=x86-64 -mtune=generic -fasynchronous-unwind-tables -fstack-clash-protection -fcf-protection -mtls-dialect=gnu2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer' --extra-ldflags='-Wl,-z,relro -Wl,--as-needed -Wl,-z,pack-relative-relocs -Wl,-z,now -specs=/usr/lib/rpm/redhat/redhat-hardened-ld -specs=/usr/lib/rpm/redhat/redhat-hardened-ld-errors -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -Wl,--build-id=sha1 -specs=/usr/lib/rpm/redhat/redhat-package-notes ' --extra-cflags=' -I/usr/include/rav1e' --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libvo-amrwbenc --enable-version3 --enable-bzlib --enable-chromaprint --enable-fontconfig --enable-frei0r --enable-gcrypt --enable-gnutls --enable-ladspa --enable-lcms2 --enable-libaom --enable-libaribb24 --enable-libaribcaption --enable-libdav1d --enable-libass --enable-libbluray --enable-libbs2b --enable-libcodec2 --enable-cuda --enable-cuda-llvm --enable-cuvid --enable-libcdio --enable-libdrm --enable-libfdk-aac --enable-libjack --enable-libjxl --enable-libklvanc --enable-libfreetype --enable-libfribidi --enable-libgme --enable-libgsm --enable-libharfbuzz --enable-libilbc --enable-liblc3 --enable-libmp3lame --enable-libmysofa --enable-nvenc --enable-nvdec --enable-openal --enable-liboapv --enable-opencl --enable-opengl --enable-libopenh264 --enable-libopenjpeg --enable-libopenmpt --enable-libopus --enable-libpulse --enable-libplacebo --enable-librsvg --enable-librav1e --enable-librubberband --enable-libqrencode --enable-libsmbclient --enable-version3 --enable-libsnappy --enable-libsoxr --enable-libspeex --enable-libsrt --enable-libssh --enable-libsvtav1 --enable-libtesseract --enable-libtheora --enable-libtwolame --enable-libvorbis --enable-libv4l2 --enable-libvidstab --enable-libvmaf --enable-version3 --enable-vapoursynth --enable-libvpx --enable-libvvenc --enable-vulkan --enable-libshaderc --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxvid --enable-libxml2 --enable-libzimg --enable-libzmq --enable-libzvbi --enable-lv2 --enable-avfilter --enable-libmodplug --enable-pthreads --disable-static --enable-shared --enable-gpl --disable-debug --disable-stripping --shlibdir=/usr/lib64 --enable-lto --enable-libvpl --enable-runtime-cpudetect\nlibavutil      60. 26.103 / 60. 26.103\nlibavcodec     62. 28.103 / 62. 28.103\nlibavformat    62. 12.103 / 62. 12.103\nlibavdevice    62.  3.103 / 62.  3.103\nlibavfilter    11. 14.103 / 11. 14.103\nlibswscale      9.  5.103 /  9.  5.103\nlibswresample   6.  3.103 /  6.  3.103\n\nExiting with exit code 0\n",
+            "stderr": ""
+          },
+          {
+            "argv": [
+              "ffprobe",
+              "-version"
+            ],
+            "exit_status": 0,
+            "stdout": "ffprobe version 8.1.3 Copyright (c) 2007-2026 the FFmpeg developers\nbuilt with gcc 16 (GCC)\nconfiguration: --prefix=/usr --bindir=/usr/bin --datadir=/usr/share/ffmpeg --docdir=/usr/share/doc/ffmpeg --incdir=/usr/include/ffmpeg --libdir=/usr/lib64 --mandir=/usr/share/man --arch=x86_64 --optflags='-O2 -flto=auto -ffat-lto-objects -fexceptions -g -grecord-gcc-switches -pipe -Wall -Wno-complain-wrong-lang -Werror=format-security -Wp,-U_FORTIFY_SOURCE,-D_FORTIFY_SOURCE=3 -Wp,-D_GLIBCXX_ASSERTIONS -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -fstack-protector-strong -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -m64 -march=x86-64 -mtune=generic -fasynchronous-unwind-tables -fstack-clash-protection -fcf-protection -mtls-dialect=gnu2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer' --extra-ldflags='-Wl,-z,relro -Wl,--as-needed -Wl,-z,pack-relative-relocs -Wl,-z,now -specs=/usr/lib/rpm/redhat/redhat-hardened-ld -specs=/usr/lib/rpm/redhat/redhat-hardened-ld-errors -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -Wl,--build-id=sha1 -specs=/usr/lib/rpm/redhat/redhat-package-notes ' --extra-cflags=' -I/usr/include/rav1e' --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libvo-amrwbenc --enable-version3 --enable-bzlib --enable-chromaprint --enable-fontconfig --enable-frei0r --enable-gcrypt --enable-gnutls --enable-ladspa --enable-lcms2 --enable-libaom --enable-libaribb24 --enable-libaribcaption --enable-libdav1d --enable-libass --enable-libbluray --enable-libbs2b --enable-libcodec2 --enable-cuda --enable-cuda-llvm --enable-cuvid --enable-libcdio --enable-libdrm --enable-libfdk-aac --enable-libjack --enable-libjxl --enable-libklvanc --enable-libfreetype --enable-libfribidi --enable-libgme --enable-libgsm --enable-libharfbuzz --enable-libilbc --enable-liblc3 --enable-libmp3lame --enable-libmysofa --enable-nvenc --enable-nvdec --enable-openal --enable-liboapv --enable-opencl --enable-opengl --enable-libopenh264 --enable-libopenjpeg --enable-libopenmpt --enable-libopus --enable-libpulse --enable-libplacebo --enable-librsvg --enable-librav1e --enable-librubberband --enable-libqrencode --enable-libsmbclient --enable-version3 --enable-libsnappy --enable-libsoxr --enable-libspeex --enable-libsrt --enable-libssh --enable-libsvtav1 --enable-libtesseract --enable-libtheora --enable-libtwolame --enable-libvorbis --enable-libv4l2 --enable-libvidstab --enable-libvmaf --enable-version3 --enable-vapoursynth --enable-libvpx --enable-libvvenc --enable-vulkan --enable-libshaderc --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxvid --enable-libxml2 --enable-libzimg --enable-libzmq --enable-libzvbi --enable-lv2 --enable-avfilter --enable-libmodplug --enable-pthreads --disable-static --enable-shared --enable-gpl --disable-debug --disable-stripping --shlibdir=/usr/lib64 --enable-lto --enable-libvpl --enable-runtime-cpudetect\nlibavutil      60. 26.103 / 60. 26.103\nlibavcodec     62. 28.103 / 62. 28.103\nlibavformat    62. 12.103 / 62. 12.103\nlibavdevice    62.  3.103 / 62.  3.103\nlibavfilter    11. 14.103 / 11. 14.103\nlibswscale      9.  5.103 /  9.  5.103\nlibswresample   6.  3.103 /  6.  3.103\n",
+            "stderr": ""
+          },
+          {
+            "argv": [
+              "ffmpeg",
+              "-v",
+              "error",
+              "-nostdin",
+              "-n",
+              "-stream_loop",
+              "-1",
+              "-i",
+              "/home/eureka/Documents/AsciiFlow/tests/fixtures/codecs/hevc-main10-pq-c3-legal-v1.mp4",
+              "-map",
+              "0:v:0",
+              "-an",
+              "-c:v",
+              "copy",
+              "-frames:v",
+              "100000",
+              "-color_primaries",
+              "bt2020",
+              "-color_trc",
+              "smpte2084",
+              "-colorspace",
+              "bt2020nc",
+              "-color_range",
+              "tv",
+              "-map_metadata",
+              "-1",
+              "-fflags",
+              "+bitexact",
+              "-video_track_timescale",
+              "90000",
+              "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/measurement-v1/source-pq-preserve/input.mp4"
+            ],
+            "exit_status": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "argv": [
+              "ffprobe",
+              "-v",
+              "error",
+              "-select_streams",
+              "v:0",
+              "-count_packets",
+              "-show_streams",
+              "-of",
+              "json",
+              "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/measurement-v1/source-pq-preserve/input.mp4"
+            ],
+            "exit_status": 0,
+            "stdout": "{\n    \"streams\": [\n        {\n            \"index\": 0,\n            \"codec_name\": \"hevc\",\n            \"codec_long_name\": \"H.265 / HEVC (High Efficiency Video Coding)\",\n            \"profile\": \"Main 10\",\n            \"codec_type\": \"video\",\n            \"codec_tag_string\": \"hev1\",\n            \"codec_tag\": \"0x31766568\",\n            \"width\": 1920,\n            \"height\": 1080,\n            \"coded_width\": 1920,\n            \"coded_height\": 1088,\n            \"has_b_frames\": 0,\n            \"pix_fmt\": \"yuv420p10le\",\n            \"level\": 255,\n            \"color_range\": \"tv\",\n            \"color_space\": \"bt2020nc\",\n            \"color_transfer\": \"smpte2084\",\n            \"color_primaries\": \"bt2020\",\n            \"chroma_location\": \"left\",\n            \"field_order\": \"progressive\",\n            \"view_ids_available\": \"\",\n            \"view_pos_available\": \"\",\n            \"id\": \"0x1\",\n            \"r_frame_rate\": \"50/1\",\n            \"avg_frame_rate\": \"50/1\",\n            \"time_base\": \"1/90000\",\n            \"start_pts\": 0,\n            \"start_time\": \"0.000000\",\n            \"duration_ts\": 180000000,\n            \"duration\": \"2000.000000\",\n            \"bit_rate\": \"2563762\",\n            \"nb_frames\": \"100000\",\n            \"nb_read_packets\": \"100000\",\n            \"extradata_size\": 2430,\n            \"disposition\": {\n                \"default\": 1,\n                \"dub\": 0,\n                \"original\": 0,\n                \"comment\": 0,\n                \"lyrics\": 0,\n                \"karaoke\": 0,\n                \"forced\": 0,\n                \"hearing_impaired\": 0,\n                \"visual_impaired\": 0,\n                \"clean_effects\": 0,\n                \"attached_pic\": 0,\n                \"timed_thumbnails\": 0,\n                \"non_diegetic\": 0,\n                \"captions\": 0,\n                \"descriptions\": 0,\n                \"metadata\": 0,\n                \"dependent\": 0,\n                \"still_image\": 0,\n                \"multilayer\": 0\n            },\n            \"tags\": {\n                \"language\": \"und\",\n                \"handler_name\": \"VideoHandler\"\n            }\n        }\n    ]\n}\n",
+            "stderr": ""
+          }
+        ],
+        "output": {
+          "path": "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/measurement-v1/source-pq-preserve/input.mp4",
+          "sha256": "d1146254ce1658a7469c93533cb16e8164e08ef49b7a9727f484013bcfc24c26",
+          "bytes": 641354407
+        },
+        "probe": {
+          "streams": [
+            {
+              "index": 0,
+              "codec_name": "hevc",
+              "codec_long_name": "H.265 / HEVC (High Efficiency Video Coding)",
+              "profile": "Main 10",
+              "codec_type": "video",
+              "codec_tag_string": "hev1",
+              "codec_tag": "0x31766568",
+              "width": 1920,
+              "height": 1080,
+              "coded_width": 1920,
+              "coded_height": 1088,
+              "has_b_frames": 0,
+              "pix_fmt": "yuv420p10le",
+              "level": 255,
+              "color_range": "tv",
+              "color_space": "bt2020nc",
+              "color_transfer": "smpte2084",
+              "color_primaries": "bt2020",
+              "chroma_location": "left",
+              "field_order": "progressive",
+              "view_ids_available": "",
+              "view_pos_available": "",
+              "id": "0x1",
+              "r_frame_rate": "50/1",
+              "avg_frame_rate": "50/1",
+              "time_base": "1/90000",
+              "start_pts": 0,
+              "start_time": "0.000000",
+              "duration_ts": 180000000,
+              "duration": "2000.000000",
+              "bit_rate": "2563762",
+              "nb_frames": "100000",
+              "nb_read_packets": "100000",
+              "extradata_size": 2430,
+              "disposition": {
+                "default": 1,
+                "dub": 0,
+                "original": 0,
+                "comment": 0,
+                "lyrics": 0,
+                "karaoke": 0,
+                "forced": 0,
+                "hearing_impaired": 0,
+                "visual_impaired": 0,
+                "clean_effects": 0,
+                "attached_pic": 0,
+                "timed_thumbnails": 0,
+                "non_diegetic": 0,
+                "captions": 0,
+                "descriptions": 0,
+                "metadata": 0,
+                "dependent": 0,
+                "still_image": 0,
+                "multilayer": 0
+              },
+              "tags": {
+                "language": "und",
+                "handler_name": "VideoHandler"
+              }
+            }
+          ]
+        }
+      },
+      "output": {
+        "path": "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/production-v1/pq-preserve.mp4",
+        "sha256": "d5efd71ed4939927696fe165900583cd3f06d942aad7e4cb3a3f5ad5899dce2c"
+      },
+      "production_command": {
+        "argv": [
+          "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/production-v1/production-asciiflow",
+          "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/measurement-v1/source-pq-preserve/input.mp4",
+          "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/production-v1/pq-preserve.mp4",
+          "--width",
+          "80",
+          "--charset",
+          "standard",
+          "--font",
+          "builtin-8x8",
+          "--color",
+          "true",
+          "--audio",
+          "none",
+          "--decode",
+          "vaapi",
+          "--backend",
+          "vulkan",
+          "--vulkan-mapping",
+          "gpu",
+          "--encode",
+          "vaapi",
+          "--hw-device",
+          "/dev/dri/renderD128",
+          "--vaapi-vulkan-input-interop",
+          "on",
+          "--vaapi-vulkan-output-interop",
+          "on",
+          "--output-codec",
+          "hevc",
+          "--output-bit-depth",
+          "10",
+          "--output-dynamic-range",
+          "preserve",
+          "--no-progress",
+          "--diagnostic-report",
+          "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/production-v1/pq-preserve-diagnostic.json"
+        ],
+        "elapsed_seconds": 384.4683743329988,
+        "exit_code": 0,
+        "id": "pq-preserve-production",
+        "loaded_driver_files": {
+          "/usr/lib64/dri-nonfree/iHD_drv_video.so": {
+            "sha256": "98942f2f651c99e6874c108107a34e0f6335fefae777faca1454ca14311b950f"
+          },
+          "/usr/lib64/libvulkan_intel.so": {
+            "sha256": "11ef9334499bd78b0010cb4f1462d59042a76d9bf49cf2bc0a08f02b3f9c01bd"
+          }
+        },
+        "log": "command-005.log",
+        "peak_process_rss_kib": 165756,
+        "process_samples": "command-005-process.jsonl",
+        "watchdog": "completed"
+      },
+      "stream": {
+        "index": 0,
+        "codec_name": "hevc",
+        "codec_long_name": "H.265 / HEVC (High Efficiency Video Coding)",
+        "profile": "Main 10",
+        "codec_type": "video",
+        "codec_tag_string": "hev1",
+        "codec_tag": "0x31766568",
+        "width": 1920,
+        "height": 1080,
+        "coded_width": 1920,
+        "coded_height": 1080,
+        "has_b_frames": 0,
+        "pix_fmt": "yuv420p10le",
+        "level": 120,
+        "color_range": "tv",
+        "color_space": "bt2020nc",
+        "color_transfer": "smpte2084",
+        "color_primaries": "bt2020",
+        "chroma_location": "left",
+        "refs": 1,
+        "view_ids_available": "",
+        "view_pos_available": "",
+        "id": "0x1",
+        "r_frame_rate": "50/1",
+        "avg_frame_rate": "50/1",
+        "time_base": "1/12800",
+        "start_pts": 0,
+        "start_time": "0.000000",
+        "duration_ts": 25600000,
+        "duration": "2000.000000",
+        "bit_rate": "2071401",
+        "nb_frames": "100000",
+        "nb_read_frames": "100000",
+        "nb_read_packets": "100000",
+        "extradata_size": 128,
+        "disposition": {
+          "default": 1,
+          "dub": 0,
+          "original": 0,
+          "comment": 0,
+          "lyrics": 0,
+          "karaoke": 0,
+          "forced": 0,
+          "hearing_impaired": 0,
+          "visual_impaired": 0,
+          "clean_effects": 0,
+          "attached_pic": 0,
+          "timed_thumbnails": 0,
+          "non_diegetic": 0,
+          "captions": 0,
+          "descriptions": 0,
+          "metadata": 0,
+          "dependent": 0,
+          "still_image": 0,
+          "multilayer": 0
+        },
+        "tags": {
+          "language": "und",
+          "handler_name": "VideoHandler"
+        }
+      },
+      "audio": null,
+      "resource_summary": {
+        "milestones": {
+          "0": {
+            "rss_kib": 43740,
+            "fd_count": 4,
+            "nearest_external_observation": {
+              "elapsed_seconds": 1.0266027359975851,
+              "pid": 565140,
+              "rss_kib": 160252,
+              "anonymous_kib": 75632,
+              "threads": 10,
+              "fd_count": 25,
+              "pss_kib": 109006,
+              "frames_processed": 1,
+              "frame_correlation": "latest flushed observation, not atomic"
+            }
+          },
+          "10000": {
+            "rss_kib": 161912,
+            "fd_count": 23,
+            "nearest_external_observation": {
+              "elapsed_seconds": 31.02425317199959,
+              "pid": 565140,
+              "rss_kib": 161916,
+              "anonymous_kib": 77296,
+              "threads": 10,
+              "fd_count": 23,
+              "pss_kib": 109747,
+              "frames_processed": 10000,
+              "frame_correlation": "latest flushed observation, not atomic"
+            }
+          },
+          "25000": {
+            "rss_kib": 163036,
+            "fd_count": 23,
+            "nearest_external_observation": {
+              "elapsed_seconds": 69.24850616799813,
+              "pid": 565140,
+              "rss_kib": 163036,
+              "anonymous_kib": 78416,
+              "threads": 10,
+              "fd_count": 23,
+              "pss_kib": 110867,
+              "frames_processed": 25000,
+              "frame_correlation": "latest flushed observation, not atomic"
+            }
+          },
+          "50000": {
+            "rss_kib": 164796,
+            "fd_count": 25,
+            "nearest_external_observation": {
+              "elapsed_seconds": 148.85572228899764,
+              "pid": 565140,
+              "rss_kib": 164820,
+              "anonymous_kib": 80200,
+              "threads": 10,
+              "fd_count": 25,
+              "pss_kib": 112766,
+              "frames_processed": 50000,
+              "frame_correlation": "latest flushed observation, not atomic"
+            }
+          },
+          "75000": {
+            "rss_kib": 166560,
+            "fd_count": 25,
+            "nearest_external_observation": {
+              "elapsed_seconds": 226.50193473299805,
+              "pid": 565140,
+              "rss_kib": 166564,
+              "anonymous_kib": 81944,
+              "threads": 10,
+              "fd_count": 23,
+              "pss_kib": 114511,
+              "frames_processed": 75000,
+              "frame_correlation": "latest flushed observation, not atomic"
+            }
+          },
+          "100000": {
+            "rss_kib": 168232,
+            "fd_count": 14,
+            "nearest_external_observation": {
+              "elapsed_seconds": 322.66183797199847,
+              "pid": 565140,
+              "rss_kib": 168252,
+              "anonymous_kib": 83632,
+              "threads": 10,
+              "fd_count": 25,
+              "pss_kib": 116199,
+              "frames_processed": 99000,
+              "frame_correlation": "latest flushed observation, not atomic"
+            }
+          }
+        },
+        "rss_peak_kib": 168248,
+        "rss_final_kib": 158456,
+        "fd": {
+          "before": 4,
+          "peak": 28,
+          "after": 4
+        },
+        "resources_after_cleanup": {
+          "dma_buf_imported_plane_bindings": {
+            "active_bytes": 0,
+            "active_count": 0,
+            "peak_bytes": 41779200,
+            "peak_count": 8
+          },
+          "vaapi_decoder_exported_frame_refs": {
+            "active_bytes": null,
+            "active_count": 0,
+            "peak_bytes": null,
+            "peak_count": 7
+          },
+          "vaapi_encoder_acquired_frame_refs": {
+            "active_bytes": null,
+            "active_count": 0,
+            "peak_bytes": null,
+            "peak_count": 7
+          },
+          "vulkan_buffer_bindings": {
+            "active_bytes": 0,
+            "active_count": 0,
+            "peak_bytes": 50278528,
+            "peak_count": 18
+          }
+        },
+        "queue_observations": {
+          "mux_audio": {
+            "atomic_exact_high_water_mark": false,
+            "boundary_observations": 0,
+            "bytes": null,
+            "capacity": 16,
+            "depth": null,
+            "peak_depth": null,
+            "peak_kind": "Unavailable",
+            "pre_operation_depth": 0,
+            "pre_operation_peak_depth": 0,
+            "scope": "maximum len snapshots after each successful enqueue/dequeue; concurrent operations may race the snapshot; depth is last boundary observation, not cleanup-time depth"
+          },
+          "mux_video": {
+            "atomic_exact_high_water_mark": false,
+            "boundary_observations": 200002,
+            "bytes": null,
+            "capacity": 16,
+            "depth": 0,
+            "peak_depth": 2,
+            "peak_kind": "MeasuredPeakAtOperationBoundary",
+            "pre_operation_depth": 1,
+            "pre_operation_peak_depth": 1,
+            "scope": "maximum len snapshots after each successful enqueue/dequeue; concurrent operations may race the snapshot; depth is last boundary observation, not cleanup-time depth"
+          },
+          "pipeline_decoded": {
+            "atomic_exact_high_water_mark": false,
+            "boundary_observations": 200000,
+            "bytes": null,
+            "capacity": 3,
+            "depth": 0,
+            "peak_depth": 3,
+            "peak_kind": "MeasuredPeakAtOperationBoundary",
+            "pre_operation_depth": 0,
+            "pre_operation_peak_depth": 3,
+            "scope": "maximum len snapshots after each successful enqueue/dequeue; concurrent operations may race the snapshot; depth is last boundary observation, not cleanup-time depth"
+          },
+          "pipeline_processed": {
+            "atomic_exact_high_water_mark": false,
+            "boundary_observations": 200000,
+            "bytes": null,
+            "capacity": 3,
+            "depth": 0,
+            "peak_depth": 3,
+            "peak_kind": "MeasuredPeakAtOperationBoundary",
+            "pre_operation_depth": 0,
+            "pre_operation_peak_depth": 3,
+            "scope": "maximum len snapshots after each successful enqueue/dequeue; concurrent operations may race the snapshot; depth is last boundary observation, not cleanup-time depth"
+          }
+        },
+        "mux": {
+          "bytes_written_since_explicit_flush": 0,
+          "flush_count": 1563,
+          "internal_pending_bytes": null,
+          "internal_pending_packets": null,
+          "last_flush_reason": "final-eof",
+          "writes_since_explicit_flush": 0
+        },
+        "throughput": {
+          "first_10k": {
+            "fps": 322.32846813619125,
+            "observed_start_frame": 0,
+            "observed_end_frame": 10000,
+            "elapsed_seconds": 31.02425317199959
+          },
+          "middle_10k": {
+            "fps": 311.6863899579481,
+            "observed_start_frame": 45000,
+            "observed_end_frame": 55000,
+            "elapsed_seconds": 32.083531145999586
+          },
+          "last_10k": {
+            "fps": 241.22993802467263,
+            "observed_start_frame": 90000,
+            "observed_end_frame": 100000,
+            "elapsed_seconds": 41.45422447099918
+          }
+        },
+        "memory_verdict": "Requires media-length trend review; no arbitrary MiB gate",
+        "limitations": "External PSS/Anonymous/time and flushed 1000-frame observations are correlated, not atomic; throughput endpoints include process startup/finalization when wall duration is supplied; queue observations are not exact high-water census"
+      },
+      "measurement_full_decode": {
+        "argv": [
+          "ffmpeg",
+          "-v",
+          "error",
+          "-nostdin",
+          "-xerror",
+          "-i",
+          "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/measurement-v1/pq-preserve.mp4",
+          "-map",
+          "0",
+          "-f",
+          "null",
+          "-"
+        ],
+        "elapsed_seconds": 210.34323810800197,
+        "exit_code": 0,
+        "id": "pq-preserve-full-decode",
+        "log": "command-008.log",
+        "peak_process_rss_kib": 267464,
+        "process_samples": "command-008-process.jsonl",
+        "watchdog": "completed"
+      },
+      "production_receipt": "production-v1/pq-preserve-record.json",
+      "memory_qualification": "No additional sustained unexplained growth identified in recorded workload; mux index is not a total-memory bound"
+    },
+    "C": {
+      "kind": "pq-to-sdr",
+      "frames": 100000,
+      "media_seconds": 2000,
+      "artifact_and_lifecycle_result": "PASS",
+      "input": {
+        "schema_version": 1,
+        "kind": "pq-to-sdr",
+        "frames": 100000,
+        "media_seconds": 2000.0,
+        "audio_tracks": 2,
+        "audio": "copy",
+        "status": "GeneratedNotQualified",
+        "source": {
+          "path": "/home/eureka/Documents/AsciiFlow/tests/fixtures/codecs/av1-main10-pq-c3-legal-v1.mp4",
+          "sha256": "7eb4fd7e7513fc181ad8489e13edbac10a88a8f3a7947d2f958d36a0ce08e7c4",
+          "bytes": 8502612
+        },
+        "generators": [
+          {
+            "path": "/home/eureka/Documents/AsciiFlow/tests/soak/generate.py",
+            "sha256": "04a744fe2e47fc8be4c213530b1ebba9f0be760d5b0dbff56cdd4b4aa459e744"
+          },
+          {
+            "path": "/home/eureka/Documents/AsciiFlow/tests/fixtures/codecs/SHA256SUMS",
+            "sha256": "4d315580d1da2b9329e86fb510d80240e7448266c9f721cb9fe4fa6a2b782575"
+          }
+        ],
+        "ffmpeg_version": "ffmpeg version 8.1.3 Copyright (c) 2000-2026 the FFmpeg developers\nbuilt with gcc 16 (GCC)\nconfiguration: --prefix=/usr --bindir=/usr/bin --datadir=/usr/share/ffmpeg --docdir=/usr/share/doc/ffmpeg --incdir=/usr/include/ffmpeg --libdir=/usr/lib64 --mandir=/usr/share/man --arch=x86_64 --optflags='-O2 -flto=auto -ffat-lto-objects -fexceptions -g -grecord-gcc-switches -pipe -Wall -Wno-complain-wrong-lang -Werror=format-security -Wp,-U_FORTIFY_SOURCE,-D_FORTIFY_SOURCE=3 -Wp,-D_GLIBCXX_ASSERTIONS -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -fstack-protector-strong -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -m64 -march=x86-64 -mtune=generic -fasynchronous-unwind-tables -fstack-clash-protection -fcf-protection -mtls-dialect=gnu2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer' --extra-ldflags='-Wl,-z,relro -Wl,--as-needed -Wl,-z,pack-relative-relocs -Wl,-z,now -specs=/usr/lib/rpm/redhat/redhat-hardened-ld -specs=/usr/lib/rpm/redhat/redhat-hardened-ld-errors -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -Wl,--build-id=sha1 -specs=/usr/lib/rpm/redhat/redhat-package-notes ' --extra-cflags=' -I/usr/include/rav1e' --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libvo-amrwbenc --enable-version3 --enable-bzlib --enable-chromaprint --enable-fontconfig --enable-frei0r --enable-gcrypt --enable-gnutls --enable-ladspa --enable-lcms2 --enable-libaom --enable-libaribb24 --enable-libaribcaption --enable-libdav1d --enable-libass --enable-libbluray --enable-libbs2b --enable-libcodec2 --enable-cuda --enable-cuda-llvm --enable-cuvid --enable-libcdio --enable-libdrm --enable-libfdk-aac --enable-libjack --enable-libjxl --enable-libklvanc --enable-libfreetype --enable-libfribidi --enable-libgme --enable-libgsm --enable-libharfbuzz --enable-libilbc --enable-liblc3 --enable-libmp3lame --enable-libmysofa --enable-nvenc --enable-nvdec --enable-openal --enable-liboapv --enable-opencl --enable-opengl --enable-libopenh264 --enable-libopenjpeg --enable-libopenmpt --enable-libopus --enable-libpulse --enable-libplacebo --enable-librsvg --enable-librav1e --enable-librubberband --enable-libqrencode --enable-libsmbclient --enable-version3 --enable-libsnappy --enable-libsoxr --enable-libspeex --enable-libsrt --enable-libssh --enable-libsvtav1 --enable-libtesseract --enable-libtheora --enable-libtwolame --enable-libvorbis --enable-libv4l2 --enable-libvidstab --enable-libvmaf --enable-version3 --enable-vapoursynth --enable-libvpx --enable-libvvenc --enable-vulkan --enable-libshaderc --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxvid --enable-libxml2 --enable-libzimg --enable-libzmq --enable-libzvbi --enable-lv2 --enable-avfilter --enable-libmodplug --enable-pthreads --disable-static --enable-shared --enable-gpl --disable-debug --disable-stripping --shlibdir=/usr/lib64 --enable-lto --enable-libvpl --enable-runtime-cpudetect\nlibavutil      60. 26.103 / 60. 26.103\nlibavcodec     62. 28.103 / 62. 28.103\nlibavformat    62. 12.103 / 62. 12.103\nlibavdevice    62.  3.103 / 62.  3.103\nlibavfilter    11. 14.103 / 11. 14.103\nlibswscale      9.  5.103 /  9.  5.103\nlibswresample   6.  3.103 /  6.  3.103\n\nExiting with exit code 0\n",
+        "ffprobe_version": "ffprobe version 8.1.3 Copyright (c) 2007-2026 the FFmpeg developers\nbuilt with gcc 16 (GCC)\nconfiguration: --prefix=/usr --bindir=/usr/bin --datadir=/usr/share/ffmpeg --docdir=/usr/share/doc/ffmpeg --incdir=/usr/include/ffmpeg --libdir=/usr/lib64 --mandir=/usr/share/man --arch=x86_64 --optflags='-O2 -flto=auto -ffat-lto-objects -fexceptions -g -grecord-gcc-switches -pipe -Wall -Wno-complain-wrong-lang -Werror=format-security -Wp,-U_FORTIFY_SOURCE,-D_FORTIFY_SOURCE=3 -Wp,-D_GLIBCXX_ASSERTIONS -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -fstack-protector-strong -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -m64 -march=x86-64 -mtune=generic -fasynchronous-unwind-tables -fstack-clash-protection -fcf-protection -mtls-dialect=gnu2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer' --extra-ldflags='-Wl,-z,relro -Wl,--as-needed -Wl,-z,pack-relative-relocs -Wl,-z,now -specs=/usr/lib/rpm/redhat/redhat-hardened-ld -specs=/usr/lib/rpm/redhat/redhat-hardened-ld-errors -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -Wl,--build-id=sha1 -specs=/usr/lib/rpm/redhat/redhat-package-notes ' --extra-cflags=' -I/usr/include/rav1e' --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libvo-amrwbenc --enable-version3 --enable-bzlib --enable-chromaprint --enable-fontconfig --enable-frei0r --enable-gcrypt --enable-gnutls --enable-ladspa --enable-lcms2 --enable-libaom --enable-libaribb24 --enable-libaribcaption --enable-libdav1d --enable-libass --enable-libbluray --enable-libbs2b --enable-libcodec2 --enable-cuda --enable-cuda-llvm --enable-cuvid --enable-libcdio --enable-libdrm --enable-libfdk-aac --enable-libjack --enable-libjxl --enable-libklvanc --enable-libfreetype --enable-libfribidi --enable-libgme --enable-libgsm --enable-libharfbuzz --enable-libilbc --enable-liblc3 --enable-libmp3lame --enable-libmysofa --enable-nvenc --enable-nvdec --enable-openal --enable-liboapv --enable-opencl --enable-opengl --enable-libopenh264 --enable-libopenjpeg --enable-libopenmpt --enable-libopus --enable-libpulse --enable-libplacebo --enable-librsvg --enable-librav1e --enable-librubberband --enable-libqrencode --enable-libsmbclient --enable-version3 --enable-libsnappy --enable-libsoxr --enable-libspeex --enable-libsrt --enable-libssh --enable-libsvtav1 --enable-libtesseract --enable-libtheora --enable-libtwolame --enable-libvorbis --enable-libv4l2 --enable-libvidstab --enable-libvmaf --enable-version3 --enable-vapoursynth --enable-libvpx --enable-libvvenc --enable-vulkan --enable-libshaderc --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxvid --enable-libxml2 --enable-libzimg --enable-libzmq --enable-libzvbi --enable-lv2 --enable-avfilter --enable-libmodplug --enable-pthreads --disable-static --enable-shared --enable-gpl --disable-debug --disable-stripping --shlibdir=/usr/lib64 --enable-lto --enable-libvpl --enable-runtime-cpudetect\nlibavutil      60. 26.103 / 60. 26.103\nlibavcodec     62. 28.103 / 62. 28.103\nlibavformat    62. 12.103 / 62. 12.103\nlibavdevice    62.  3.103 / 62.  3.103\nlibavfilter    11. 14.103 / 11. 14.103\nlibswscale      9.  5.103 /  9.  5.103\nlibswresample   6.  3.103 /  6.  3.103\n",
+        "tools": {
+          "ffmpeg": {
+            "path": "/usr/bin/ffmpeg",
+            "sha256": "c71eb1c6b9d57114ea567b1525c393295285df3ad21b17ad8144e02832d8ed92"
+          },
+          "ffprobe": {
+            "path": "/usr/bin/ffprobe",
+            "sha256": "f21cb84ff7cbdd97940118b2c7e23c3075ee0172d065fb5b05f16c2d333d50ef"
+          }
+        },
+        "commands": [
+          {
+            "argv": [
+              "ffmpeg",
+              "-version"
+            ],
+            "exit_status": 0,
+            "stdout": "ffmpeg version 8.1.3 Copyright (c) 2000-2026 the FFmpeg developers\nbuilt with gcc 16 (GCC)\nconfiguration: --prefix=/usr --bindir=/usr/bin --datadir=/usr/share/ffmpeg --docdir=/usr/share/doc/ffmpeg --incdir=/usr/include/ffmpeg --libdir=/usr/lib64 --mandir=/usr/share/man --arch=x86_64 --optflags='-O2 -flto=auto -ffat-lto-objects -fexceptions -g -grecord-gcc-switches -pipe -Wall -Wno-complain-wrong-lang -Werror=format-security -Wp,-U_FORTIFY_SOURCE,-D_FORTIFY_SOURCE=3 -Wp,-D_GLIBCXX_ASSERTIONS -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -fstack-protector-strong -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -m64 -march=x86-64 -mtune=generic -fasynchronous-unwind-tables -fstack-clash-protection -fcf-protection -mtls-dialect=gnu2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer' --extra-ldflags='-Wl,-z,relro -Wl,--as-needed -Wl,-z,pack-relative-relocs -Wl,-z,now -specs=/usr/lib/rpm/redhat/redhat-hardened-ld -specs=/usr/lib/rpm/redhat/redhat-hardened-ld-errors -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -Wl,--build-id=sha1 -specs=/usr/lib/rpm/redhat/redhat-package-notes ' --extra-cflags=' -I/usr/include/rav1e' --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libvo-amrwbenc --enable-version3 --enable-bzlib --enable-chromaprint --enable-fontconfig --enable-frei0r --enable-gcrypt --enable-gnutls --enable-ladspa --enable-lcms2 --enable-libaom --enable-libaribb24 --enable-libaribcaption --enable-libdav1d --enable-libass --enable-libbluray --enable-libbs2b --enable-libcodec2 --enable-cuda --enable-cuda-llvm --enable-cuvid --enable-libcdio --enable-libdrm --enable-libfdk-aac --enable-libjack --enable-libjxl --enable-libklvanc --enable-libfreetype --enable-libfribidi --enable-libgme --enable-libgsm --enable-libharfbuzz --enable-libilbc --enable-liblc3 --enable-libmp3lame --enable-libmysofa --enable-nvenc --enable-nvdec --enable-openal --enable-liboapv --enable-opencl --enable-opengl --enable-libopenh264 --enable-libopenjpeg --enable-libopenmpt --enable-libopus --enable-libpulse --enable-libplacebo --enable-librsvg --enable-librav1e --enable-librubberband --enable-libqrencode --enable-libsmbclient --enable-version3 --enable-libsnappy --enable-libsoxr --enable-libspeex --enable-libsrt --enable-libssh --enable-libsvtav1 --enable-libtesseract --enable-libtheora --enable-libtwolame --enable-libvorbis --enable-libv4l2 --enable-libvidstab --enable-libvmaf --enable-version3 --enable-vapoursynth --enable-libvpx --enable-libvvenc --enable-vulkan --enable-libshaderc --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxvid --enable-libxml2 --enable-libzimg --enable-libzmq --enable-libzvbi --enable-lv2 --enable-avfilter --enable-libmodplug --enable-pthreads --disable-static --enable-shared --enable-gpl --disable-debug --disable-stripping --shlibdir=/usr/lib64 --enable-lto --enable-libvpl --enable-runtime-cpudetect\nlibavutil      60. 26.103 / 60. 26.103\nlibavcodec     62. 28.103 / 62. 28.103\nlibavformat    62. 12.103 / 62. 12.103\nlibavdevice    62.  3.103 / 62.  3.103\nlibavfilter    11. 14.103 / 11. 14.103\nlibswscale      9.  5.103 /  9.  5.103\nlibswresample   6.  3.103 /  6.  3.103\n\nExiting with exit code 0\n",
+            "stderr": ""
+          },
+          {
+            "argv": [
+              "ffprobe",
+              "-version"
+            ],
+            "exit_status": 0,
+            "stdout": "ffprobe version 8.1.3 Copyright (c) 2007-2026 the FFmpeg developers\nbuilt with gcc 16 (GCC)\nconfiguration: --prefix=/usr --bindir=/usr/bin --datadir=/usr/share/ffmpeg --docdir=/usr/share/doc/ffmpeg --incdir=/usr/include/ffmpeg --libdir=/usr/lib64 --mandir=/usr/share/man --arch=x86_64 --optflags='-O2 -flto=auto -ffat-lto-objects -fexceptions -g -grecord-gcc-switches -pipe -Wall -Wno-complain-wrong-lang -Werror=format-security -Wp,-U_FORTIFY_SOURCE,-D_FORTIFY_SOURCE=3 -Wp,-D_GLIBCXX_ASSERTIONS -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -fstack-protector-strong -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -m64 -march=x86-64 -mtune=generic -fasynchronous-unwind-tables -fstack-clash-protection -fcf-protection -mtls-dialect=gnu2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer' --extra-ldflags='-Wl,-z,relro -Wl,--as-needed -Wl,-z,pack-relative-relocs -Wl,-z,now -specs=/usr/lib/rpm/redhat/redhat-hardened-ld -specs=/usr/lib/rpm/redhat/redhat-hardened-ld-errors -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -Wl,--build-id=sha1 -specs=/usr/lib/rpm/redhat/redhat-package-notes ' --extra-cflags=' -I/usr/include/rav1e' --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libvo-amrwbenc --enable-version3 --enable-bzlib --enable-chromaprint --enable-fontconfig --enable-frei0r --enable-gcrypt --enable-gnutls --enable-ladspa --enable-lcms2 --enable-libaom --enable-libaribb24 --enable-libaribcaption --enable-libdav1d --enable-libass --enable-libbluray --enable-libbs2b --enable-libcodec2 --enable-cuda --enable-cuda-llvm --enable-cuvid --enable-libcdio --enable-libdrm --enable-libfdk-aac --enable-libjack --enable-libjxl --enable-libklvanc --enable-libfreetype --enable-libfribidi --enable-libgme --enable-libgsm --enable-libharfbuzz --enable-libilbc --enable-liblc3 --enable-libmp3lame --enable-libmysofa --enable-nvenc --enable-nvdec --enable-openal --enable-liboapv --enable-opencl --enable-opengl --enable-libopenh264 --enable-libopenjpeg --enable-libopenmpt --enable-libopus --enable-libpulse --enable-libplacebo --enable-librsvg --enable-librav1e --enable-librubberband --enable-libqrencode --enable-libsmbclient --enable-version3 --enable-libsnappy --enable-libsoxr --enable-libspeex --enable-libsrt --enable-libssh --enable-libsvtav1 --enable-libtesseract --enable-libtheora --enable-libtwolame --enable-libvorbis --enable-libv4l2 --enable-libvidstab --enable-libvmaf --enable-version3 --enable-vapoursynth --enable-libvpx --enable-libvvenc --enable-vulkan --enable-libshaderc --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxvid --enable-libxml2 --enable-libzimg --enable-libzmq --enable-libzvbi --enable-lv2 --enable-avfilter --enable-libmodplug --enable-pthreads --disable-static --enable-shared --enable-gpl --disable-debug --disable-stripping --shlibdir=/usr/lib64 --enable-lto --enable-libvpl --enable-runtime-cpudetect\nlibavutil      60. 26.103 / 60. 26.103\nlibavcodec     62. 28.103 / 62. 28.103\nlibavformat    62. 12.103 / 62. 12.103\nlibavdevice    62.  3.103 / 62.  3.103\nlibavfilter    11. 14.103 / 11. 14.103\nlibswscale      9.  5.103 /  9.  5.103\nlibswresample   6.  3.103 /  6.  3.103\n",
+            "stderr": ""
+          },
+          {
+            "argv": [
+              "ffmpeg",
+              "-v",
+              "error",
+              "-nostdin",
+              "-n",
+              "-stream_loop",
+              "-1",
+              "-i",
+              "/home/eureka/Documents/AsciiFlow/tests/fixtures/codecs/av1-main10-pq-c3-legal-v1.mp4",
+              "-map",
+              "0:v:0",
+              "-an",
+              "-c:v",
+              "copy",
+              "-frames:v",
+              "100000",
+              "-color_primaries",
+              "bt2020",
+              "-color_trc",
+              "smpte2084",
+              "-colorspace",
+              "bt2020nc",
+              "-color_range",
+              "tv",
+              "-map_metadata",
+              "-1",
+              "-fflags",
+              "+bitexact",
+              "-video_track_timescale",
+              "90000",
+              "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/measurement-v1/source-pq-to-sdr/input.mp4"
+            ],
+            "exit_status": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "argv": [
+              "ffprobe",
+              "-v",
+              "error",
+              "-select_streams",
+              "v:0",
+              "-count_packets",
+              "-show_streams",
+              "-of",
+              "json",
+              "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/measurement-v1/source-pq-to-sdr/input.mp4"
+            ],
+            "exit_status": 0,
+            "stdout": "{\n    \"streams\": [\n        {\n            \"index\": 0,\n            \"codec_name\": \"av1\",\n            \"codec_long_name\": \"Alliance for Open Media AV1\",\n            \"profile\": \"Main\",\n            \"codec_type\": \"video\",\n            \"codec_tag_string\": \"av01\",\n            \"codec_tag\": \"0x31307661\",\n            \"mime_codec_string\": \"av01.0.09M.10.0.111.09.16.09.0\",\n            \"width\": 1920,\n            \"height\": 1080,\n            \"coded_width\": 1920,\n            \"coded_height\": 1080,\n            \"has_b_frames\": 0,\n            \"sample_aspect_ratio\": \"1:1\",\n            \"display_aspect_ratio\": \"16:9\",\n            \"pix_fmt\": \"yuv420p10le\",\n            \"level\": 9,\n            \"color_range\": \"tv\",\n            \"color_space\": \"bt2020nc\",\n            \"color_transfer\": \"smpte2084\",\n            \"color_primaries\": \"bt2020\",\n            \"chroma_location\": \"left\",\n            \"field_order\": \"progressive\",\n            \"id\": \"0x1\",\n            \"r_frame_rate\": \"50/1\",\n            \"avg_frame_rate\": \"50/1\",\n            \"time_base\": \"1/90000\",\n            \"start_pts\": 0,\n            \"start_time\": \"0.000000\",\n            \"duration_ts\": 180000000,\n            \"duration\": \"2000.000000\",\n            \"bit_rate\": \"11334102\",\n            \"nb_frames\": \"100000\",\n            \"nb_read_packets\": \"100000\",\n            \"extradata_size\": 20,\n            \"disposition\": {\n                \"default\": 1,\n                \"dub\": 0,\n                \"original\": 0,\n                \"comment\": 0,\n                \"lyrics\": 0,\n                \"karaoke\": 0,\n                \"forced\": 0,\n                \"hearing_impaired\": 0,\n                \"visual_impaired\": 0,\n                \"clean_effects\": 0,\n                \"attached_pic\": 0,\n                \"timed_thumbnails\": 0,\n                \"non_diegetic\": 0,\n                \"captions\": 0,\n                \"descriptions\": 0,\n                \"metadata\": 0,\n                \"dependent\": 0,\n                \"still_image\": 0,\n                \"multilayer\": 0\n            },\n            \"tags\": {\n                \"language\": \"und\",\n                \"handler_name\": \"VideoHandler\"\n            }\n        }\n    ]\n}\n",
+            "stderr": ""
+          },
+          {
+            "argv": [
+              "ffmpeg",
+              "-v",
+              "error",
+              "-nostdin",
+              "-n",
+              "-i",
+              "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/measurement-v1/source-pq-to-sdr/input.mp4",
+              "-f",
+              "lavfi",
+              "-i",
+              "sine=frequency=440:sample_rate=48000:duration=2000.00",
+              "-f",
+              "lavfi",
+              "-i",
+              "sine=frequency=660:sample_rate=48000:duration=2000.00",
+              "-map",
+              "0:v:0",
+              "-map",
+              "1:a:0",
+              "-map",
+              "2:a:0",
+              "-c:v",
+              "copy",
+              "-c:a",
+              "aac",
+              "-b:a",
+              "128k",
+              "-ar",
+              "48000",
+              "-ac",
+              "2",
+              "-threads",
+              "1",
+              "-map_metadata",
+              "-1",
+              "-fflags",
+              "+bitexact",
+              "-flags:a",
+              "+bitexact",
+              "-video_track_timescale",
+              "90000",
+              "-metadata:s:a:0",
+              "language=eng",
+              "-metadata:s:a:0",
+              "title=Soak track 1",
+              "-disposition:a:0",
+              "default",
+              "-metadata:s:a:1",
+              "language=jpn",
+              "-metadata:s:a:1",
+              "title=Soak track 2",
+              "-disposition:a:1",
+              "0",
+              "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/measurement-v1/source-pq-to-sdr/input-aac.mp4"
+            ],
+            "exit_status": 0,
+            "stdout": "",
+            "stderr": ""
+          }
+        ],
+        "output": {
+          "path": "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/measurement-v1/source-pq-to-sdr/input-aac.mp4",
+          "sha256": "38d24a0360d3bbfba5710e5cc85823a8bdad01c1ca065b2386dbd81261cae6b6",
+          "bytes": 2899946247
+        },
+        "probe": {
+          "streams": [
+            {
+              "index": 0,
+              "codec_name": "av1",
+              "codec_long_name": "Alliance for Open Media AV1",
+              "profile": "Main",
+              "codec_type": "video",
+              "codec_tag_string": "av01",
+              "codec_tag": "0x31307661",
+              "mime_codec_string": "av01.0.09M.10.0.111.09.16.09.0",
+              "width": 1920,
+              "height": 1080,
+              "coded_width": 1920,
+              "coded_height": 1080,
+              "has_b_frames": 0,
+              "sample_aspect_ratio": "1:1",
+              "display_aspect_ratio": "16:9",
+              "pix_fmt": "yuv420p10le",
+              "level": 9,
+              "color_range": "tv",
+              "color_space": "bt2020nc",
+              "color_transfer": "smpte2084",
+              "color_primaries": "bt2020",
+              "chroma_location": "left",
+              "field_order": "progressive",
+              "id": "0x1",
+              "r_frame_rate": "50/1",
+              "avg_frame_rate": "50/1",
+              "time_base": "1/90000",
+              "start_pts": 0,
+              "start_time": "0.000000",
+              "duration_ts": 180000000,
+              "duration": "2000.000000",
+              "bit_rate": "11334102",
+              "nb_frames": "100000",
+              "nb_read_packets": "100000",
+              "extradata_size": 20,
+              "disposition": {
+                "default": 1,
+                "dub": 0,
+                "original": 0,
+                "comment": 0,
+                "lyrics": 0,
+                "karaoke": 0,
+                "forced": 0,
+                "hearing_impaired": 0,
+                "visual_impaired": 0,
+                "clean_effects": 0,
+                "attached_pic": 0,
+                "timed_thumbnails": 0,
+                "non_diegetic": 0,
+                "captions": 0,
+                "descriptions": 0,
+                "metadata": 0,
+                "dependent": 0,
+                "still_image": 0,
+                "multilayer": 0
+              },
+              "tags": {
+                "language": "und",
+                "handler_name": "VideoHandler"
+              }
+            }
+          ]
+        }
+      },
+      "output": {
+        "path": "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/production-v1/pq-to-sdr.mp4",
+        "sha256": "3d9f4a69f6f930e4155238dc72080464f1096829b0a2176053da6bd31f4dfe4d"
+      },
+      "production_command": {
+        "argv": [
+          "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/production-v1/production-asciiflow",
+          "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/measurement-v1/source-pq-to-sdr/input-aac.mp4",
+          "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/production-v1/pq-to-sdr.mp4",
+          "--width",
+          "80",
+          "--charset",
+          "standard",
+          "--font",
+          "builtin-8x8",
+          "--color",
+          "true",
+          "--audio",
+          "copy",
+          "--decode",
+          "vaapi",
+          "--backend",
+          "vulkan",
+          "--vulkan-mapping",
+          "gpu",
+          "--encode",
+          "vaapi",
+          "--hw-device",
+          "/dev/dri/renderD128",
+          "--vaapi-vulkan-input-interop",
+          "on",
+          "--vaapi-vulkan-output-interop",
+          "on",
+          "--output-codec",
+          "hevc",
+          "--output-bit-depth",
+          "10",
+          "--output-dynamic-range",
+          "sdr",
+          "--no-progress",
+          "--diagnostic-report",
+          "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/production-v1/pq-to-sdr-diagnostic.json"
+        ],
+        "elapsed_seconds": 811.6858215430002,
+        "exit_code": 0,
+        "id": "pq-to-sdr-production",
+        "loaded_driver_files": {
+          "/usr/lib64/dri-nonfree/iHD_drv_video.so": {
+            "sha256": "98942f2f651c99e6874c108107a34e0f6335fefae777faca1454ca14311b950f"
+          },
+          "/usr/lib64/libvulkan_intel.so": {
+            "sha256": "11ef9334499bd78b0010cb4f1462d59042a76d9bf49cf2bc0a08f02b3f9c01bd"
+          }
+        },
+        "log": "command-008.log",
+        "peak_process_rss_kib": 226268,
+        "process_samples": "command-008-process.jsonl",
+        "watchdog": "completed"
+      },
+      "stream": {
+        "index": 0,
+        "codec_name": "hevc",
+        "codec_long_name": "H.265 / HEVC (High Efficiency Video Coding)",
+        "profile": "Main 10",
+        "codec_type": "video",
+        "codec_tag_string": "hev1",
+        "codec_tag": "0x31766568",
+        "width": 1920,
+        "height": 1080,
+        "coded_width": 1920,
+        "coded_height": 1080,
+        "has_b_frames": 0,
+        "pix_fmt": "yuv420p10le",
+        "level": 120,
+        "color_range": "tv",
+        "color_space": "bt709",
+        "color_transfer": "bt709",
+        "color_primaries": "bt709",
+        "chroma_location": "left",
+        "refs": 1,
+        "view_ids_available": "",
+        "view_pos_available": "",
+        "id": "0x1",
+        "r_frame_rate": "50/1",
+        "avg_frame_rate": "50/1",
+        "time_base": "1/12800",
+        "start_pts": 0,
+        "start_time": "0.000000",
+        "duration_ts": 25600000,
+        "duration": "2000.000000",
+        "bit_rate": "2651776",
+        "nb_frames": "100000",
+        "nb_read_frames": "100000",
+        "nb_read_packets": "100000",
+        "extradata_size": 128,
+        "disposition": {
+          "default": 1,
+          "dub": 0,
+          "original": 0,
+          "comment": 0,
+          "lyrics": 0,
+          "karaoke": 0,
+          "forced": 0,
+          "hearing_impaired": 0,
+          "visual_impaired": 0,
+          "clean_effects": 0,
+          "attached_pic": 0,
+          "timed_thumbnails": 0,
+          "non_diegetic": 0,
+          "captions": 0,
+          "descriptions": 0,
+          "metadata": 0,
+          "dependent": 0,
+          "still_image": 0,
+          "multilayer": 0
+        },
+        "tags": {
+          "language": "und",
+          "handler_name": "VideoHandler"
+        }
+      },
+      "audio": {
+        "oracle": "strict payload/timestamps/stream metadata",
+        "result": "PASS",
+        "packet_counts": [
+          93751,
+          93751
+        ]
+      },
+      "resource_summary": {
+        "milestones": {
+          "0": {
+            "rss_kib": 43776,
+            "fd_count": 4,
+            "nearest_external_observation": {
+              "elapsed_seconds": 1.0272425600014685,
+              "pid": 570828,
+              "rss_kib": 163064,
+              "anonymous_kib": 77920,
+              "threads": 6,
+              "fd_count": 24,
+              "pss_kib": 110226,
+              "frames_processed": 0,
+              "frame_correlation": "latest flushed observation, not atomic"
+            }
+          },
+          "10000": {
+            "rss_kib": 192708,
+            "fd_count": 30,
+            "nearest_external_observation": {
+              "elapsed_seconds": 49.8565151340008,
+              "pid": 570828,
+              "rss_kib": 192708,
+              "anonymous_kib": 107032,
+              "threads": 11,
+              "fd_count": 28,
+              "pss_kib": 139799,
+              "frames_processed": 10000,
+              "frame_correlation": "latest flushed observation, not atomic"
+            }
+          },
+          "25000": {
+            "rss_kib": 199024,
+            "fd_count": 30,
+            "nearest_external_observation": {
+              "elapsed_seconds": 118.29540753399851,
+              "pid": 570828,
+              "rss_kib": 199032,
+              "anonymous_kib": 113356,
+              "threads": 11,
+              "fd_count": 30,
+              "pss_kib": 146123,
+              "frames_processed": 25000,
+              "frame_correlation": "latest flushed observation, not atomic"
+            }
+          },
+          "50000": {
+            "rss_kib": 208436,
+            "fd_count": 30,
+            "nearest_external_observation": {
+              "elapsed_seconds": 232.0526993320018,
+              "pid": 570828,
+              "rss_kib": 208436,
+              "anonymous_kib": 122760,
+              "threads": 11,
+              "fd_count": 30,
+              "pss_kib": 155528,
+              "frames_processed": 50000,
+              "frame_correlation": "latest flushed observation, not atomic"
+            }
+          },
+          "75000": {
+            "rss_kib": 218616,
+            "fd_count": 30,
+            "nearest_external_observation": {
+              "elapsed_seconds": 349.9499101549991,
+              "pid": 570828,
+              "rss_kib": 218640,
+              "anonymous_kib": 132964,
+              "threads": 11,
+              "fd_count": 30,
+              "pss_kib": 165734,
+              "frames_processed": 75000,
+              "frame_correlation": "latest flushed observation, not atomic"
+            }
+          },
+          "100000": {
+            "rss_kib": 226916,
+            "fd_count": 21,
+            "nearest_external_observation": {
+              "elapsed_seconds": 460.202631483,
+              "pid": 570828,
+              "rss_kib": 226940,
+              "anonymous_kib": 141264,
+              "threads": 11,
+              "fd_count": 30,
+              "pss_kib": 174023,
+              "frames_processed": 99000,
+              "frame_correlation": "latest flushed observation, not atomic"
+            }
+          }
+        },
+        "rss_peak_kib": 226940,
+        "rss_final_kib": 217088,
+        "fd": {
+          "before": 4,
+          "peak": 30,
+          "after": 4
+        },
+        "resources_after_cleanup": {
+          "dma_buf_imported_plane_bindings": {
+            "active_bytes": 0,
+            "active_count": 0,
+            "peak_bytes": 20889600,
+            "peak_count": 4
+          },
+          "vaapi_decoder_exported_frame_refs": {
+            "active_bytes": null,
+            "active_count": 0,
+            "peak_bytes": null,
+            "peak_count": 7
+          },
+          "vaapi_encoder_acquired_frame_refs": {
+            "active_bytes": null,
+            "active_count": 0,
+            "peak_bytes": null,
+            "peak_count": 7
+          },
+          "vulkan_buffer_bindings": {
+            "active_bytes": 0,
+            "active_count": 0,
+            "peak_bytes": 162253192,
+            "peak_count": 32
+          }
+        },
+        "queue_observations": {
+          "mux_audio": {
+            "atomic_exact_high_water_mark": false,
+            "boundary_observations": 375006,
+            "bytes": null,
+            "capacity": 16,
+            "depth": 0,
+            "peak_depth": 16,
+            "peak_kind": "MeasuredPeakAtOperationBoundary",
+            "pre_operation_depth": 0,
+            "pre_operation_peak_depth": 16,
+            "scope": "maximum len snapshots after each successful enqueue/dequeue; concurrent operations may race the snapshot; depth is last boundary observation, not cleanup-time depth"
+          },
+          "mux_video": {
+            "atomic_exact_high_water_mark": false,
+            "boundary_observations": 200004,
+            "bytes": null,
+            "capacity": 16,
+            "depth": 0,
+            "peak_depth": 16,
+            "peak_kind": "MeasuredPeakAtOperationBoundary",
+            "pre_operation_depth": 1,
+            "pre_operation_peak_depth": 16,
+            "scope": "maximum len snapshots after each successful enqueue/dequeue; concurrent operations may race the snapshot; depth is last boundary observation, not cleanup-time depth"
+          },
+          "pipeline_decoded": {
+            "atomic_exact_high_water_mark": false,
+            "boundary_observations": 200000,
+            "bytes": null,
+            "capacity": 3,
+            "depth": 0,
+            "peak_depth": 3,
+            "peak_kind": "MeasuredPeakAtOperationBoundary",
+            "pre_operation_depth": 0,
+            "pre_operation_peak_depth": 3,
+            "scope": "maximum len snapshots after each successful enqueue/dequeue; concurrent operations may race the snapshot; depth is last boundary observation, not cleanup-time depth"
+          },
+          "pipeline_processed": {
+            "atomic_exact_high_water_mark": false,
+            "boundary_observations": 200000,
+            "bytes": null,
+            "capacity": 3,
+            "depth": 0,
+            "peak_depth": 3,
+            "peak_kind": "MeasuredPeakAtOperationBoundary",
+            "pre_operation_depth": 0,
+            "pre_operation_peak_depth": 3,
+            "scope": "maximum len snapshots after each successful enqueue/dequeue; concurrent operations may race the snapshot; depth is last boundary observation, not cleanup-time depth"
+          }
+        },
+        "mux": {
+          "bytes_written_since_explicit_flush": 0,
+          "flush_count": 4493,
+          "internal_pending_bytes": null,
+          "internal_pending_packets": null,
+          "last_flush_reason": "final-eof",
+          "writes_since_explicit_flush": 0
+        },
+        "throughput": {
+          "first_10k": {
+            "fps": 200.57559123662594,
+            "observed_start_frame": 0,
+            "observed_end_frame": 10000,
+            "elapsed_seconds": 49.8565151340008
+          },
+          "middle_10k": {
+            "fps": 215.07419208955457,
+            "observed_start_frame": 45000,
+            "observed_end_frame": 55000,
+            "elapsed_seconds": 46.495583234998776
+          },
+          "last_10k": {
+            "fps": 223.00817428696192,
+            "observed_start_frame": 90000,
+            "observed_end_frame": 100000,
+            "elapsed_seconds": 44.84140562099856
+          }
+        },
+        "memory_verdict": "Requires media-length trend review; no arbitrary MiB gate",
+        "limitations": "External PSS/Anonymous/time and flushed 1000-frame observations are correlated, not atomic; throughput endpoints include process startup/finalization when wall duration is supplied; queue observations are not exact high-water census"
+      },
+      "measurement_full_decode": {
+        "argv": [
+          "ffmpeg",
+          "-v",
+          "error",
+          "-nostdin",
+          "-xerror",
+          "-i",
+          "/home/eureka/Documents/AsciiFlow/target/stage54d1b-long-soak/measurement-v1/pq-to-sdr.mp4",
+          "-map",
+          "0",
+          "-f",
+          "null",
+          "-"
+        ],
+        "elapsed_seconds": 228.55765568500283,
+        "exit_code": 0,
+        "id": "pq-to-sdr-full-decode",
+        "log": "command-012.log",
+        "peak_process_rss_kib": 282316,
+        "process_samples": "command-012-process.jsonl",
+        "watchdog": "completed"
+      },
+      "production_receipt": "production-v1/pq-to-sdr-record.json",
+      "memory_qualification": "Qualified for recorded single-job workload: required MOV index plus BoundedAudioPacketAllocatorRetention; see final audio attribution receipt",
+      "historical_memory_qualification": "Unqualified: unexplained media-length-correlated residual"
+    }
+  },
+  "memory_gate": "No unexplained frame-count-correlated memory growth beyond container/runtime structures whose required growth has been explicitly accounted for.",
+  "memory_decision": "SEALED: audio-enabled residual classified BoundedAudioPacketAllocatorRetention using matched A2, native last-reference census and post-teardown reclaim. No constant-RSS or persistent-host claim.",
+  "remaining_gates": [],
+  "completed_gates": {
+    "three_actual_default_Release_full_GPU_100k": "PASS",
+    "three_complete_decode_back_timing_color_and_audio": "PASS",
+    "FD_and_tracked_Vulkan_DMABUF_VAAPI_teardown": "PASS",
+    "observed_queue_bounds": "PASS; sampled boundary peaks, not atomic HWM",
+    "progressive_unexplained_throughput_collapse": "Not observed; no small-percent performance threshold",
+    "C_51k_SIGINT": "PASS: exit130, target absent, staging removed, tracked cleanup",
+    "C_51k_native_mux_EFBIG": "PASS: exit1, root cause retained, safe target/staging/tracked cleanup",
+    "C_100k_repeat_Tier2": "PASS: whole-file byte identity on same binary/input/driver stack",
+    "alternate_B_10k": "PASS",
+    "post_retained_17x3": "PASS",
+    "six_case_compatibility": "PASS",
+    "canonical_portability_core": "PASS",
+    "static": "PASS: 43 soak +66 corpus tests; fmt/diff",
+    "SPIRV": "PASS: 325 physical modules, 25 distinct hashes, Vulkan1.3",
+    "clean_builds": "Prior frozen production/measurement qualification retained; current default Release build/check and qualification Release build PASS. Source additions are feature-gated diagnostics; no new old-build exact attestation claimed.",
+    "Validation": "Reused prior 3x10k PASS; not newly enabled for 100k",
+    "C_audio_memory_attribution": "PASS: A2 exact output, bounded last-native-reference census, EOF zero, release-path audit and diagnosis-only post-teardown reclaim"
+  },
+  "evidence_root": "target/stage54d1b-long-soak",
+  "evidence": {
+    "production_artifact_review": "final-artifact-review.json",
+    "measurement_artifact_review": "measurement-review-v3.json",
+    "original_measurement_runner": "measurement-v1/results.json",
+    "default_production_runner": "production-v1/results.json",
+    "memory_trends": "trend-review.json",
+    "long_cancellation": "long-cancel/result.json",
+    "long_native_write_failure": "long-write-failure/result.json",
+    "long_Tier2_repeat": "long-determinism/result.json",
+    "post_soak": "post/result.json",
+    "retained_17x3": "post/retained/results.json",
+    "compatibility_subset": "post/compatibility/results.json",
+    "canonical_portability_core": "post/core/results.json",
+    "alternate_10k": "post/alternate10k/results.json",
+    "static_build_SPIRV": "static-v3/result.json",
+    "first_frame_metadata_review": "metadata-review/result.json"
+  },
+  "historical_runner_correction": "Preserved A/C FAILED video-only mux-count assertions; independent review counts copied audio packets too. No historical FAIL rewritten.",
+  "historical_oracle_policy": "Unchanged same-stack strict, H264 historical, Tier1B-P/Tier1C/Tier2/Tier3 stack-scoped; no historical exact-build attestation transfer",
+  "limitations": [
+    "Exact-package per-track rounded MOV cluster capacity is required allocation state, not exact RSS attribution. Default C still has 8304 KiB residual over 50k to last (99940) sample; final100k capacities are the same.",
+    "Anonymous is not an exclusive private-allocation census; driver-internal objects/pending mux bytes are not fully observable.",
+    "No static mastering/CLL exists in the selected C source; absent output metadata is not a new positive test of stripping a metadata-bearing input.",
+    "No persistent-process memory bound, 24/7 guarantee, alternate100k or full five-stack rerun claimed.",
+    "Large media/executable artifacts remain local ignored files; identities, generators, commands, non-media receipts are retained.",
+    "Final audio attribution: observed residual numbers remain historical measurements, now classified BoundedAudioPacketAllocatorRetention for this single-job workload. Whole-process trim is not an audio-specific allocation census; persistent RSS plateau is not claimed."
+  ],
+  "reliability_claim": "Qualified for the recorded single-job CLI workloads and long-run production paths.",
+  "d1_overall": "SEALED",
+  "d2_justified": true,
+  "d2_started": false,
+  "retained_archive": {
+    "archive": "tests/soak/evidence/d1b-long-soak-evidence.tar.gz",
+    "archive_sha256": "51932025e03360e8124b3c9c5e7e33fde61e0eab5e2e167457f5092506bf2c1b",
+    "archive_bytes": 82624171
+  },
+  "retained_manifest": "tests/soak/evidence/d1b-long-soak-manifest.json",
+  "memory_attribution": {
+    "receipt": "tests/soak/evidence/d1b-mov-attribution.json",
+    "sha256": "037b3508ceb32ef9248fddecdddb55f60deaefe5dde92f793c208fbfcafdc505",
+    "manifest": "tests/soak/evidence/d1b-mov-attribution-manifest.json",
+    "archive": "tests/soak/evidence/d1b-mov-attribution-evidence.tar.gz",
+    "archive_sha256": "c202dca084944d4ed864f32a5469ad93d72376d06773965bdfb153aa163b4941",
+    "classification": "UnexplainedResidualGrowth (classification B); required MOV index component is ExpectedContainerIndexGrowth, but does not explain all observed growth.",
+    "default_C_repeat": {
+      "samples": [
+        {
+          "actual_written_frames": 50000,
+          "elapsed_seconds": 240.72725582400017,
+          "tracks": [
+            {
+              "stream_index": 0,
+              "entries": 50000,
+              "capacity": 50176
+            },
+            {
+              "stream_index": 1,
+              "entries": 46876,
+              "capacity": 47104
+            },
+            {
+              "stream_index": 2,
+              "entries": 46876,
+              "capacity": 47104
+            }
+          ],
+          "cluster_kib": 10152.0,
+          "rss_kib": 174728,
+          "pss_kib": 147241,
+          "anonymous_kib": 115008
+        },
+        {
+          "actual_written_frames": 99940,
+          "elapsed_seconds": 479.32076986599714,
+          "tracks": [
+            {
+              "stream_index": 0,
+              "entries": 99940,
+              "capacity": 100352
+            },
+            {
+              "stream_index": 1,
+              "entries": 93695,
+              "capacity": 94208
+            },
+            {
+              "stream_index": 2,
+              "entries": 93695,
+              "capacity": 94208
+            }
+          ],
+          "cluster_kib": 20304.0,
+          "rss_kib": 193184,
+          "pss_kib": 165697,
+          "anonymous_kib": 133464
+        }
+      ],
+      "expected_cluster_delta_kib": 10152.0,
+      "observed_delta_kib": {
+        "rss_kib": 18456,
+        "pss_kib": 18456,
+        "anonymous_kib": 18456
+      },
+      "residual_delta_kib": {
+        "rss_kib": 8304.0,
+        "pss_kib": 8304.0,
+        "anonymous_kib": 8304.0
+      },
+      "method": "Actual final packet-end offsets versus observed staging byte length; whole-file identity and tail moov checked. Written packets lag accepted/processed frames by bounded queues/AVIO buffering; samples are not atomic.",
+      "endpoint_limitation": "Last external sample has 99940 written video frames; all rounded track capacities equal those at final 100000, so expected cluster-byte delta is unchanged."
+    },
+    "previous_rough_model": "Preserved in prior archive; current exact-package capacity-rounded review supersedes the unrounded approximation, not the measured observations."
+  },
+  "layer_isolation": {
+    "receipt": "tests/soak/evidence/d1b-layer-isolation.json",
+    "sha256": "428b32933d35198acf4766d4e9ebd36601bf30030bf89830bcb4055f57ed29fd",
+    "classification": "UnexplainedResidualGrowth, narrowed to audio-enabled upstream/native input path; no allowed whole-production closure classification established.",
+    "experiments": [
+      {
+        "experiment": "full C default Release, dual AAC (preserved)",
+        "frames": [
+          50000,
+          99940
+        ],
+        "observed_delta_kib": 18456,
+        "known_index_delta_kib": 10152,
+        "residual_kib": 8304,
+        "layer_attribution": "Audio-enabled complete path; retained observed residual"
+      },
+      {
+        "experiment": "mux-only actual C packets",
+        "frames": [
+          49974,
+          99900
+        ],
+        "observed_delta_kib": 10100,
+        "known_index_delta_kib": 10152.0,
+        "residual_kib": -52.0,
+        "layer_attribution": "Required MOV index accounts for late-interval replay growth; production residual not reproduced"
+      },
+      {
+        "experiment": "C audio-off actual full GPU",
+        "frames": [
+          50000,
+          99938
+        ],
+        "observed_delta_kib": 3552,
+        "known_index_delta_kib": 3528.0,
+        "residual_kib": 24.0,
+        "layer_attribution": "Video chain residual disappears at this observational resolution; small checkpoint variation only"
+      },
+      {
+        "experiment": "preserve vs tone-map differential",
+        "result": "Not run: conditional prerequisite absent; audio-off removes residual",
+        "layer_attribution": "No further Vulkan or video-mode investigation"
+      }
+    ],
+    "archive": {
+      "path": "tests/soak/evidence/d1b-layer-isolation-evidence.tar.gz",
+      "bytes": 44441770,
+      "sha256": "7dc5141419969cfd1349ca20f885137c66ea32b568ead1941a6203c29a5982cb"
+    },
+    "manifest": {
+      "path": "tests/soak/evidence/d1b-layer-isolation-manifest.json",
+      "bytes": 5888,
+      "sha256": "3090e2c0b9f57e4774397c25ce7fc39c96eaa0578827051b11c23f7e4952bc7d"
+    }
+  },
+  "audio_memory_attribution": {
+    "receipt": {
+      "path": "tests/soak/stage54d1b-audio-memory-attribution.json",
+      "bytes": 21845,
+      "sha256": "e575f32239c87671c18b23164c2f495187fb66c34f93eef19703c8973ac9e7d7"
+    },
+    "archive": {
+      "path": "tests/soak/evidence/d1b-audio-memory-attribution-evidence.tar.gz",
+      "bytes": 37778240,
+      "sha256": "c3ff7caef8b8a7c31ec2d6bc7ba2d9b98d700a0939ea1034f2be7354611a51ed"
+    },
+    "manifest": {
+      "path": "tests/soak/evidence/d1b-audio-memory-attribution-manifest.json",
+      "bytes": 7110,
+      "sha256": "14b4244e625a08a749173b82df37e43efef14cb11d5b5808ac7b40ed23b20380"
+    }
+  }
+}

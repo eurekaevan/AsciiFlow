@@ -69,7 +69,7 @@ checksum = "330a5ed07fa54e4702c9d6c4174f74427fc0ef6e214bbd677ae50a5099946470"
 
 [[package]]
 name = "asciiflow-cli"
-version = "2.0.0-alpha.0"
+version = "2.0.0"
 dependencies = [
  "anyhow",
  "asciiflow-core",
@@ -89,7 +89,7 @@ dependencies = [
 
 [[package]]
 name = "asciiflow-core"
-version = "2.0.0-alpha.0"
+version = "2.0.0"
 dependencies = [
  "crossbeam-channel",
  "serde",
@@ -99,7 +99,7 @@ dependencies = [
 
 [[package]]
 name = "asciiflow-cpu"
-version = "2.0.0-alpha.0"
+version = "2.0.0"
 dependencies = [
  "asciiflow-core",
  "asciiflow-font",
@@ -107,7 +107,7 @@ dependencies = [
 
 [[package]]
 name = "asciiflow-font"
-version = "2.0.0-alpha.0"
+version = "2.0.0"
 dependencies = [
  "font8x8",
  "freetype-rs",
@@ -116,7 +116,7 @@ dependencies = [
 
 [[package]]
 name = "asciiflow-interop"
-version = "2.0.0-alpha.0"
+version = "2.0.0"
 dependencies = [
  "asciiflow-core",
  "asciiflow-cpu",
@@ -132,7 +132,7 @@ dependencies = [
 
 [[package]]
 name = "asciiflow-media"
-version = "2.0.0-alpha.0"
+version = "2.0.0"
 dependencies = [
  "asciiflow-core",
  "crossbeam-channel",
@@ -145,7 +145,7 @@ dependencies = [
 
 [[package]]
 name = "asciiflow-vulkan"
-version = "2.0.0-alpha.0"
+version = "2.0.0"
 dependencies = [
  "asciiflow-core",
  "asciiflow-cpu",

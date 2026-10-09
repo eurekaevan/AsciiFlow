@@ -1,0 +1,282 @@
+{
+  "source_root": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2",
+  "qualification": "EvidenceOnlyNotASeal",
+  "variants": [
+    {
+      "kind": "default",
+      "target_directory": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/clean-default",
+      "initial_entries": [],
+      "created_empty_at": "2026-10-08T05:10:59.337430+00:00",
+      "commands": [
+        {
+          "id": "release-build",
+          "argv": [
+            "cargo",
+            "build",
+            "--offline",
+            "--release",
+            "--workspace"
+          ],
+          "env": {
+            "CARGO_BUILD_JOBS": "2",
+            "CARGO_TARGET_DIR": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/clean-default"
+          },
+          "started_at": "2026-10-08T05:10:59.337545+00:00",
+          "log": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-clean-build-evidence/default/release-build.log",
+          "exit_code": 0,
+          "finished_at": "2026-10-08T05:16:55.518987+00:00"
+        },
+        {
+          "id": "release-tests",
+          "argv": [
+            "cargo",
+            "test",
+            "--offline",
+            "--release",
+            "--workspace",
+            "--",
+            "--test-threads=1"
+          ],
+          "env": {
+            "CARGO_BUILD_JOBS": "2",
+            "CARGO_TARGET_DIR": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/clean-default"
+          },
+          "started_at": "2026-10-08T05:16:55.519211+00:00",
+          "log": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-clean-build-evidence/default/release-tests.log",
+          "exit_code": 0,
+          "finished_at": "2026-10-08T05:20:22.593226+00:00"
+        },
+        {
+          "id": "release-clippy",
+          "argv": [
+            "cargo",
+            "clippy",
+            "--offline",
+            "--release",
+            "--workspace",
+            "--all-targets",
+            "--",
+            "-D",
+            "warnings"
+          ],
+          "env": {
+            "CARGO_BUILD_JOBS": "2",
+            "CARGO_TARGET_DIR": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/clean-default"
+          },
+          "started_at": "2026-10-08T05:20:22.593527+00:00",
+          "log": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-clean-build-evidence/default/release-clippy.log",
+          "exit_code": 0,
+          "finished_at": "2026-10-08T05:20:33.447303+00:00"
+        },
+        {
+          "id": "debug-tests",
+          "argv": [
+            "cargo",
+            "test",
+            "--offline",
+            "--workspace",
+            "--",
+            "--test-threads=1"
+          ],
+          "env": {
+            "CARGO_BUILD_JOBS": "2",
+            "CARGO_TARGET_DIR": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/clean-default"
+          },
+          "started_at": "2026-10-08T05:20:33.447580+00:00",
+          "log": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-clean-build-evidence/default/debug-tests.log",
+          "exit_code": 0,
+          "finished_at": "2026-10-08T05:26:28.802488+00:00"
+        },
+        {
+          "id": "debug-clippy",
+          "argv": [
+            "cargo",
+            "clippy",
+            "--offline",
+            "--workspace",
+            "--all-targets",
+            "--",
+            "-D",
+            "warnings"
+          ],
+          "env": {
+            "CARGO_BUILD_JOBS": "2",
+            "CARGO_TARGET_DIR": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/clean-default"
+          },
+          "started_at": "2026-10-08T05:26:28.802788+00:00",
+          "log": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-clean-build-evidence/default/debug-clippy.log",
+          "exit_code": 0,
+          "finished_at": "2026-10-08T05:26:44.772317+00:00"
+        },
+        {
+          "id": "fmt",
+          "argv": [
+            "cargo",
+            "fmt",
+            "--all",
+            "--",
+            "--check"
+          ],
+          "env": {
+            "CARGO_BUILD_JOBS": "2",
+            "CARGO_TARGET_DIR": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/clean-default"
+          },
+          "started_at": "2026-10-08T05:26:44.772632+00:00",
+          "log": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-clean-build-evidence/default/fmt.log",
+          "exit_code": 0,
+          "finished_at": "2026-10-08T05:26:45.246974+00:00"
+        }
+      ],
+      "release_binary": {
+        "path": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/clean-default/release/asciiflow",
+        "bytes": 4130448,
+        "sha256": "92fc20d079c8067872e88ba6f1d67949e952f630b07d1ac7f6441245f831fe02"
+      },
+      "source_unchanged": true
+    },
+    {
+      "kind": "measurement",
+      "target_directory": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/clean-measurement",
+      "initial_entries": [],
+      "created_empty_at": "2026-10-08T05:26:45.308027+00:00",
+      "commands": [
+        {
+          "id": "release-build",
+          "argv": [
+            "cargo",
+            "build",
+            "--offline",
+            "--release",
+            "--workspace",
+            "--features",
+            "asciiflow-cli/reliability-measurement"
+          ],
+          "env": {
+            "CARGO_BUILD_JOBS": "2",
+            "CARGO_TARGET_DIR": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/clean-measurement"
+          },
+          "started_at": "2026-10-08T05:26:45.308145+00:00",
+          "log": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-clean-build-evidence/measurement/release-build.log",
+          "exit_code": 0,
+          "finished_at": "2026-10-08T05:32:35.753610+00:00"
+        },
+        {
+          "id": "release-tests",
+          "argv": [
+            "cargo",
+            "test",
+            "--offline",
+            "--release",
+            "--workspace",
+            "--features",
+            "asciiflow-cli/reliability-measurement",
+            "--",
+            "--test-threads=1"
+          ],
+          "env": {
+            "CARGO_BUILD_JOBS": "2",
+            "CARGO_TARGET_DIR": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/clean-measurement"
+          },
+          "started_at": "2026-10-08T05:32:35.754042+00:00",
+          "log": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-clean-build-evidence/measurement/release-tests.log",
+          "exit_code": 0,
+          "finished_at": "2026-10-08T05:36:12.494820+00:00"
+        },
+        {
+          "id": "release-clippy",
+          "argv": [
+            "cargo",
+            "clippy",
+            "--offline",
+            "--release",
+            "--workspace",
+            "--all-targets",
+            "--features",
+            "asciiflow-cli/reliability-measurement",
+            "--",
+            "-D",
+            "warnings"
+          ],
+          "env": {
+            "CARGO_BUILD_JOBS": "2",
+            "CARGO_TARGET_DIR": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/clean-measurement"
+          },
+          "started_at": "2026-10-08T05:36:12.495307+00:00",
+          "log": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-clean-build-evidence/measurement/release-clippy.log",
+          "exit_code": 0,
+          "finished_at": "2026-10-08T05:36:23.368295+00:00"
+        },
+        {
+          "id": "debug-tests",
+          "argv": [
+            "cargo",
+            "test",
+            "--offline",
+            "--workspace",
+            "--features",
+            "asciiflow-cli/reliability-measurement",
+            "--",
+            "--test-threads=1"
+          ],
+          "env": {
+            "CARGO_BUILD_JOBS": "2",
+            "CARGO_TARGET_DIR": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/clean-measurement"
+          },
+          "started_at": "2026-10-08T05:36:23.368851+00:00",
+          "log": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-clean-build-evidence/measurement/debug-tests.log",
+          "exit_code": 0,
+          "finished_at": "2026-10-08T05:42:18.715365+00:00"
+        },
+        {
+          "id": "debug-clippy",
+          "argv": [
+            "cargo",
+            "clippy",
+            "--offline",
+            "--workspace",
+            "--all-targets",
+            "--features",
+            "asciiflow-cli/reliability-measurement",
+            "--",
+            "-D",
+            "warnings"
+          ],
+          "env": {
+            "CARGO_BUILD_JOBS": "2",
+            "CARGO_TARGET_DIR": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/clean-measurement"
+          },
+          "started_at": "2026-10-08T05:42:18.715899+00:00",
+          "log": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-clean-build-evidence/measurement/debug-clippy.log",
+          "exit_code": 0,
+          "finished_at": "2026-10-08T05:42:34.411179+00:00"
+        },
+        {
+          "id": "fmt",
+          "argv": [
+            "cargo",
+            "fmt",
+            "--all",
+            "--",
+            "--check"
+          ],
+          "env": {
+            "CARGO_BUILD_JOBS": "2",
+            "CARGO_TARGET_DIR": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/clean-measurement"
+          },
+          "started_at": "2026-10-08T05:42:34.411612+00:00",
+          "log": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/memory-clean-build-evidence/measurement/fmt.log",
+          "exit_code": 0,
+          "finished_at": "2026-10-08T05:42:34.879957+00:00"
+        }
+      ],
+      "release_binary": {
+        "path": "/home/eureka/Documents/AsciiFlow/target/stage54d1a-memory-v2/target/clean-measurement/release/asciiflow",
+        "bytes": 4259832,
+        "sha256": "b23d695d578a4da7a816648f3c13f6bfe2e28012a6a8ade25653146db71717b8"
+      },
+      "source_unchanged": true
+    }
+  ],
+  "source_unchanged": true,
+  "finished_at": "2026-10-08T05:42:35.001755+00:00"
+}

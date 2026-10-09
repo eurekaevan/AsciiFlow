@@ -1,6 +1,21 @@
 {
   "schema_version": 1,
   "support_contract_version": "1.1.0",
+  "release_profiles": {
+    "lgpl-prebuilt": {
+      "description": "Official LGPL prebuilt Linux release; opt-in distribution restrictions, not a replacement for the base support contract.",
+      "ffmpeg_license": "LGPL-2.1-or-later",
+      "exclusions": [
+        {
+          "match": { "encode": "software" },
+          "availability": "Excluded",
+          "reason": "Software H.264 encoding requires GPL dependency libx264 and is excluded from the official LGPL prebuilt release."
+        }
+      ],
+      "retained_base_qualification": "Historical software H.264 PASS remains qualified under a GPL-capable build context; exclusion is not a historical FAIL.",
+      "runtime_requirement": "Profile policy and actual FFmpeg codec capability probes both apply. Software decode and qualified VAAPI H.264/HEVC/AV1 encoding remain eligible; no silent software encoder fallback."
+    }
+  },
   "states": {
     "Supported": "Qualified by retained production evidence within the scope stated here.",
     "ConditionallySupported": "Qualified only when every listed condition holds.",

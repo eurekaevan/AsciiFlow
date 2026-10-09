@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-08",
+  "stage": "5.4D-1A",
+  "status": "SEALED",
+  "status_scope": "Current product contract only",
+  "product_contract": {
+    "process_lifetime": "one CLI process handles one media job and exits",
+    "persistent_multi_job_process": "out of scope"
+  },
+  "scope_decision": {
+    "classification": "NonBlockingOutOfScopeObservation",
+    "observation": "Persistent-process allocator/runtime retention is not fully bounded.",
+    "impact": "This does not block the current one-job process contract; it does not qualify a persistent or service-style process."
+  },
+  "current_gate_review": {
+    "source": "tests/soak/stage54d1a-final-closure.json",
+    "source_sha256": "38b00b8b9d3935f953efdd6c54e2162953407bfb7f0126772c4cbcae2e8e2eb1",
+    "remaining_gate": "A14: five repeated-job processes failed the 100-cycle no-new-HWM requirement at the 500-cycle cap.",
+    "disposition": "Outside the one-job process contract.",
+    "other_current_d1a_production_blocker": "None identified in the current closure review. Earlier broader-scope gate statements remain historical; the latest reviewed closure records identify A14 as the sole remaining gate."
+  },
+  "historical_results_preserved": {
+    "historical_rss_alarm_failure_kib": 69648,
+    "cycle_48_increment_kib": 652,
+    "campaign_processes": 10,
+    "campaign_complete_cycles": 4418,
+    "campaign_jobs": 18025,
+    "campaign_result": "Five processes failed the all-process HWM window requirement; these historical repeated-job results remain failures and are not relabeled as passes."
+  },
+  "immutable_receipts": [
+    {
+      "path": "tests/soak/evidence/stage54d1a-resource-failure-historical.json",
+      "sha256": "63b0417bb2666662914c28d0af734c2588def5c0e3b7ab2c63bcc86db62a77bd",
+      "role": "Original resource/failure receipt; retained byte-for-byte."
+    },
+    {
+      "path": "tests/soak/evidence/stage54d1a-ab-final-closure-historical.json",
+      "sha256": "c854ff9adf724b90e302369dc75ef13d69dbd58b608d018e00db7098f5ff4ed3",
+      "role": "Original A/B closure snapshot; retained byte-for-byte."
+    }
+  ],
+  "supporting_receipts": [
+    "tests/soak/stage54d1a-memory-plateau.json",
+    "tests/soak/stage54d1a-final-closure.json"
+  ],
+  "stage_boundaries": {
+    "D1A": "SEALED for current product scope only",
+    "D1B": "Not sealed; separately authorized work remains distinct",
+    "D2": "Not started",
+    "formal_100k_soak": false
+  },
+  "preservation": "No historical receipt, source evidence, result, or evidence hash is modified by this scope-closure record."
+}

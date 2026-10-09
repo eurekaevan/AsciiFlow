@@ -1,0 +1,486 @@
+{
+  "schema": "asciiflow-native-io-closure-v1",
+  "avio_direct": true,
+  "avio_mode_scope": "test-configured direct native AVIO for controllable write boundaries; production buffering policy unchanged",
+  "queue_peak_scope": "full channel capacity witnessed while native AVIO callback held; not periodic-sample inference or a total-memory census",
+  "fd_before_capture": 4,
+  "fd_final": 4,
+  "faults": [
+    {
+      "requested_boundary": "header",
+      "errno": 28,
+      "classification": "SimulatedOnly",
+      "error_surfaced_at": "Some(MuxInitialization)",
+      "root_cause_category": "MediaNativeErrno",
+      "root": "pipeline mux initialization: write MP4 container header failed: media operation failed: write observed MP4 header: No space left on device (-28)",
+      "fd_after": 5,
+      "immediate_healthy_recovery_exact_bytes_payload_duration_pts_dts": true,
+      "failure_callback_trace": [
+        {
+          "actual_boundary": "header",
+          "attempted_bytes": 32,
+          "bytes_accepted_before": 0,
+          "callback": 1,
+          "controlled_hold": false,
+          "injected_fault": true,
+          "returned": -28
+        }
+      ]
+    },
+    {
+      "requested_boundary": "header",
+      "errno": 5,
+      "classification": "SimulatedOnly",
+      "error_surfaced_at": "Some(MuxInitialization)",
+      "root_cause_category": "MediaNativeErrno",
+      "root": "pipeline mux initialization: write MP4 container header failed: media operation failed: write observed MP4 header: Input/output error (-5)",
+      "fd_after": 5,
+      "immediate_healthy_recovery_exact_bytes_payload_duration_pts_dts": true,
+      "failure_callback_trace": [
+        {
+          "actual_boundary": "header",
+          "attempted_bytes": 32,
+          "bytes_accepted_before": 0,
+          "callback": 1,
+          "controlled_hold": false,
+          "injected_fault": true,
+          "returned": -5
+        }
+      ]
+    },
+    {
+      "requested_boundary": "packet-write",
+      "errno": 28,
+      "classification": "SimulatedOnly",
+      "error_surfaced_at": "Some(MuxRuntime)",
+      "root_cause_category": "MediaNativeErrno",
+      "root": "pipeline mux runtime: write interleaved packet failed: media operation failed: media operation failed: failed to mux interleaved packet: No space left on device (-28)",
+      "fd_after": 5,
+      "immediate_healthy_recovery_exact_bytes_payload_duration_pts_dts": true,
+      "failure_callback_trace": [
+        {
+          "actual_boundary": "packet-write",
+          "attempted_bytes": 265,
+          "bytes_accepted_before": 52,
+          "callback": 4,
+          "controlled_hold": false,
+          "injected_fault": true,
+          "returned": -28
+        }
+      ]
+    },
+    {
+      "requested_boundary": "packet-write",
+      "errno": 5,
+      "classification": "SimulatedOnly",
+      "error_surfaced_at": "Some(MuxRuntime)",
+      "root_cause_category": "MediaNativeErrno",
+      "root": "pipeline mux runtime: write interleaved packet failed: media operation failed: media operation failed: failed to mux interleaved packet: Input/output error (-5)",
+      "fd_after": 5,
+      "immediate_healthy_recovery_exact_bytes_payload_duration_pts_dts": true,
+      "failure_callback_trace": [
+        {
+          "actual_boundary": "packet-write",
+          "attempted_bytes": 265,
+          "bytes_accepted_before": 52,
+          "callback": 4,
+          "controlled_hold": false,
+          "injected_fault": true,
+          "returned": -5
+        }
+      ]
+    },
+    {
+      "requested_boundary": "intermediate-flush",
+      "errno": 28,
+      "classification": "SimulatedOnly",
+      "error_surfaced_at": "Some(MuxRuntime)",
+      "root_cause_category": "MediaNativeErrno",
+      "root": "pipeline mux runtime: write interleaved packet failed: media operation failed: flush bounded mux interleaver: No space left on device (-28)",
+      "fd_after": 5,
+      "immediate_healthy_recovery_exact_bytes_payload_duration_pts_dts": true,
+      "failure_callback_trace": [
+        {
+          "actual_boundary": "intermediate-flush",
+          "attempted_bytes": 218,
+          "bytes_accepted_before": 14240,
+          "callback": 65,
+          "controlled_hold": false,
+          "injected_fault": true,
+          "returned": -28
+        }
+      ]
+    },
+    {
+      "requested_boundary": "intermediate-flush",
+      "errno": 5,
+      "classification": "SimulatedOnly",
+      "error_surfaced_at": "Some(MuxRuntime)",
+      "root_cause_category": "MediaNativeErrno",
+      "root": "pipeline mux runtime: write interleaved packet failed: media operation failed: flush bounded mux interleaver: Input/output error (-5)",
+      "fd_after": 5,
+      "immediate_healthy_recovery_exact_bytes_payload_duration_pts_dts": true,
+      "failure_callback_trace": [
+        {
+          "actual_boundary": "intermediate-flush",
+          "attempted_bytes": 218,
+          "bytes_accepted_before": 14240,
+          "callback": 65,
+          "controlled_hold": false,
+          "injected_fault": true,
+          "returned": -5
+        }
+      ]
+    },
+    {
+      "requested_boundary": "trailer",
+      "errno": 28,
+      "classification": "SimulatedOnly",
+      "error_surfaced_at": "Some(Finalization)",
+      "root_cause_category": "MediaNativeErrno",
+      "root": "pipeline finalization: write MP4 container trailer failed: media operation failed: failed to finalize MP4 output: No space left on device (-28)",
+      "fd_after": 5,
+      "immediate_healthy_recovery_exact_bytes_payload_duration_pts_dts": true,
+      "failure_callback_trace": [
+        {
+          "actual_boundary": "trailer",
+          "attempted_bytes": 4,
+          "bytes_accepted_before": 77154,
+          "callback": 378,
+          "controlled_hold": false,
+          "injected_fault": true,
+          "returned": -28
+        }
+      ]
+    },
+    {
+      "requested_boundary": "trailer",
+      "errno": 5,
+      "classification": "SimulatedOnly",
+      "error_surfaced_at": "Some(Finalization)",
+      "root_cause_category": "MediaNativeErrno",
+      "root": "pipeline finalization: write MP4 container trailer failed: media operation failed: failed to finalize MP4 output: Input/output error (-5)",
+      "fd_after": 5,
+      "immediate_healthy_recovery_exact_bytes_payload_duration_pts_dts": true,
+      "failure_callback_trace": [
+        {
+          "actual_boundary": "trailer",
+          "attempted_bytes": 4,
+          "bytes_accepted_before": 77154,
+          "callback": 378,
+          "controlled_hold": false,
+          "injected_fault": true,
+          "returned": -5
+        }
+      ]
+    }
+  ],
+  "slow_consumers": [
+    {
+      "mode": "sustained",
+      "classification": "NativePass",
+      "control": "event-controlled holds inside actual native AVIO callback",
+      "project_mux_capacities": [
+        16,
+        16
+      ],
+      "witnessed_full_depths": [
+        16,
+        16
+      ],
+      "producer_full_then_blocking_send_events": [
+        75,
+        180
+      ],
+      "producer_counts_video_audio": [
+        90,
+        284
+      ],
+      "readback_counts_per_stream": [
+        90,
+        142,
+        142
+      ],
+      "exact_mp4_bytes": true,
+      "exact_payload_duration_pts_dts": true,
+      "fd_after": 5,
+      "callback_count": 471,
+      "controlled_hold_count": 360,
+      "bytes_accepted": 82261,
+      "actual_callback_boundary_counts": [
+        {
+          "boundary": "final-interleaver-flush",
+          "count": 2
+        },
+        {
+          "boundary": "header",
+          "count": 3
+        },
+        {
+          "boundary": "intermediate-flush",
+          "count": 12
+        },
+        {
+          "boundary": "packet-write",
+          "count": 360
+        },
+        {
+          "boundary": "trailer",
+          "count": 94
+        }
+      ]
+    },
+    {
+      "mode": "bursty",
+      "classification": "NativePass",
+      "control": "event-controlled holds inside actual native AVIO callback",
+      "project_mux_capacities": [
+        16,
+        16
+      ],
+      "witnessed_full_depths": [
+        16,
+        16
+      ],
+      "producer_full_then_blocking_send_events": [
+        75,
+        196
+      ],
+      "producer_counts_video_audio": [
+        90,
+        284
+      ],
+      "readback_counts_per_stream": [
+        90,
+        142,
+        142
+      ],
+      "exact_mp4_bytes": true,
+      "exact_payload_duration_pts_dts": true,
+      "fd_after": 5,
+      "callback_count": 471,
+      "controlled_hold_count": 51,
+      "bytes_accepted": 82261,
+      "actual_callback_boundary_counts": [
+        {
+          "boundary": "final-interleaver-flush",
+          "count": 2
+        },
+        {
+          "boundary": "header",
+          "count": 3
+        },
+        {
+          "boundary": "intermediate-flush",
+          "count": 12
+        },
+        {
+          "boundary": "packet-write",
+          "count": 360
+        },
+        {
+          "boundary": "trailer",
+          "count": 94
+        }
+      ]
+    },
+    {
+      "mode": "slow-flush",
+      "classification": "NativePass",
+      "control": "event-controlled holds inside actual native AVIO callback",
+      "project_mux_capacities": [
+        16,
+        16
+      ],
+      "witnessed_full_depths": [
+        16,
+        16
+      ],
+      "producer_full_then_blocking_send_events": [
+        75,
+        204
+      ],
+      "producer_counts_video_audio": [
+        90,
+        284
+      ],
+      "readback_counts_per_stream": [
+        90,
+        142,
+        142
+      ],
+      "exact_mp4_bytes": true,
+      "exact_payload_duration_pts_dts": true,
+      "fd_after": 5,
+      "callback_count": 471,
+      "controlled_hold_count": 12,
+      "bytes_accepted": 82261,
+      "actual_callback_boundary_counts": [
+        {
+          "boundary": "final-interleaver-flush",
+          "count": 2
+        },
+        {
+          "boundary": "header",
+          "count": 3
+        },
+        {
+          "boundary": "intermediate-flush",
+          "count": 12
+        },
+        {
+          "boundary": "packet-write",
+          "count": 360
+        },
+        {
+          "boundary": "trailer",
+          "count": 94
+        }
+      ]
+    },
+    {
+      "mode": "slow-finalization",
+      "classification": "NativePass",
+      "control": "event-controlled holds inside actual native AVIO callback",
+      "project_mux_capacities": [
+        16,
+        16
+      ],
+      "witnessed_full_depths": [
+        0,
+        0
+      ],
+      "producer_full_then_blocking_send_events": [
+        75,
+        199
+      ],
+      "producer_counts_video_audio": [
+        90,
+        284
+      ],
+      "readback_counts_per_stream": [
+        90,
+        142,
+        142
+      ],
+      "exact_mp4_bytes": true,
+      "exact_payload_duration_pts_dts": true,
+      "fd_after": 5,
+      "callback_count": 471,
+      "controlled_hold_count": 94,
+      "bytes_accepted": 82261,
+      "actual_callback_boundary_counts": [
+        {
+          "boundary": "final-interleaver-flush",
+          "count": 2
+        },
+        {
+          "boundary": "header",
+          "count": 3
+        },
+        {
+          "boundary": "intermediate-flush",
+          "count": 12
+        },
+        {
+          "boundary": "packet-write",
+          "count": 360
+        },
+        {
+          "boundary": "trailer",
+          "count": 94
+        }
+      ]
+    }
+  ],
+  "native_kernel_enospc_control": {
+    "classification": "NativePass",
+    "errno": 28,
+    "kind": "kernel-character-device-write-control",
+    "path": "/dev/full",
+    "qualification": "real native file-descriptor write error; not filesystem quota/disk exhaustion",
+    "root": "pipeline mux initialization: write MP4 container header failed: media operation failed: write observed MP4 header: No space left on device (-28)",
+    "trace": {
+      "bytes_accepted": 0,
+      "callbacks": 1,
+      "controlled_holds": 0,
+      "events": [
+        {
+          "actual_boundary": "header",
+          "attempted_bytes": 32,
+          "bytes_accepted_before": 0,
+          "callback": 1,
+          "controlled_hold": false,
+          "injected_fault": false,
+          "returned": -28
+        }
+      ]
+    }
+  },
+  "remaining": [
+    "real isolated filesystem ENOSPC",
+    "pipeline queue capacity-three native slow-IO integration",
+    "CLI mux write plus staging-removal composite"
+  ],
+  "artifacts": [
+    {
+      "path": "crates/asciiflow-media/src/ffmpeg/native_io.rs",
+      "sha256": "18d071193093fcdb8e2c55bda104f1545e576b620bd22ee42d241be818d89128"
+    },
+    {
+      "path": "crates/asciiflow-media/src/ffmpeg/encoder.rs",
+      "sha256": "370e702adb7292f53fdb35b57ffbcf05d85c558f632bc175db18271f085932ad"
+    },
+    {
+      "path": "crates/asciiflow-media/src/ffmpeg/mux_replay.rs",
+      "sha256": "13b0d06893ef7c399b922ffb51487ce7bd953eb704f77864e3b55851a509791c"
+    },
+    {
+      "path": "target/stage54d1a-native-io-closure-final/native/native-io.json",
+      "sha256": "a560006d173ce8bd2c7bbb4df56df71d195a4b56c58626dd915c51e85e45291e"
+    },
+    {
+      "path": "target/stage54d1a-native-io-closure-final/command-000.log",
+      "sha256": "867336ee8e5c5b091f1bcaa29489a65c60d623c5e27288afe946237a63796593"
+    },
+    {
+      "path": "target/stage54d1a-native-io-closure-final/environment.json",
+      "sha256": "1ab1c635ba3c5d88ded86bf0f79aff8e1ca2742085fb5349a35f80eb99f81fca"
+    },
+    {
+      "path": "target/stage54d1a-native-io-closure-final/results.json",
+      "sha256": "f09df912349a1ccb49f5d453029626711e5bc8886007b0c7d85168eb1c80d871"
+    }
+  ],
+  "execution": {
+    "command": [
+      "cargo",
+      "test",
+      "--release",
+      "-p",
+      "asciiflow-media",
+      "--features",
+      "mux-qualification",
+      "--lib",
+      "ffmpeg::encoder::mux_replay::native_io::native_avio_phase_faults_and_controlled_slow_sink",
+      "--",
+      "--ignored",
+      "--exact",
+      "--test-threads=1",
+      "--nocapture"
+    ],
+    "test_result": "1 passed; 0 failed; 0 ignored",
+    "runtime_seconds": 0.1,
+    "watchdog_seconds": 120,
+    "hardware_scope": "Native FFmpeg URL-backed file I/O, no GPU qualification inferred",
+    "source_scope": "Run environment captured before command; per-file stamps captured after test. Whole-source closure remains the campaign coordinator's responsibility."
+  },
+  "qualification": {
+    "faults": "SimulatedOnly: native AVIO callbacks returned injected ENOSPC/EIO at observed boundaries",
+    "slow_io": "NativePass: event-controlled callback holds, actual native mux queues/owner and original URL-backed writes",
+    "kernel_enospc": "NativePass for /dev/full kernel write control only",
+    "filesystem_enospc": "Unqualified: quota-limited or isolated filesystem exhaustion not exercised",
+    "composite_cleanup": "Unresolved: real mux-write plus CLI staging-removal failure requires CLI production cleanup path",
+    "pipeline_capacity_three": "Unresolved in this mux-only matrix"
+  }
+}

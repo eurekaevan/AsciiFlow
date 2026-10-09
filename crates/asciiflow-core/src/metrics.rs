@@ -162,6 +162,8 @@ impl Metrics {
     }
     pub fn frame_completed(&self) {
         self.inner.lock().expect("metrics lock poisoned").frames += 1;
+        #[cfg(feature = "reliability-measurement")]
+        crate::reliability::frame_completed();
     }
     pub fn record_audio(&self, packets: u64, bytes: u64) {
         let mut value = self.inner.lock().expect("metrics lock poisoned");
