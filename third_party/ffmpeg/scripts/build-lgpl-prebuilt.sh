@@ -13,7 +13,8 @@ test ! -e "$work"
 mkdir -p "$work"
 tar -xf "$archive" -C "$work"
 prefix="$work/sysroot"
-export PKG_CONFIG_PATH="$devel/lib64/pkgconfig"
+multiarch=$(cc -dumpmachine)
+export PKG_CONFIG_PATH="$devel/lib/$multiarch/pkgconfig:$devel/lib64/pkgconfig:$devel/lib/pkgconfig:$devel/share/pkgconfig"
 cd "$work/ffmpeg-8.1.3"
 configure=(./configure --prefix="$prefix" --libdir="$prefix/lib"
   --enable-shared --disable-static --disable-gpl --disable-nonfree
@@ -26,7 +27,7 @@ configure=(./configure --prefix="$prefix" --libdir="$prefix/lib"
   --disable-muxers --enable-muxer=mp4,null
   --disable-protocols --enable-protocol=file
   --extra-cflags="-I$devel/include -I$devel/include/libdrm"
-  --extra-ldflags="-L$devel/lib64")
+  --extra-ldflags="-L$devel/lib/$multiarch -L$devel/lib64 -L$devel/lib")
 printf '%q ' "${configure[@]}" > "$work/configure-command.txt"
 printf '\n' >> "$work/configure-command.txt"
 cc --version > "$work/compiler.txt"

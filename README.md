@@ -168,6 +168,10 @@ Capability/plan inspection does not start this conversion UI. See the
 
 ## Installing the qualified Linux release
 
+For automated packages of the current source, see the [Linux Release workflow
+and packaging instructions](docs/releases.md). Tag-triggered publishing and
+manual trial builds use the official LGPL profile.
+
 The instructions below concern frozen **2.0.0**, not a newly qualified package
 of the current development source. New font-name discovery needs runtime
 Fontconfig on Linux; builtin/explicit-file selection does not need it.

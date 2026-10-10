@@ -1,0 +1,73 @@
+name: Release Linux LGPL
+
+on:
+  push:
+    tags: ['[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set and validate release date
+        env:
+          RELEASE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+        run: |
+          python3 - <<'PY'
+          import datetime, os, re
+          value = os.environ['RELEASE_TAG'] or datetime.datetime.now(datetime.timezone.utc).date().isoformat()
+          assert re.fullmatch(r'[0-9]{4}-[0-9]{2}-[0-9]{2}', value), 'Tag must use YYYY-MM-DD'
+          datetime.date.fromisoformat(value)  # Reject impossible calendar dates.
+          with open(os.environ['GITHUB_ENV'], 'a') as output:
+              output.write(f'RELEASE_DATE={value}\n')
+          PY
+      - uses: dtolnay/rust-toolchain@1.99.0
+        with:
+          components: rust-docs
+      - name: Install build and verification dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake clang libclang-dev pkg-config nasm curl xz-utils ripgrep python3 git ffmpeg libdav1d-dev libva-dev libdrm-dev libfreetype-dev libvulkan1 libfontconfig1
+      - name: Build and verify release archive
+        shell: bash
+        run: |
+          archive="$RUNNER_TEMP/ffmpeg-8.1.3.tar.xz"
+          curl --fail --location --retry 3 --output "$archive" https://ffmpeg.org/releases/ffmpeg-8.1.3.tar.xz
+          bash scripts/package-linux-release.sh "$archive" "$RUNNER_TEMP/asciiflow-release"
+      - name: Retain FFmpeg build diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-x86_64-build-diagnostics
+          path: ${{ runner.temp }}/asciiflow-release/ffmpeg/*.log
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-x86_64-lgpl
+          path: ${{ runner.temp }}/asciiflow-release/dist/*
+          if-no-files-found: error
+
+  publish:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-x86_64-lgpl
+          path: dist
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          gh release create "$RELEASE_TAG" dist/*.tar.gz dist/SHA256SUMS \
+            --verify-tag --latest --generate-notes --notes-file dist/RELEASE_NOTES.md
