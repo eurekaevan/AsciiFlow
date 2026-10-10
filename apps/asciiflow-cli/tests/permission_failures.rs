@@ -11,11 +11,16 @@ use std::{
     os::unix::fs::PermissionsExt,
     path::{Path, PathBuf},
     process::Command,
-    sync::atomic::{AtomicU64, Ordering},
+    sync::{
+        Mutex,
+        atomic::{AtomicU64, Ordering},
+    },
     time::{SystemTime, UNIX_EPOCH},
 };
 
 static NEXT: AtomicU64 = AtomicU64::new(0);
+// Descriptor counts are process-wide, so isolate each test's setup and cleanup.
+static PERMISSION_TEST: Mutex<()> = Mutex::new(());
 
 struct Workspace(PathBuf);
 
@@ -95,6 +100,7 @@ fn fd_count() -> usize {
 
 #[test]
 fn existing_output_directory_permission_denies_staging_creation() {
+    let _serial = PERMISSION_TEST.lock().unwrap();
     let ws = Workspace::new();
     let input = fixture("no-audio.mp4");
     let output_dir = ws.0.join("output");
@@ -130,6 +136,7 @@ fn existing_output_directory_permission_denies_staging_creation() {
 
 #[test]
 fn read_only_parent_denies_creation_of_target_directory() {
+    let _serial = PERMISSION_TEST.lock().unwrap();
     let ws = Workspace::new();
     let input = fixture("no-audio.mp4");
     let blocked_parent = ws.0.join("blocked");
