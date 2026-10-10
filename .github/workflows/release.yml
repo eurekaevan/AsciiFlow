@@ -11,19 +11,27 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-24.04
+    outputs:
+      release_date: ${{ steps.release.outputs.release_date }}
+      release_commit: ${{ steps.release.outputs.release_commit }}
     steps:
       - uses: actions/checkout@v4
       - name: Set and validate release date
+        id: release
         env:
-          RELEASE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+          RELEASE_TAG: ${{ github.event_name == 'push' && github.ref_name || '' }}
         run: |
           python3 - <<'PY'
-          import datetime, os, re
-          value = os.environ['RELEASE_TAG'] or datetime.datetime.now(datetime.timezone.utc).date().isoformat()
+          import datetime, os, re, subprocess
+          from zoneinfo import ZoneInfo
+          value = os.environ['RELEASE_TAG'] or datetime.datetime.now(ZoneInfo('Asia/Taipei')).date().isoformat()
           assert re.fullmatch(r'[0-9]{4}-[0-9]{2}-[0-9]{2}', value), 'Tag must use YYYY-MM-DD'
           datetime.date.fromisoformat(value)  # Reject impossible calendar dates.
           with open(os.environ['GITHUB_ENV'], 'a') as output:
               output.write(f'RELEASE_DATE={value}\n')
+          commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'release_date={value}\nrelease_commit={commit}\n')
           PY
       - uses: dtolnay/rust-toolchain@1.99.0
         with:
@@ -52,12 +60,33 @@ jobs:
           if-no-files-found: error
 
   publish:
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     needs: build
     runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.build.outputs.release_commit }}
+      - name: Create or verify release tag
+        env:
+          RELEASE_TAG: ${{ needs.build.outputs.release_date }}
+          RELEASE_COMMIT: ${{ needs.build.outputs.release_commit }}
+        shell: bash
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/$RELEASE_TAG"; then
+            git fetch --no-tags origin "refs/tags/$RELEASE_TAG"
+            tag_commit=$(git rev-parse 'FETCH_HEAD^{commit}')
+            if [[ "$tag_commit" != "$RELEASE_COMMIT" ]]; then
+              echo "Release tag $RELEASE_TAG points to a different commit; refusing to publish" >&2
+              exit 1
+            fi
+          else
+            status=$?
+            [[ "$status" == 2 ]] || exit "$status"
+            git tag "$RELEASE_TAG" "$RELEASE_COMMIT"
+            git push origin "refs/tags/$RELEASE_TAG"
+          fi
       - uses: actions/download-artifact@v4
         with:
           name: linux-x86_64-lgpl
@@ -66,7 +95,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_TAG: ${{ needs.build.outputs.release_date }}
         shell: bash
         run: |
           gh release create "$RELEASE_TAG" dist/*.tar.gz dist/SHA256SUMS \

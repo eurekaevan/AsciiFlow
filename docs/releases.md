@@ -33,7 +33,11 @@ H.264 encoding. Selecting `--encode software` produces an explicit error.
    version is internal build metadata and does not need to change for each
    release. The packaged CLI's `--version` prints the same date as the release
    tag; ordinary source builds print `asciiflow dev`.
-2. Push a date tag in `YYYY-MM-DD` format, for example `2026-10-10`.
+2. Run **Release Linux LGPL** manually on the intended branch or tag, or push a
+   date tag in `YYYY-MM-DD` format, for example `2026-10-10`.
+   Manual runs use the current date in `Asia/Taipei` (UTC+8), even when an older
+   tag is selected. The date is fixed at the start of the build and shared by
+   the archive, CLI build label and publishing job. Tag pushes use the tag date.
    Only date-shaped tag pushes trigger publishing; the workflow also checks
    calendar validity and rejects dates such as `2026-02-30`. Each date identifies
    one release; a second release needs another date tag.
@@ -43,11 +47,13 @@ H.264 encoding. Selecting `--encode software` produces an explicit error.
    token is needed: only the publishing job receives
    `contents: write` permission through the built-in GitHub token.
 
-Run **Release Linux LGPL** manually to build a trial archive without publishing.
-Manual runs upload the archive, checksums, release notes and verification logs
-as an Actions artifact. A tag push does not automatically wait for ordinary CI;
-run CI on the intended commit before tagging. Manual branch runs use the current
-UTC date for archive names; manual tag runs use the validated tag date.
+Both triggers upload the archive, checksums, release notes and verification logs
+as an Actions artifact and publish a Release after a successful build. The
+publishing job creates the date tag at the exact commit that was built, or
+verifies that an existing tag points to that commit. A conflicting tag fails
+publication without moving it; an existing Release is not overwritten.
+Neither trigger automatically waits for ordinary CI; run CI on the intended
+commit before publishing.
 
 ```sh
 git tag 2026-10-10
