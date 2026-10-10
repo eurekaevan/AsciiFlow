@@ -2184,10 +2184,12 @@ mod audio_regression_tests {
     static NATIVE_WRITE_CALLBACKS: std::sync::atomic::AtomicUsize =
         std::sync::atomic::AtomicUsize::new(0);
 
+    // FFmpeg headers differ on the write buffer's constness. These callbacks
+    // never access it; infer its exact type from AVIOContext::write_packet.
     #[cfg(target_os = "linux")]
-    unsafe extern "C" fn fail_native_write_enospc(
+    unsafe extern "C" fn fail_native_write_enospc<Buffer>(
         _: *mut std::ffi::c_void,
-        _: *const u8,
+        _: Buffer,
         _: i32,
     ) -> i32 {
         NATIVE_WRITE_CALLBACKS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
@@ -2195,13 +2197,40 @@ mod audio_regression_tests {
     }
 
     #[cfg(target_os = "linux")]
-    unsafe extern "C" fn fail_native_write_eio(
+    unsafe extern "C" fn fail_native_write_eio<Buffer>(
         _: *mut std::ffi::c_void,
-        _: *const u8,
+        _: Buffer,
         _: i32,
     ) -> i32 {
         NATIVE_WRITE_CALLBACKS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         ffi::AVERROR(libc::EIO)
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn native_write_fault_callbacks_support_both_buffer_signatures() {
+        let enospc_mut: unsafe extern "C" fn(_, *mut u8, _) -> _ = fail_native_write_enospc;
+        let enospc_const: unsafe extern "C" fn(_, *const u8, _) -> _ = fail_native_write_enospc;
+        let eio_mut: unsafe extern "C" fn(_, *mut u8, _) -> _ = fail_native_write_eio;
+        let eio_const: unsafe extern "C" fn(_, *const u8, _) -> _ = fail_native_write_eio;
+        unsafe {
+            assert_eq!(
+                enospc_mut(ptr::null_mut(), ptr::null_mut(), 0),
+                ffi::AVERROR(libc::ENOSPC)
+            );
+            assert_eq!(
+                enospc_const(ptr::null_mut(), ptr::null(), 0),
+                ffi::AVERROR(libc::ENOSPC)
+            );
+            assert_eq!(
+                eio_mut(ptr::null_mut(), ptr::null_mut(), 0),
+                ffi::AVERROR(libc::EIO)
+            );
+            assert_eq!(
+                eio_const(ptr::null_mut(), ptr::null(), 0),
+                ffi::AVERROR(libc::EIO)
+            );
+        }
     }
 
     /// Minimal native MP4 output for exercising the real mux worker's AVIO
