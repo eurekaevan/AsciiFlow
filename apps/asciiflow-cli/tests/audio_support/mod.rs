@@ -331,7 +331,7 @@ pub fn same_audio(input: &Stream, output: &Stream) {
         record_strict_audio_failure("PacketCountMismatch");
     }
     assert_eq!(input.packets.len(), output.packets.len());
-    let same_time = |x: i64, y: i64| {
+    let same_time = |field: &str, packet_index: Option<usize>, x: i64, y: i64| {
         let difference = (i128::from(x) * i128::from(input.num) * i128::from(output.den)
             - i128::from(y) * i128::from(output.num) * i128::from(input.den))
         .abs();
@@ -340,13 +340,26 @@ pub fn same_audio(input: &Stream, output: &Stream) {
         }
         assert!(
             difference <= i128::from(output.num) * i128::from(input.den),
-            "media timestamp changed"
+            "media timestamp changed: field={field}, packet_index={packet_index:?}\n\
+             input={x}, time_base={}/{}; output={y}, time_base={}/{}\n\
+             absolute_difference={difference}/{} seconds ({:.12} s); allowed={}/{} seconds\n\
+             FFmpeg={}, libavformat={:#x}",
+            input.num,
+            input.den,
+            output.num,
+            output.den,
+            i128::from(input.den) * i128::from(output.den),
+            difference as f64 / (input.den as f64 * output.den as f64),
+            output.num,
+            output.den,
+            unsafe { CStr::from_ptr(ffi::av_version_info()) }.to_string_lossy(),
+            unsafe { ffi::avformat_version() },
         );
     };
     if input.duration != ffi::AV_NOPTS_VALUE && output.duration != ffi::AV_NOPTS_VALUE {
-        same_time(input.duration, output.duration);
+        same_time("stream.duration", None, input.duration, output.duration);
     }
-    for (a, b) in input.packets.iter().zip(&output.packets) {
+    for (packet_index, (a, b)) in input.packets.iter().zip(&output.packets).enumerate() {
         if a.data != b.data {
             record_strict_audio_failure("PayloadMismatch");
         }
@@ -354,8 +367,12 @@ pub fn same_audio(input: &Stream, output: &Stream) {
             a.data, b.data,
             "compressed payload changed or crossed audio tracks"
         );
-        for (x, y) in [(a.pts, b.pts), (a.dts, b.dts), (a.duration, b.duration)] {
-            same_time(x, y);
+        for (field, x, y) in [
+            ("packet.pts", a.pts, b.pts),
+            ("packet.dts", a.dts, b.dts),
+            ("packet.duration", a.duration, b.duration),
+        ] {
+            same_time(field, Some(packet_index), x, y);
         }
     }
 }
