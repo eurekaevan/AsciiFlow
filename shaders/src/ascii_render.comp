@@ -31,38 +31,11 @@ layout(push_constant) uniform Params {
     uint neutral_chroma;
 } params;
 
-uint alpha_for(uint glyph, uint x, uint y) {
-#ifdef USE_COORD_LUT
-    uint local_x = coordinates[x].y;
-    uint local_y = coordinates[params.width + y].y;
-#else
-#ifdef USE_INT64_COORDS
-    uint local_x = uint(
-        (uint64_t(x) * params.grid_width * params.atlas_width / params.width)
-        % params.atlas_width
-    );
-    uint local_y = uint(
-        (uint64_t(y) * params.grid_height * params.atlas_height / params.height)
-        % params.atlas_height
-    );
-#else
-    uint local_x = (x * params.grid_width * params.atlas_width / params.width)
-        % params.atlas_width;
-    uint local_y = (y * params.grid_height * params.atlas_height / params.height)
-        % params.atlas_height;
-#endif
-#endif
-    uint atlas_index = glyph * params.atlas_width * params.atlas_height
-        + local_y * params.atlas_width
-        + local_x;
-    return uint(atlas[atlas_index]);
-}
-
 uint cell_x_for(uint x) {
 #ifdef USE_COORD_LUT
     return coordinates[x].x;
 #else
-    return x * params.grid_width / params.width;
+    return ((x + 1u) * params.grid_width - 1u) / params.width;
 #endif
 }
 
@@ -70,8 +43,37 @@ uint cell_y_for(uint y) {
 #ifdef USE_COORD_LUT
     return coordinates[params.width + y].x;
 #else
-    return y * params.grid_height / params.height;
+    return ((y + 1u) * params.grid_height - 1u) / params.height;
 #endif
+}
+
+uint alpha_for(uint glyph, uint x, uint y) {
+#ifdef USE_COORD_LUT
+    uint local_x = coordinates[x].y;
+    uint local_y = coordinates[params.width + y].y;
+#else
+    uint cx = cell_x_for(x);
+    uint cy = cell_y_for(y);
+    uint x0 = cx * params.width / params.grid_width;
+    uint x1 = (cx + 1u) * params.width / params.grid_width;
+    uint y0 = cy * params.height / params.grid_height;
+    uint y1 = (cy + 1u) * params.height / params.grid_height;
+#ifdef USE_INT64_COORDS
+    uint local_x = uint(
+        (uint64_t(x - x0) * params.atlas_width) / (x1 - x0)
+    );
+    uint local_y = uint(
+        (uint64_t(y - y0) * params.atlas_height) / (y1 - y0)
+    );
+#else
+    uint local_x = (x - x0) * params.atlas_width / (x1 - x0);
+    uint local_y = (y - y0) * params.atlas_height / (y1 - y0);
+#endif
+#endif
+    uint atlas_index = glyph * params.atlas_width * params.atlas_height
+        + local_y * params.atlas_width
+        + local_x;
+    return uint(atlas[atlas_index]);
 }
 
 uint blend(uint background, uint foreground, uint alpha) {

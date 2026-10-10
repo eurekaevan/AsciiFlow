@@ -1,4 +1,7 @@
-# AsciiFlow 2.0.0-rc.1 — Linux CLI release candidate
+# Historical Linux release candidate notes
+
+Original artifact label: `2.0.0-rc.1`. Retained as historical evidence; current
+releases use date tags.
 
 This candidate targets a recorded Linux x86-64 installation and the tested
 Intel Arc Meteor Lake stacks. It is not a promise for all distributions, Intel

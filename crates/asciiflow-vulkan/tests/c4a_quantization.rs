@@ -271,7 +271,12 @@ fn sample_location(
     }
     let uv_index = sample_index - pixel_count;
     let vector = uv_index / 2;
-    (vector, if uv_index % 2 == 0 { "Cb" } else { "Cr" }.into())
+    let channel = if uv_index.is_multiple_of(2) {
+        "Cb"
+    } else {
+        "Cr"
+    };
+    (vector, channel.into())
 }
 
 fn prequantized_code(

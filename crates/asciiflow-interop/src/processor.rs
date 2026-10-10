@@ -71,7 +71,7 @@ impl WorkerSlot {
                                         error,
                                     )
                                 })?;
-                            let mut output = match desc.format {
+                            let result = match desc.format {
                                 PixelFormat::Nv12 => backend.process_external_nv12(
                                     &desc,
                                     mapping.pts(),
@@ -84,9 +84,14 @@ impl WorkerSlot {
                                     &config,
                                     planes,
                                 ),
-                            }?;
-                            // `mapping` retains both FFmpeg frames until the
-                            // slot fence has completed inside the backend.
+                            };
+                            let (mut output, _mapping) = crate::drm_prime::finish_gpu_access(
+                                result,
+                                mapping,
+                                backend.is_device_abandoned(),
+                            )?;
+                            // The returned guard retains both FFmpeg frames
+                            // through successful completion and output handling.
                             output.timings.drm_prime_map = map_wall;
                             output.timings.backend_wall = submitted.elapsed();
                             Ok(output)
@@ -141,7 +146,7 @@ impl VaapiVulkanInteropProcessor {
     pub fn new(first: VulkanAsciiBackend, desc: FrameDesc, config: AsciiConfig) -> Result<Self> {
         if !first.device_info().dma_buf_interop {
             return Err(Error::Vulkan(
-                "selected Vulkan device does not expose the required Stage 3A DMA-BUF interop extensions"
+                "selected Vulkan device does not expose the required DMA-BUF interop extensions"
                     .into(),
             ));
         }
@@ -179,7 +184,7 @@ impl VaapiVulkanInteropProcessor {
         }
         if frame.desc() != &self.desc {
             return Err(Error::UnsupportedFrame(
-                "VAAPI frame geometry changed while using Stage 3A interop".into(),
+                "VAAPI frame geometry changed while using DMA-BUF interop".into(),
             ));
         }
         let completed = if self.free.is_empty() {

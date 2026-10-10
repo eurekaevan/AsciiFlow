@@ -1,13 +1,9 @@
 # AsciiFlow
 
-AsciiFlow **2.0.0** is the completed release milestone. The
-[final release receipt](docs/asciiflow-2.0.0-final.md) records
-the artifact identity, inherited qualification and unchanged limitations.
-
-Current source development is **2.1.0-dev**, including system font discovery
-and terminal UX. It does not replace or modify the frozen 2.0.0 artifact.
-Maintenance is change-driven; numbered development stages and sealing plans
-are no longer used.
+Releases use calendar-date tags (`YYYY-MM-DD`). The current source includes
+system font discovery and terminal UX. The
+[historical release receipt](docs/historical-release-receipt.md) retains the identity, qualification and limitations of its frozen artifact.
+Maintenance follows changes and regressions.
 
 AsciiFlow is a Rust CLI that converts video into color or monochrome ASCII
 video. It has a portable CPU path and, on qualified Linux hardware, a Vulkan
@@ -152,6 +148,10 @@ include `--width`, `--height`, `--charset`, `--font`, `--font-face-index`,
 positional except for capability/plan inspection. Run `asciiflow --help`
 for the exact installed CLI.
 
+Input must be a local regular file; symbolic links to regular files are accepted.
+Directories, FIFOs and device files are rejected before native probing, including
+with `--capabilities` and `--explain-plan`. Streaming input is not supported.
+
 Current source builds accept `--font "Liberation Mono:style=Bold"` as well as
 explicit files and `builtin-8x8`. A system match must still pass the existing
 FreeType monospaced/scalable/glyph checks; discovery does not promise fallback.
@@ -166,29 +166,25 @@ trusted frame count show elapsed progress without a percentage or invented ETA.
 Capability/plan inspection does not start this conversion UI. See the
 [font and terminal validation report](docs/font-terminal-validation.md).
 
-## Installing the qualified Linux release
+## Installing the Linux release
 
 For automated packages of the current source, see the [Linux Release workflow
 and packaging instructions](docs/releases.md). Tag-triggered publishing and
 manual trial builds use the official LGPL profile.
 
-The instructions below concern frozen **2.0.0**, not a newly qualified package
-of the current development source. New font-name discovery needs runtime
-Fontconfig on Linux; builtin/explicit-file selection does not need it.
+The official package is dynamically linked for Linux x86-64. Extract the
+archive and add its directory to your `PATH` (or invoke `asciiflow` by absolute
+path). Keep the executable next to its bundled `lib/` directory and retain the
+licenses, notices and `sources/` when redistributing it. Shaders and the builtin
+font are embedded; no source checkout, shader cache or fixtures are needed at
+runtime. FreeType, libdav1d, Vulkan and VAAPI/driver libraries remain system
+prerequisites. Font-name discovery also needs runtime Fontconfig on Linux;
+builtin and explicit-file selection do not.
 
-The qualified 2.0.0 milestone is a dynamically linked Linux x86-64 package,
-not a universal Linux bundle. Extract the archive and add its directory to
-your `PATH` (or invoke `asciiflow` by absolute path). Keep the executable next
-to its bundled `lib/` directory; moving only the executable loses the qualified
-LGPL FFmpeg dependency set. Keep the accompanying licenses, notices and
-`sources/` when redistributing the package. Shaders and the builtin font are
-embedded; no source checkout, shader cache or fixture directory is needed at
-runtime. FreeType, libdav1d, Vulkan loader and VAAPI/driver libraries remain
-system prerequisites. Use the recorded release dependency and
-hardware receipts rather than assuming another FFmpeg major or driver is
-compatible. The tested build toolchain is Rust1.97.1; the manifest's1.88 floor
-reflects language features and is not a separately qualified minimum-toolchain
-claim. Offline builds are not a release promise.
+Package build and runtime requirements are recorded in [release packaging](docs/releases.md).
+The [historical qualification receipt](docs/historical-release-receipt.md) describes
+its exact tested artifact and dependency stack; it does not automatically
+qualify a new package or another driver. Offline builds are not a release promise.
 
 ```bash
 asciiflow --version
@@ -196,7 +192,7 @@ asciiflow input.mp4 output.mp4 --width 160 --audio auto
 asciiflow input.mp4 --capabilities
 ```
 
-See the [final milestone and installation receipt](docs/asciiflow-2.0.0-final.md), the
+See the [historical installation receipt](docs/historical-release-receipt.md), the
 [generated scenario matrix](docs/production-support.md#complete-scenario-inventory)
 and the [inherited LGPL qualification report](docs/lgpl-release-qualification.md).
 AsciiFlow source is MIT; the executable's distribution also has obligations
@@ -247,7 +243,7 @@ The [architecture](docs/architecture.md) explains ownership and native
 boundaries. [Testing](docs/testing.md) distinguishes portable checks from
 opt-in Intel `/dev/dri` gates and records the current post-polarity media
 baseline. Baseline revisions identify evidence, not separate application
-versions or future development stages. The permanent [PQ reference](docs/hdr-pq-semantics.md)
+release identities. The permanent [PQ reference](docs/hdr-pq-semantics.md)
 and [tone-mapping contract](docs/tone-mapping.md) describe the numeric policies;
 [production validation](docs/hdr-to-sdr-validation.md) retains the tested
 fixed-policy PQ→SDR path and regression identities.
@@ -267,7 +263,7 @@ durable qualification evidence belong in `tests/`, with their contracts in
 `target/` also holds locally retained release packages, exact source snapshots,
 raw qualification measurements and inputs—not just disposable Cargo output.
 **Do not remove the whole directory or run an unrestricted `cargo clean` here.**
-Final 2.0.0 artifacts are under `target/releases/asciiflow-2.0.0/`; historical
+The historical release artifacts are under `target/releases/asciiflow-2.0.0/`;
 rc.1/rc.2 artifacts remain in their original release directories. Archive these
 with their receipts before moving them off this machine.
 

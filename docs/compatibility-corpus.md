@@ -49,11 +49,11 @@ that every plausible stream feature is supported.
 
 ## Running
 
-For the Stage 5.4B real-media corpus:
+For the reviewed real-media corpus:
 
 ```bash
 python3 -B tests/corpus/run.py quick --manifest tests/corpus/real-media-v1.json \
-  --output target/stage54b-evidence-new
+  --output target/media-compatibility-evidence-new
 ```
 
 The three checked-in `generate-real-*.py` recipes generate each group once.

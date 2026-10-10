@@ -15,8 +15,6 @@ cd "$root"
   echo "Release packaging requires a clean checkout" >&2; exit 1;
 }
 [[ ! -e "$work" ]]
-version=$(python3 -c 'import tomllib; print(tomllib.load(open("Cargo.toml", "rb"))["workspace"]["package"]["version"])')
-[[ $version =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]
 release_date=${RELEASE_DATE:-$(date -u +%F)}
 python3 - "$release_date" <<'PY'
 import datetime, re, sys
@@ -31,6 +29,7 @@ export FFMPEG_DIR="$work/ffmpeg/sysroot"
 export PKG_CONFIG_PATH="$FFMPEG_DIR/lib/pkgconfig"
 export LD_LIBRARY_PATH="$FFMPEG_DIR/lib"
 export CARGO_TARGET_DIR="$work/target"
+export ASCIIFLOW_RELEASE_DATE="$release_date"
 export RUSTFLAGS='-C link-arg=-Wl,--disable-new-dtags,-rpath,$ORIGIN/lib'
 python3 tests/release/ffmpeg-profile-receipt.py "$FFMPEG_DIR" "$work/ffmpeg-profile.json"
 cargo test --locked -p asciiflow-media --features lgpl-prebuilt \
@@ -101,7 +100,10 @@ assert '(RPATH)' in dynamic and '[$ORIGIN/lib]' in dynamic, dynamic
 assert '(RUNPATH)' not in dynamic, dynamic
 pathlib.Path(sys.argv[2]).write_text(listing + dynamic)
 PY
-"$relocated/asciiflow" --version
+version_output=$("$relocated/asciiflow" --version)
+[[ "$version_output" == "asciiflow $release_date" ]] || {
+  echo "Packaged CLI build label does not match release date: $version_output" >&2; exit 1;
+}
 "$relocated/asciiflow" --help > "$work/help.txt"
 if "$relocated/asciiflow" tests/fixtures/media/no-audio.mp4 "$work/rejected.mp4" \
     --backend cpu --decode software --encode software --audio none --width 16 --no-progress \
@@ -113,7 +115,7 @@ rg -q 'excluded from the official LGPL prebuilt' "$work/software-rejection.txt"
 cp "$work/"{runtime-check.txt,software-rejection.txt} "$work/dist/"
 cat > "$work/dist/RELEASE_NOTES.md" <<NOTES
 Linux x86_64 official LGPL package, built on Ubuntu 24.04 (glibc 2.39 or newer).
-Release date: $release_date. Application version: $version.
+Release date: $release_date.
 
 Includes FFmpeg 8.1.3 shared libraries, corresponding source and third-party notices.
 Software H.264 encoding is excluded; a compatible VAAPI GPU and host drivers are required.

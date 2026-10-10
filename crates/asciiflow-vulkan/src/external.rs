@@ -269,7 +269,7 @@ fn require_modifier_support(
         })?;
     if modifier_properties.drm_format_modifier_plane_count != 1 {
         return Err(Error::Vulkan(format!(
-            "DRM modifier {modifier:#018x} for {format:?} has {} Vulkan memory planes; Stage 3A supports one memory plane per exported layer",
+            "DRM modifier {modifier:#018x} for {format:?} has {} Vulkan memory planes; DMA-BUF interop supports one memory plane per exported layer",
             modifier_properties.drm_format_modifier_plane_count
         )));
     }

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bounded H.264 VAAPI encoder capture across the two Stage 5.4C2 iHD builds.
+"""Bounded H.264 VAAPI encoder capture across the two tested iHD builds.
 
 This runner records evidence only. It does not alter the host environment, reuse
 an output directory, or turn partial results into a qualification decision.
@@ -25,7 +25,7 @@ DEVICE = "/dev/dri/renderD128"
 CASES = ("canonical-h2648", "canonical-h2648-auto", "hevc-pq-to-sdr10")
 DRIVERS = {
     "ihd-26.1.5-host": "/usr/lib64/dri-nonfree",
-    "ihd-25.4.6-isolated": "target/stage54c2-toolchains/intel-media-driver-25.4.6-1.fc44/usr/lib64/dri-nonfree",
+    "ihd-25.4.6-isolated": "target/driver-toolchains/intel-media-driver-25.4.6-1.fc44/usr/lib64/dri-nonfree",
 }
 HISTORICAL_ORACLE_SHA256 = {
     "tests/baselines/media/verify-hdr-to-sdr-production.py":
@@ -228,7 +228,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--binary", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
-    parser.add_argument("--inputs", type=Path, default=Path("target/stage54c1-evidence/inputs"))
+    parser.add_argument("--inputs", type=Path, default=Path("target/portability-inputs"))
     parser.add_argument("--device", default=DEVICE)
     parser.add_argument("--timeout-seconds", type=float, default=2400)
     parser.add_argument("--va-trace", action="store_true",

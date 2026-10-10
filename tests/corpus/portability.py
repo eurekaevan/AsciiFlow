@@ -86,10 +86,7 @@ def source_identity():
                            ":(exclude)tests/portability/stack-qualification.json",
                            ":(exclude)tests/portability/h264-driver-qualification.json",
                            ":(exclude)tests/portability/qualified-stacks.json",
-                           ":(exclude)docs/stage5.4c2-expanded-portability-matrix.md",
-                           ":(exclude)docs/stage5.4c2a-h264-ihd2546.md",
-                           ":(exclude)docs/stage5.4c1a-deterministic-mux.md",
-                           ":(exclude)docs/stage5.4c1-portability-baseline.md"], cwd=ROOT,
+                           ":(exclude)docs/portability-testing.md"], cwd=ROOT,
                           capture_output=True, check=True).stdout
     paths = subprocess.run(["git", "ls-files", "--cached", "--others", "--exclude-standard"],
                            cwd=ROOT, capture_output=True, text=True, check=True).stdout.splitlines()
@@ -97,7 +94,7 @@ def source_identity():
     # self-referential identity when the second manifest records the first one.
     files = {p: digest(ROOT / p) for p in sorted(set(paths))
              if (ROOT / p).is_file() and not p.startswith("tests/portability/stacks/")
-             and p not in {"tests/portability/baseline.json", "tests/portability/mux-qualification.json", "tests/portability/stack-qualification.json", "tests/portability/h264-driver-qualification.json", "tests/portability/qualified-stacks.json", "docs/stage5.4c2-expanded-portability-matrix.md", "docs/stage5.4c2a-h264-ihd2546.md", "docs/stage5.4c1a-deterministic-mux.md", "docs/stage5.4c1-portability-baseline.md"}}
+             and p not in {"tests/portability/baseline.json", "tests/portability/mux-qualification.json", "tests/portability/stack-qualification.json", "tests/portability/h264-driver-qualification.json", "tests/portability/qualified-stacks.json", "docs/portability-testing.md"}}
     return {"head": query(["git", "rev-parse", "HEAD"])["stdout"].strip(),
             "dirty_diff_sha256": hashlib.sha256(diff).hexdigest(),
             "cargo_lock_sha256": digest(ROOT / "Cargo.lock"), "files_sha256": files}

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""D-1B finite 100k production paths; no automatic reliability sealing."""
+"""Finite 100k production paths; no automatic reliability sealing."""
 import argparse
 import json
 import math
@@ -27,16 +27,16 @@ def main():
     run = Run(SimpleNamespace(output=args.output, binary=args.binary,
               device="/dev/dri/renderD128", watchdog_seconds=args.watchdog_seconds,
               proc_sample_interval_seconds=1.0,
-              mode="d1b-100k", stack=None))
+              mode="production-100k", stack=None))
     run.environment()
     save(run.out / "protocol.json", {
-        "stage": "5.4D-1B", "frames_per_path": 100000,
+        "stage": "finite-production-long-run", "frames_per_path": 100000,
         "paths": ["sdr", "pq-preserve", "pq-to-sdr"],
         "measurement": args.measurement, "validation": False,
         "memory_plateau": "Persistent multi-job retention unqualified and outside single-job CLI contract; historical failures unchanged",
         "audio_tracks": {"sdr": 1, "pq-preserve": 0, "pq-to-sdr": 2},
         "scope": "Finite single-job long paths; not persistent hosting or 24x7 qualification",
-        "decision": "Path PASS does not automatically seal D-1B or D-1"})
+        "decision": "Path PASS does not automatically qualify long-run or general reliability"})
     for kind in ("sdr", "pq-preserve", "pq-to-sdr"):
         options = {}
         if args.inputs_from:

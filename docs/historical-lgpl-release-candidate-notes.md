@@ -1,4 +1,7 @@
-# AsciiFlow 2.0.0-rc.2 — LGPL prebuilt candidate
+# Historical LGPL release candidate notes
+
+Original artifact label: `2.0.0-rc.2`. Retained as historical evidence; current
+releases use date tags.
 
 This candidate uses the explicit `lgpl-prebuilt` Cargo feature and isolated
 FFmpeg 8.1.3 shared libraries. Qualification status and exact artifact identities

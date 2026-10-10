@@ -1,7 +1,7 @@
 # Host-transfer hardware-media baseline
 
-This record captures the 2026-09-14 Stage 2 baseline on the real Intel Arc
-Meteor Lake GPU. Stage 2 deliberately keeps Host NV12 between FFmpeg VAAPI and
+This record captures the 2026-09-14 Host NV12 baseline on the real Intel Arc
+Meteor Lake GPU. This baseline deliberately keeps Host NV12 between FFmpeg VAAPI and
 the existing Vulkan processor; it implements no DMA-BUF or external-memory
 interop.
 
@@ -12,7 +12,7 @@ interop.
 - Driver used for codec validation: Intel iHD 26.1.5 from RPM Fusion's complete
   media driver
 - H.264: Constrained Baseline/Main/High decode and EncSlice
-- HEVC: Main/Main10 decode and EncSlice (not implemented in Stage 2)
+- HEVC: Main/Main10 decode and EncSlice (not implemented in this baseline)
 - Vulkan device: Intel(R) Arc(tm) Graphics (MTL), Mesa ANV 26.1.8
 
 Fedora's free Intel media-driver build initialized successfully but omitted
@@ -41,7 +41,7 @@ is bounded by the reusable input frame and encoder `async_depth=2` retention.
 
 No FFmpeg or VAAPI type enters Core. Core's planner describes only software or
 hardware decode/encode and explicit hardware-download/upload nodes. The CLI is
-the composition root for `software|vaapi|auto`; Stage 2 keeps `auto` equal to
+the composition root for `software|vaapi|auto`; the baseline keeps `auto` equal to
 software until this evidence is deliberately turned into a default policy.
 An explicit VAAPI request fails on device, codec/profile, frames-pool, or NV12
 transfer failure and never falls back silently.
@@ -142,4 +142,4 @@ historical Host NV12 boundary, download more than erases the codec gain.
 This identifies hwdownload as the dominant remaining cost in that measurement.
 Hardware encoding was throughput-neutral while substantially reducing CPU use.
 Current production also has DMA-BUF interop; this retained baseline does not
-describe that path or prescribe another development stage.
+describe that path or prescribe future work.

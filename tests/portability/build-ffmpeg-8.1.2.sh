@@ -2,7 +2,7 @@
 # Isolated libav patch comparison; never install into the host filesystem.
 set -euo pipefail
 root=$(cd -- "$(dirname -- "$0")/../.." && pwd)
-work="$root/target/stage54c1-toolchains"
+work="$root/target/portability-toolchains"
 source="$work/ffmpeg-8.1.2"
 prefix="$work/ffmpeg-8.1.2-prefix"
 devel="$work/devel/usr"

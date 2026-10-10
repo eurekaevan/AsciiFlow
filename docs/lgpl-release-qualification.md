@@ -237,7 +237,7 @@ validated shaders, actual library licenses/closure/maps, hardware receipts,
 all relevant smokes, retained oracles, mux tiers and failed attempt logs.
 No placeholders or remaining release gates remain for this recorded candidate.
 
-**D-2 SEALED; D SEALED; Stage 5.4 SEALED; rc.2 release-ready within scope.**
+**Historical LGPL candidate qualification completed within the recorded scope.**
 Still limited to recorded Linux Intel stacks, one process/one job, PQ limited
 BT.2020 NCL and qualified <=1000 cd/m² explicit tone-map domain, qualified
 MP4/CFR audio copy. HLG/full range and official software H.264 encoding are

@@ -1255,6 +1255,11 @@ fn require_supported_output(codec: &VideoCodec, desc: &FrameDesc, mode: EncodeMo
             "ASCII output currently emits limited-range code values; full/unspecified range cannot be tagged safely".into(),
         ));
     }
+    if desc.format == PixelFormat::Nv12 && desc.color_space != ColorSpace::default() {
+        return Err(Error::UnsupportedFrame(
+            "NV12 output requires explicitly tagged limited left-sited BT.709 SDR; other color signals cannot be tagged safely".into(),
+        ));
+    }
     if desc.format == PixelFormat::P010Le
         && (!matches!(codec, VideoCodec::Hevc | VideoCodec::Av1) || mode != EncodeMode::Vaapi)
     {
@@ -2398,6 +2403,98 @@ mod audio_regression_tests {
     }
 
     #[test]
+    fn nv12_rejects_noncanonical_color_before_encoder_or_output_initialization() {
+        let sdr = ColorSpace::default();
+        let variants = [
+            ColorSpace {
+                transfer: TransferCharacteristic::Hlg,
+                ..sdr
+            },
+            ColorSpace {
+                transfer: TransferCharacteristic::Unspecified,
+                ..sdr
+            },
+            ColorSpace {
+                matrix: ColorMatrix::Bt601,
+                ..sdr
+            },
+            ColorSpace {
+                matrix: ColorMatrix::Unspecified,
+                ..sdr
+            },
+            ColorSpace {
+                primaries: ColorPrimaries::Bt2020,
+                ..sdr
+            },
+            ColorSpace {
+                primaries: ColorPrimaries::Unspecified,
+                ..sdr
+            },
+            ColorSpace {
+                chroma_location: ChromaLocation::Center,
+                ..sdr
+            },
+            ColorSpace {
+                chroma_location: ChromaLocation::Unspecified,
+                ..sdr
+            },
+            ColorSpace {
+                range: ColorRange::Full,
+                ..sdr
+            },
+            ColorSpace {
+                range: ColorRange::Unspecified,
+                ..sdr
+            },
+        ];
+        let output = std::env::temp_dir().join(format!(
+            "asciiflow-nv12-color-rejected-{}.mp4",
+            std::process::id()
+        ));
+        assert!(!output.exists());
+        for color in variants {
+            let desc = FrameDesc::host_nv12(128, 96, color).unwrap();
+            for (codec, mode) in [
+                (VideoCodec::H264, EncodeMode::Software),
+                (VideoCodec::H264, EncodeMode::Vaapi),
+                (VideoCodec::Hevc, EncodeMode::Vaapi),
+                (VideoCodec::Av1, EncodeMode::Vaapi),
+            ] {
+                let error = Encoder::create_with_codec_and_audio(
+                    &output,
+                    desc.clone(),
+                    Rational::new(50, 1).unwrap(),
+                    OutputEncoding {
+                        codec: codec.clone(),
+                        mode,
+                    },
+                    VaapiOptions::default(),
+                    Vec::new(),
+                    CancellationToken::new(),
+                )
+                .err()
+                .unwrap();
+                assert!(matches!(error, Error::UnsupportedFrame(_)), "{error}");
+                assert!(!output.exists(), "{codec} admitted {color:?}");
+            }
+            let error = probe_vaapi_encoder_for(
+                VideoCodec::H264,
+                desc,
+                Rational::new(50, 1).unwrap(),
+                VaapiOptions::default(),
+            )
+            .err()
+            .unwrap();
+            assert!(matches!(error, Error::UnsupportedFrame(_)), "{error}");
+        }
+        let desc = FrameDesc::host_nv12(128, 96, sdr).unwrap();
+        require_supported_output(&VideoCodec::H264, &desc, EncodeMode::Software).unwrap();
+        for codec in [VideoCodec::H264, VideoCodec::Hevc, VideoCodec::Av1] {
+            require_supported_output(&codec, &desc, EncodeMode::Vaapi).unwrap();
+        }
+    }
+
+    #[test]
     fn pq_output_rejects_noncanonical_color_dimensions() {
         let pq = ColorSpace::pq_bt2020();
         let variants = [
@@ -2681,15 +2778,15 @@ mod audio_regression_tests {
     }
 
     #[test]
-    #[ignore = "requires Main10 VAAPI and a 10-bit AAC input at ASCIIFLOW_STAGE52C2_AAC_INPUT"]
+    #[ignore = "requires Main10 VAAPI and a 10-bit AAC input at ASCIIFLOW_MAIN10_AAC_INPUT"]
     fn injected_main10_audio_mux_failure_preserves_root_cause() {
-        assert_ten_bit_audio_mux_failure(VideoCodec::Hevc, "ASCIIFLOW_STAGE52C2_AAC_INPUT");
+        assert_ten_bit_audio_mux_failure(VideoCodec::Hevc, "ASCIIFLOW_MAIN10_AAC_INPUT");
     }
 
     #[test]
-    #[ignore = "requires AV1 10-bit VAAPI and a 10-bit AAC input at ASCIIFLOW_STAGE52C3_AAC_INPUT"]
+    #[ignore = "requires AV1 10-bit VAAPI and a 10-bit AAC input at ASCIIFLOW_AV1_10BIT_AAC_INPUT"]
     fn injected_av1_10bit_audio_mux_failure_preserves_root_cause() {
-        assert_ten_bit_audio_mux_failure(VideoCodec::Av1, "ASCIIFLOW_STAGE52C3_AAC_INPUT");
+        assert_ten_bit_audio_mux_failure(VideoCodec::Av1, "ASCIIFLOW_AV1_10BIT_AAC_INPUT");
     }
 
     fn assert_ten_bit_audio_mux_failure(codec: VideoCodec, input_env: &str) {

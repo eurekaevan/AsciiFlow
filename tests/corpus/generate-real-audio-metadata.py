@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate Stage 5.4B candidates, never promote them into a qualified corpus.
+"""Generate real-media audio/metadata candidates, never promote them into a qualified corpus.
 
 Requires FFmpeg/ffprobe 8.1.3. All media is local and deterministic; every
 subprocess has a watchdog. Inventory records observations, not argv promises.
@@ -16,7 +16,7 @@ import subprocess
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SUBTITLE = "1\n00:00:00,200 --> 00:00:01,200\nStage 5.4B retained subtitle\n"
+SUBTITLE = "1\n00:00:00,200 --> 00:00:01,200\nRetained metadata subtitle\n"
 
 
 def identity(path):
@@ -40,7 +40,7 @@ def main():
     out = args.out_dir.resolve()
     out.mkdir(parents=False, exist_ok=False)
     commands = []
-    inventory = {"stage": "5.4B", "qualification": "candidate-only",
+    inventory = {"stage": "real-media-candidates", "qualification": "candidate-only",
                  "script": identity(Path(__file__).resolve()), "tools": {},
                  "sources": [], "artifacts": [], "limitations": [], "commands": commands}
 

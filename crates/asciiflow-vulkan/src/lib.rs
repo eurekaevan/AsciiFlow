@@ -601,8 +601,8 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "real-device Stage 1.2 benchmark; validation must be disabled"]
-    fn stage12_benchmark() {
+    #[ignore = "real-device mapping throughput benchmark; validation must be disabled"]
+    fn mapping_throughput_benchmark() {
         assert!(std::env::var_os("ASCIIFLOW_VULKAN_VALIDATION").is_none());
         let desc = FrameDesc::host_nv12(1920, 1080, ColorSpace::default()).unwrap();
         let mut bytes = vec![0_u8; desc.byte_len()];
@@ -821,8 +821,8 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "real Intel Arc Stage 1.3 isolated one-slot/two-slot throughput experiment"]
-    fn stage13_inflight_benchmark() {
+    #[ignore = "real Intel Arc isolated one-slot/two-slot throughput experiment"]
+    fn frame_slot_throughput_benchmark() {
         assert!(std::env::var_os("ASCIIFLOW_VULKAN_VALIDATION").is_none());
         for name in [
             "ASCIIFLOW_VULKAN_MAP_VARIANT",

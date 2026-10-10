@@ -1,13 +1,12 @@
-# Video codecs and color processing (Stage 5.3A implementation)
+# Video codecs and color processing
 
 The [versioned production support contract](production-support.md) separates
 measured qualification, architectural representability, unsupported behavior
 and absent probe evidence. Its [corpus runner](compatibility-corpus.md) checks
 complete scenarios; independent dimension rows are not a Cartesian-product
-support promise. The Stage 5.4A record is
-SEALED and enables no additional codec path.
+support promise. The qualified support record enables no additional codec path.
 
-The [Stage 5.4B real-media record](media-compatibility-results.md)
+The [real-media qualification record](media-compatibility-results.md)
 extends qualification only to exact source/request tuples, not arbitrary
 containers or profiles. Ordinary, fast-start and fragmented MP4 cases exercise
 real demux/mux with strict AAC packet/timestamp/language/default checks.
@@ -43,7 +42,7 @@ P010LE, 10-bit 4:2:0 BT.709 SDR VAAPI/MP4 output. AV1 Profile0 is the
 native profile for both 8- and 10-bit 4:2:0; bit depth is separate. H.264/10
 remains unsupported. Ten-bit input with default 8-bit output is
 rejected before staging: there is no implicit P010→NV12 conversion. Eight-bit
-input to Main10 is likewise outside this stage's production contract.
+input to Main10 is likewise outside the production contract.
 `--decode software|vaapi|auto` applies to the detected codec. Explicit VAAPI
 never substitutes a software decoder.
 
@@ -57,10 +56,10 @@ decode qualification now accepts HEVC Main10 and AV1 Main 10-bit 4:2:0 with
 explicit BT.709 SDR tags and yields P010LE; the production CLI accepts those
 inputs only when HEVC Main10 or AV1 10-bit output is explicitly selected. Unsupported chroma,
 HLG and BT.2020 SDR fail rather than convert silently. Canonical PQ has a
-separate full-hardware preserve plan under Stage B-3 closure,
+separate qualified full-hardware preservation plan,
 never software production decode or implicit SDR conversion. Intel P010 VAAPI/DRM
 interop is qualified internally on the observed Intel Arc host; see
-Stage 5.2B.
+[P010 processing and qualification](p010.md).
 
 Capabilities retain Supported/Unsupported/NotProbed states. Native probing checks
 FFmpeg configuration and driver profile + VLD for H.264, HEVC Main and AV1
@@ -110,9 +109,9 @@ reordering. Film-grain equivalence is not claimed.
 
 HEVC Main output is qualified via VAAPI only.
 AV1 output is Profile0, NV12, 8-bit 4:2:0 and VAAPI-only. HEVC Main10
-qualification is recorded in Stage 5.2C-2.
-AV1 Profile0/Main 10-bit P010 VAAPI output is qualified in
-Stage 5.2C-3. Both 10-bit outputs require
+qualification is recorded in the retained hardware evidence.
+AV1 Profile0/Main 10-bit P010 VAAPI output is qualified on the recorded Intel
+stack. Both 10-bit outputs require
 explicit `--output-bit-depth 10` and qualified VAAPI hardware; their codecs
 remain independent of the 10-bit HEVC/AV1 input codec. There is no software
 HEVC/AV1 encoder, generalized tone mapping, 4:2:2/4:4:4 output,
@@ -121,11 +120,12 @@ quality/preset/bitrate UI, AV1 tuning, or new GPU vendor/platform support.
 ## Color processing is separate from codec capability
 
 The SDR pixel contract is **BT.709 limited-range SDR** for
-both NV12 and P010. Stage 5.3A classifies PQ and HLG by transfer function,
-independent of codec or bit depth. The SDR assessment rejects them; Stage B-3
+both NV12 and P010. Color resolution classifies PQ and HLG by transfer function,
+independent of codec or bit depth. The SDR assessment rejects them; the
+PQ-preservation planner
 separately admits resolved BT.2020 NCL/PQ/limited/left P010 only for an actually
 probed Vulkan PQ + VAAPI decode/encode + both P010 DMA-BUF path, with explicit
-HEVC/AV1 ten-bit output. Its hardware sealing status is in the B-3 report.
+HEVC/AV1 ten-bit output. Its qualified scope is recorded in the support contract.
 For preservation, CPU, software decode/encode, staging, eight-bit output and
 unavailable facts fail, even under `auto`; no HDR initialization fallback is permitted.
 BT.2020 with an SDR transfer remains SDR, not HDR; wide-gamut SDR is rejected
@@ -137,10 +137,9 @@ Static mastering/CLL data is parsed but neither creates HDR classification nor
 enables HDR output by itself. Source mastering-display/CLL is never propagated
 or recomputed for ASCII output; PQ preserve is not HDR10 mastering validation.
 Details and the hardware-validation gates are in
-[color-semantics.md](color-semantics.md) and
-Stage 5.3A report.
+[color-semantics.md](color-semantics.md) and the [support contract](production-support.md).
 
-[Stage 5.3C-4B](hdr-to-sdr-validation.md) is **SEALED** on the recorded
+[HDR-to-SDR conversion](hdr-to-sdr-validation.md) is **QUALIFIED** on the recorded
 Intel scope. Default dynamic-range policy is `preserve`; explicit `sdr` admits
 the same resolved PQ P010 input through actual VAAPI decode, Vulkan input
 interop, unchanged HDR ASCII/Method A/BT.709 limiter, sealed SDR pack, output

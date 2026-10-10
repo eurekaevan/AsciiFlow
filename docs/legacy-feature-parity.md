@@ -31,6 +31,6 @@ The former C# README and architecture description are not authoritative for
 Rust. Current commands and support boundaries are in the root [README](../README.md),
 [architecture](architecture.md), [codec contract](codecs.md),
 [font contract](fonts.md), [audio contract](audio.md), and
-[testing policy](testing.md). Historical stage and media-baseline revision
+[testing policy](testing.md). Historical qualification and media-baseline revision
 identifiers remain in their reports because they identify distinct evidence,
 not parallel application versions.

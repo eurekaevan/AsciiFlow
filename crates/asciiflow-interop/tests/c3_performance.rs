@@ -311,7 +311,7 @@ fn bench_cpu(host: &VideoFrame, config: &AsciiConfig, reference: &HdrPqReference
             samples.b.push(b);
             samples.c.push(c);
             samples.batch_wall.push(wall);
-            if (frame - WARMUP + 1) % 50 == 0 {
+            if (frame - WARMUP + 1).is_multiple_of(50) {
                 eprintln!(
                     "C3 performance CPU: {}/300 measured frames",
                     frame - WARMUP + 1
@@ -353,7 +353,7 @@ fn bench_gpu(
         if batch >= WARMUP {
             samples.batch_wall.push(wall);
             let count = (batch - WARMUP + 1) * slots.len();
-            if count % 50 == 0 {
+            if count.is_multiple_of(50) {
                 eprintln!(
                     "C3 performance Vulkan {} slots: {count}/300 measured frames",
                     slots.len()

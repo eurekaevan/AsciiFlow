@@ -89,7 +89,7 @@ def main():
         parser.error("watchdog must be positive")
     out = args.out_dir.resolve()
     out.mkdir(parents=False, exist_ok=False)
-    inventory = {"stage": "5.4B", "qualification": "candidate-only",
+    inventory = {"stage": "real-media-candidates", "qualification": "candidate-only",
                  "script": identity(Path(__file__).resolve()), "tools": {},
                  "commands": [], "artifacts": [], "limitations": []}
 

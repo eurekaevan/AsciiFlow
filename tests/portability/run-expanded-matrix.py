@@ -75,7 +75,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--binary", type=Path, default=Path("target/release/asciiflow"))
-    parser.add_argument("--inputs", type=Path, default=Path("target/stage54c1-evidence/inputs"))
+    parser.add_argument("--inputs", type=Path, default=Path("target/portability-inputs"))
     parser.add_argument("--gates", nargs="+", choices=("core", "mux", "hardware", "performance", "retained", "lifecycle", "static"),
                         default=["core", "mux", "hardware", "performance", "retained", "lifecycle", "static"])
     parser.add_argument("--repetitions", type=int, default=3)

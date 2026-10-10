@@ -52,10 +52,10 @@ python3 tests/corpus/generate-real-negative.py OUTPUT_DIRECTORY
 
 cargo build --release --workspace
 python3 -B tests/corpus/run.py quick --manifest tests/corpus/real-media-v1.json \
-  --output target/stage54b-evidence-new
+  --output target/media-compatibility-evidence-new
 # Full existing CPU references, hardware smokes and 17 retained paths:
 python3 -B tests/corpus/run.py full --retained \
-  --manifest tests/corpus/real-media-v1.json --output target/stage54b-full-new
+  --manifest tests/corpus/real-media-v1.json --output target/media-compatibility-full-new
 ```
 
 Generator source identities and full FFmpeg command/configuration are retained,
@@ -156,7 +156,7 @@ registered Unqualified limit cannot mask their loss.
 | 61 | SPIR-V | All 995 actual debug/release cache modules validate under Vulkan1.3 after final qualification builds; exact paths/SHA and aggregate census in receipt. Prior 964 census also passed; newly compiled diagnostic modules included, no fixed count shortcut. |
 | 62 | Static checks | Release workspace/tests and encode-characterization build; clippy all targets -D warnings with/without encode-characterization; fmt; generated-document consistency; diff; 52 offline corpus controls pass. Real C1/C2B/C3/C4A references and eight Validation/FD/fault/FreeType hardware gates pass. |
 | 63 | Exact limitations | Scoped Intel Arc Meteor Lake 8086:7d55 / Mesa ANV26.2.3 / iHD26.1.5 / kernel7.2.8 / FFmpeg8.1.3 only. No hardware/software/profile Cartesian product, no faithful VFR, no MOV/Matroska audio support, no missing-range/valid-zero-frame fixture proof, no new features. A preexisting unused-variable warning in optional p010-output-diagnostic-only build is recorded; production and required characterization clippy gates are clean. |
-| 65 | Final Stage5.4B status | SEALED: all 47 conditional tuples pass, all 24 Unsupported cases reject as expected, 11 Unqualified blockers are explicit, zero unexplained failures/skips, retained and static/hardware gates green. |
+| 65 | Final compatibility qualification status | SEALED: all 47 conditional tuples pass, all 24 Unsupported cases reject as expected, 11 Unqualified blockers are explicit, zero unexplained failures/skips, retained and static/hardware gates green. |
 
 ## Remaining Unqualified cases — not PASS
 
@@ -202,7 +202,7 @@ repo-relative path + space + SHA lines (joined without terminal newline) produce
 census SHA-256
 `7904b61d4e9e380f271fa1f84d4d38b5536a1dde54e92076e4c43818f0ba7979`.
 
-The explicit Unqualified boundaries are allowed by this stage's definition of
+The explicit Unqualified boundaries are allowed by this qualification's definition of
 done and are retained as such; they are not failed Supported cases hidden by
 demotion. Timing, audio, color, safe-output, hang prevention, repeatability and
 the existing production matrix have no remaining unexplained gate.

@@ -127,7 +127,7 @@ pub fn build_font_atlas(
     if !face.is_fixed_width() {
         return Err(error(
             "validate face",
-            "Stage 4.3 currently requires a monospaced font".into(),
+            "scalable font rendering requires a monospaced font".into(),
         ));
     }
     let mut indices = Vec::new();

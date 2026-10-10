@@ -70,14 +70,14 @@ Use the existing corpus runner, not a separate portability execution engine:
 ```sh
 python3 -B tests/corpus/run.py quick --stack tests/portability/stacks/STACK.json \
   --manifest tests/portability/core-set.json --binary target/release/asciiflow \
-  --generated-inputs target/stage54c1-evidence/inputs --output target/STACK-run
+  --generated-inputs target/portability-inputs --output target/STACK-run
 # On the second stack, add --reference-run target/REFERENCE-run.
 python3 -B tests/portability/stack.py diff REFERENCE-capabilities.json CANDIDATE-capabilities.json
 ```
 
 The core set covers the five SDR codec/depth paths, HEVC/AV1 PQ preserve,
 HEVC PQ→H2648 and AV1 PQ→HEVC10, AAC single/dual, B-frames, 24000/1001,
-nonzero PTS, the Stage 5.4B fixes and HLG/full-range/conflict rejection.
+nonzero PTS, the real-media compatibility fixes and HLG/full-range/conflict rejection.
 Source bytes and generator version stay fixed; never regenerate inputs using
 the alternate FFmpeg and silently call them the same fixture.
 
@@ -150,7 +150,7 @@ Verify its `.asc` signature using the official FFmpeg signing key fingerprint
 `FCF986EA15E6E293A5644F10B4322F04D67658D8` before extracting it.
 
 `tests/portability/build-ffmpeg-8.1.2.sh` builds only inside
-`target/stage54c1-toolchains`. Headers are extracted, not installed, from:
+`target/portability-toolchains`. Headers are extracted, not installed, from:
 
 | RPM | SHA-256 |
 |---|---|
@@ -168,19 +168,19 @@ host libdav1d. No package downgrade or ldconfig override is involved.
 Preparation commands (from the repository root; downloads/extraction only):
 
 ```sh
-mkdir -p target/stage54c1-toolchains/downloads target/stage54c1-toolchains/devel
-curl --fail --location --output target/stage54c1-toolchains/downloads/ffmpeg-8.1.2.tar.xz https://ffmpeg.org/releases/ffmpeg-8.1.2.tar.xz
-curl --fail --location --output target/stage54c1-toolchains/downloads/ffmpeg-8.1.2.tar.xz.asc https://ffmpeg.org/releases/ffmpeg-8.1.2.tar.xz.asc
-curl --fail --location --output target/stage54c1-toolchains/downloads/ffmpeg-devel.asc https://ffmpeg.org/ffmpeg-devel.asc
-mkdir -m 700 -p target/stage54c1-toolchains/keyring
-gpg --homedir target/stage54c1-toolchains/keyring --import target/stage54c1-toolchains/downloads/ffmpeg-devel.asc
-gpg --homedir target/stage54c1-toolchains/keyring --verify target/stage54c1-toolchains/downloads/ffmpeg-8.1.2.tar.xz.asc target/stage54c1-toolchains/downloads/ffmpeg-8.1.2.tar.xz
-dnf --repo=fedora --repo=updates download --destdir=target/stage54c1-toolchains/downloads --arch=x86_64 libva-devel-2.23.0-3.fc44 libdrm-devel-2.4.134-1.fc44 libdav1d-devel-1.5.4-1.fc44
-tar -xJf target/stage54c1-toolchains/downloads/ffmpeg-8.1.2.tar.xz -C target/stage54c1-toolchains
+mkdir -p target/portability-toolchains/downloads target/portability-toolchains/devel
+curl --fail --location --output target/portability-toolchains/downloads/ffmpeg-8.1.2.tar.xz https://ffmpeg.org/releases/ffmpeg-8.1.2.tar.xz
+curl --fail --location --output target/portability-toolchains/downloads/ffmpeg-8.1.2.tar.xz.asc https://ffmpeg.org/releases/ffmpeg-8.1.2.tar.xz.asc
+curl --fail --location --output target/portability-toolchains/downloads/ffmpeg-devel.asc https://ffmpeg.org/ffmpeg-devel.asc
+mkdir -m 700 -p target/portability-toolchains/keyring
+gpg --homedir target/portability-toolchains/keyring --import target/portability-toolchains/downloads/ffmpeg-devel.asc
+gpg --homedir target/portability-toolchains/keyring --verify target/portability-toolchains/downloads/ffmpeg-8.1.2.tar.xz.asc target/portability-toolchains/downloads/ffmpeg-8.1.2.tar.xz
+dnf --repo=fedora --repo=updates download --destdir=target/portability-toolchains/downloads --arch=x86_64 libva-devel-2.23.0-3.fc44 libdrm-devel-2.4.134-1.fc44 libdav1d-devel-1.5.4-1.fc44
+tar -xJf target/portability-toolchains/downloads/ffmpeg-8.1.2.tar.xz -C target/portability-toolchains
 ```
 
 Verify the three RPM hashes above, then extract each with `rpm2cpio | cpio -idm`
-while working inside `target/stage54c1-toolchains/devel`; never run an install
+while working inside `target/portability-toolchains/devel`; never run an install
 transaction. Run `bash tests/portability/build-ffmpeg-8.1.2.sh`. Keep the full
 configure/build logs with the resulting stack manifest. The capture/activation
 prefix must prepend to the existing PATH, retaining the same Rust toolchain.

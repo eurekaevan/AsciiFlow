@@ -46,7 +46,7 @@ run -f lavfi -i "$video" -f lavfi -i 'sine=frequency=880:sample_rate=48000:durat
   -bsf:v 'av1_metadata=color_primaries=1:transfer_characteristics=1:matrix_coefficients=1:color_range=tv' \
   av1-main10-reject.mp4
 
-# Stage 5.2B qualification inputs. The source is generated as true 10-bit
+# P010 decode qualification inputs. The source is generated as true 10-bit
 # planar samples (not an 8-bit image shifted into a 10-bit pixel format).
 python3 ./generate_10bit_gradient.py "$tmpdir/gradient.yuv"
 
@@ -71,7 +71,7 @@ run -f rawvideo -pixel_format yuv420p10le -video_size 64x64 \
   -bsf:v 'hevc_metadata=video_full_range_flag=0:colour_primaries=9:transfer_characteristics=16:matrix_coefficients=9' \
   hevc-main10-pq-reject.mp4
 
-# Stage 5.3A color-semantics fixtures. Stream-copy retagging preserves the
+# Color-semantics fixtures. Stream-copy retagging preserves the
 # deterministic 10-bit gradient while updating both MP4 stream fields and the
 # codec bitstream. The latter supplies the decoded AVFrame color fields.
 retag_hevc() {

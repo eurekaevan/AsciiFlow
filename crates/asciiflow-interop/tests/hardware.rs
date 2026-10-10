@@ -1,7 +1,7 @@
-use asciiflow_core::{AsciiBackend, AsciiConfig, FrameSink, FrameSource, PixelFormat, VideoCodec};
 #[cfg(feature = "av1-encode-diagnostic")]
-use asciiflow_core::{ColorSpace, FrameDesc, HostFrame, Rational, VideoFrame};
-#[cfg(feature = "p010-output-diagnostic")]
+use asciiflow_core::Rational;
+use asciiflow_core::{AsciiBackend, AsciiConfig, FrameSink, FrameSource, PixelFormat, VideoCodec};
+#[cfg(any(feature = "av1-encode-diagnostic", feature = "p010-output-diagnostic"))]
 use asciiflow_core::{ColorSpace, FrameDesc, HostFrame, VideoFrame};
 use asciiflow_cpu::CpuAsciiBackend;
 #[cfg(feature = "p010-output-diagnostic")]
@@ -111,7 +111,12 @@ fn hevc_av1_descriptor_and_pre_ascii_parity() {
         assert!(reference.next_frame().unwrap().is_none());
         assert!(direct.next_vaapi_frame().unwrap().is_none());
         assert_eq!(vulkan.validation_error_count(), 0);
-        compare_full_ascii(36, "ASCIIFLOW_STAGE5_INPUT", path.to_str().unwrap(), false);
+        compare_full_ascii(
+            36,
+            "ASCIIFLOW_P010_DECODE_INPUT",
+            path.to_str().unwrap(),
+            false,
+        );
     }
 }
 
@@ -697,7 +702,7 @@ fn p010_output_300_frame_benchmark() {
             HostFrame::new_zeroed(&nv12_desc),
         )
         .unwrap();
-        let output_path = temporary_output("stage52c1-nv12-control");
+        let output_path = temporary_output("nv12-control");
         let encoder = Encoder::create_with(
             &output_path,
             nv12_desc.clone(),
@@ -759,13 +764,13 @@ fn ten_bit_p010_interop_reuse_is_exact_and_fd_bounded() {
     for (name, variable, fallback) in [
         (
             "HEVC Main10",
-            "ASCIIFLOW_STAGE52B_HEVC_STRESS_INPUT",
-            "/tmp/asciiflow-stage52b-hevc-3000.mp4",
+            "ASCIIFLOW_MAIN10_DECODE_STRESS_INPUT",
+            "/tmp/asciiflow-main10-decode-3000.mp4",
         ),
         (
             "AV1 10-bit",
-            "ASCIIFLOW_STAGE52B_AV1_STRESS_INPUT",
-            "/tmp/asciiflow-stage52b-av1-3000.mp4",
+            "ASCIIFLOW_AV1_10BIT_DECODE_STRESS_INPUT",
+            "/tmp/asciiflow-av1-10bit-decode-3000.mp4",
         ),
     ] {
         let path = input(variable, fallback);
@@ -958,13 +963,13 @@ fn ten_bit_p010_decode_paths_300_frame_benchmark() {
     for (codec, variable, fallback) in [
         (
             "HEVC Main10",
-            "ASCIIFLOW_STAGE52B_HEVC_STRESS_INPUT",
-            "/tmp/asciiflow-stage52b-hevc-3000.mp4",
+            "ASCIIFLOW_MAIN10_DECODE_STRESS_INPUT",
+            "/tmp/asciiflow-main10-decode-3000.mp4",
         ),
         (
             "AV1 10-bit",
-            "ASCIIFLOW_STAGE52B_AV1_STRESS_INPUT",
-            "/tmp/asciiflow-stage52b-av1-3000.mp4",
+            "ASCIIFLOW_AV1_10BIT_DECODE_STRESS_INPUT",
+            "/tmp/asciiflow-av1-10bit-decode-3000.mp4",
         ),
     ] {
         let path = input(variable, fallback);
@@ -1001,7 +1006,7 @@ fn temporary_output(label: &str) -> PathBuf {
 #[test]
 #[ignore = "requires Intel iHD VAAPI and an ANV Vulkan device"]
 fn descriptor_and_pre_ascii_nv12_are_exact() {
-    let path = input("ASCIIFLOW_STAGE3_INPUT", "input.mp4");
+    let path = input("ASCIIFLOW_H264_INTEROP_INPUT", "input.mp4");
     let mut reference = vaapi_decoder(&path);
     let mut direct = vaapi_decoder(&path);
     let desc = direct.info().frame_desc.clone();
@@ -1054,7 +1059,7 @@ fn descriptor_and_pre_ascii_nv12_are_exact() {
 #[test]
 #[ignore = "requires Intel iHD VAAPI and an ANV Vulkan device"]
 fn full_ascii_is_exact_with_two_bounded_slots() {
-    compare_full_ascii(30, "ASCIIFLOW_STAGE3_INPUT", "input.mp4", false);
+    compare_full_ascii(30, "ASCIIFLOW_H264_INTEROP_INPUT", "input.mp4", false);
 }
 
 #[test]
@@ -1062,8 +1067,8 @@ fn full_ascii_is_exact_with_two_bounded_slots() {
 fn surface_reuse_stress_is_exact_and_fd_bounded() {
     compare_full_ascii(
         3000,
-        "ASCIIFLOW_STAGE3_STRESS_INPUT",
-        "/tmp/asciiflow-stage3-stress-input.mp4",
+        "ASCIIFLOW_H264_INTEROP_STRESS_INPUT",
+        "/tmp/asciiflow-h264-interop-stress-input.mp4",
         true,
     );
 }
@@ -1071,7 +1076,7 @@ fn surface_reuse_stress_is_exact_and_fd_bounded() {
 #[test]
 #[ignore = "requires Intel iHD VAAPI and an ANV Vulkan device"]
 fn import_failure_and_early_processor_drop_do_not_leak_fds() {
-    let path = input("ASCIIFLOW_STAGE3_INPUT", "input.mp4");
+    let path = input("ASCIIFLOW_H264_INTEROP_INPUT", "input.mp4");
     let mut decoder = vaapi_decoder(&path);
     let desc = decoder.info().frame_desc.clone();
     let mapping =
@@ -1114,8 +1119,8 @@ fn import_failure_and_early_processor_drop_do_not_leak_fds() {
 #[test]
 #[ignore = "requires Intel iHD VAAPI and an ANV Vulkan device; run without validation because it intentionally imports an invalid fd"]
 fn output_import_failure_and_full_processor_drop_do_not_leak_fds() {
-    let path = input("ASCIIFLOW_STAGE3_INPUT", "input.mp4");
-    let output_path = temporary_output("stage3b-failure");
+    let path = input("ASCIIFLOW_H264_INTEROP_INPUT", "input.mp4");
+    let output_path = temporary_output("h264-interop-failure");
     let _ = std::fs::remove_file(&output_path);
     let mut decoder = vaapi_decoder(&path);
     let desc = decoder.info().frame_desc.clone();
@@ -1178,7 +1183,7 @@ fn output_import_failure_and_full_processor_drop_do_not_leak_fds() {
 fn encoder_descriptor_and_pre_encode_pixels_are_exact() {
     compare_output_interop(
         30,
-        "ASCIIFLOW_STAGE3_INPUT",
+        "ASCIIFLOW_H264_INTEROP_INPUT",
         "input.mp4",
         false,
         VideoCodec::H264,
@@ -1190,7 +1195,7 @@ fn encoder_descriptor_and_pre_encode_pixels_are_exact() {
 fn hevc_encoder_descriptor_and_staged_interop_pixels_are_exact() {
     compare_output_interop(
         30,
-        "ASCIIFLOW_STAGE51_INPUT",
+        "ASCIIFLOW_HEVC_ENCODE_INPUT",
         "input.mp4",
         false,
         VideoCodec::Hevc,
@@ -1202,10 +1207,10 @@ fn hevc_encoder_descriptor_and_staged_interop_pixels_are_exact() {
 fn av1_encoder_descriptor_and_staged_interop_pixels_are_exact() {
     compare_output_interop(
         30,
-        "ASCIIFLOW_STAGE51B_INPUT",
+        "ASCIIFLOW_AV1_ENCODE_INPUT",
         concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../../target/stage51a1-evidence/h264-testsrc2-300.mp4"
+            "/../../target/interop-fixtures/h264-testsrc2-300.mp4"
         ),
         false,
         VideoCodec::Av1,
@@ -1215,12 +1220,12 @@ fn av1_encoder_descriptor_and_staged_interop_pixels_are_exact() {
 #[test]
 #[ignore = "requires Intel iHD VAAPI"]
 fn encoder_rejects_surface_from_a_different_frames_context() {
-    let path = input("ASCIIFLOW_STAGE3_INPUT", "input.mp4");
+    let path = input("ASCIIFLOW_H264_INTEROP_INPUT", "input.mp4");
     let decoder = vaapi_decoder(&path);
     let desc = decoder.info().frame_desc.clone();
     let frame_rate = decoder.info().frame_rate;
-    let first_path = temporary_output("stage3b-pool-a");
-    let second_path = temporary_output("stage3b-pool-b");
+    let first_path = temporary_output("h264-interop-pool-a");
+    let second_path = temporary_output("h264-interop-pool-b");
     let _ = std::fs::remove_file(&first_path);
     let _ = std::fs::remove_file(&second_path);
     let mut first = Encoder::create_with(
@@ -1255,12 +1260,12 @@ fn encoder_rejects_surface_from_a_different_frames_context() {
 #[test]
 #[ignore = "requires Intel iHD H.264 and HEVC encode"]
 fn h264_and_hevc_encoder_frames_are_not_cross_submittable() {
-    let path = input("ASCIIFLOW_STAGE51_INPUT", "input.mp4");
+    let path = input("ASCIIFLOW_HEVC_ENCODE_INPUT", "input.mp4");
     let decoder = vaapi_decoder(&path);
     let desc = decoder.info().frame_desc.clone();
     let frame_rate = decoder.info().frame_rate;
-    let h264_path = temporary_output("stage51-h264-pool");
-    let hevc_path = temporary_output("stage51-hevc-pool");
+    let h264_path = temporary_output("hevc-h264-pool");
+    let hevc_path = temporary_output("hevc-encode-pool");
     let cancellation = Default::default();
     let mut h264 = Encoder::create_with_codec_and_audio(
         &h264_path,
@@ -1416,17 +1421,17 @@ fn av1_10bit_surface_rejects_every_foreign_encoder_context() {
 #[ignore = "requires Intel iHD H.264, HEVC, and AV1 encode"]
 fn av1_encoder_frames_are_not_cross_submittable() {
     let path = input(
-        "ASCIIFLOW_STAGE51B_INPUT",
+        "ASCIIFLOW_AV1_ENCODE_INPUT",
         concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../../target/stage51a1-evidence/h264-testsrc2-300.mp4"
+            "/../../target/interop-fixtures/h264-testsrc2-300.mp4"
         ),
     );
     let decoder = vaapi_decoder(&path);
     let desc = decoder.info().frame_desc.clone();
     let frame_rate = decoder.info().frame_rate;
-    let av1_path = temporary_output("stage51b-av1-pool");
-    let h264_path = temporary_output("stage51b-h264-pool");
+    let av1_path = temporary_output("av1-encode-pool");
+    let h264_path = temporary_output("av1-h264-pool");
     let mut av1 = Encoder::create_with_codec_and_audio(
         &av1_path,
         desc.clone(),
@@ -1480,8 +1485,8 @@ fn av1_encoder_frames_are_not_cross_submittable() {
 fn full_interop_surface_reuse_is_exact_and_fd_bounded() {
     compare_output_interop(
         3000,
-        "ASCIIFLOW_STAGE3_STRESS_INPUT",
-        "/tmp/asciiflow-stage3-stress-input.mp4",
+        "ASCIIFLOW_H264_INTEROP_STRESS_INPUT",
+        "/tmp/asciiflow-h264-interop-stress-input.mp4",
         true,
         VideoCodec::H264,
     );
@@ -1492,8 +1497,8 @@ fn full_interop_surface_reuse_is_exact_and_fd_bounded() {
 fn hevc_full_interop_surface_reuse_is_exact_and_fd_bounded() {
     compare_output_interop(
         3000,
-        "ASCIIFLOW_STAGE51_STRESS_INPUT",
-        "/tmp/asciiflow-stage5-qualification/h264-testsrc2-1920x1080-50fps-300f-bt709-limited-8bit-420.mp4",
+        "ASCIIFLOW_HEVC_ENCODE_STRESS_INPUT",
+        "/tmp/asciiflow-interop-fixtures/h264-testsrc2-1920x1080-50fps-300f-bt709-limited-8bit-420.mp4",
         true,
         VideoCodec::Hevc,
     );
@@ -1504,10 +1509,10 @@ fn hevc_full_interop_surface_reuse_is_exact_and_fd_bounded() {
 fn av1_full_interop_surface_reuse_is_exact_and_fd_bounded() {
     compare_output_interop(
         3000,
-        "ASCIIFLOW_STAGE51B_STRESS_INPUT",
+        "ASCIIFLOW_AV1_ENCODE_STRESS_INPUT",
         concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../../target/stage51a1-evidence/h264-testsrc2-3000-loop.mp4"
+            "/../../target/interop-fixtures/h264-testsrc2-3000-loop.mp4"
         ),
         true,
         VideoCodec::Av1,
@@ -1519,7 +1524,7 @@ fn av1_full_interop_surface_reuse_is_exact_and_fd_bounded() {
 fn main10_encoder_owned_full_interop_30_frame_parity() {
     compare_output_interop_format(
         30,
-        "ASCIIFLOW_STAGE52C2_HEVC_INPUT",
+        "ASCIIFLOW_MAIN10_INTEROP_INPUT",
         "/tmp/asciiflow-main10-128.mp4",
         true,
         VideoCodec::Hevc,
@@ -1532,7 +1537,7 @@ fn main10_encoder_owned_full_interop_30_frame_parity() {
 fn main10_encoder_owned_full_interop_3000_frame_stress() {
     compare_output_interop_format(
         3000,
-        "ASCIIFLOW_STAGE52C2_HEVC_STRESS_INPUT",
+        "ASCIIFLOW_MAIN10_INTEROP_STRESS_INPUT",
         "/tmp/asciiflow-main10-3000.mp4",
         true,
         VideoCodec::Hevc,
@@ -1544,7 +1549,7 @@ fn main10_encoder_owned_full_interop_3000_frame_stress() {
 #[ignore = "requires a 3000-frame 128x128+ Main10 SDR input and Intel Main10 encode"]
 fn main10_staged_encode_3000_frame_fd_stress() {
     staged_p010_encode_3000_frame_fd_stress(
-        "ASCIIFLOW_STAGE52C2_HEVC_STRESS_INPUT",
+        "ASCIIFLOW_MAIN10_INTEROP_STRESS_INPUT",
         "/tmp/asciiflow-main10-3000.mp4",
         VideoCodec::Hevc,
     );
@@ -1555,7 +1560,7 @@ fn main10_staged_encode_3000_frame_fd_stress() {
 fn av1_10bit_encoder_owned_full_interop_30_frame_parity() {
     compare_output_interop_format(
         30,
-        "ASCIIFLOW_STAGE52C3_AV1_INPUT",
+        "ASCIIFLOW_AV1_10BIT_INTEROP_INPUT",
         "/tmp/asciiflow-av1-10-128.mp4",
         true,
         VideoCodec::Av1,
@@ -1573,7 +1578,7 @@ fn canonical_v1_main10_full_interop_300_frame_preencode_parity() {
     for codec in [VideoCodec::Hevc, VideoCodec::Av1] {
         compare_output_interop_format(
             300,
-            "ASCIIFLOW_STAGE53A_CANONICAL_INPUT",
+            "ASCIIFLOW_CANONICAL_P010_INPUT",
             input,
             true,
             codec,
@@ -1587,7 +1592,7 @@ fn canonical_v1_main10_full_interop_300_frame_preencode_parity() {
 fn av1_10bit_encoder_owned_full_interop_3000_frame_stress() {
     compare_output_interop_format(
         3000,
-        "ASCIIFLOW_STAGE52C3_AV1_STRESS_INPUT",
+        "ASCIIFLOW_AV1_10BIT_INTEROP_STRESS_INPUT",
         "/tmp/asciiflow-av1-10-3000.mp4",
         true,
         VideoCodec::Av1,
@@ -1599,7 +1604,7 @@ fn av1_10bit_encoder_owned_full_interop_3000_frame_stress() {
 #[ignore = "requires a 3000-frame 128x128+ AV1 10-bit SDR input and Intel AV1 10-bit encode"]
 fn av1_10bit_staged_encode_3000_frame_fd_stress() {
     staged_p010_encode_3000_frame_fd_stress(
-        "ASCIIFLOW_STAGE52C3_AV1_STRESS_INPUT",
+        "ASCIIFLOW_AV1_10BIT_INTEROP_STRESS_INPUT",
         "/tmp/asciiflow-av1-10-3000.mp4",
         VideoCodec::Av1,
     );
@@ -1776,9 +1781,9 @@ fn compare_output_interop_format(
 ) {
     let path = input(env_name, fallback);
     let output_path = temporary_output(if check_fds {
-        "stage3b-stress"
+        "output-interop-stress"
     } else {
-        "stage3b-parity"
+        "output-interop-parity"
     });
     let _ = std::fs::remove_file(&output_path);
     let before = fd_count();
@@ -1992,7 +1997,7 @@ fn compare_output_interop_format(
     if check_fds {
         let after = fd_count();
         println!(
-            "stage3b fd_count before={before} active_baseline={active_baseline_report} max_steady={max_seen} after={after}"
+            "output interop fd_count before={before} active_baseline={active_baseline_report} max_steady={max_seen} after={after}"
         );
         assert!(
             after <= before + 4,

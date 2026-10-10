@@ -17,7 +17,7 @@ pub enum FontError {
     AtlasTooLarge,
     #[error("the built-in font does not contain glyph {0:?}")]
     MissingGlyph(char),
-    #[error("only the built-in font is available in Stage 0; got {0:?}")]
+    #[error("unsupported font backend: {0:?}")]
     UnsupportedFont(String),
 }
 

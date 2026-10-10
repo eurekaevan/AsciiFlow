@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stage 5.4C-1A gates, using the existing corpus and retained oracles unchanged."""
+"""Deterministic mux gates, using the existing corpus and retained oracles unchanged."""
 import argparse
 import json
 import os
@@ -34,7 +34,7 @@ def main():
     parser.add_argument("gate", choices=("retained", "static", "lifecycle", "portability", "timing"))
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--binary", type=Path, default=Path("target/release/asciiflow"))
-    parser.add_argument("--inputs", type=Path, default=Path("target/stage54c1-evidence/inputs"))
+    parser.add_argument("--inputs", type=Path, default=Path("target/portability-inputs"))
     args = parser.parse_args()
     context = SimpleNamespace(output=args.output, binary=args.binary, device="/dev/dri/renderD128",
                               watchdog_seconds=1200, mode=args.gate, stack=None)
@@ -72,7 +72,7 @@ def main():
         for command in commands:
             run.gate(command["id"], "hardware", lambda c=command: run.checked(c["id"], c["argv"], env), True)
     elif args.gate == "portability":
-        for name, prefix in [("canonical", None), ("alternate", Path("target/stage54c1-toolchains/ffmpeg-8.1.2-prefix"))]:
+        for name, prefix in [("canonical", None), ("alternate", Path("target/portability-toolchains/ffmpeg-8.1.2-prefix"))]:
             stack_id = json.loads(Path(f"tests/portability/stacks/{'canonical' if name == 'canonical' else 'alternate-ffmpeg'}.json").read_text())["stack_id"]
             manifest = capture_manifest(run, stack_id, name, prefix)
             argv = ["python3", "-B", "tests/corpus/run.py", "quick", "--stack", str(manifest), "--manifest", "tests/portability/core-set.json",

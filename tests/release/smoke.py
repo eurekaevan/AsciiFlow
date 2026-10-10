@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""D-2 short, actual-artifact checks; never a replacement for media qualification."""
+"""Short actual-artifact checks; never a replacement for media qualification."""
 import argparse
 from fractions import Fraction
 import hashlib
@@ -28,7 +28,8 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--second-build", action="store_true")
     parser.add_argument("--lgpl-prebuilt", action="store_true")
-    parser.add_argument("--version", default="2.0.0-rc.1")
+    parser.add_argument("--version", required=True,
+                        help="expected CLI build label: YYYY-MM-DD, dev, or a historical artifact label")
     args = parser.parse_args()
     binary, output = args.binary.resolve(), args.output.resolve()
     output.mkdir(parents=True, exist_ok=False)

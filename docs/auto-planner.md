@@ -1,8 +1,7 @@
 # AsciiFlow automatic pipeline planner
 
-Stage 4.0 introduced the Rust CLI's runtime decision point for media,
-processing, and DMA-BUF interop. Later stages extended its codec facts without
-changing that boundary. The decision is deliberately small and deterministic:
+The Rust CLI has a runtime decision point for media, processing, and DMA-BUF
+interop. The decision is deliberately small and deterministic:
 AsciiFlow probes the input and this process's runtime capabilities, filters a
 finite set of legal candidates, and selects the lowest qualitative preference
 cost. It does not benchmark pipelines at startup and it does not persist a
@@ -86,8 +85,8 @@ ordered pipeline.
 
 ## Current automatic preference
 
-The score is a qualitative ordering derived from Stage 1–3 evidence, not a
-portable millisecond estimate. It favors Vulkan processing, penalizes software
+The score is a qualitative ordering derived from CPU, Vulkan and interop
+measurements, not a portable millisecond estimate. It favors Vulkan processing, penalizes software
 decode modestly, treats VAAPI decode without input interop as expensive, and
 prefers VAAPI encode over software encode when a Host upload is still needed.
 The resulting preference order is:
@@ -111,10 +110,12 @@ devices such as llvmpipe/lavapipe are not eligible for automatic processing;
 the existing environment hook remains for explicit diagnostics and tests.
 
 Unsupported input requirements do not get silently admitted to the pipeline.
-The qualified range is H.264, HEVC Main and AV1 Main 8-bit 4:2:0,
-NV12-compatible video. Stage 4.1
-rejects 10-bit input before output creation with an explicit unsupported-input
-error; it never performs an undeclared 10-to-8 conversion.
+Qualified 8-bit SDR uses NV12; qualified HEVC Main10 and AV1 Main 10-bit SDR
+use P010LE. Canonical PQ requires its dedicated qualified hardware path, or
+an explicit qualified PQ-to-SDR request. Unsupported profiles, signals and
+unavailable required hardware reject before output creation; bit depth alone
+does not establish eligibility. See [codecs](codecs.md) and
+[color semantics](color-semantics.md). There is no undeclared 10-to-8 conversion.
 
 ## Diagnostics
 
@@ -177,8 +178,8 @@ If an auto-selected capability fails during that construction, the CLI records
 the exact failure, excludes that capability, replans once, and retries once.
 A failure first observed after processing starts remains terminal.
 
-Stage 4.1 adds structured initialization/runtime stages, deterministic test-only
-fault injection, cooperative cancellation, and first-failure preservation. The
+The failure contract defines structured initialization/runtime stages,
+deterministic test-only fault injection, cooperative cancellation, and first-failure preservation. The
 complete contract is in [`failure-semantics.md`](failure-semantics.md).
 
 Output handling remains transactional at the application level. The encoder
@@ -197,10 +198,9 @@ frame-pool, descriptor, modifier, external-image import, queue-family ownership,
 and copy execution in both directions; vendor identity is diagnostic context
 only. Because qualification is operational, a multi-GPU host may use a
 cross-device import if the selected Vulkan device can actually execute it;
-Stage 4.0 does not yet score topology or cross-device transfer cost. No new
-codecs, platforms, audio passthrough,
-external semaphore bridge, direct external-image shader, or startup benchmark
-is part of Stage 4.0.
+the planner does not score topology or cross-device transfer cost. It does not
+add an external semaphore bridge, direct external-image shader or startup
+benchmark.
 
 Synthetic planner tests are the primary coverage for degraded capability
 scenarios and do not require a GPU. Real validation remains opt-in: capability
@@ -208,9 +208,9 @@ probe output, `--capabilities`, `--explain-plan`, automatic full interop,
 explicit-versus-automatic parity, and the 300-frame comparison must be run on
 the qualified host before claiming hardware support.
 
-## Stage 4.0 Intel qualification evidence (historical baseline)
+## Intel automatic-planner qualification (historical baseline)
 
-On 2026-09-14, Release validation used the Stage 3 workload (`input.mp4`,
+On 2026-09-14, Release validation used the full-interop workload (`input.mp4`,
 1920x1080 at 50 FPS, H.264 High/yuv420p, ASCII width 80) on Intel Arc MTL
 (0x8086:0x7d55), Mesa ANV 26.1.8, the pinned FFmpeg 9.0.1 build, and the RPM
 Fusion iHD 26.1.5 driver loaded from an isolated temporary directory. The

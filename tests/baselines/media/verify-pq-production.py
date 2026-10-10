@@ -142,7 +142,7 @@ def main():
                   "--vaapi-vulkan-input-interop", "on", "--vaapi-vulkan-output-interop", "on", "--no-progress"]
         manifest = {
             "schema_version": 1, "name": "Canonical PQ production baseline v1",
-            "scope": "Intel Arc Meteor Lake / iHD / ANV; full closure gates in docs/stage5.3b3-hdr-production.md",
+            "scope": "Intel Arc Meteor Lake / iHD / ANV; full closure gates in docs/production-support.md",
             "color_processing": "HdrPqPreserve", "tone_mapping": "None",
             "output_color": {"primaries": "BT.2020", "transfer": "PQ", "matrix": "BT.2020 NCL", "range": "limited", "chroma_location": "left"},
             "source_static_metadata": "mastering display / MaxCLL / MaxFALL neither propagated nor recomputed; not HDR10 mastering qualification",

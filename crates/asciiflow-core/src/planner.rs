@@ -1146,7 +1146,7 @@ impl Candidate {
     }
 
     fn preference_cost(self) -> u16 {
-        // Qualitative tiers derived from Stage 1-3 measurements; these are
+        // Qualitative tiers derived from CPU, Vulkan, and interop measurements; these are
         // ordering penalties, not portable millisecond estimates.
         let mut cost = match self.backend {
             ProcessingBackend::Vulkan => 0,

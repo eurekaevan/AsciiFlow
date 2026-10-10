@@ -39,7 +39,7 @@ impl WorkerBackend {
 
     fn completion_unknown(&self) -> bool {
         match self {
-            Self::Standard(_) => false,
+            Self::Standard(backend) => backend.is_device_abandoned(),
             #[cfg(feature = "hdr-to-sdr-production")]
             Self::HdrToSdr(backend) => backend.is_device_abandoned(),
         }
@@ -167,7 +167,7 @@ impl WorkerSlot {
                                         error,
                                     )
                                 })?;
-                            let mut timings = match input {
+                            let (mut timings, output_mapping) = match input {
                                 SlotInput::Hardware(input) => {
                                     let input_mapping = DrmPrimeMapping::map_direct_read(input)
                                         .map_err(|error| {
@@ -194,23 +194,28 @@ impl WorkerSlot {
                                         output_planes,
                                         output_format,
                                     );
-                                    if result.is_err() && backend.completion_unknown() {
-                                        // Keep both actual VAAPI owners, not only imported FDs,
-                                        // alive when GPU completion cannot authorize pool reuse.
-                                        std::mem::forget(input_mapping);
-                                        std::mem::forget(output_mapping);
-                                        return Err(result.expect_err("failed GPU completion"));
-                                    }
-                                    let mut timings = result?;
+                                    let (mut timings, (input_mapping, output_mapping)) =
+                                        crate::drm_prime::finish_gpu_access(
+                                            result,
+                                            (input_mapping, output_mapping),
+                                            backend.completion_unknown(),
+                                        )?;
                                     timings.drm_prime_map = input_map_wall;
                                     drop(input_mapping);
-                                    timings
+                                    (timings, output_mapping)
                                 }
-                                SlotInput::Host(input) => backend.process_host_to_external(
-                                    input,
-                                    &config,
-                                    output_planes,
-                                )?,
+                                SlotInput::Host(input) => {
+                                    let result = backend.process_host_to_external(
+                                        input,
+                                        &config,
+                                        output_planes,
+                                    );
+                                    crate::drm_prime::finish_gpu_access(
+                                        result,
+                                        output_mapping,
+                                        backend.completion_unknown(),
+                                    )?
+                                }
                             };
                             timings.encoder_surface_acquire = surface_acquire;
                             timings.output_drm_prime_map = output_map_wall;
@@ -339,11 +344,11 @@ impl VaapiVulkanFullInteropProcessor {
             }
             slot.prepare(&desc, &config, false)?;
             #[cfg(feature = "hdr-to-sdr-qualification")]
-            if let Some((fault_slot, _, Some(pack))) = fault {
-                if index == fault_slot {
-                    slot.prepare_sdr_output_with_fault(format, pack)?;
-                    continue;
-                }
+            if let Some((fault_slot, _, Some(pack))) = fault
+                && index == fault_slot
+            {
+                slot.prepare_sdr_output_with_fault(format, pack)?;
+                continue;
             }
             slot.prepare_sdr_output(format)?;
         }

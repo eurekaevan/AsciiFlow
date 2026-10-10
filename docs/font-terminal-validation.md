@@ -1,12 +1,12 @@
 # System font and terminal validation
 
-Status: **Completed**. Post-2.0 source version: **2.1.0-dev**.
+Status: **Completed**. The original qualification used source version
+`2.1.0-dev`; this identifies historical evidence, not a current release.
 This is the historical font-discovery/terminal result before font-aware automatic
 row selection. Current scalable-font automatic geometry is described in
 [fonts](fonts.md); explicit grids retain the existing raster policy.
 This is a development qualification, not a new redistributable package.
-AsciiFlow 2.0.0 remains FINALIZED; its release artifacts and historical reports
-are unchanged.
+The historical release artifacts and reports are unchanged.
 
 ## Implementation boundary
 
@@ -54,8 +54,8 @@ fonts and Fontconfig are not bundled. Existing FreeType and FFmpeg selections
 remain unchanged; no redistribution qualification is asserted here.
 
 Qualification uses base commit `9104b950e6f83ca54c5c666b3d909e0cd6a6791d`
-plus the recorded Stage 6A working-tree source hashes. The tree is intentionally
-uncommitted. Cargo.lock SHA-256:
+plus the recorded font/terminal working-tree source hashes. The qualification
+tree was intentionally uncommitted. Cargo.lock SHA-256:
 `f94c72231ab531f246514d7c8cb8fb814931dd84345f2401ff893c46bce0e7e4`.
 Tested development binary SHA-256:
 `2c2da775de10be79f1340583ff5fc458a1483d8d8a4bd6f3047f4b867a436f0a`.
@@ -121,10 +121,11 @@ pipeline interface.
 Production media semantics changed: **No**. Planner, codecs, HDR/color algorithms,
 interop, mux/audio ownership and output safety are unchanged. The only media
 addition is the optional progress observation. A/B/C and explicit-file output
-identity give direct regression evidence; this is not a rerun of Stage 5.4's
-full soak/portability campaign. System font availability and acceptance depend
-on local configuration and FreeType. Raster identity is stack/font scoped.
-The frozen 2.0.0 package does not contain Stage 6A features.
+identity give direct regression evidence; this is not a rerun of the full
+soak/portability campaign. System font availability and acceptance depend on
+local configuration and FreeType. Raster identity is stack/font scoped.
+The frozen historical package does not contain system font discovery or the
+terminal progress UI.
 
 No production blocker remains for the recorded font/terminal checks. Future
-changes use targeted regression testing, not another numbered stage.
+changes use targeted regression testing, rather than a development-phase checklist.

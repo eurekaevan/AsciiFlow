@@ -14,6 +14,24 @@ const DRM_FORMAT_GR88: u32 = u32::from_le_bytes(*b"GR88");
 const DRM_FORMAT_R16: u32 = u32::from_le_bytes(*b"R16 ");
 const DRM_FORMAT_GR32: u32 = u32::from_le_bytes(*b"GR32");
 
+/// Return owners only after successful completion; quarantine them when an
+/// error cannot establish that GPU access has ended.
+pub(crate) fn finish_gpu_access<R, O>(
+    result: Result<R>,
+    owners: O,
+    completion_unknown: bool,
+) -> Result<(R, O)> {
+    match result {
+        Ok(output) => Ok((output, owners)),
+        Err(error) => {
+            if completion_unknown {
+                std::mem::forget(owners);
+            }
+            Err(error)
+        }
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct DrmObject {
     pub fd: i32,
@@ -410,5 +428,37 @@ impl Drop for MappedFrameGuard {
             let mut pointer = frame.as_ptr();
             unsafe { ffi::av_frame_free(&mut pointer) };
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::Arc;
+
+    #[test]
+    fn failed_gpu_access_releases_completed_owners_and_quarantines_unknown_owners() {
+        // Covers one owner (input/host-output) and two owners (full interop).
+        for unknown in [false, true] {
+            let input = Arc::new(());
+            let output = Arc::new(());
+            let result: Result<()> = Err(Error::Vulkan("GPU failure".into()));
+            assert!(finish_gpu_access(result, input.clone(), unknown).is_err());
+            assert_eq!(Arc::strong_count(&input), if unknown { 2 } else { 1 });
+            let result: Result<()> = Err(Error::Vulkan("GPU failure".into()));
+            assert!(finish_gpu_access(result, (input.clone(), output.clone()), unknown).is_err());
+            assert_eq!(Arc::strong_count(&input), if unknown { 3 } else { 1 });
+            assert_eq!(Arc::strong_count(&output), if unknown { 2 } else { 1 });
+        }
+    }
+
+    #[test]
+    fn successful_gpu_access_keeps_owners_until_the_caller_releases_them() {
+        let owner = Arc::new(());
+        let (output, retained) = finish_gpu_access(Ok(7), owner.clone(), false).unwrap();
+        assert_eq!(output, 7);
+        assert_eq!(Arc::strong_count(&owner), 2);
+        drop(retained);
+        assert_eq!(Arc::strong_count(&owner), 1);
     }
 }

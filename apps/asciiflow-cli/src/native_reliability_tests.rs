@@ -170,7 +170,7 @@ fn fixture_ffmpeg() -> Command {
 }
 
 fn font(index: usize) -> PathBuf {
-    if index % 2 == 0 {
+    if index.is_multiple_of(2) {
         PathBuf::from("builtin-8x8")
     } else {
         fixture("fonts/Inconsolata-Regular.ttf")
@@ -193,7 +193,7 @@ fn case(index: usize, output: OutputKind, action: HookAction) -> Case {
         input,
         output,
         font: font(index),
-        color: (index / 2) % 2 == 0,
+        color: (index / 2).is_multiple_of(2),
         audio,
         action,
         expected: match action {

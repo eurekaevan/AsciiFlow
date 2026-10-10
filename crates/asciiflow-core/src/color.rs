@@ -177,7 +177,7 @@ impl std::error::Error for ColorError {}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ColorResolutionPolicy {
-    /// Preserve the Stage 5.2 NV12 conversion's BT.709/limited output default.
+    /// Preserve the NV12 conversion's BT.709/limited output default.
     LegacyEightBit,
     /// P010 requires explicitly signaled BT.709 SDR fields.
     StrictTenBit,

@@ -187,7 +187,7 @@ fn drain(
 }
 
 #[test]
-#[ignore = "requires retained Stage 5.4C2A NV12 capture and explicit VAAPI device/output"]
+#[ignore = "requires retained native encoder NV12 capture and explicit VAAPI device/output"]
 fn retained_nv12_h264_vaapi_encoder_only() {
     let input = PathBuf::from(
         std::env::var_os("ASCIIFLOW_ENCODER_REPLAY_INPUT")

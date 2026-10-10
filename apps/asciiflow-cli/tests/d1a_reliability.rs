@@ -70,7 +70,11 @@ fn measurement_preserves_output_identity_and_retains_failure_cleanup() {
     cmd.env("ASCIIFLOW_RELIABILITY_REPORT", &failed_report);
     let result = Process::start(&mut cmd).finish();
     assert!(!result.status.success());
-    assert!(String::from_utf8_lossy(&result.stderr).contains("failed to open input"));
+    // Missing files are rejected before FFmpeg opens native input; telemetry
+    // must still record cleanup while preserving the original OS diagnostic.
+    let stderr = String::from_utf8_lossy(&result.stderr);
+    assert!(stderr.contains("failed to inspect input media"), "{stderr}");
+    assert!(stderr.contains("No such file or directory"), "{stderr}");
     assert_eq!(fs::read(destination).unwrap(), b"sentinel");
     let rows: Vec<Value> = fs::read_to_string(failed_report)
         .unwrap()

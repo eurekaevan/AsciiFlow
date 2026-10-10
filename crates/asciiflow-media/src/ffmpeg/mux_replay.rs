@@ -226,7 +226,7 @@ impl Capture {
             for (audio, tx) in [(false, video_tx), (true, audio_tx)] {
                 let trace = trace.clone();
                 scope.spawn(move || {
-                    if (schedule % 2 == 0) == audio {
+                    if schedule.is_multiple_of(2) == audio {
                         std::thread::sleep(Duration::from_millis(10));
                     }
                     for cycle in 0..cycles {

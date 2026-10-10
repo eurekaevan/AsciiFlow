@@ -1,6 +1,7 @@
-# Stage 4.2 audio passthrough
+# Audio passthrough
 
-Stage 4.2 adds media completeness without adding an audio processing pipeline.
+Audio passthrough preserves compatible compressed streams without adding an
+audio processing pipeline.
 AsciiFlow copies compatible compressed audio packets from the input demuxer to
 the MP4 muxer. It does not decode, encode, resample, remix, normalize, filter,
 or otherwise inspect audio samples.
@@ -68,7 +69,7 @@ base with `av_packet_rescale_ts`; AsciiFlow does not clamp, stretch, trim, or
 invent timestamps. A selected audio packet missing PTS or DTS fails at mux
 runtime with its input stream number.
 
-The current video contract retains the Stage 4.1 ordered CFR sequence based on
+The current video contract retains the ordered CFR sequence based on
 the probed source frame-rate rational. With audio selected, the mux layer adds
 the first decoded video timestamp to that sequence, preserving its origin
 relative to audio. Subsequent decoded video timestamps must match that CFR
@@ -94,7 +95,7 @@ channel disconnect does not replace the native FFmpeg context.
 
 On Ctrl+C the common cancellation token stops producers and the mux worker.
 Queued packet wrappers are dropped, no trailer is treated as successful, and
-the Stage 4.1 transactional output guard deletes the staging MP4. An existing
+the transactional output guard deletes the staging MP4. An existing
 destination is replaced only after successful video drain, mux trailer, and
 worker completion.
 
@@ -109,10 +110,10 @@ and CPU wall time spent submitting audio packets to the muxer. These are audio
 passthrough metrics, not per-frame render metrics and not part of the reported
 video FPS.
 
-Stage 4.2 deliberately adds no automated audio tests. Validation uses the
-existing workspace suite plus a manual AAC-in-MP4 conversion and independent
-`ffprobe` inspection. Audio transcoding, resampling, DSP, audio/video trimming,
-new containers, and new codecs remain out of scope.
+The original audio qualification used the existing workspace suite plus a
+manual AAC-in-MP4 conversion and independent `ffprobe` inspection. Automated
+regression coverage is described below. Audio transcoding, resampling, DSP,
+audio/video trimming, new containers, and new codecs remain out of scope.
 
 ## Manual validation, 2026-09-15
 
@@ -143,12 +144,12 @@ used the same short remuxed input for both policies:
 
 The difference is small and does not establish a speed improvement. There was
 no observed audio-related throughput regression. This is a short A/B check,
-not a controlled rerun of the Stage 4.1 benchmark. The copied track contains
+not a controlled rerun of the failure-lifecycle benchmark. The copied track contains
 259 AAC packets, 96,583 payload bytes, 44.1 kHz stereo, language `eng`, and
 6.013968 seconds of audio alongside 6 seconds of video. Audio mux submission
 wall time was 0.253–0.321 ms for the entire run.
 
-## Automated regression coverage (Stage 4.2.1)
+## Automated regression coverage
 
 Hardware-independent tests now lock auto/copy/none policy, strict incompatibility,
 multi-track ordering, language/default disposition, exact compressed packet

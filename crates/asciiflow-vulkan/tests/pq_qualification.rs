@@ -307,8 +307,8 @@ fn exercise_atlas(atlas: GlyphAtlas, config: AsciiConfig, label: &str) {
             let label = format!("{label}/{name}/color={color}");
             let mapped = gpu.map_cells(&input, &config).unwrap();
             compare_cells(&label, &mapped, &input, &config, &reference);
-            // Independent physical reference levels use the Stage 5.3B-1
-            // one-code quantization bounds, not a GPU-relative tolerance.
+            // Independent physical reference levels use one-code quantization
+            // bounds, not a GPU-relative tolerance.
             let vector = match *name {
                 "black" => Some((0.0, 0.01)),
                 "100-nit-reference" => Some((100.0, 0.1)),

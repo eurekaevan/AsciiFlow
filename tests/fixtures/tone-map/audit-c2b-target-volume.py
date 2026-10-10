@@ -319,7 +319,7 @@ def audit(c1_path, output_directory):
     if sample_count != width * height:
         raise ValueError("unexpected sample count")
     return dict(audit_schema_version=1, numerical_gate_status="PASS",
-        stage_sealing_authority="docs/stage5.3c2b-target-volume-cpu.md",
+        stage_sealing_authority="docs/gamut-mapping.md",
         scope="Internal f64 CPU reference only",
         width=width, height=height, samples=sample_count, matrix_identity=MATRIX_ID,
         normalization="Display-linear 1 = 100 cd/m²", input_sha256=c1_digest,

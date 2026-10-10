@@ -19,6 +19,15 @@ impl<'a> Nv12Renderer<'a> {
         color: bool,
     ) -> Result<VideoFrame> {
         desc.validate_layout()?;
+        if grid.width == 0
+            || grid.height == 0
+            || grid.width > desc.width
+            || grid.height > desc.height
+        {
+            return Err(Error::Cpu(
+                "cell grid must fit inside the source frame".into(),
+            ));
+        }
         if grid.cells.len() != grid.width as usize * grid.height as usize {
             return Err(Error::Cpu("cell grid storage is incomplete".into()));
         }
@@ -69,14 +78,16 @@ impl<'a> Nv12Renderer<'a> {
         let width = desc.width as usize;
         let height = desc.height as usize;
         for py in 0..height {
-            let cy = py * grid.height as usize / height;
-            let local_y = (py * grid.height as usize * self.atlas.height() as usize / height)
-                % self.atlas.height() as usize;
+            let [cy, local_y] = render_coordinate(
+                py,
+                height,
+                grid.height as usize,
+                self.atlas.height() as usize,
+            );
             for px in 0..width {
-                let cx = px * grid.width as usize / width;
+                let [cx, local_x] =
+                    render_coordinate(px, width, grid.width as usize, self.atlas.width() as usize);
                 let cell = grid.cells[cy * grid.width as usize + cx];
-                let local_x = (px * grid.width as usize * self.atlas.width() as usize / width)
-                    % self.atlas.width() as usize;
                 let alpha = self.atlas.glyph(cell.glyph as usize)
                     [local_y * self.atlas.width() as usize + local_x]
                     as u32;
@@ -90,21 +101,31 @@ impl<'a> Nv12Renderer<'a> {
         }
         for py in (0..height).step_by(2) {
             for px in (0..width).step_by(2) {
-                let cy = py * grid.height as usize / height;
-                let cx = px * grid.width as usize / width;
+                let [cy, _] = render_coordinate(
+                    py,
+                    height,
+                    grid.height as usize,
+                    self.atlas.height() as usize,
+                );
+                let [cx, _] =
+                    render_coordinate(px, width, grid.width as usize, self.atlas.width() as usize);
                 let cell = grid.cells[cy * grid.width as usize + cx];
                 if color {
                     let mut alpha = 0u32;
                     for dy in 0..2 {
                         for dx in 0..2 {
-                            let sample_y =
-                                ((py + dy) * grid.height as usize * self.atlas.height() as usize
-                                    / height)
-                                    % self.atlas.height() as usize;
-                            let sample_x =
-                                ((px + dx) * grid.width as usize * self.atlas.width() as usize
-                                    / width)
-                                    % self.atlas.width() as usize;
+                            let [_, sample_y] = render_coordinate(
+                                py + dy,
+                                height,
+                                grid.height as usize,
+                                self.atlas.height() as usize,
+                            );
+                            let [_, sample_x] = render_coordinate(
+                                px + dx,
+                                width,
+                                grid.width as usize,
+                                self.atlas.width() as usize,
+                            );
                             alpha += self.atlas.glyph(cell.glyph as usize)
                                 [sample_y * self.atlas.width() as usize + sample_x]
                                 as u32;
@@ -127,6 +148,19 @@ impl<'a> Nv12Renderer<'a> {
         }
         VideoFrame::new_host(desc, pts, storage)
     }
+}
+
+// Inverse of the mapper's floor boundaries, with glyph coordinates local to
+// that same cell. Use u64 products for the public u32 frame/atlas dimensions.
+fn render_coordinate(pixel: usize, extent: usize, count: usize, atlas: usize) -> [usize; 2] {
+    let (pixel, extent, count, atlas) = (pixel as u64, extent as u64, count as u64, atlas as u64);
+    let cell = ((pixel + 1) * count - 1) / extent;
+    let start = cell * extent / count;
+    let end = (cell + 1) * extent / count;
+    [
+        cell as usize,
+        ((pixel - start) * atlas / (end - start)) as usize,
+    ]
 }
 
 fn blend(background: u32, foreground: u32, alpha: u32) -> u32 {
@@ -158,6 +192,87 @@ mod tests {
     use super::*;
     use crate::AsciiCell;
     use asciiflow_core::ColorSpace;
+
+    #[test]
+    fn zero_or_oversized_grids_are_errors_not_panics() {
+        let atlas = GlyphAtlas::builtin("builtin-8x8", " ").unwrap();
+        for (width, height) in [(0, 1), (1, 0), (0, 0), (3, 1), (1, 3), (u32::MAX, u32::MAX)] {
+            let grid = CellGrid {
+                width,
+                height,
+                cells: Vec::new(),
+            };
+            let desc = FrameDesc::host_nv12(2, 2, ColorSpace::default()).unwrap();
+            assert!(matches!(
+                Nv12Renderer::new(&atlas).render(&grid, desc, None, false),
+                Err(Error::Cpu(_))
+            ));
+        }
+    }
+
+    #[test]
+    fn uneven_grid_render_uses_the_same_pixels_as_mapping() {
+        let input_y = [16u16, 16, 16, 100, 100, 100, 200, 200, 200, 200];
+        let atlas = GlyphAtlas::from_r8(1, 1, 1, vec![255]).unwrap();
+        for format in [PixelFormat::Nv12, PixelFormat::P010Le] {
+            let desc = match format {
+                PixelFormat::Nv12 => FrameDesc::host_nv12(10, 2, ColorSpace::default()),
+                PixelFormat::P010Le => FrameDesc::host_p010_le(10, 2, ColorSpace::default()),
+            }
+            .unwrap();
+            let mut codes = input_y.repeat(2);
+            codes.extend([128; 10]);
+            let storage = match format {
+                PixelFormat::Nv12 => {
+                    HostFrame::from_nv12(&desc, codes.iter().map(|&x| x as u8).collect())
+                }
+                PixelFormat::P010Le => HostFrame::from_p010_le(
+                    &desc,
+                    codes.iter().flat_map(|&x| (x << 8).to_le_bytes()).collect(),
+                ),
+            }
+            .unwrap();
+            let input = VideoFrame::new_host(desc.clone(), Some(7), storage).unwrap();
+            let grid = crate::Nv12Mapper::new("@")
+                .unwrap()
+                .map(&input, 3, 1)
+                .unwrap();
+            let output = Nv12Renderer::new(&atlas)
+                .render(&grid, desc, Some(7), true)
+                .unwrap();
+            assert_eq!(output, input, "{format:?}");
+        }
+    }
+
+    #[test]
+    fn uneven_cells_use_local_glyph_coordinates_on_both_axes() {
+        for (width, height, gw, gh, aw, ah) in [(10, 2, 3, 1, 3, 1), (2, 10, 1, 3, 1, 3)] {
+            let atlas = GlyphAtlas::from_r8(aw, ah, 1, vec![0, 128, 255]).unwrap();
+            let grid = CellGrid {
+                width: gw,
+                height: gh,
+                cells: vec![
+                    AsciiCell {
+                        glyph: 0,
+                        y: 235,
+                        u: 128,
+                        v: 128
+                    };
+                    3
+                ],
+            };
+            let desc = FrameDesc::host_nv12(width, height, ColorSpace::default()).unwrap();
+            let output = Nv12Renderer::new(&atlas)
+                .render(&grid, desc.clone(), None, false)
+                .unwrap();
+            let y = output.host().planes(&desc).0;
+            let actual: Vec<_> = (0..10)
+                .map(|i| y[if width == 10 { i } else { i * 2 }])
+                .collect();
+            assert_eq!(actual, [16, 126, 235, 16, 126, 235, 16, 16, 126, 235]);
+        }
+    }
+
     #[test]
     fn out_of_range_glyph_is_an_error_not_a_panic() {
         let atlas = GlyphAtlas::builtin("builtin-8x8", " ").unwrap();

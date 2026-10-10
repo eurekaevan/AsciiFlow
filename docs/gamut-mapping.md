@@ -61,11 +61,9 @@ was not implemented. It is now qualified separately by C-2B, without preserving
 all Y or reversibility. C-1/production remain unchanged.
 The original audit below is retained as historical evidence of that decision.
 
-The original Annex5 Stage 5.3C-2 is **NOT SEALED / ABANDONED**. At that audit
+The original Annex 5 implementation proposal is **ABANDONED / UNQUALIFIED**. At that audit
 no gamut mapper, hard-clip converter or C-1→C-2 path had been added. The entry-domain and official-formula
-audits found two blockers before coding an oracle. See
-the stage record and
-[machine-readable audit](../tests/fixtures/tone-map/c2-domain-audit.json).
+audits found two blockers before coding an oracle. See the [machine-readable audit](../tests/fixtures/tone-map/c2-domain-audit.json).
 
 ## Previously requested reference and original audit status
 

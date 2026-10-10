@@ -1,153 +1,65 @@
 # AsciiFlow architecture
 
-Stage 5.4D-1 starts reliability hardening
-without changing the media feature matrix. Worker unwind now publishes root
-failure/cancellation before ordered joins; owned worker objects are destroyed
-inside the guard lifetime, while native decoder/encoder contexts still outlive
-interop teardown. Mux panic is latched before channel disconnect. The
-[reliability contract](reliability-testing.md) retains bounded queues, single
-mux ownership, no runtime fallback and same-directory atomic output commit.
-D-1 is SEALED for the recorded single-job CLI workloads and long-run paths.
-Path C's audio-enabled residual is classified bounded allocator retention;
-persistent multi-job memory remains unqualified. The current release boundary
-is tracked separately in Stage5.4D-2, not by rewriting historical stage evidence.
+AsciiFlow is a Rust video processor with a permanent CPU reference backend,
+a Vulkan 1.3 compute backend, optional Linux VAAPI media, and qualified Intel
+DMA-BUF bridges in both pixel directions. Input interop avoids decode-side
+Host copies; output interop fills encoder-owned VAAPI surfaces from Vulkan.
+The default output is 8-bit H.264. The former C# implementation is outside the
+active tree; its distinct features are tracked in
+[legacy-feature-parity.md](legacy-feature-parity.md).
 
-D-1A adds opt-in, process-scoped ownership
-observations behind `reliability-measurement`, compiled out of default builds.
-Tokens release only after native release; abandoned resources stay active.
-Measured buffer bindings/imports/AVFrame references are not a driver-memory or
-surface-pool census. Queue capacity is a hard bound, sampled depth is an
-observation, and 64 packets/8 MiB triggers mux flushing rather than limiting
-total mux memory. See the [ownership map](reliability-testing.md#current-ownership-map).
-Reports cannot alias media/diagnostic paths, and diagnostic failures never
-remove committed output or mask a primary media/cancellation failure.
+This document describes the current mechanisms and constraints. Release
+identity uses date tags; support claims remain scoped to the reviewed hardware,
+libraries and artifacts in the [support contract](production-support.md) and
+[qualified-stack registry](../tests/portability/qualified-stacks.json).
+Runtime probe facts apply to the current input/device and do not independently
+qualify a new stack. Native loaded-library evidence is captured during
+initialization with loader diagnostics and a scoped child environment;
+isolated toolchains do not replace host installations. Portability qualification
+and reliability qualification are separate claims.
 
-Stage 5.4C2's five-stack portability matrix and H.264 closure are recorded in
-the C-2A closure report,
-the matrix report
-and [qualified-stack registry](../tests/portability/qualified-stacks.json).
-Qualification requires reviewed evidence; native all-ready probes alone do
-not qualify a stack. Qualification remains scoped to exact
-artifacts and actual loaded-library evidence from stack manifest v2, captured
-with loader diagnostics during initialization and a scoped child environment.
-Toolchains stay under new target prefixes, without host installation. The
-alternate-kernel edge is `UnavailableSafely` because checking it would require
-an unauthorized reboot. C qualification does not imply D-1 reliability closure.
+## Color and media admission
 
-Stage 5.4A adds the [versioned support contract](production-support.md),
-[structured diagnostics and corpus runner](compatibility-corpus.md), and a
-sealed closure record. It changes neither
-planner selection nor the production pixel/media contract. Runtime probe facts
-remain scoped to the input/device; architectural plans and historical qualified
-hardware evidence are separate. Stage 5.4B adds the
-[real-media compatibility corpus](media-compatibility-results.md),
-not new processing algorithms or media formats. Native decoded dimensions,
-pixel format, SAR and display matrices are admitted before cached scaler or
-interop use; independent stream codec parameters retain first-frame color
-conflict evidence. Corrupt compressed audio fails before mux enqueue, and
-static HDR metadata with SDR transfer fails as conflicting input.
-Passthrough audio preserves display labels across container title/name spellings
-alongside language and disposition; compressed payload and timestamps are not
-transcoded or regenerated.
-
-Video processing retains source presentation timestamps, but the encoder uses
-sequential CFR frame indices. Without copied audio, output starts at zero and
-maps one output frame to each decoded input frame. With copied audio, source
-video must remain on its original CFR grid; mux restores the video origin and
-preserves compressed audio timestamps. This is not faithful VFR presentation:
-video-only VFR is retimed, and VFR/discontinuous audio-copy input rejects.
-No display-transform, subtitle-transcode or audio-transcode path is added.
-
-This is the canonical architecture for the Rust application. The former C#
-implementation has left the active tree; its distinct user-facing features
-are tracked in [legacy-feature-parity.md](legacy-feature-parity.md), not treated
-as a second execution path. Stage 5.3B-1 is sealed on the qualified Intel
-hardware. Stage 5.3B-2 adds the independent internal Vulkan PQ qualification;
-Stage 5.3B-3 integrates the strictly planned HDR-preserve path. Its
-hardware closure status is the release authority.
-
-Stage 5.3C-1 adds only a permanent f64 post-ASCII Method A reference;
-its closure record does not enable production HDR→SDR.
-The historical C-2 entry audit remains NOT SEALED
-for its abandoned Annex5 implementation. C-2A clarification
-is SEALED as an explicit method rejection: Annex5 has no defensible verified
-formula correction, and raw C-1 has source/Y excursions.
-C-2B qualifies the replacement CPU f64
-reference: §2 primary conversion + explicit target-volume limiting (D5+D6),
-not a strict-Y mapper or a production fallback. No production feature is enabled.
-
-C-3 adds an independent feature-gated Vulkan
-f32 reference: existing HDR map → linear render → Method A → primary conversion /
-target clip. It is **SEALED** under C3B's independently derived N3 contract,
-with real full-frame parity, dual-codec 3000-frame stress/resource and performance
-closure. C3B selects the N3 signal-accuracy contract and
-common-scale/compensated f32 arithmetic; canonical and legal HEVC/AV1 full-frame
-parity pass. Old two-code UNORM16 failures remain historical diagnostics, not
-PASS. A new identity-preserved legal source replaces the unsuitable B-3 input
-for C3 qualification, without changing the B-3 production baseline.
-That isolated stage does not itself enable a production planner or encoder.
-
-C-4A, **SEALED** on the qualified Intel hardware, adds only a
-qualification consumer: C-3 nonlinear BT.709 RGB → BT.709 NCL limited NV12/P010
-→ FFmpeg-owned encoder-style writable VAAPI surface. No native color metadata
-is assigned and no encoding occurs in that qualification stage.
-
-[C-4B](hdr-to-sdr-validation.md) is **SEALED** on the recorded Intel
-scope and completes Stage 5.3C. Explicit `--output-dynamic-range sdr` selects
-`HdrPqToSdrBt709`: actual VAAPI P010 input → resident Vulkan HDR ASCII/Method A/
-BT.709 limiting → sealed NV12/P010 pack → encoder-owned output interop → VAAPI
-SDR encode/mux. Default `preserve`, existing SDR processing and PQ preservation
-are unchanged. Per-source-pixel domain rejection precedes averaging/coverage;
-no full RGB/pixel host readback, software fallback or source HDR metadata clone.
-
-This document describes the sole Rust implementation through sealed Stage 5.3C-4B
-production integration and sealed C-2B CPU reference, retaining Stage 5.3B-3 PQ
-production integration on the Stage 5.2C-3 P010
-processing foundation: a permanent CPU reference backend, a Vulkan 1.3 compute
-backend, optional Linux VAAPI media, and qualified Intel DMA-BUF bridges in both
-pixel directions. Stage 3A
-eliminates decode-side Host copies; Stage 3B fills encoder-owned VAAPI
-surfaces directly from Vulkan. Stage 4.0 adds a runtime capability graph and
-automatic selection without changing the portable Host reference paths. Stage
-4.1 adds structured failures, bounded initialization replan, cooperative
-cancellation, transactional output, and failure-path resource guarantees.
-Stage 4.2 adds a separate compressed-audio passthrough plan and one bounded,
-single-owner interleaved mux path; it does not change video planning or pixels.
-Stage 4.3 adds optional FreeType atlases. Stage 5.0 qualifies HEVC Main and AV1
-Main input; Stages 5.1A and 5.1B qualify HEVC Main and AV1 Profile0 VAAPI
-output, respectively. Device-specific evidence is kept in the stage reports.
-Stage 5.2A adds Host P010LE and CPU/Vulkan processing; 5.2B qualifies 10-bit
-decode and input interop, 5.2C-1 qualifies P010 output interop, and 5.2C-2
-qualifies explicit HEVC Main10 VAAPI/MP4 output on the tested Intel device.
-Stage 5.2C-3 qualifies AV1 Profile0/Main 10-bit output through the same P010
-processing and interop architecture, with an independently probed encode fact.
-The default output remains 8-bit H.264.
-Stage 5.3A adds portable raw and resolved color semantics without changing
-pixel processing or claiming HDR support. The Intel color-regression gate is
-recorded separately in its sealed hardware report. Stage 5.3B-1 adds an
-independent, internal-only BT.2020/PQ P010 CPU reference; it does not enable
-production HDR processing or change the SDR hot path. Stage 5.3B-2 exposes
-only a feature-gated qualification constructor. Independent f32 PQ shaders
-reuse the packed P010 device buffers, DMA-BUF transfers, and existing bounded
-one/two-slot ownership; the CPU oracle and SDR shaders remain unchanged.
-The qualification decoder bypasses only `UnsupportedHdrPq`, never conflicting
-or unknown metadata, and still enforces codec/depth/layout/siting stability.
-Diagnostic VAAPI surfaces retain PQ descriptor tags but are not HDR encoders.
-
-Stage B-3 separates the SDR assessment from `HdrPqPreserve` eligibility. Actual
-PQ compute, decoded-stream and encoder-owned P010 import probes are required;
-the planner must select Vulkan + VAAPI decode/encode + both interop directions.
-CPU, software decode/encode and staged HDR paths are not qualified. Default
-eight-bit output fails for PQ; explicit HEVC/AV1 ten-bit output is mandatory.
-The factory constructs the encoder's canonical output descriptor from the
-plan, sets native BT.2020/PQ/NCL/limited fields before codec opening and on
-every frame, and removes source mastering/CLL side data. HDR initialization
-failure does not replan, even under `auto`; runtime failures remain terminal.
-Native P010 geometry and effective color/static metadata changes fail rather
-than crop, relabel or fall back. No SDR shader or CPU f64 oracle math changed.
+Native decoded dimensions, pixel format, SAR and display matrices are admitted
+before cached scaler or interop use. Independent stream codec parameters retain
+first-frame color conflict evidence. Static HDR metadata with SDR transfer is
+conflicting input. Corrupt compressed audio fails before mux enqueue.
+Passthrough preserves display labels across container title/name spellings,
+language and disposition; payload and timestamps are not transcoded or
+regenerated. See [structured diagnostics and corpus runner](compatibility-corpus.md)
+and [real-media compatibility results](media-compatibility-results.md).
 
 ```text
-internal qualification only:
+codec parameters / decoded AVFrame metadata
+  -> portable raw stream and frame color facts
+  -> resolved semantics + provenance + dynamic-range class
+  -> color support decision
+  -> pipeline planner
+  -> NV12/P010 pixel pipeline
+  -> canonical output metadata for the selected processing mode
+```
+
+See [color semantics](color-semantics.md). Video-only output starts at zero and
+uses sequential CFR encoder frame indices, one per decoded input frame.
+With copied audio, source video must remain on its original CFR grid; mux
+restores the video origin and preserves compressed audio timestamps.
+Video-only VFR is retimed, and VFR/discontinuous audio-copy input rejects.
+Display-transform, subtitle-transcode and audio-transcode paths are unsupported.
+
+## HDR preservation and SDR conversion
+
+`HdrPqPreserve` requires actual PQ compute, decoded-stream and encoder-owned
+P010 import probes. The planner must select Vulkan, VAAPI decode/encode and
+both interop directions. CPU, software media and staged HDR paths are
+unqualified. Default eight-bit output fails for PQ; explicit HEVC/AV1 ten-bit
+output is mandatory. The encoder descriptor comes from the plan and assigns
+BT.2020/PQ/NCL/limited fields before codec opening and on every frame; source
+mastering/CLL side data is removed. HDR initialization failure does not replan,
+even under `auto`, and runtime failures remain terminal. Native P010 geometry
+and effective color/static metadata changes fail rather than crop or relabel.
+
+```text
+PQ processing:
 limited BT.2020/PQ P010 -> BT.2020 NCL -> per-channel PQ EOTF
   -> absolute linear RGB -> linear cell average / R8 coverage blend
   -> inverse PQ -> BT.2020 NCL -> limited P010
@@ -156,57 +68,73 @@ production unsupported: HLG, wide-gamut SDR, full/unknown/conflicting color,
                        software/staged HDR, implicit HDR/SDR or depth conversion
 ```
 
-See [HDR PQ pixel semantics](hdr-pq-semantics.md) and the
-Stage 5.3B-1 report and
-Stage 5.3B-2 hardware report.
-Current production closure: Stage 5.3B-3.
+Independent CPU f64 and feature-gated Vulkan f32 references verify
+[HDR PQ pixel semantics](hdr-pq-semantics.md). The Vulkan reference reuses packed
+P010 device buffers, DMA-BUF transfers and bounded slot ownership. Its diagnostic
+decoder bypasses only `UnsupportedHdrPq`, never conflicting or unknown metadata,
+and still enforces codec/depth/layout/siting stability. Diagnostic VAAPI surfaces
+retain PQ descriptor tags but are not HDR encoders.
 
-The [C-1 tone mapper](tone-mapping.md) consumes the shared B-1 renderer's
-post-blend linear BT.2020 RGB in absolute nits, not re-encoded PQ. Its fixed
-1000→100 Method A result is a raw f64 SDR BT.2020 intermediate. It cannot feed
-back into glyph selection and has no metadata/temporal adaptation. No BT.709
-gamut conversion, codec tags, quantized frame, shader, planner or public CLI
-option is added. Input above 1000 nits rejects qualification; standard-produced
-negative/>1 output excursions remain visible for future gamut/output work.
+Explicit `--output-dynamic-range sdr` selects `HdrPqToSdrBt709`: actual VAAPI
+P010 input -> resident Vulkan HDR ASCII/Method A/BT.709 limiting -> NV12/P010
+pack -> encoder-owned output interop -> VAAPI SDR encode/mux.
+Per-source-pixel domain rejection precedes averaging/coverage. This path uses
+no full RGB/pixel host readback, software fallback or source HDR metadata clone.
+Its hardware scope is recorded in [HDR-to-SDR validation](hdr-to-sdr-validation.md).
+Default `preserve` retains the PQ-preserve behavior.
 
-The previous planned Annex5 arrow is rejected by [C-2A](gamut-mapping.md).
-Conceptual C-2 now means **BT.2020→BT.709 SDR conversion**: C-2A is the
-domain/standard clarification; C-2B is primary conversion + target-volume CPU
-reference. `core::sdr_target_volume` separates raw C-1 nonlinear input,
-display-linear BT.2020, XYZ, unbounded/bounded BT.709 and nonlinear BT.709 types.
-It explicitly extends display power as sign(v)|v|^2.4 (zero maps to +0),
-uses precise D65-derived matrices, preserves unbounded results, then clips
-each target-linear component to [0,1], where 1=100 cd/m². The inverse power
-1/2.4 is a display signal representation, not BT.709's camera OETF.
-`cpu::target_volume` consumes C-1 immutably after the existing HDR ASCII renderer.
-No source preclip, CAT (same D65), Y restoration, quantization or encoder is
-added. Preclip XYZ/Y is colorimetrically preserved within f64 error; limiting
-may change Y/hue and is many-to-one. This is a measured project policy, not
-Annex5, optimality or luminance preservation. C-4B consumes the sealed C-3/C-4A
-GPU path without changing those algorithms. CPU references remain qualification
-only; PQ-preserve production remains unchanged.
+The [tone mapper](tone-mapping.md) consumes post-blend linear BT.2020 RGB in
+absolute nits. Fixed 1000→100 Method A produces a raw f64 SDR BT.2020 intermediate;
+it cannot feed back into glyph selection and has no metadata/temporal
+adaptation. Input above 1000 nits rejects qualification. Negative or above-one
+output excursions remain observable at this intermediate boundary.
 
-C3B's [precision contract review](numerical-qualification.md) separates
+[Gamut conversion](gamut-mapping.md) uses primary conversion plus explicit
+target-volume limiting; the previously proposed Annex5 method is rejected.
+`core::sdr_target_volume` separates nonlinear input, display-linear BT.2020,
+XYZ, unbounded/bounded BT.709 and nonlinear BT.709 types. Display power is
+extended as sign(v)|v|^2.4 (zero maps to +0). Precise D65-derived matrices
+preserve unbounded results before each target-linear component is clipped to
+[0,1], where 1=100 cd/m². The inverse power 1/2.4 represents the display signal,
+not BT.709's camera OETF. `cpu::target_volume` consumes the tone-mapper result
+immutably after HDR ASCII rendering. There is no source preclip, CAT (both
+primaries use D65) or Y restoration. Preclip XYZ/Y is preserved within f64
+error; limiting can change Y/hue and is many-to-one. This is a measured project
+policy, not an optimality or luminance-preservation claim.
+
+The Vulkan f32 path uses common-scale/compensated arithmetic under the
+[N3 precision contract](numerical-qualification.md), with full-frame parity,
+dual-codec stress/resource and performance evidence. That contract separates
 reference-space error, full-scale RGB diagnostics and hypothetical limited
-8/10-bit BT.709 YUV codes. These projections are not C-4A's independent packed-code
-oracle and do not select a production format. Optional `hdr-to-sdr-fp64-experiment` modules and
-explicit experimental devices are qualification-only; ordinary contexts never
-request shaderFloat64. Neither those experiments nor the diagnostic output-code
-contract alone opens the production HDR→SDR planner; only C-4B qualifies the
-explicit hardware production integration.
+8/10-bit BT.709 YUV codes. These projections are distinct from the packed-code
+oracle and do not choose the production format. The qualification-only surface
+consumer packs nonlinear BT.709 RGB into limited NV12/P010 without native
+metadata assignment or encoding. Production integration supplies those missing
+encoder/mux responsibilities. CPU references remain qualification-only;
+`hdr-to-sdr-fp64-experiment` modules and explicit experimental devices also
+remain qualification-only. Ordinary contexts never request shaderFloat64.
+Historical failed precision checks remain failed diagnostics rather than
+being reclassified by the current contract.
 
-```text
-codec parameters / decoded AVFrame metadata
-  -> portable raw stream and frame color facts
-  -> resolved semantics + provenance + dynamic-range class
-  -> software color support decision
-  -> pipeline planner
-  -> unchanged NV12/P010 pixel pipeline
-  -> BT.709 limited-range output metadata for accepted SDR
-```
+## Reliability and measurement
 
-See [color semantics](color-semantics.md) and the
-Stage 5.3A status.
+Worker unwind publishes root failure/cancellation before ordered joins. Owned
+worker objects are destroyed inside the guard lifetime; native decoder/encoder
+contexts outlive interop teardown. Mux panic is latched before channel
+disconnect. The [reliability contract](reliability-testing.md) specifies bounded
+queues, single mux ownership, no runtime fallback and same-directory atomic
+output commit. Recorded single-job and long-run workloads are qualified;
+the audio-enabled Path C residual is classified as bounded allocator retention.
+Persistent multi-job memory remains unqualified.
+
+Opt-in `reliability-measurement` provides process-scoped ownership observations
+and is compiled out of default builds. Tokens release only after native
+release; abandoned resources stay active. Buffer bindings/imports/AVFrame
+references are not a driver-memory or surface-pool census. Queue capacity is
+a hard bound, sampled depth is an observation, and 64 packets/8 MiB triggers
+mux flushing rather than limiting total mux memory. Reports cannot alias
+media/diagnostic paths; diagnostic failures never remove committed output or
+mask a primary media/cancellation failure.
 
 ## Workspace and dependency direction
 
@@ -234,15 +162,15 @@ all Vulkan types and calls; Core does not depend on `ash` or `gpu-allocator`.
 
 ## Native and unsafe boundary
 
-Stage 5.0 adds portable HEVC/AV1 codec and Main-profile identities. Native codec
+Core defines portable HEVC/AV1 codec and Main-profile identities. Native codec
 discovery, actual decoded format validation and libva profile/VLD probing stay
 in media. Decode capability and stream input-interop qualification are keyed
 by codec; initialization replan changes only the failing codec's fact. The DRM
-importer is reused. Stage 5.1A separates portable output requirements from the
-encoder backend. Stages 5.1A and 5.1B qualify HEVC Main and AV1 Profile0
-VAAPI encoder-owned surfaces through the same output interop as H.264 on Intel
-Arc Meteor Lake; see input codec validation and
-the output reports below.
+importer is codec-independent. Portable output requirements are separate from
+the encoder backend. HEVC Main and AV1 Profile0
+VAAPI encoder-owned surfaces are qualified through the same output interop as
+H.264 on Intel Arc Meteor Lake. Device-specific support and evidence are linked
+from [production support](production-support.md).
 
 The output selection boundary is:
 
@@ -260,19 +188,16 @@ Core contains portable identities only. FFmpeg codec IDs, named encoder lookup,
 VAProfileHEVCMain, VAProfileHEVCMain10 and VAProfileAV1Profile0 EncSlice qualification, CQP options
 and AVHWFramesContext stay
 in media. The interop crate receives an encoder-owned NV12 or P010 frames context;
-it contains no H.264/HEVC/AV1 branch. See the
-Stage 5.1A validation and
-Stage 5.1B validation and
-Stage 5.2C-2 HEVC Main10 validation and
-Stage 5.2C-3 AV1 10-bit validation.
+it contains no H.264/HEVC/AV1 branch. See the codec qualification boundaries in
+[production support](production-support.md) and [testing](testing.md).
 
-Stage 4.3 adds initialization-only `Font specification -> FreeType -> GlyphAtlas`.
+Font setup is initialization-only: `Font specification -> FreeType -> GlyphAtlas`.
 The CLI builds one owned atlas before staging/mux initialization and passes
 identical pixels to CPU/Vulkan. FreeType objects never enter core, frames or
 workers; atlas data has no native types. Vulkan forks preserve atlas identity
 and initialize their own static upload and coordinate LUT. Font validity is
 render configuration, not a hardware capability or a replan opportunity.
-See [fonts.md](fonts.md) and validation.
+See [fonts](fonts.md).
 
 The media crate uses the raw `ffmpeg-sys-next` binding and wraps it in internal
 RAII types for `AVFrame`, `AVPacket`, decoder/format/scaler state, and
@@ -318,8 +243,8 @@ parameters, moves reference-counted `AVPacket` ownership out of the demux
 scratch packet, and sends selected packets through a bounded queue to the mux
 owner. Selected audio uses an independent demux reader of the same immutable
 local input; video decoding cannot be blocked by audio waiting for a video head.
-Stage 2 downloads/uploads within `asciiflow-media`. Stage 3A uses a specialized
-Media/Interop pipeline carrying `VaapiDecodedFrame` outside Core, then returns
+Explicit Host downloads/uploads stay within `asciiflow-media`. Input interop
+uses a specialized Media/Interop pipeline carrying `VaapiDecodedFrame` outside Core, then returns
 the processed result through the selected Host NV12 or P010LE contract. The
 qualified 10-bit decoder and interop paths preserve P010LE through processing.
 
@@ -339,9 +264,14 @@ It does not create RGB24 frames and does not rasterize glyphs per video frame.
 The CPU backend is the permanent correctness/reference backend, not temporary
 legacy code. FreeType is never called in the per-frame renderer.
 
+SDR cells use floor-defined pixel intervals, and rendering scales glyph coverage
+within each actual cell interval. The CPU renderer, NV12 Vulkan variants and
+P010 coordinate LUT use the same boundaries even for non-divisible dimensions.
+See [P010 and SDR rendering semantics](p010.md#cpu-and-vulkan-semantics).
+
 ## Capability, policy, plan, and execution
 
-Stage 4.0 keeps four concepts separate:
+Planning keeps four concepts separate:
 
 * `CapabilitySnapshot` records facts observed from FFmpeg, VAAPI, Vulkan, and
   DRM PRIME. Each fact is `Supported`, `Unsupported(reason)`, or
@@ -466,7 +396,7 @@ image→buffer copy is measured with Vulkan timestamps. Pipeline latency runs
 from the decode call that produces a frame through encoder acceptance; total
 FPS remains the throughput measure.
 
-## Vulkan Stage 1 data flow
+## Vulkan data flow
 
 ```text
 Host NV12
@@ -488,8 +418,8 @@ and interleaved UV directly and creates no full-frame RGB/RGBA intermediate.
 
 Pass 1 has a checked u32 common path and a u64 correctness fallback. The host
 proves the cell sums, counts, boundary numerators, indexes, frame byte length,
-and cell count before selecting u32. The default u32 shader uses 32 lanes after
-the Stage 1.3 Intel Arc workgroup sweep. `shaderInt64` remains a device
+and cell count before selecting u32. The default u32 shader uses 32 lanes, selected by the qualified
+Intel Arc workgroup sweep. `shaderInt64` remains a device
 requirement because otherwise-supported large one-cell workloads can exceed a
 u32 reduction sum. `--vulkan-mapping cpu` is an explicit diagnostic hybrid:
 the CLI composes the existing CPU mapper with Vulkan Pass 2 without adding a
@@ -508,10 +438,13 @@ constructor's geometry/configuration while frames are pending.
 
 Synchronization2 barriers cover transfer to compute, Pass 1 to Pass 2, and
 compute to transfer. A failed queue submission or device loss makes the
-pipelined backend terminal; Stage 1 does not attempt recovery. Fence waits are
-still intentionally blocking. A driver that wedges without reporting device
-loss can therefore stall the process; bounded waits need a safe abandoned-device
-teardown design rather than merely timing out while resources remain in flight.
+pipelined backend terminal. Fence waits are bounded to five seconds. A timeout
+or any other wait error after submission abandons the device because completion
+is unknown. Initialization buffers, imported Vulkan objects and actual VAAPI
+mapping/source owners remain retained until process termination; they cannot
+be destroyed or returned to surface pools. Abandoned backends reject reuse.
+Responsive completion and cancellation retain ordinary cleanup. See
+[failure semantics](failure-semantics.md) for the containment contract.
 
 Host NV12 and P010LE are tightly packed: both plane strides equal width times
 the format's bytes per sample. This is an invariant of Host storage, not a
@@ -531,7 +464,7 @@ CPU Vulkan devices are excluded from normal selection; the
 `ASCIIFLOW_VULKAN_ALLOW_CPU=1` escape hatch exists only for software-driver CI
 or development checks.
 
-## Stage 3A VAAPI-to-Vulkan input interop
+## VAAPI-to-Vulkan input interop
 
 The `--vaapi-vulkan-input-interop on` path requires explicit VAAPI decode,
 Vulkan processing, the two-slot configuration, and all four Linux external
@@ -564,15 +497,15 @@ Linux DMA-BUF implicit synchronization and the GENERAL-layout convention are
 accepted only for the tested Intel iHD 26.1.5 + Mesa ANV 26.1.8 combination.
 They are not asserted as a portable Vulkan guarantee.
 
-Stage 3A creates/imports two images per frame. The measured lifecycle is well
+Input interop creates/imports two images per frame. The measured lifecycle is well
 below the 0.2 ms cache gate, so no surface cache or fd-number identity shortcut
 was introduced. This path is not end-to-end zero-copy: an image→buffer GPU copy
 and Vulkan output→Host readback remain.
 
-## Stage 3B Vulkan-to-VAAPI output interop
+## Vulkan-to-VAAPI output interop
 
 The `--vaapi-vulkan-output-interop on` path requires VAAPI encode, Vulkan GPU
-mapping, and two bounded slots. It can be combined with Stage 3A input
+mapping, and two bounded slots. It can be combined with input
 interop for the full GPU-resident path, or used independently with software
 decode and Host input. `auto` selects it only after the encoder-owned surface
 and writable external-image access have been qualified. It never falls back
@@ -606,8 +539,8 @@ and mapped frame remain alive until the Vulkan fence and foreign release are
 complete. The mapped frame is then dropped and the original hardware frame is
 consumed by the existing encoder packet/mux path.
 
-Stage 3B is GPU-resident for pixels but intentionally synchronous. It retains
-the Stage 3A image-to-buffer copy, the existing Pass 1/2 buffers and shaders,
+Output interop is GPU-resident for pixels but intentionally synchronous. It
+retains the input image-to-buffer copy, the existing Pass 1/2 buffers and shaders,
 and an output buffer-to-image copy. It introduces no sync-file bridge, external
 semaphore, direct shader image writes, or import cache; measured costs do not
 justify those changes.
@@ -634,7 +567,7 @@ that distinction explicit.
   software media/Vulkan, and finally CPU processing. It does not choose VAAPI
   decode plus `hwdownload` solely because a VAAPI device exists.
 - Qualified VAAPI paths support NV12/8-bit or P010/10-bit 4:2:0 as selected.
-  Stage 3A accepts the observed R8+GR88 or R16+GR32 iHD export with a known,
+  Input interop accepts the observed R8+GR88 or R16+GR32 iHD export with a known,
   importable modifier. Unqualified HDR, 4:4:4, multi-object, unknown-modifier, and
   incompatible layer topologies are rejected rather than silently reduced.
 - Compatible compressed audio streams can be copied into MP4. One mux worker
@@ -655,14 +588,14 @@ that distinction explicit.
   native handles part of Core.
 - Built-in 8x8 remains the default; explicit scalable monospaced FreeType fonts
   provide grayscale tiles without changing glyph ordering or grid geometry.
-- Source presentation timestamps are represented on decoded frames, but Stage
-  0 encoding uses an ordered constant-frame-rate sequence based on the source
+- Source presentation timestamps are represented on decoded frames, but
+  encoding uses an ordered constant-frame-rate sequence based on the source
   frame-rate rational. With audio selected, the mux layer preserves the first
   video's timestamp origin and rejects source timestamps that deviate from
   that CFR sequence. See [audio.md](audio.md) for timing and frame-limit details.
 - Output commit uses the host's rename semantics. Fedora/Linux replaces an
-  existing destination atomically; cross-platform replacement semantics need a
-  dedicated Stage after the Rust baseline.
+  existing destination atomically; cross-platform replacement semantics
+  remain unqualified.
 - Temporary output names are hidden, per-invocation names containing process,
   timestamp, and sequence components. The CLI reserves them with exclusive
   creation before encoder startup.
@@ -681,7 +614,7 @@ cargo build --workspace
 cargo test --workspace
 ```
 
-Stage 4.0 planner tests use synthetic capability snapshots and therefore do
+Planner tests use synthetic capability snapshots and therefore do
 not require a GPU. They cover full GPU-resident selection, missing input or
 output interop, missing VAAPI encode/device, unsuitable Vulkan, explicit
 software/CPU overrides, conflicting policies, unsupported explicit hardware,
@@ -717,14 +650,14 @@ execution factory constructs resources is excluded and replanned exactly once.
 Explicit policy failures and every failure after processing begins remain
 terminal; there is no mid-stream fallback.
 
-Stage 4.1's lifecycle, structured errors, first-failure propagation, bounded
+Lifecycle, structured errors, first-failure propagation, bounded
 GPU teardown, cancellation, and transactional output guarantees are specified
 in [`failure-semantics.md`](failure-semantics.md).
 
-Stage 1.3 permits exactly two GPU frames in flight. Stage 2's explicit VAAPI ↔
-Host NV12 transfer remains the reference path. Stage 3A adds decode-side
-DMA-BUF import and Stage 3B adds encoder-owned writable DMA-BUF import. Neither
-stage adds a transfer queue, timeline semaphore, sync-file bridge, or direct
+The production Vulkan configuration permits at most two GPU frames in flight.
+Explicit VAAPI ↔ Host NV12 transfer remains a reference path. Input interop
+imports decoded DMA-BUFs; output interop imports encoder-owned writable
+DMA-BUFs. Neither direction uses a transfer queue, timeline semaphore, sync-file bridge, or direct
 image shader access. Any later work must preserve Host NV12 and the CPU backend
 as usable reference boundaries rather than silently replacing them.
 

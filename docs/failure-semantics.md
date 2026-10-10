@@ -1,6 +1,6 @@
 # Failure and cancellation semantics
 
-Stage 4.1 makes failure behavior part of the AsciiFlow contract. It does not
+Failure behavior is part of the AsciiFlow contract. It does not
 add a codec, pixel format, backend, or performance optimization.
 
 ## Failure model
@@ -55,7 +55,12 @@ Vulkan fence waits used by the streaming path are bounded to five seconds.
 root cause; it never triggers replan. If completion cannot be established by
 the deadline, AsciiFlow reports a GPU teardown timeout and deliberately
 abandons in-flight device objects instead of destroying memory that the GPU may
-still reference. Process termination lets the OS/driver reclaim those objects.
+still reference. Any fence wait error after a successful submission has the same
+unknown-completion policy. Retained resources include initialization uploads,
+imported Vulkan objects, DRM mappings and their actual decoder/encoder AVFrame
+owners; retaining duplicated file descriptors alone cannot prevent VAAPI pool
+reuse. The abandoned backend rejects further preparation and processing.
+Process termination lets the OS/driver reclaim those objects.
 This is a containment policy, not a claim that a hung device can be recovered.
 Normal completion and cancellation with responsive hardware wait for pending
 slots before their imported DMA-BUF memory, mappings, AVFrame references, and
@@ -77,15 +82,27 @@ that does not provide those semantics.
 
 ## Input and EOF contract
 
-The current pixel pipeline accepts only 8-bit, 4:2:0 input with non-zero even
-dimensions representable by the native APIs. Ten-bit video is rejected before
-output creation with: `10-bit video is not supported by the current 8-bit NV12
-pipeline`. There is no silent 10-to-8 conversion. Odd dimensions are rejected,
-not rounded by the planner.
+The CLI requires a local regular file, including a symbolic link resolving to
+one. It rejects directories, FIFOs and device files before native probing in
+conversion, capability inspection and plan inspection. File inspection errors
+retain their OS diagnostic and the `InputProbe` stage. This prevents a FIFO open
+from waiting indefinitely for a writer; it does not add streaming input support.
+
+The pixel pipeline requires non-zero even 4:2:0 dimensions representable by the
+native APIs. Qualified 8-bit SDR uses NV12; qualified 10-bit SDR and canonical
+PQ use P010LE under their respective processing and hardware policies. See
+[codecs](codecs.md), [P010](p010.md) and [color semantics](color-semantics.md)
+for the complete admission rules. Unsupported profiles and color signals reject
+before output creation. There is no implicit 10-to-8 conversion; explicit
+qualified PQ-to-SDR conversion is a separate request. Odd dimensions are
+rejected, not rounded by the planner.
 
 ASCII width is constrained to 1 through 8192 and the grid to four million
 cells; dimensions larger than the frame are safely clamped. These checks occur
 before pixel allocation.
+
+The public CPU renderer additionally rejects zero-sized, oversized and
+incomplete grids and invalid glyph/color values with errors rather than panics.
 
 Normal EOF drains delayed decoder frames, pending processor slots, delayed
 encoder packets, and finally the mux trailer. Tests cover zero, one, two,
@@ -112,7 +129,7 @@ reinitialization, and Khronos validation.
 
 ## Current Intel validation evidence
 
-On 2026-09-15, the Stage 4.0 1920x1080, 50 FPS fixture was rerun on Intel Arc
+On 2026-09-15, the automatic-planner 1920x1080, 50 FPS fixture was rerun on Intel Arc
 MTL (0x8086:0x7d55), Mesa ANV 26.1.8, FFmpeg 9.0.1, and iHD 26.1.5.
 
 - All 14 Release SPIR-V modules passed `spirv-val --target-env vulkan1.3`.
@@ -130,7 +147,7 @@ MTL (0x8086:0x7d55), Mesa ANV 26.1.8, FFmpeg 9.0.1, and iHD 26.1.5.
   now remain owned by the outer pipeline scope until all downstream workers
   have joined and their VAAPI surfaces have been released.
 - The 300-frame Release auto runs were 529.18, 532.26, and 529.92 FPS (median
-  529.92). Against Stage 4.0's 526.40 FPS median this is +0.67%, so there is no
+  529.92). Against the automatic-planner baseline's 526.40 FPS median this is +0.67%, so there is no
   measurable regression. Three auto files and the explicit full-interop file
   were byte-identical; packet timeline and decoded framemd5 hashes also
   matched. The output remained H.264 High, yuv420p, BT.709 limited range,

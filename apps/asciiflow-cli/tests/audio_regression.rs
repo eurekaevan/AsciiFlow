@@ -596,7 +596,7 @@ fn sigint_with_audio_preserves_existing_output_and_cleans_staging() {
 #[ignore = "requires Intel VAAPI/Vulkan and a retained 3000-frame benchmark input"]
 fn av1_full_interop_sigint_preserves_output_and_next_run_initializes() {
     let input = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../target/stage51a1-evidence/h264-testsrc2-3000-loop.mp4");
+        .join("../../target/interop-fixtures/h264-testsrc2-3000-loop.mp4");
     let ws = Workspace::new();
     let mut command = std::process::Command::new(env!("CARGO_BIN_EXE_asciiflow"));
     command

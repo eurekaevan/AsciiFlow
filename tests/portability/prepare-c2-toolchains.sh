@@ -2,7 +2,7 @@
 # Prepare SHA-pinned isolated components. No downloads or host installation.
 set -euo pipefail
 root=$(cd -- "$(dirname -- "$0")/../.." && pwd)
-work="$root/target/stage54c2-toolchains"
+work="$root/target/driver-toolchains"
 downloads="$work/downloads"
 verify() {
     printf '%s  %s\n' "$1" "$downloads/$2" | sha256sum --check --status
@@ -49,7 +49,7 @@ if [[ ! -d "$work/ffmpeg-8.1.1" ]]; then
     tar -xf "$downloads/ffmpeg-8.1.1.tar.xz" -C "$work"
 fi
 prefix="$work/ffmpeg-8.1.1-prefix"
-devel="$root/target/stage54c1-toolchains/devel/usr"
+devel="$root/target/portability-toolchains/devel/usr"
 test -f "$devel/include/va/va.h"
 test -f "$devel/include/libdrm/drm.h"
 cd -- "$work/ffmpeg-8.1.1"

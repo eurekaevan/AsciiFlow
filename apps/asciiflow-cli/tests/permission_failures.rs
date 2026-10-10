@@ -7,8 +7,9 @@ mod audio_support;
 
 use audio_support::{Process, command, fixture};
 use std::{
+    ffi::CString,
     fs,
-    os::unix::fs::PermissionsExt,
+    os::unix::fs::{PermissionsExt, symlink},
     path::{Path, PathBuf},
     process::Command,
     sync::{
@@ -160,5 +161,77 @@ fn read_only_parent_denies_creation_of_target_directory() {
     assert!(!blocked_parent.join("not-created").exists());
     assert_eq!(before_fds, after_fds, "parent process descriptor leak");
     fs::set_permissions(&blocked_parent, fs::Permissions::from_mode(0o700)).unwrap();
+    ws.assert_no_staging();
+}
+
+#[test]
+fn non_regular_inputs_are_rejected_before_blocking_probe() {
+    let _serial = PERMISSION_TEST.lock().unwrap();
+    let ws = Workspace::new();
+    let fifo = ws.0.join("input.mp4");
+    let fifo_name = CString::new(fifo.as_os_str().as_encoded_bytes()).unwrap();
+    assert_eq!(unsafe { libc::mkfifo(fifo_name.as_ptr(), 0o600) }, 0);
+    let directory = ws.0.join("directory.mp4");
+    fs::create_dir(&directory).unwrap();
+    let output = ws.0.join("result.mp4");
+    fs::write(&output, b"existing destination sentinel").unwrap();
+
+    // Process::finish has a bounded watchdog and kills a hung child on failure.
+    // Cover both diagnostic entry points, which also open native input media.
+    for input in [&fifo, &directory] {
+        for diagnostic in [None, Some("--capabilities"), Some("--explain-plan")] {
+            let mut cmd = conversion(input, &output);
+            if let Some(option) = diagnostic {
+                cmd.arg(option);
+            }
+            let result = Process::start(&mut cmd).finish();
+            let stderr = String::from_utf8_lossy(&result.stderr);
+            assert!(!result.status.success(), "non-regular input accepted");
+            assert!(
+                stderr.contains("input media must be a regular file"),
+                "{stderr}"
+            );
+            assert_eq!(fs::read(&output).unwrap(), b"existing destination sentinel");
+            ws.assert_no_staging();
+        }
+    }
+}
+
+#[test]
+fn regular_file_symlink_remains_a_supported_input() {
+    let _serial = PERMISSION_TEST.lock().unwrap();
+    let ws = Workspace::new();
+    let input = ws.0.join("alias.mp4");
+    symlink(fixture("no-audio.mp4"), &input).unwrap();
+    let output = ws.0.join("result.mp4");
+    let result = Process::start(&mut conversion(&input, &output)).finish();
+    assert!(
+        result.status.success(),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    assert!(fs::metadata(&output).unwrap().len() > 0);
+    ws.assert_no_staging();
+}
+
+#[test]
+fn missing_input_preserves_io_diagnostic_and_destination() {
+    let _serial = PERMISSION_TEST.lock().unwrap();
+    let ws = Workspace::new();
+    let input = ws.0.join("missing.mp4");
+    let output = ws.0.join("result.mp4");
+    fs::write(&output, b"existing destination sentinel").unwrap();
+    let report = ws.0.join("report.json");
+    let mut cmd = conversion(&input, &output);
+    cmd.arg("--diagnostic-report").arg(&report);
+    let result = Process::start(&mut cmd).finish();
+    let stderr = String::from_utf8_lossy(&result.stderr);
+    assert!(!result.status.success());
+    assert!(stderr.contains("failed to inspect input media"), "{stderr}");
+    assert!(stderr.contains("No such file or directory"), "{stderr}");
+    let diagnostic: serde_json::Value = serde_json::from_slice(&fs::read(report).unwrap()).unwrap();
+    assert_eq!(diagnostic["failure"]["stage"], "InputProbe");
+    assert_eq!(diagnostic["failure"]["category"], "Media");
+    assert_eq!(fs::read(&output).unwrap(), b"existing destination sentinel");
     ws.assert_no_staging();
 }

@@ -19,12 +19,12 @@ change is a hard error. The CLI qualification probe decodes that first frame
 before selecting a plan or creating an output.
 
 `support` remains the **SDR assessment**, not global production eligibility.
-For canonical PQ it still records `UnsupportedHdrPq`. Stage B-3 separately
+For canonical PQ it still records `UnsupportedHdrPq`. The PQ-preservation planner separately
 validates the complete signal and selects `ColorProcessing::HdrPqPreserve`
 only with probed Vulkan PQ + VAAPI decode/encode + both P010 import facts.
 The production closure report records its status.
 The default request remains `preserve`. Explicit `sdr` may instead select
-`HdrPqToSdrBt709` under [C-4B's sealed hardware contract](hdr-to-sdr-validation.md):
+`HdrPqToSdrBt709` under [the qualified HDR-to-SDR hardware contract](hdr-to-sdr-validation.md):
 same strict PQ input signal, actual per-source-pixel 0–1000-nit domain check,
 VAAPI/Vulkan input/output interop and explicit BT.709 limited output metadata.
 This does not relabel PQ as SDR, broaden the SDR support assessment or authorize
@@ -39,7 +39,7 @@ deliberate source hierarchy, but the raw codec-parameter/context values are
 not yet retained as *two separate* provenance layers. A future source that
 makes them disagree needs explicit qualification, not an assumed winner.
 
-The Stage 5.2 8-bit compatibility default remains BT.709/limited for fields
+The legacy 8-bit compatibility default remains BT.709/limited for fields
 that are wholly unspecified. Strict 10-bit resolution does **not** default
 missing primaries, transfer or matrix to BT.709. The raw unspecified values
 remain visible even when an 8-bit effective default is used. Known transfer
@@ -58,7 +58,7 @@ not direct VAAPI decode.
 | Missing required 10-bit fields or unknown transfer | Unknown | Rejected before staging |
 | BT.2020 primaries or matrix with BT.709 transfer | SDR, not HDR | Rejected: wide-gamut math not implemented |
 | Display P3 with SDR transfer | SDR, not HDR | Rejected: gamut not implemented |
-| PQ transfer | HDR PQ | SDR assessment rejects; canonical ten-bit BT.2020 NCL/limited/left may use qualified hardware preservation or explicit fixed-domain C-4B SDR conversion |
+| PQ transfer | HDR PQ | SDR assessment rejects; canonical ten-bit BT.2020 NCL/limited/left may use qualified hardware preservation or explicit fixed-domain HDR-to-SDR conversion |
 | HLG transfer | HDR HLG | Rejected: HDR pixel processing not implemented |
 | Disagreeing explicit stream/frame fields | Conflicting | Rejected |
 | PQ/HLG with explicit BT.709 primaries and matrix | HDR class, contradictory metadata | Rejected as conflicting |
@@ -66,12 +66,19 @@ not direct VAAPI decode.
 
 The renderer's black/white code values are currently fixed to limited range
 (NV12 16–235, P010 64–940). Consequently, a full-range input cannot honestly
-be emitted with a full-range tag. Stage 5.3A rejects it instead of changing
+be emitted with a full-range tag. The SDR admission check rejects it instead of changing
 pixel mathematics or silently relabeling it. This narrows a previously
 permissive P010 route; it is a correctness correction, not an HDR feature.
 For accepted BT.709 limited-range SDR, the existing encoder writes BT.709
 primaries, transfer, matrix and MPEG/limited range. Eight-bit scaling retains
-its legacy BT.709/limited normalization; no GPU shader or interop path changed.
+its legacy BT.709/limited normalization.
+
+The public NV12 encoder admission check requires explicit BT.709 primaries,
+transfer and matrix, limited range and left-sited chroma (`ColorSpace::default()`).
+It rejects other or unspecified fields before encoder/output initialization,
+including when called directly without the CLI planner. The encoder writes
+these tags but does not convert arbitrary input colors into this signal.
+P010LE keeps its separate SDR/PQ admission rules.
 
 ## Static HDR metadata
 
@@ -89,6 +96,6 @@ it does not recompute those statistics or claim HDR10 mastering qualification.
 Static metadata neither proves nor is required for HDR classification. PQ
 without mastering metadata is still HDR PQ; mastering/CLL data without a PQ
 or HLG transfer does not promote SDR to HDR. Dynamic HDR metadata processing
-and ICC conversion remain unsupported. B-3 preservation and C-4B's explicit,
+and ICC conversion remain unsupported. PQ preservation and the explicit,
 fixed Method A/BT.709 limiting path use independently qualified pixel models
 without changing this classifier or accepting unspecified signal metadata.

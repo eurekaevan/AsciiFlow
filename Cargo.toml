@@ -11,6 +11,7 @@ members = [
 ]
 
 [workspace.package]
+# Internal Cargo metadata; public releases use date tags and CLI build labels.
 version = "2.1.0-dev"
 edition = "2024"
 license = "MIT"

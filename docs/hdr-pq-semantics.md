@@ -63,7 +63,7 @@ set for this reference path.
 Standards: [ITU-R BT.2100-3](https://www.itu.int/rec/R-REC-BT.2100-3-202502-I)
 and [ITU-R BT.2020](https://www.itu.int/rec/R-REC-BT.2020).
 
-## Internal Vulkan qualification (Stage 5.3B-2)
+## Internal Vulkan qualification
 
 The independent `hdr-pq-qualification` feature exposes `VulkanPqQualification`,
 not a CLI or planner mode. The CPU f64 oracle above remains authoritative and
@@ -90,7 +90,7 @@ roughly twice the observed maximum as margin; they are not a universal GPU
 precision guarantee. Exact glyph equality and final per-plane error ≤1 active
 ten-bit code remain independent hard gates. See the
 hardware report for measured errors, fixtures,
-FD/failure evidence and performance. Stage B-3 reuses these equations unchanged
+FD/failure evidence and performance. Production PQ preservation reuses these equations unchanged
 for the explicitly planned full-P010 hardware path; source mastering-display,
 MaxCLL and MaxFALL are removed, not copied or recomputed. HDR10 static mastering
 is not qualified by PQ preservation.

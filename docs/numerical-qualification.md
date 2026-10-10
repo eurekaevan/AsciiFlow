@@ -120,5 +120,5 @@ Canonical case GPU timings are single-dispatch, capture-enabled observations,
 not stabilized backend performance qualification. They include substantial
 readback in backend wall time; no throughput comparison is inferred from them.
 Full real-source diagnostics, policy decision and final gate ledger are recorded
-in the Stage C3 report and machine-readable evidence. Historical SDR/PQ/H.264
+in the internal Vulkan qualification report and machine-readable evidence. Historical SDR/PQ/H.264
 records remain separate from a newly executed check. No ignored test is PASS.

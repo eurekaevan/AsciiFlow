@@ -134,7 +134,7 @@ impl From<InteropArg> for InteropRequest {
 #[derive(Debug, Parser)]
 #[command(
     name = "asciiflow",
-    version,
+    version = option_env!("ASCIIFLOW_RELEASE_DATE").unwrap_or("dev"),
     about = "Bounded NV12/P010 ASCII video pipeline"
 )]
 pub struct Args {

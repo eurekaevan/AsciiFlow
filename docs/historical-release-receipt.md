@@ -1,8 +1,9 @@
-# AsciiFlow 2.0.0
+# Historical release receipt
 
-**FINALIZED — Final qualified v2 engineering milestone.** Stage 5.4 remains
-SEALED; AsciiFlow v2 is COMPLETE. No new feature stage, publication, tag or
-commit was created by this finalization.
+This is the historical `2.0.0` artifact receipt. Its original version, source
+and binary identities are retained for traceability; current releases use date
+tags. This receipt does not qualify a later build. No publication, tag or commit
+was created by the original finalization.
 
 ## Identity and change boundary
 
@@ -132,4 +133,4 @@ unqualified; ordinary MP4 sample indexes and bounded audio allocator retention
 do not imply constant memory. Hardware portability is limited to qualified
 stacks. No universal Linux, real-time, 24/7, legal or patent guarantee is made.
 
-**Final status: FINALIZED. Stage 5.4 SEALED. v2 engineering milestone COMPLETE.**
+**Historical artifact status: finalized within its recorded qualification scope.**

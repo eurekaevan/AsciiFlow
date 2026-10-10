@@ -175,6 +175,22 @@ fn max_sample_for(format: PixelFormat) -> u32 {
     }
 }
 
+fn render_coordinate(pixel: u32, extent: u32, count: u32, atlas: u32) -> [u32; 2] {
+    let (pixel, extent, count, atlas) = (
+        u64::from(pixel),
+        u64::from(extent),
+        u64::from(count),
+        u64::from(atlas),
+    );
+    let cell = ((pixel + 1) * count - 1) / extent;
+    let start = cell * extent / count;
+    let end = (cell + 1) * extent / count;
+    [
+        cell as u32,
+        ((pixel - start) * atlas / (end - start)) as u32,
+    ]
+}
+
 pub struct VulkanAsciiBackend {
     pq_preserve: bool,
     pq_sdr_source_domain: bool,
@@ -199,6 +215,12 @@ pub enum DiagnosticOutputFault {
 }
 
 impl VulkanAsciiBackend {
+    /// GPU completion is unknown: actual external surface owners must not be
+    /// returned to their pools, even though Vulkan imports remain allocated.
+    pub fn is_device_abandoned(&self) -> bool {
+        self.context.is_abandoned()
+    }
+
     #[cfg(feature = "hdr-to-sdr-production")]
     pub(crate) fn c3_map_buffer_bytes(&self) -> u64 {
         self.resources.as_ref().map_or(0, |r| {
@@ -465,6 +487,11 @@ impl VulkanAsciiBackend {
     }
 
     fn ensure_resources(&mut self, desc: &FrameDesc, config: &AsciiConfig) -> Result<()> {
+        if self.context.is_abandoned() {
+            return Err(Error::Vulkan(
+                "Vulkan device was abandoned because GPU completion is unknown".into(),
+            ));
+        }
         desc.validate_layout()?;
         if self.pq_preserve {
             crate::pq::validate_pq_desc(desc)?;
@@ -1455,12 +1482,14 @@ impl Resources {
             frame_bytes,
             u64::from(max_sample_for(key.format)),
         );
-        let x_coordinate_max = (key.width - 1)
+        let x_coordinate_max = key
+            .width
             .checked_mul(key.grid_width)
             .map(u64::from)
             .and_then(|scaled| scaled.checked_mul(atlas.width() as u64))
             .ok_or_else(|| Error::Vulkan("horizontal coordinate range overflow".into()))?;
-        let y_coordinate_max = (key.height - 1)
+        let y_coordinate_max = key
+            .height
             .checked_mul(key.grid_height)
             .map(u64::from)
             .and_then(|scaled| scaled.checked_mul(atlas.height() as u64))
@@ -1844,13 +1873,21 @@ impl Resources {
         if let Err(error) =
             result.upload_static(context, bytemuck::cast_slice(&lut_data), result.lut.handle)
         {
-            result.destroy(device, allocator);
+            if context.is_abandoned() {
+                std::mem::forget(result);
+            } else {
+                result.destroy(device, allocator);
+            }
             return Err(error);
         }
         let atlas_data = result.atlas.as_r8_slice().to_vec();
         let atlas_upload_started = Instant::now();
         if let Err(error) = result.upload_static(context, &atlas_data, result.atlas_buffer.handle) {
-            result.destroy(device, allocator);
+            if context.is_abandoned() {
+                std::mem::forget(result);
+            } else {
+                result.destroy(device, allocator);
+            }
             return Err(error);
         }
         tracing::info!(
@@ -1862,26 +1899,30 @@ impl Resources {
         let mut coordinate_lut =
             Vec::<[u32; 2]>::with_capacity((result.key.width + result.key.height) as usize);
         for x in 0..result.key.width {
-            let scaled = x as u64 * result.key.grid_width as u64;
-            coordinate_lut.push([
-                (scaled / result.key.width as u64) as u32,
-                (scaled * result.atlas.width() as u64 / result.key.width as u64
-                    % result.atlas.width() as u64) as u32,
-            ]);
+            coordinate_lut.push(render_coordinate(
+                x,
+                result.key.width,
+                result.key.grid_width,
+                result.atlas.width(),
+            ));
         }
         for y in 0..result.key.height {
-            let scaled = y as u64 * result.key.grid_height as u64;
-            coordinate_lut.push([
-                (scaled / result.key.height as u64) as u32,
-                (scaled * result.atlas.height() as u64 / result.key.height as u64
-                    % result.atlas.height() as u64) as u32,
-            ]);
+            coordinate_lut.push(render_coordinate(
+                y,
+                result.key.height,
+                result.key.grid_height,
+                result.atlas.height(),
+            ));
         }
         let coordinate_lut_data = bytemuck::cast_slice(&coordinate_lut).to_vec();
         if let Err(error) =
             result.upload_static(context, &coordinate_lut_data, result.coordinate_lut.handle)
         {
-            result.destroy(device, allocator);
+            if context.is_abandoned() {
+                std::mem::forget(result);
+            } else {
+                result.destroy(device, allocator);
+            }
             return Err(error);
         }
         Ok(result)
@@ -1963,9 +2004,9 @@ impl Resources {
                     )));
                 }
                 Err(error) => {
-                    if error == vk::Result::ERROR_DEVICE_LOST {
-                        context.abandon();
-                    }
+                    // Submission succeeded, but a failed wait cannot establish
+                    // completion. Retain every resource the GPU may still use.
+                    context.abandon();
                     return Err(vk_error("Vulkan work failed")(error));
                 }
             }
@@ -2793,9 +2834,54 @@ pub(crate) fn create_pipeline(
 
 #[cfg(test)]
 mod tests {
-    use super::{mapping_u32_is_safe, validate_external_planes};
+    use super::{mapping_u32_is_safe, render_coordinate, validate_external_planes};
     use crate::{ExternalImageAccess, ExternalPlaneImage, ExternalPlaneKind};
     use asciiflow_core::{ColorSpace, FrameDesc};
+
+    #[test]
+    #[ignore = "requires a Vulkan device"]
+    fn abandoned_device_rejects_resource_reuse_and_replacement() {
+        let mut backend = super::VulkanAsciiBackend::new().unwrap();
+        let desc = FrameDesc::host_nv12(64, 48, ColorSpace::default()).unwrap();
+        let config = asciiflow_core::AsciiConfig::default();
+        backend.prepare(&desc, &config).unwrap();
+        backend.context.abandon();
+        assert!(backend.is_device_abandoned());
+        for desc in [
+            desc,
+            FrameDesc::host_nv12(128, 96, ColorSpace::default()).unwrap(),
+        ] {
+            let error = backend.prepare(&desc, &config).unwrap_err();
+            assert!(
+                error.to_string().contains("device was abandoned"),
+                "{error}"
+            );
+        }
+    }
+
+    #[test]
+    fn coordinate_lut_uses_mapping_boundaries_and_local_atlas_coordinates() {
+        let actual: Vec<_> = (0..10).map(|p| render_coordinate(p, 10, 3, 3)).collect();
+        assert_eq!(
+            actual,
+            [
+                [0, 0],
+                [0, 1],
+                [0, 2],
+                [1, 0],
+                [1, 1],
+                [1, 2],
+                [2, 0],
+                [2, 0],
+                [2, 1],
+                [2, 2]
+            ]
+        );
+        assert_eq!(
+            render_coordinate(u32::MAX - 1, u32::MAX, u32::MAX, 1),
+            [u32::MAX - 1, 0]
+        );
+    }
 
     fn plane(
         kind: ExternalPlaneKind,

@@ -92,14 +92,14 @@ fn main() -> ExitCode {
         return ExitCode::FAILURE;
     }
     #[cfg(feature = "reliability-measurement")]
-    if let Some(session) = measurement {
-        if let Err(error) = session.finish() {
-            // Conversion may already have committed. Never remove that output
-            // or replace a primary media/cancellation cause with telemetry.
-            eprintln!("Error: reliability report failed (output state unchanged): {error}");
-            if outcome.is_ok() {
-                return ExitCode::FAILURE;
-            }
+    if let Some(session) = measurement
+        && let Err(error) = session.finish()
+    {
+        // Conversion may already have committed. Never remove that output
+        // or replace a primary media/cancellation cause with telemetry.
+        eprintln!("Error: reliability report failed (output state unchanged): {error}");
+        if outcome.is_ok() {
+            return ExitCode::FAILURE;
         }
     }
     match outcome {
@@ -298,6 +298,32 @@ fn run_inner(
     PipelinePlanner::validate_policy(policy.clone()).map_err(|error| {
         asciiflow_core::Error::pipeline(PipelineStage::Planning, "validate pipeline policy", error)
     })?;
+    ensure_not_cancelled(&cancellation)?;
+    // Input probing uses blocking native I/O. The CLI accepts local media files,
+    // so reject FIFOs/devices before FFmpeg can wait indefinitely for a writer.
+    // metadata follows symlinks, preserving aliases of ordinary media files.
+    let input_metadata = fs::metadata(&args.input).map_err(|error| {
+        asciiflow_core::Error::pipeline_message(
+            PipelineStage::InputProbe,
+            "inspect input media",
+            format!(
+                "failed to inspect input media {}: {error}",
+                args.input.display()
+            ),
+        )
+    })?;
+    if !input_metadata.is_file() {
+        return Err(asciiflow_core::Error::pipeline_message(
+            PipelineStage::InputProbe,
+            "inspect input media",
+            format!(
+                "input media must be a regular file: {}",
+                args.input.display()
+            ),
+        )
+        .into());
+    }
+    ensure_not_cancelled(&cancellation)?;
     if args.explain_plan {
         // Diagnostics may need to explain an input rejected by first-frame
         // color qualification, before the full capability probe can return.
@@ -320,6 +346,7 @@ fn run_inner(
             .into());
         }
     }
+    ensure_not_cancelled(&cancellation)?;
     let vaapi = VaapiOptions::new(args.hw_device.clone());
     let probe =
         capabilities::probe_for_request(&args.input, &vaapi, &config, policy.output_dynamic_range)
@@ -1618,7 +1645,7 @@ fn commit_output(temporary: &Path, output: &Path) -> Result<()> {
 }
 
 #[cfg(test)]
-mod stage13_tests {
+mod mapping_benchmark_tests {
     use super::*;
     use asciiflow_core::{ColorSpace, FrameDesc, HostFrame, VideoFrame};
     use asciiflow_vulkan::GpuAsciiCell;
@@ -1644,8 +1671,8 @@ mod stage13_tests {
     }
 
     #[test]
-    #[ignore = "real-device Stage 1.3 mapping crossover benchmark; validation must be disabled"]
-    fn stage13_mapping_crossover() {
+    #[ignore = "real-device mapping crossover benchmark; validation must be disabled"]
+    fn mapping_crossover_benchmark() {
         assert!(std::env::var_os("ASCIIFLOW_VULKAN_VALIDATION").is_none());
         let input = patterned_frame();
         for name in [
@@ -1778,12 +1805,12 @@ mod stage13_tests {
 mod native_reliability_tests;
 
 #[cfg(test)]
-mod stage2_tests {
+mod decode_parity_tests {
     use super::*;
     use asciiflow_core::FrameSource;
 
     #[test]
-    #[ignore = "real-device Stage 2 VAAPI download and CPU/Vulkan parity"]
+    #[ignore = "real-device VAAPI download and CPU/Vulkan parity"]
     fn vaapi_decode_download_and_ascii_parity() {
         let input = std::env::var("ASCIIFLOW_TEST_VIDEO")
             .expect("ASCIIFLOW_TEST_VIDEO must name the benchmark input");
@@ -1961,7 +1988,7 @@ mod diagnostic_tests {
 }
 
 #[cfg(test)]
-mod stage40_tests {
+mod capability_and_output_tests {
     use super::*;
     use asciiflow_core::{
         ChromaSubsampling, ColorSpace, InputRequirements, InteropCapabilities, MediaCapabilities,
@@ -2056,7 +2083,7 @@ mod stage40_tests {
     #[test]
     fn failed_or_cancelled_staging_preserves_existing_destination() {
         let root = std::env::temp_dir().join(format!(
-            "asciiflow-stage41-output-{}-{}",
+            "asciiflow-output-transaction-{}-{}",
             std::process::id(),
             SystemTime::now()
                 .duration_since(UNIX_EPOCH)
@@ -2087,7 +2114,7 @@ mod stage40_tests {
     #[test]
     fn successful_commit_replaces_destination_and_removes_staging() {
         let root = std::env::temp_dir().join(format!(
-            "asciiflow-stage41-success-{}-{}",
+            "asciiflow-output-success-{}-{}",
             std::process::id(),
             SystemTime::now()
                 .duration_since(UNIX_EPOCH)
@@ -2776,7 +2803,7 @@ mod stage40_tests {
     }
 
     #[test]
-    #[ignore = "real-device Stage 4 repeated capability probe FD lifetime test"]
+    #[ignore = "real-device repeated capability probe FD lifetime test"]
     fn repeated_capability_probe_releases_file_descriptors() {
         let input = std::env::var("ASCIIFLOW_TEST_VIDEO")
             .expect("ASCIIFLOW_TEST_VIDEO must name the benchmark input");

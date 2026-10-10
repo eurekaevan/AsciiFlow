@@ -39,141 +39,141 @@ Rows classify individual dimensions, not their Cartesian product. Conditions and
 
 | Dimension | Value | State | Conditions | Evidence |
 |---|---|---|---|---|
-| audio_codec | aac | ConditionallySupported | MP4-compatible single/dual AAC cases only. | stage53c4b-runtime |
+| audio_codec | aac | ConditionallySupported | MP4-compatible single/dual AAC cases only. | hdr-to-sdr-runtime |
 | audio_codec | other | Unqualified |  |  |
-| audio_policy | auto | ConditionallySupported | MP4-compatible compressed streams; AAC single/dual-track cases qualified. Existing CFR video timeline required; incompatible streams are omitted, not transcoded. | stage53c4b-runtime |
-| audio_policy | copy | ConditionallySupported | Strict MP4 copy eligibility and the existing CFR video timeline; AAC single/dual-track cases qualified. VFR/discontinuities reject. | stage53c4b-runtime |
-| audio_policy | none | Supported |  | stage53c4b-runtime |
-| backend | auto | ConditionallySupported | Only for sealed automatic-path test cases. | stage53c4b |
-| backend | cpu | Supported | Portable NV12 SDR production. P010 CPU is separately qualified processing; CPU production HDR preserve/tone mapping is unsupported. | stage2 |
-| backend | vulkan | ConditionallySupported | Scoped Mesa ANV device and qualified operation. | stage53c4b |
-| chroma_location | center | Unsupported |  | stage53c4b |
-| chroma_location | left | Supported |  | stage53b1, stage53c4b |
+| audio_policy | auto | ConditionallySupported | MP4-compatible compressed streams; AAC single/dual-track cases qualified. Existing CFR video timeline required; incompatible streams are omitted, not transcoded. | hdr-to-sdr-runtime |
+| audio_policy | copy | ConditionallySupported | Strict MP4 copy eligibility and the existing CFR video timeline; AAC single/dual-track cases qualified. VFR/discontinuities reject. | hdr-to-sdr-runtime |
+| audio_policy | none | Supported |  | hdr-to-sdr-runtime |
+| backend | auto | ConditionallySupported | Only for sealed automatic-path test cases. | hdr-to-sdr-production |
+| backend | cpu | Supported | Portable NV12 SDR production. P010 CPU is separately qualified processing; CPU production HDR preserve/tone mapping is unsupported. | cpu-vaapi-validation |
+| backend | vulkan | ConditionallySupported | Scoped Mesa ANV device and qualified operation. | hdr-to-sdr-production |
+| chroma_location | center | Unsupported |  | hdr-to-sdr-production |
+| chroma_location | left | Supported |  | pq-reference, hdr-to-sdr-production |
 | chroma_location | unspecified | Unqualified |  |  |
-| color_matrix | bt2020-constant | Unsupported |  | stage53c4b |
-| color_matrix | bt2020-ncl | ConditionallySupported | Canonical PQ input only. | stage53c4b |
+| color_matrix | bt2020-constant | Unsupported |  | hdr-to-sdr-production |
+| color_matrix | bt2020-ncl | ConditionallySupported | Canonical PQ input only. | hdr-to-sdr-production |
 | color_matrix | bt601 | Unqualified | Legacy 8-bit software normalization exists in code/tests; no sealed production qualification for this path. |  |
-| color_matrix | bt709 | Supported |  | stage53b1, stage53c4b |
+| color_matrix | bt709 | Supported |  | pq-reference, hdr-to-sdr-production |
 | color_matrix | identity | Unqualified |  |  |
 | color_matrix | other | Unqualified |  |  |
 | color_matrix | unknown | Unqualified |  |  |
 | color_matrix | unspecified | Unqualified |  |  |
-| color_primaries | bt2020 | ConditionallySupported | PQ input only; limited range, BT.2020 NCL matrix, left chroma, VAAPI decode, Vulkan processing, VAAPI encode and matching input/output profile interop. | stage53c4b |
+| color_primaries | bt2020 | ConditionallySupported | PQ input only; limited range, BT.2020 NCL matrix, left chroma, VAAPI decode, Vulkan processing, VAAPI encode and matching input/output profile interop. | hdr-to-sdr-production |
 | color_primaries | bt470bg | Unqualified |  |  |
-| color_primaries | bt709 | Supported |  | stage53b1, stage53c4b |
-| color_primaries | display-p3 | Unsupported |  | stage53c4b |
+| color_primaries | bt709 | Supported |  | pq-reference, hdr-to-sdr-production |
+| color_primaries | display-p3 | Unsupported |  | hdr-to-sdr-production |
 | color_primaries | other | Unqualified |  |  |
 | color_primaries | smpte170m | Unqualified |  |  |
 | color_primaries | smpte240m | Unqualified |  |  |
 | color_primaries | unknown | Unqualified |  |  |
 | color_primaries | unspecified | Unqualified |  |  |
-| color_range | full | Unsupported |  | stage53c4b |
-| color_range | limited | Supported |  | stage53b1, stage53c4b |
+| color_range | full | Unsupported |  | hdr-to-sdr-production |
+| color_range | limited | Supported |  | pq-reference, hdr-to-sdr-production |
 | color_range | unspecified | Unqualified |  |  |
-| color_transfer | bt709 | Supported |  | stage53b1, stage53c4b |
+| color_transfer | bt709 | Supported |  | pq-reference, hdr-to-sdr-production |
 | color_transfer | gamma22 | Unqualified |  |  |
 | color_transfer | gamma28 | Unqualified |  |  |
-| color_transfer | hlg | Unsupported |  | stage53c4b |
+| color_transfer | hlg | Unsupported |  | hdr-to-sdr-production |
 | color_transfer | linear | Unqualified |  |  |
 | color_transfer | other | Unqualified |  |  |
-| color_transfer | pq | ConditionallySupported | Canonical PQ preservation or explicit HDR-to-SDR conversion using VAAPI decode, Vulkan processing, VAAPI encode and matching input/output profile interop; source-domain ceiling of 1000 cd/m2 applies only to conversion. | stage53c4b |
+| color_transfer | pq | ConditionallySupported | Canonical PQ preservation or explicit HDR-to-SDR conversion using VAAPI decode, Vulkan processing, VAAPI encode and matching input/output profile interop; source-domain ceiling of 1000 cd/m2 applies only to conversion. | hdr-to-sdr-production |
 | color_transfer | smpte170m | Unqualified |  |  |
 | color_transfer | srgb | Unqualified |  |  |
 | color_transfer | unknown | Unqualified |  |  |
 | color_transfer | unspecified | Unqualified |  |  |
-| decode | auto | ConditionallySupported | Only for the sealed automatic-path font/color/mono NV12/P010 smoke cases. | stage53c4b |
-| decode | software | Supported | Portable 8-bit SDR decode path; strict 10-bit processing has separate format qualification. PQ software decode is inspection only, never production. | stage2 |
-| decode | vaapi | ConditionallySupported | Intel iHD 26.1.5 on PCI 8086:7d55, qualified input profile and format. | stage53b1, stage53c4b |
-| display_geometry | non-square-sar-or-non-identity-matrix | Unsupported | Reject InputProbe/UnsupportedFrame; no silent rotation, reflection, aspect-ratio normalization or transform application. | stage54b-corpus, stage54b-report |
-| display_geometry | odd-420-dimensions | Unsupported | Native 129x97 AV1 yuv420p rejected InputProbe/Media by the even-dimension NV12 admission guard; not padded into a claimed supported source. | stage54b-corpus, stage54b-report |
-| display_geometry | square-or-unspecified-sar-identity-or-absent-matrix | ConditionallySupported | Exact reviewed tuples; unspecified SAR uses the existing square interpretation. Renderer does not implement display transforms. | stage54b-corpus, stage54b-report |
-| dynamic_range | conflicting | Unsupported |  | stage53c4b |
-| dynamic_range | hlg | Unsupported |  | stage53c4b |
-| dynamic_range | pq | ConditionallySupported | Preserve canonical PQ or explicitly convert PQ to SDR; only the conversion is limited to 0–1000 cd/m2 per source pixel. | stage53c4b |
-| dynamic_range | sdr | Supported |  | stage53b1, stage53c4b |
-| dynamic_range | unknown | Unsupported | Strict 10-bit unknown metadata is rejected. Legacy 8-bit unspecified metadata may use BT.709 defaults; that normalization is not a production qualification. | stage53c4b |
-| encode | auto | ConditionallySupported | Only for sealed automatic-path smoke cases. | stage53c4b |
-| encode | software | Supported | H.264 8-bit SDR via libx264 only. Software HEVC/AV1 encoding and all software HDR production are unsupported. | stage2 |
-| encode | vaapi | ConditionallySupported | Qualified output codec/profile/depth on Intel iHD 26.1.5. | stage53b1, stage53c4b |
-| font | builtin-8x8 | ConditionallySupported | Sealed automatic-path render smoke cases. | stage53c4b-runtime |
-| font | freetype | ConditionallySupported | Sealed smoke tests use a valid installed font; font availability remains host-dependent. | stage53c4b-runtime |
-| input_bit_depth | 10 | ConditionallySupported | HEVC Main10 or AV1 Main 10-bit 4:2:0 under the scoped hardware path. | stage53c4b |
-| input_bit_depth | 12 | Unsupported |  | stage53c4b |
-| input_bit_depth | 8 | Supported |  | stage53b1, stage53c4b |
-| input_bit_depth | other | Unsupported |  | stage53c4b |
+| decode | auto | ConditionallySupported | Only for the sealed automatic-path font/color/mono NV12/P010 smoke cases. | hdr-to-sdr-production |
+| decode | software | Supported | Portable 8-bit SDR decode path; strict 10-bit processing has separate format qualification. PQ software decode is inspection only, never production. | cpu-vaapi-validation |
+| decode | vaapi | ConditionallySupported | Intel iHD 26.1.5 on PCI 8086:7d55, qualified input profile and format. | pq-reference, hdr-to-sdr-production |
+| display_geometry | non-square-sar-or-non-identity-matrix | Unsupported | Reject InputProbe/UnsupportedFrame; no silent rotation, reflection, aspect-ratio normalization or transform application. | real-media-corpus, media-compatibility-report |
+| display_geometry | odd-420-dimensions | Unsupported | Native 129x97 AV1 yuv420p rejected InputProbe/Media by the even-dimension NV12 admission guard; not padded into a claimed supported source. | real-media-corpus, media-compatibility-report |
+| display_geometry | square-or-unspecified-sar-identity-or-absent-matrix | ConditionallySupported | Exact reviewed tuples; unspecified SAR uses the existing square interpretation. Renderer does not implement display transforms. | real-media-corpus, media-compatibility-report |
+| dynamic_range | conflicting | Unsupported |  | hdr-to-sdr-production |
+| dynamic_range | hlg | Unsupported |  | hdr-to-sdr-production |
+| dynamic_range | pq | ConditionallySupported | Preserve canonical PQ or explicitly convert PQ to SDR; only the conversion is limited to 0–1000 cd/m2 per source pixel. | hdr-to-sdr-production |
+| dynamic_range | sdr | Supported |  | pq-reference, hdr-to-sdr-production |
+| dynamic_range | unknown | Unsupported | Strict 10-bit unknown metadata is rejected. Legacy 8-bit unspecified metadata may use BT.709 defaults; that normalization is not a production qualification. | hdr-to-sdr-production |
+| encode | auto | ConditionallySupported | Only for sealed automatic-path smoke cases. | hdr-to-sdr-production |
+| encode | software | Supported | H.264 8-bit SDR via libx264 only. Software HEVC/AV1 encoding and all software HDR production are unsupported. | cpu-vaapi-validation |
+| encode | vaapi | ConditionallySupported | Qualified output codec/profile/depth on Intel iHD 26.1.5. | pq-reference, hdr-to-sdr-production |
+| font | builtin-8x8 | ConditionallySupported | Sealed automatic-path render smoke cases. | hdr-to-sdr-runtime |
+| font | freetype | ConditionallySupported | Sealed smoke tests use a valid installed font; font availability remains host-dependent. | hdr-to-sdr-runtime |
+| input_bit_depth | 10 | ConditionallySupported | HEVC Main10 or AV1 Main 10-bit 4:2:0 under the scoped hardware path. | hdr-to-sdr-production |
+| input_bit_depth | 12 | Unsupported |  | hdr-to-sdr-production |
+| input_bit_depth | 8 | Supported |  | pq-reference, hdr-to-sdr-production |
+| input_bit_depth | other | Unsupported |  | hdr-to-sdr-production |
 | input_chroma_subsampling | other | Unqualified |  |  |
 | input_chroma_subsampling | unknown | Unqualified |  |  |
-| input_chroma_subsampling | yuv420 | Supported |  | stage53b1, stage53c4b |
-| input_chroma_subsampling | yuv422 | Unsupported |  | stage53c4b |
-| input_chroma_subsampling | yuv444 | Unsupported |  | stage53c4b |
-| input_codec | av1 | ConditionallySupported | Qualified input profiles and bit depths in the retained production cases; PQ input additionally requires AV1 Main 10-bit 4:2:0. | stage53b1, stage53c4b |
-| input_codec | h264 | Supported |  | stage53b1, stage2 |
-| input_codec | hevc | Supported |  | stage53b1, stage53c4b, stage2 |
+| input_chroma_subsampling | yuv420 | Supported |  | pq-reference, hdr-to-sdr-production |
+| input_chroma_subsampling | yuv422 | Unsupported |  | hdr-to-sdr-production |
+| input_chroma_subsampling | yuv444 | Unsupported |  | hdr-to-sdr-production |
+| input_codec | av1 | ConditionallySupported | Qualified input profiles and bit depths in the retained production cases; PQ input additionally requires AV1 Main 10-bit 4:2:0. | pq-reference, hdr-to-sdr-production |
+| input_codec | h264 | Supported |  | pq-reference, cpu-vaapi-validation |
+| input_codec | hevc | Supported |  | pq-reference, hdr-to-sdr-production, cpu-vaapi-validation |
 | input_codec | other | Unqualified |  |  |
-| input_color | conflicting | Unsupported |  | stage53c4b |
-| input_color | full_pq | Unsupported |  | stage53c4b |
-| input_color | hlg | Unsupported |  | stage53c4b |
-| input_color | pq | ConditionallySupported | Canonical limited BT.2020 NCL/PQ and left chroma; HEVC Main10 or AV1 Main 10-bit 4:2:0; VAAPI decode, Vulkan processing, VAAPI encode and matching input/output profile interop. The 0–1000 cd/m2 source pixel ceiling applies only to explicit HDR-to-SDR conversion. | stage53c4b |
+| input_color | conflicting | Unsupported |  | hdr-to-sdr-production |
+| input_color | full_pq | Unsupported |  | hdr-to-sdr-production |
+| input_color | hlg | Unsupported |  | hdr-to-sdr-production |
+| input_color | pq | ConditionallySupported | Canonical limited BT.2020 NCL/PQ and left chroma; HEVC Main10 or AV1 Main 10-bit 4:2:0; VAAPI decode, Vulkan processing, VAAPI encode and matching input/output profile interop. The 0–1000 cd/m2 source pixel ceiling applies only to explicit HDR-to-SDR conversion. | hdr-to-sdr-production |
 | input_color | sdr601 | Unqualified | Legacy 8-bit software normalization is planner-accepted, but this path lacks production qualification. |  |
-| input_color | sdr709 | Supported |  | stage53b1, stage53c4b |
-| input_color | unknown | Unsupported |  | stage53c4b |
-| input_color | wide_sdr | Unsupported |  | stage53c4b |
+| input_color | sdr709 | Supported |  | pq-reference, hdr-to-sdr-production |
+| input_color | unknown | Unsupported |  | hdr-to-sdr-production |
+| input_color | wide_sdr | Unsupported |  | hdr-to-sdr-production |
 | input_container | matroska | Unqualified | Video-only H.264 sample converts, but AAC/FLAC Matroska-to-MP4 strict oracles fail: unspecified language becomes und, absent default becomes true, millisecond packet duration and missing first duration differ. Not a supported Matroska/audio preservation claim. |  |
 | input_container | mov | Unqualified | H.264/AAC sample converts but the unchanged strict audio oracle rejects undefined language becoming und. No MOV support promotion. |  |
-| input_container | mp4 | ConditionallySupported | Retained matrix plus exact reviewed MP4 tuples (ordinary/fast-start/fragmented) only. AAC payload/timing/default/language are strictly checked where copied. Subtitles and video display titles are explicitly not copied. | stage53b1, stage53c4b, stage54b-corpus |
+| input_container | mp4 | ConditionallySupported | Retained matrix plus exact reviewed MP4 tuples (ordinary/fast-start/fragmented) only. AAC payload/timing/default/language are strictly checked where copied. Subtitles and video display titles are explicitly not copied. | pq-reference, hdr-to-sdr-production, real-media-corpus |
 | input_gop | benign-elementary-stream-parameter-update | Unqualified | Level-only SPS change drains eight frames, but original Annex B PTS/DTS are absent; timeline preservation is unqualified. |  |
-| input_gop | reviewed-b-frames-long-gop-all-intra | ConditionallySupported | Exact H.264 B0/B2/B4, HEVC B2, 250-frame GOP and all-intra portable sources plus the H.264 B2 hardware clone. Packet DTS monotonicity/reorder and decoded presentation spans checked; no open-GOP blanket claim. | stage54b-corpus, stage54b-report |
-| input_interop | auto | ConditionallySupported | Only for sealed automatic-path smokes. | stage53c4b |
-| input_interop | off | Supported | Portable software NV12 SDR path; PQ production requires input interop on. This does not qualify staged HDR. | stage2 |
-| input_interop | on | ConditionallySupported | Qualified decoded codec/format and Intel VAAPI-to-Vulkan path. | stage53c4b |
-| input_metadata | legacy-8bit-unspecified-color | ConditionallySupported | Only exact reviewed 8-bit sources use the existing BT.709 default policy. Raw null metadata remains recorded, never inferred from pixels. This does not permit unknown strict 10-bit color. | stage54b-corpus, stage54b-report |
-| input_metadata | pq-static-output-policy | ConditionallySupported | Exact 1080p PQ sources with/without static metadata qualify on the Intel path. Output retains PQ/BT.2020 limited signal but does NOT propagate or recompute source mastering/MaxCLL/MaxFALL/dynamic HDR side data; no static-metadata fidelity claim. | stage54b-corpus, stage54b-report |
-| input_metadata | sdr-with-hdr-static | Unsupported | Static mastering/content-light with known SDR transfer is Conflicting, including stream or frame side data. | stage54b-corpus, stage54b-report |
-| input_metadata | strict-10bit-missing-primaries-transfer-matrix | Unsupported | Actual generated HEVC10 negatives fail InputProbe/UnsupportedColor. Native missing range was not constructed; its fixture still reports limited range and remains Unqualified. | stage54b-corpus, stage54b-report |
-| input_pixel_format | nv12 | Supported |  | stage53b1, stage53c4b |
+| input_gop | reviewed-b-frames-long-gop-all-intra | ConditionallySupported | Exact H.264 B0/B2/B4, HEVC B2, 250-frame GOP and all-intra portable sources plus the H.264 B2 hardware clone. Packet DTS monotonicity/reorder and decoded presentation spans checked; no open-GOP blanket claim. | real-media-corpus, media-compatibility-report |
+| input_interop | auto | ConditionallySupported | Only for sealed automatic-path smokes. | hdr-to-sdr-production |
+| input_interop | off | Supported | Portable software NV12 SDR path; PQ production requires input interop on. This does not qualify staged HDR. | cpu-vaapi-validation |
+| input_interop | on | ConditionallySupported | Qualified decoded codec/format and Intel VAAPI-to-Vulkan path. | hdr-to-sdr-production |
+| input_metadata | legacy-8bit-unspecified-color | ConditionallySupported | Only exact reviewed 8-bit sources use the existing BT.709 default policy. Raw null metadata remains recorded, never inferred from pixels. This does not permit unknown strict 10-bit color. | real-media-corpus, media-compatibility-report |
+| input_metadata | pq-static-output-policy | ConditionallySupported | Exact 1080p PQ sources with/without static metadata qualify on the Intel path. Output retains PQ/BT.2020 limited signal but does NOT propagate or recompute source mastering/MaxCLL/MaxFALL/dynamic HDR side data; no static-metadata fidelity claim. | real-media-corpus, media-compatibility-report |
+| input_metadata | sdr-with-hdr-static | Unsupported | Static mastering/content-light with known SDR transfer is Conflicting, including stream or frame side data. | real-media-corpus, media-compatibility-report |
+| input_metadata | strict-10bit-missing-primaries-transfer-matrix | Unsupported | Actual generated HEVC10 negatives fail InputProbe/UnsupportedColor. Native missing range was not constructed; its fixture still reports limited range and remains Unqualified. | real-media-corpus, media-compatibility-report |
+| input_pixel_format | nv12 | Supported |  | pq-reference, hdr-to-sdr-production |
 | input_pixel_format | other | Unqualified |  |  |
-| input_pixel_format | p010le | ConditionallySupported | Qualified 10-bit 4:2:0 only. | stage53c4b |
-| input_pixel_format | yuv420p | Supported |  | stage53b1, stage53c4b |
-| input_pixel_format | yuv420p10le | ConditionallySupported | Qualified 10-bit 4:2:0 only. | stage53c4b |
-| input_profile | av1-main | ConditionallySupported | Qualified AV1 Main / Profile 0 8-bit output and AV1 Main 10-bit PQ input cases only. | stage53c4b |
-| input_profile | h264-baseline | Supported |  | stage2 |
-| input_profile | h264-high | Supported |  | stage53b1, stage2 |
+| input_pixel_format | p010le | ConditionallySupported | Qualified 10-bit 4:2:0 only. | hdr-to-sdr-production |
+| input_pixel_format | yuv420p | Supported |  | pq-reference, hdr-to-sdr-production |
+| input_pixel_format | yuv420p10le | ConditionallySupported | Qualified 10-bit 4:2:0 only. | hdr-to-sdr-production |
+| input_profile | av1-main | ConditionallySupported | Qualified AV1 Main / Profile 0 8-bit output and AV1 Main 10-bit PQ input cases only. | hdr-to-sdr-production |
+| input_profile | h264-baseline | Supported |  | cpu-vaapi-validation |
+| input_profile | h264-high | Supported |  | pq-reference, cpu-vaapi-validation |
 | input_profile | h264-main | Unqualified | Device capability enumeration is not a production profile qualification. |  |
-| input_profile | hevc-main | ConditionallySupported | Qualified 8-bit HEVC Main production case. | stage53b1, stage53c4b |
-| input_profile | hevc-main10 | ConditionallySupported | Qualified PQ input and 10-bit output cases only with 4:2:0 and the scoped Intel hardware path. | stage53c4b |
+| input_profile | hevc-main | ConditionallySupported | Qualified 8-bit HEVC Main production case. | pq-reference, hdr-to-sdr-production |
+| input_profile | hevc-main10 | ConditionallySupported | Qualified PQ input and 10-bit output cases only with 4:2:0 and the scoped Intel hardware path. | hdr-to-sdr-production |
 | input_profile | other | Unqualified |  |  |
-| input_resolution | 1280x720 | ConditionallySupported | Only exact Stage 5.4B portable software H.264 8-bit video-only tuple; no VAAPI/profiles/10-bit resolution generalization. | stage54b-corpus, stage54b-report |
-| input_resolution | 128x96 | ConditionallySupported | Only exact Stage 5.4B portable software H.264 8-bit video-only tuple; no VAAPI/profiles/10-bit resolution generalization. | stage54b-corpus, stage54b-report |
-| input_resolution | 1920x1080 | ConditionallySupported | Canonical production matrix. Native decode/encode and interop probes must accept the actual dimensions; profile availability alone is insufficient. | stage53b1, stage53c4b |
-| input_resolution | 2x2 | ConditionallySupported | Only exact Stage 5.4B portable software H.264 8-bit video-only tuple; no VAAPI/profiles/10-bit resolution generalization. | stage54b-corpus, stage54b-report |
-| input_resolution | 4x4 | ConditionallySupported | Only exact Stage 5.4B portable software H.264 8-bit video-only tuple; no VAAPI/profiles/10-bit resolution generalization. | stage54b-corpus, stage54b-report |
+| input_resolution | 1280x720 | ConditionallySupported | Only exact reviewed portable software H.264 8-bit video-only tuple; no VAAPI/profiles/10-bit resolution generalization. | real-media-corpus, media-compatibility-report |
+| input_resolution | 128x96 | ConditionallySupported | Only exact reviewed portable software H.264 8-bit video-only tuple; no VAAPI/profiles/10-bit resolution generalization. | real-media-corpus, media-compatibility-report |
+| input_resolution | 1920x1080 | ConditionallySupported | Canonical production matrix. Native decode/encode and interop probes must accept the actual dimensions; profile availability alone is insufficient. | pq-reference, hdr-to-sdr-production |
+| input_resolution | 2x2 | ConditionallySupported | Only exact reviewed portable software H.264 8-bit video-only tuple; no VAAPI/profiles/10-bit resolution generalization. | real-media-corpus, media-compatibility-report |
+| input_resolution | 4x4 | ConditionallySupported | Only exact reviewed portable software H.264 8-bit video-only tuple; no VAAPI/profiles/10-bit resolution generalization. | real-media-corpus, media-compatibility-report |
 | input_resolution | other | Unqualified | No blanket resolution claim. Current planner may admit dimensions after actual runtime probing; 64x64 P010 encoder probes reject on the recorded iHD stack. |  |
-| input_timing | cfr-tested-rates | ConditionallySupported | 24000/1001,24,25,30000/1001,30,50,60000/1001,60: exact portable H.264 8-bit tuples. Source frames map one-to-one to encoder sequential CFR index; video-only origin is zero. Audio-copy checks original source video CFR grid and preserves its origin. Native source/output tick bounds, not arbitrary millisecond tolerance. | stage54b-corpus, stage54b-report |
-| input_timing | discontinuous-with-audio-copy | Unsupported | Observed timestamp gap/backward/VFR AAC cases reject DecodeRuntime/Media and preserve preexisting output. | stage54b-corpus, stage54b-report |
-| input_timing | unusual-time-bases-and-origins | ConditionallySupported | Exact 1/1000,1/90000,1/48000,1/1000000 and +2s/+86400s source tuples only; output policy as above. Audio/video offset and shorter/longer AAC preserve compressed timestamps and endpoints in exact reviewed MP4 tuples. | stage54b-corpus, stage54b-report |
+| input_timing | cfr-tested-rates | ConditionallySupported | 24000/1001,24,25,30000/1001,30,50,60000/1001,60: exact portable H.264 8-bit tuples. Source frames map one-to-one to encoder sequential CFR index; video-only origin is zero. Audio-copy checks original source video CFR grid and preserves its origin. Native source/output tick bounds, not arbitrary millisecond tolerance. | real-media-corpus, media-compatibility-report |
+| input_timing | discontinuous-with-audio-copy | Unsupported | Observed timestamp gap/backward/VFR AAC cases reject DecodeRuntime/Media and preserve preexisting output. | real-media-corpus, media-compatibility-report |
+| input_timing | unusual-time-bases-and-origins | ConditionallySupported | Exact 1/1000,1/90000,1/48000,1/1000000 and +2s/+86400s source tuples only; output policy as above. Audio/video offset and shorter/longer AAC preserve compressed timestamps and endpoints in exact reviewed MP4 tuples. | real-media-corpus, media-compatibility-report |
 | input_timing | vfr | Unqualified | Video-only VFR is retimed one frame per decoded frame to zero-origin CFR: source presentation duration is not preserved. Audio-copy VFR fails DecodeRuntime/Media; future faithful timeline policy required. |  |
-| midstream_changes | color-semantic-change | Unsupported | Stream codec parameters and actual frame color remain independent; tested changed SPS and container/frame conflict reject UnsupportedColor/Conflicting. | stage54b-corpus, stage54b-report |
-| midstream_changes | geometry-or-pixel-format | Unsupported | Actual native decoded dimensions and software pixel format are checked before cached scaler/interop use; tested resolution and 8-to-10-bit elementary streams reject. | stage54b-corpus, stage54b-report |
-| output_bit_depth | 10 | ConditionallySupported | HEVC Main10 or AV1 Main 10-bit profile on the scoped P010 path. | stage53c4b |
-| output_bit_depth | 12 | Unsupported |  | stage53c4b |
-| output_bit_depth | 8 | Supported |  | stage53b1, stage53c4b |
-| output_bit_depth | other | Unsupported |  | stage53c4b |
-| output_codec | av1 | ConditionallySupported | VAAPI AV1 codec/profile/depth probe and scoped P010/NV12 path required. | stage53b1, stage53c4b |
-| output_codec | h264 | Supported |  | stage53b1, stage53c4b |
-| output_codec | hevc | ConditionallySupported | VAAPI HEVC codec/profile/depth probe and scoped P010/NV12 path required. | stage53b1, stage53c4b |
-| output_codec | other | Unsupported |  | stage53c4b |
+| midstream_changes | color-semantic-change | Unsupported | Stream codec parameters and actual frame color remain independent; tested changed SPS and container/frame conflict reject UnsupportedColor/Conflicting. | real-media-corpus, media-compatibility-report |
+| midstream_changes | geometry-or-pixel-format | Unsupported | Actual native decoded dimensions and software pixel format are checked before cached scaler/interop use; tested resolution and 8-to-10-bit elementary streams reject. | real-media-corpus, media-compatibility-report |
+| output_bit_depth | 10 | ConditionallySupported | HEVC Main10 or AV1 Main 10-bit profile on the scoped P010 path. | hdr-to-sdr-production |
+| output_bit_depth | 12 | Unsupported |  | hdr-to-sdr-production |
+| output_bit_depth | 8 | Supported |  | pq-reference, hdr-to-sdr-production |
+| output_bit_depth | other | Unsupported |  | hdr-to-sdr-production |
+| output_codec | av1 | ConditionallySupported | VAAPI AV1 codec/profile/depth probe and scoped P010/NV12 path required. | pq-reference, hdr-to-sdr-production |
+| output_codec | h264 | Supported |  | pq-reference, hdr-to-sdr-production |
+| output_codec | hevc | ConditionallySupported | VAAPI HEVC codec/profile/depth probe and scoped P010/NV12 path required. | pq-reference, hdr-to-sdr-production |
+| output_codec | other | Unsupported |  | hdr-to-sdr-production |
 | output_container | matroska | Unsupported | The current CLI rejects non-MP4 output paths. | current-cli |
-| output_container | mp4 | Supported |  | stage53b1, stage53c4b |
-| output_dynamic_range | preserve | ConditionallySupported | SDR preserve is qualified for the five 8/10-bit output profiles; PQ preserve only for HEVC Main10 and AV1 Main 10-bit. The 1000 cd/m2 limit does not apply to PQ preservation. | stage53b1, stage53c4b |
-| output_dynamic_range | sdr | ConditionallySupported | Explicit PQ-to-SDR conversion is qualified only for canonical input with every source pixel at or below 1000 cd/m2. | stage53c4b |
-| output_interop | auto | ConditionallySupported | Only for sealed automatic-path smoke cases. | stage53c4b |
-| output_interop | off | Supported | Portable software H.264/NV12 SDR output; PQ production requires output interop on. No staged HDR qualification. | stage2 |
-| output_interop | on | ConditionallySupported | Qualified output codec/profile/depth and NV12/P010 format on the scoped Intel path. | stage53c4b |
-| output_profile | av1-main | ConditionallySupported | AV1 8-bit SDR or 10-bit SDR conversion/PQ preserve requires the matching scoped VAAPI profile and format probe. | stage53b1, stage53c4b |
-| output_profile | h264-encoder-selected | Supported | H.264 output is qualified at 8-bit SDR; no 10-bit H.264 output. | stage53b1, stage53c4b |
-| output_profile | hevc-main | ConditionallySupported | 8-bit SDR output requires the scoped VAAPI HEVC Main encode path. | stage53b1, stage53c4b |
-| output_profile | hevc-main10 | ConditionallySupported | 10-bit SDR conversion or PQ preservation requires the scoped VAAPI P010 path. | stage53c4b |
-| subtitle_policy | ignored | ConditionallySupported | Exact mov_text input is decoded alongside video but subtitles are intentionally omitted, not transcoded or copied. | stage54b-corpus, stage54b-report |
+| output_container | mp4 | Supported |  | pq-reference, hdr-to-sdr-production |
+| output_dynamic_range | preserve | ConditionallySupported | SDR preserve is qualified for the five 8/10-bit output profiles; PQ preserve only for HEVC Main10 and AV1 Main 10-bit. The 1000 cd/m2 limit does not apply to PQ preservation. | pq-reference, hdr-to-sdr-production |
+| output_dynamic_range | sdr | ConditionallySupported | Explicit PQ-to-SDR conversion is qualified only for canonical input with every source pixel at or below 1000 cd/m2. | hdr-to-sdr-production |
+| output_interop | auto | ConditionallySupported | Only for sealed automatic-path smoke cases. | hdr-to-sdr-production |
+| output_interop | off | Supported | Portable software H.264/NV12 SDR output; PQ production requires output interop on. No staged HDR qualification. | cpu-vaapi-validation |
+| output_interop | on | ConditionallySupported | Qualified output codec/profile/depth and NV12/P010 format on the scoped Intel path. | hdr-to-sdr-production |
+| output_profile | av1-main | ConditionallySupported | AV1 8-bit SDR or 10-bit SDR conversion/PQ preserve requires the matching scoped VAAPI profile and format probe. | pq-reference, hdr-to-sdr-production |
+| output_profile | h264-encoder-selected | Supported | H.264 output is qualified at 8-bit SDR; no 10-bit H.264 output. | pq-reference, hdr-to-sdr-production |
+| output_profile | hevc-main | ConditionallySupported | 8-bit SDR output requires the scoped VAAPI HEVC Main encode path. | pq-reference, hdr-to-sdr-production |
+| output_profile | hevc-main10 | ConditionallySupported | 10-bit SDR conversion or PQ preservation requires the scoped VAAPI P010 path. | hdr-to-sdr-production |
+| subtitle_policy | ignored | ConditionallySupported | Exact mov_text input is decoded alongside video but subtitles are intentionally omitted, not transcoded or copied. | real-media-corpus, media-compatibility-report |
 
 ## Complete scenario inventory
 
@@ -249,12 +249,12 @@ Availability is a distribution overlay, not a fifth base support state. Eligible
 
 ## Evidence
 
-- `current-cli`: [apps/asciiflow-cli/src/main.rs](../apps/asciiflow-cli/src/main.rs) — current checkout, output-container-guard, CURRENT.
-- `stage2`: [docs/cpu-validation.md](../docs/cpu-validation.md) — Stage 2, validation-report, QUALIFIED.
-- `stage53b1`: [tests/baselines/media/post-polarity-v2.json](../tests/baselines/media/post-polarity-v2.json) — Stage 5.3B-1, qualified-baseline-manifest, QUALIFIED.
-- `stage53c4b`: [tests/baselines/media/hdr-to-sdr-production.json](../tests/baselines/media/hdr-to-sdr-production.json) — Stage 5.3C-4B, sealed-manifest, SEALED.
-- `stage53c4b-device`: [tests/baselines/media/c4b-static-and-device-evidence.txt](../tests/baselines/media/c4b-static-and-device-evidence.txt) — Stage 5.3C-4B, device-and-runtime-evidence, SEALED.
-- `stage53c4b-report`: [docs/hdr-to-sdr-validation.md](../docs/hdr-to-sdr-validation.md) — Stage 5.3C-4B, production-report, SEALED.
-- `stage53c4b-runtime`: [tests/baselines/media/c4b-system-evidence.txt](../tests/baselines/media/c4b-system-evidence.txt) — Stage 5.3C-4B, observed-system-evidence, SEALED.
-- `stage54b-corpus`: [tests/corpus/real-media-v1.json](../tests/corpus/real-media-v1.json) — Stage 5.4B, reviewed-real-media-corpus, QUALIFIED.
-- `stage54b-report`: [docs/media-compatibility-results.md](../docs/media-compatibility-results.md) — Stage 5.4B, compatibility-report, QUALIFIED.
+- `cpu-vaapi-validation`: [docs/cpu-validation.md](../docs/cpu-validation.md) — CPU and staged VAAPI, validation-report, QUALIFIED.
+- `current-cli`: [apps/asciiflow-cli/src/main.rs](../apps/asciiflow-cli/src/main.rs) — Current checkout, output-container-guard, CURRENT.
+- `hdr-to-sdr-device`: [tests/baselines/media/c4b-static-and-device-evidence.txt](../tests/baselines/media/c4b-static-and-device-evidence.txt) — HDR-to-SDR production, device-and-runtime-evidence, SEALED.
+- `hdr-to-sdr-production`: [tests/baselines/media/hdr-to-sdr-production.json](../tests/baselines/media/hdr-to-sdr-production.json) — HDR-to-SDR production, sealed-manifest, SEALED.
+- `hdr-to-sdr-report`: [docs/hdr-to-sdr-validation.md](../docs/hdr-to-sdr-validation.md) — HDR-to-SDR production, production-report, SEALED.
+- `hdr-to-sdr-runtime`: [tests/baselines/media/c4b-system-evidence.txt](../tests/baselines/media/c4b-system-evidence.txt) — HDR-to-SDR production, observed-system-evidence, SEALED.
+- `media-compatibility-report`: [docs/media-compatibility-results.md](../docs/media-compatibility-results.md) — Real-media compatibility, compatibility-report, QUALIFIED.
+- `pq-reference`: [tests/baselines/media/post-polarity-v2.json](../tests/baselines/media/post-polarity-v2.json) — PQ pixel reference, qualified-baseline-manifest, QUALIFIED.
+- `real-media-corpus`: [tests/corpus/real-media-v1.json](../tests/corpus/real-media-v1.json) — Real-media compatibility, reviewed-real-media-corpus, QUALIFIED.

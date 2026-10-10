@@ -73,7 +73,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--binary", type=Path, default=ROOT / "target/release/asciiflow")
-    parser.add_argument("--inputs", type=Path, default=ROOT / "target/stage54c1-evidence/inputs")
+    parser.add_argument("--inputs", type=Path, default=ROOT / "target/portability-inputs")
     parser.add_argument("--canonical-stack", type=Path, required=True)
     parser.add_argument("--alternate-stack", type=Path, required=True)
     parser.add_argument("--pq-canonical-dir", type=Path, default=ROOT / "tests/fixtures/codecs")

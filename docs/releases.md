@@ -29,9 +29,10 @@ H.264 encoding. Selecting `--encode software` produces an explicit error.
 
 ## Create a release
 
-1. Run ordinary CI and commit the intended release changes. Cargo's version
-   remains the application version shown by `--version`; it does not determine
-   the release tag and does not need to change for each date release.
+1. Run ordinary CI and commit the intended release changes. Cargo's numeric
+   version is internal build metadata and does not need to change for each
+   release. The packaged CLI's `--version` prints the same date as the release
+   tag; ordinary source builds print `asciiflow dev`.
 2. Push a date tag in `YYYY-MM-DD` format, for example `2026-10-10`.
    Only date-shaped tag pushes trigger publishing; the workflow also checks
    calendar validity and rejects dates such as `2026-02-30`. Each date identifies
@@ -70,6 +71,10 @@ standard-library notices. Only avcodec, avformat, avutil and swscale are bundled
 GPU drivers and other host libraries remain system dependencies.
 Local builds use the current UTC date by default; set `RELEASE_DATE=YYYY-MM-DD`
 to reproduce another date's archive name.
+The script validates this date and embeds it through `ASCIIFLOW_RELEASE_DATE`
+before compilation. Changing that build environment value makes Cargo rebuild
+the CLI; a plain build without it returns to the `dev` label. The relocated
+package gate checks that `--version` matches the archive date.
 
 The release gate verifies the restricted FFmpeg profile, the software-encoding
 rejection test, dependency resolution after extracting into another directory,
