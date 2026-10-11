@@ -77,6 +77,7 @@ pub(crate) struct VulkanContext {
     pub device: ash::Device,
     pub queue: vk::Queue,
     pub queue_submit_lock: Mutex<()>,
+    #[cfg(target_os = "linux")]
     pub external_memory_fd: Option<ash::khr::external_memory_fd::Device>,
     pub info: DeviceInfo,
     #[cfg(feature = "hdr-to-sdr-fp64-experiment")]
@@ -316,6 +317,7 @@ impl VulkanContext {
         }
         .map_err(vk_error("failed to create Vulkan compute device"))?;
         let queue = unsafe { device.get_device_queue(selected.queue_family, 0) };
+        #[cfg(target_os = "linux")]
         let external_memory_fd = selected.dma_buf_interop.then(|| {
             ash::khr::external_memory_fd::Device::new(
                 owner.instance.as_ref().expect("Vulkan instance missing"),
@@ -330,6 +332,7 @@ impl VulkanContext {
             device,
             queue,
             queue_submit_lock: Mutex::new(()),
+            #[cfg(target_os = "linux")]
             external_memory_fd,
             info: selected,
             debug_utils,
@@ -360,6 +363,7 @@ impl VulkanContext {
         self.abandoned.load(Ordering::Acquire)
     }
 
+    #[cfg(target_os = "linux")]
     pub(crate) fn abandonment_flag(&self) -> Arc<AtomicBool> {
         self.abandoned.clone()
     }
@@ -409,14 +413,15 @@ fn collect_device_candidates(instance: &ash::Instance) -> Result<Vec<DeviceCandi
                 CStr::from_ptr(extension.extension_name.as_ptr()) == expected
             })
         };
-        let dma_buf_interop = [
-            ash::khr::external_memory_fd::NAME,
-            ash::ext::external_memory_dma_buf::NAME,
-            ash::ext::image_drm_format_modifier::NAME,
-            ash::ext::queue_family_foreign::NAME,
-        ]
-        .into_iter()
-        .all(has_extension);
+        let dma_buf_interop = cfg!(target_os = "linux")
+            && [
+                ash::khr::external_memory_fd::NAME,
+                ash::ext::external_memory_dma_buf::NAME,
+                ash::ext::image_drm_format_modifier::NAME,
+                ash::ext::queue_family_foreign::NAME,
+            ]
+            .into_iter()
+            .all(has_extension);
         let memory = unsafe { instance.get_physical_device_memory_properties(physical) };
         if properties.api_version < vk::API_VERSION_1_3 {
             continue;

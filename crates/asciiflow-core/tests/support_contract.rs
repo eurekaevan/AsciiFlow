@@ -193,6 +193,9 @@ fn qualified_capabilities() -> CapabilitySnapshot {
         media: MediaCapabilities {
             software_decode: fact(),
             software_encode: fact(),
+            media_foundation_h264_encode: CapabilitySupport::not_probed(
+                "Media Foundation is outside the VAAPI qualification fixture",
+            ),
             vaapi_device: fact(),
             h264_vaapi_decode: fact(),
             hevc_vaapi_decode: fact(),
@@ -537,6 +540,7 @@ fn media_request_value(value: MediaRequest) -> &'static str {
         MediaRequest::Auto => "auto",
         MediaRequest::Software => "software",
         MediaRequest::Hardware => "vaapi",
+        MediaRequest::MediaFoundation => "mf",
     }
 }
 

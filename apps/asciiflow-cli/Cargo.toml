@@ -21,7 +21,6 @@ asciiflow-font = { path = "../../crates/asciiflow-font" }
 anyhow.workspace = true
 asciiflow-core = { path = "../../crates/asciiflow-core" }
 asciiflow-cpu = { path = "../../crates/asciiflow-cpu" }
-asciiflow-interop = { path = "../../crates/asciiflow-interop", features = ["hdr-to-sdr-production"] }
 asciiflow-media = { path = "../../crates/asciiflow-media" }
 asciiflow-vulkan = { path = "../../crates/asciiflow-vulkan" }
 clap.workspace = true
@@ -34,3 +33,6 @@ tracing-subscriber.workspace = true
 
 [dev-dependencies]
 libc = "0.2"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+asciiflow-interop = { path = "../../crates/asciiflow-interop", features = ["hdr-to-sdr-production"] }

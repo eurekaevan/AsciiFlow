@@ -198,6 +198,7 @@ impl Pipeline {
         let first_failure = Arc::new(Mutex::new(None::<Error>));
         let (decoded_tx, decoded_rx) = bounded::<DecodedFrame>(self.capacity);
         let (processed_tx, processed_rx) = bounded::<ProcessedFrame>(self.capacity);
+        let encode_on_caller_thread = sink.encode_on_caller_thread();
 
         std::thread::scope(|scope| {
             let cancel = cancellation.clone();
@@ -368,7 +369,7 @@ impl Pipeline {
             let cancel = cancellation.clone();
             let failure = first_failure.clone();
             let m = metrics.clone();
-            let encoder_thread = scope.spawn(move || {
+            let encode = move || {
                 let _panic_guard = WorkerPanicGuard {
                     failure: failure.clone(),
                     cancellation: cancel.clone(),
@@ -443,17 +444,35 @@ impl Pipeline {
                         m.record_audio(timings.audio_packets, timings.audio_bytes);
                     }
                 }
-            });
+            };
+            let encoder_thread = if encode_on_caller_thread {
+                // COM/MF requires balanced initialization and cleanup on one thread.
+                // Preserve the worker panic/cancellation contract on this thread too.
+                if std::panic::catch_unwind(std::panic::AssertUnwindSafe(encode)).is_err() {
+                    record_failure(
+                        &first_failure,
+                        &cancellation,
+                        Error::pipeline_message(
+                            PipelineStage::EncodeRuntime,
+                            "run encoder on caller thread",
+                            "worker thread panicked",
+                        ),
+                    );
+                }
+                None
+            } else {
+                Some(scope.spawn(encode))
+            };
             for (stage, operation, thread) in [
                 (
                     PipelineStage::DecodeRuntime,
                     "join decoder worker",
-                    decoder_thread,
+                    Some(decoder_thread),
                 ),
                 (
                     PipelineStage::ProcessingRuntime,
                     "join processor worker",
-                    processor_thread,
+                    Some(processor_thread),
                 ),
                 (
                     PipelineStage::EncodeRuntime,
@@ -461,7 +480,7 @@ impl Pipeline {
                     encoder_thread,
                 ),
             ] {
-                if thread.join().is_err() {
+                if thread.is_some_and(|thread| thread.join().is_err()) {
                     record_failure(
                         &first_failure,
                         &cancellation,
@@ -560,6 +579,63 @@ mod tests {
             })
         }
     }
+    #[test]
+    fn thread_bound_sink_stays_on_caller_during_work_and_cancellation() {
+        struct ThreadBoundSink(Arc<Mutex<Vec<(&'static str, std::thread::ThreadId)>>>);
+        impl FrameSink for ThreadBoundSink {
+            fn encode_on_caller_thread(&self) -> bool {
+                true
+            }
+            fn encode(&mut self, _: VideoFrame) -> Result<()> {
+                self.0
+                    .lock()
+                    .unwrap()
+                    .push(("encode", std::thread::current().id()));
+                Ok(())
+            }
+            fn finish(&mut self) -> Result<()> {
+                self.0
+                    .lock()
+                    .unwrap()
+                    .push(("finish", std::thread::current().id()));
+                Ok(())
+            }
+        }
+        impl Drop for ThreadBoundSink {
+            fn drop(&mut self) {
+                self.0
+                    .lock()
+                    .unwrap()
+                    .push(("drop", std::thread::current().id()));
+            }
+        }
+        for cancelled in [false, true] {
+            let caller = std::thread::current().id();
+            let observed = Arc::new(Mutex::new(Vec::new()));
+            let cancellation = CancellationToken::new();
+            if cancelled {
+                cancellation.cancel();
+            }
+            let result = Pipeline::new(1).unwrap().run_with_cancellation(
+                Source { next: 0, end: 3 },
+                Backend,
+                ThreadBoundSink(observed.clone()),
+                AsciiConfig::default(),
+                cancellation,
+            );
+            let observed = observed.lock().unwrap();
+            assert!(observed.iter().all(|(_, thread)| *thread == caller));
+            let stages: Vec<_> = observed.iter().map(|(stage, _)| *stage).collect();
+            if cancelled {
+                assert!(matches!(result, Err(Error::Cancelled)));
+                assert_eq!(stages, ["drop"]);
+            } else {
+                assert_eq!(result.unwrap().metrics.frames, 3);
+                assert_eq!(stages, ["encode", "encode", "encode", "finish", "drop"]);
+            }
+        }
+    }
+
     struct Sink(Arc<Mutex<Vec<i64>>>);
     impl FrameSink for Sink {
         fn encode(&mut self, frame: VideoFrame) -> Result<()> {
@@ -740,8 +816,12 @@ mod tests {
             wait_for_finish: crossbeam_channel::Receiver<()>,
             panic_on_drop: bool,
             finalized: bool,
+            caller_thread: bool,
         }
         impl FrameSink for PanickingSink {
+            fn encode_on_caller_thread(&self) -> bool {
+                self.caller_thread
+            }
             fn encode(&mut self, _: VideoFrame) -> Result<()> {
                 self.wait_for_finish
                     .recv_timeout(Duration::from_secs(2))
@@ -768,7 +848,9 @@ mod tests {
                 }
             }
         }
-        for panic_on_drop in [false, true] {
+        for (panic_on_drop, caller_thread) in
+            [(false, false), (true, false), (false, true), (true, true)]
+        {
             let cancellation = CancellationToken::new();
             let observed = Arc::new(AtomicBool::new(false));
             let (entered, wait_for_finish) = bounded(1);
@@ -786,6 +868,7 @@ mod tests {
                         wait_for_finish,
                         panic_on_drop,
                         finalized: false,
+                        caller_thread,
                     },
                     AsciiConfig::default(),
                     cancellation,

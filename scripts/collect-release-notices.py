@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Collect the locked Linux CLI dependency notices; never bundle native libraries."""
+"""Collect the locked CLI dependency notices; never bundle native libraries."""
 import argparse
 import hashlib
 import json
@@ -14,10 +14,11 @@ import tomllib
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output", type=Path, help="new notice directory")
+    parser.add_argument("--target", default="x86_64-unknown-linux-gnu")
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
     command = ["cargo", "tree", "--locked", "--offline", "--target",
-               "x86_64-unknown-linux-gnu", "-p", "asciiflow-cli", "-e", "normal",
+               args.target, "-p", "asciiflow-cli", "-e", "normal",
                "--prefix", "none", "--format", "{p}"]
     tree = subprocess.check_output(command, cwd=root, text=True)
     cache = Path(os.environ.get("CARGO_HOME", Path.home() / ".cargo")) / "registry/src"
@@ -60,7 +61,7 @@ def main():
                         "manifest_sha256": hashlib.sha256(manifest_bytes).hexdigest(),
                         "license_texts": files,
                         "missing_packaged_text": not bool(texts)})
-    manifest = {"schema_version": 1, "scope": "locked Linux CLI normal-dependency graph; includes proc macros",
+    manifest = {"schema_version": 1, "scope": "locked CLI normal-dependency graph; includes proc macros", "target": args.target,
                 "command": command, "cargo_lock_sha256": hashlib.sha256((root / "Cargo.lock").read_bytes()).hexdigest(),
                 "native_libraries_bundled": False, "packages": records}
     (args.output / "rust-license-inventory.json").write_text(json.dumps(manifest, indent=2) + "\n")

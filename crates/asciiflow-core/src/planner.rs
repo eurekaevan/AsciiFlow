@@ -36,6 +36,8 @@ impl CapabilitySupport {
 pub struct MediaCapabilities {
     pub software_decode: CapabilitySupport,
     pub software_encode: CapabilitySupport,
+    /// Hardware-only H.264 Media Foundation encoder accepting host NV12 frames.
+    pub media_foundation_h264_encode: CapabilitySupport,
     pub vaapi_device: CapabilitySupport,
     pub h264_vaapi_decode: CapabilitySupport,
     pub hevc_vaapi_decode: CapabilitySupport,
@@ -617,6 +619,7 @@ pub enum MediaRequest {
     Auto,
     Software,
     Hardware,
+    MediaFoundation,
 }
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -668,6 +671,7 @@ impl PipelinePolicy {
 pub enum MediaImplementation {
     Software,
     Hardware,
+    MediaFoundation,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -700,6 +704,7 @@ pub enum PlanNode {
     OutputHardwareInterop,
     SoftwareEncode,
     VaapiEncode,
+    MediaFoundationEncode,
 }
 
 impl fmt::Display for PlanNode {
@@ -722,6 +727,7 @@ impl fmt::Display for PlanNode {
             Self::OutputHardwareInterop => "Vulkan/VAAPI output interop",
             Self::SoftwareEncode => "software encode",
             Self::VaapiEncode => "VAAPI encode",
+            Self::MediaFoundationEncode => "Media Foundation hardware encode",
         })
     }
 }
@@ -777,6 +783,9 @@ impl fmt::Display for PipelinePlan {
             match step.node {
                 PlanNode::SoftwareEncode => write!(f, "software {} encode", self.output.codec)?,
                 PlanNode::VaapiEncode => write!(f, "VAAPI {} encode", self.output.codec)?,
+                PlanNode::MediaFoundationEncode => {
+                    write!(f, "Media Foundation hardware {} encode", self.output.codec)?
+                }
                 _ => write!(f, "{}", step.node)?,
             }
         }
@@ -865,7 +874,20 @@ impl PipelinePlanner {
         let mut ordinal = 0_u16;
         for backend in [ProcessingBackend::Vulkan, ProcessingBackend::Cpu] {
             for decode in [MediaImplementation::Hardware, MediaImplementation::Software] {
-                for encode in [MediaImplementation::Hardware, MediaImplementation::Software] {
+                for encode in [
+                    MediaImplementation::Hardware,
+                    MediaImplementation::MediaFoundation,
+                    MediaImplementation::Software,
+                ] {
+                    if encode == MediaImplementation::MediaFoundation
+                        && policy.encode != MediaRequest::MediaFoundation
+                        && !capabilities
+                            .media
+                            .media_foundation_h264_encode
+                            .is_supported()
+                    {
+                        continue;
+                    }
                     for input_interop in [true, false] {
                         for output_interop in [true, false] {
                             let candidate = Candidate {
@@ -904,11 +926,26 @@ impl PipelinePlanner {
         }
         accepted.sort_by_key(|(cost, ordinal, _)| (*cost, *ordinal));
         let Some((cost, _, selected)) = accepted.into_iter().next() else {
-            let details = rejected
-                .iter()
-                .flat_map(|c| c.reasons.iter())
+            // Automatic selection excludes unavailable MF candidates, but a
+            // completed hardware probe must retain its failure diagnosis.
+            let mf_failure = if policy.encode == MediaRequest::Auto
+                && output.codec == VideoCodec::H264
+                && output.bit_depth == 8
+                && color_processing == ColorProcessing::Sdr
+            {
+                match &capabilities.media.media_foundation_h264_encode {
+                    CapabilitySupport::Unsupported(reason) => Some(format!(
+                        "Media Foundation hardware H.264 encode unavailable: {reason}"
+                    )),
+                    _ => None,
+                }
+            } else {
+                None
+            };
+            let details = mf_failure
+                .into_iter()
+                .chain(rejected.iter().flat_map(|c| c.reasons.iter()).cloned())
                 .take(4)
-                .cloned()
                 .collect::<Vec<_>>()
                 .join("; ");
             return Err(Error::InvalidConfig(if details.is_empty() {
@@ -925,6 +962,29 @@ impl PipelinePlanner {
 }
 
 fn validate_policy(policy: &PipelinePolicy) -> Result<()> {
+    if policy.decode == MediaRequest::MediaFoundation {
+        return Err(Error::InvalidConfig(
+            "Media Foundation decoding is not implemented; use software decode".into(),
+        ));
+    }
+    if policy.encode == MediaRequest::MediaFoundation {
+        if policy.output_codec != VideoCodec::H264 || policy.output_bit_depth != 8 {
+            return Err(Error::InvalidConfig(
+                "Media Foundation hardware encoding requires 8-bit H.264 output".into(),
+            ));
+        }
+        if policy.decode == MediaRequest::Hardware {
+            return Err(Error::InvalidConfig(
+                "Media Foundation encoding requires software decode".into(),
+            ));
+        }
+        if policy.input_interop == InteropRequest::On || policy.output_interop == InteropRequest::On
+        {
+            return Err(Error::InvalidConfig(
+                "Media Foundation encoding uses host NV12 frames; hardware interop is not implemented".into(),
+            ));
+        }
+    }
     if policy.output_bit_depth != 8 && policy.output_bit_depth != 10 {
         return Err(Error::InvalidConfig(
             "--output-bit-depth must be 8 or 10".into(),
@@ -973,9 +1033,13 @@ fn validate_policy(policy: &PipelinePolicy) -> Result<()> {
 
 impl Candidate {
     fn is_structurally_valid(self) -> bool {
-        (!self.input_interop
-            || (self.decode == MediaImplementation::Hardware
-                && self.backend == ProcessingBackend::Vulkan))
+        (self.encode != MediaImplementation::MediaFoundation
+            || (self.decode == MediaImplementation::Software
+                && !self.input_interop
+                && !self.output_interop))
+            && (!self.input_interop
+                || (self.decode == MediaImplementation::Hardware
+                    && self.backend == ProcessingBackend::Vulkan))
             && (!self.output_interop
                 || (self.encode == MediaImplementation::Hardware
                     && self.backend == ProcessingBackend::Vulkan))
@@ -1074,6 +1138,20 @@ impl Candidate {
                     upload,
                 );
             }
+        } else if self.encode == MediaImplementation::MediaFoundation {
+            require(
+                &mut reasons,
+                "Media Foundation hardware H.264 encode",
+                &caps.media.media_foundation_h264_encode,
+            );
+            if output.codec != VideoCodec::H264
+                || output.bit_depth != 8
+                || color_processing != ColorProcessing::Sdr
+            {
+                reasons.push(
+                    "Media Foundation hardware encoding requires 8-bit SDR H.264 output".into(),
+                );
+            }
         } else {
             if output.codec != VideoCodec::H264 {
                 reasons.push(format!(
@@ -1162,7 +1240,9 @@ impl Candidate {
         if self.backend == ProcessingBackend::Vulkan && !self.output_interop {
             cost += 20;
         }
-        if self.encode == MediaImplementation::Hardware && !self.output_interop {
+        if (self.encode == MediaImplementation::Hardware && !self.output_interop)
+            || self.encode == MediaImplementation::MediaFoundation
+        {
             cost += 10;
         }
         if self.encode == MediaImplementation::Software {
@@ -1197,7 +1277,10 @@ impl Candidate {
             PixelPath::GpuResident
         } else if self.backend == ProcessingBackend::Cpu
             && self.decode == MediaImplementation::Software
-            && self.encode == MediaImplementation::Software
+            && matches!(
+                self.encode,
+                MediaImplementation::Software | MediaImplementation::MediaFoundation
+            )
         {
             PixelPath::Host
         } else {
@@ -1225,6 +1308,10 @@ impl Candidate {
             reasons.push("output interop avoids Host readback and encoder hwupload".into());
         } else if self.encode == MediaImplementation::Hardware {
             reasons.push("VAAPI encode lowers CPU cost even when hwupload is required".into());
+        } else if self.encode == MediaImplementation::MediaFoundation {
+            reasons.push(
+                "Media Foundation hardware encoding accepts processed Host NV12 frames".into(),
+            );
         }
         let steps = if color_processing == ColorProcessing::HdrPqToSdrBt709 {
             let (packed, hardware) = match output.pixel_format {
@@ -1369,10 +1456,10 @@ impl Candidate {
                 host
             }
         };
-        let encode_node = if self.encode == MediaImplementation::Hardware {
-            PlanNode::VaapiEncode
-        } else {
-            PlanNode::SoftwareEncode
+        let encode_node = match self.encode {
+            MediaImplementation::Hardware => PlanNode::VaapiEncode,
+            MediaImplementation::MediaFoundation => PlanNode::MediaFoundationEncode,
+            MediaImplementation::Software => PlanNode::SoftwareEncode,
         };
         steps.push(step(encode_node, Some(encode_input), None));
         steps
@@ -1391,6 +1478,7 @@ fn matches_media(request: MediaRequest, value: MediaImplementation) -> bool {
         MediaRequest::Auto => true,
         MediaRequest::Software => value == MediaImplementation::Software,
         MediaRequest::Hardware => value == MediaImplementation::Hardware,
+        MediaRequest::MediaFoundation => value == MediaImplementation::MediaFoundation,
     }
 }
 fn matches_backend(request: ProcessingBackend, value: ProcessingBackend) -> bool {
@@ -1445,6 +1533,7 @@ mod tests {
             media: MediaCapabilities {
                 software_decode: yes(),
                 software_encode: yes(),
+                media_foundation_h264_encode: CapabilitySupport::not_probed("Windows only"),
                 vaapi_device: yes(),
                 h264_vaapi_decode: yes(),
                 hevc_vaapi_decode: yes(),
@@ -2002,6 +2091,202 @@ mod tests {
                 PlanNode::VaapiEncode
             ]
         );
+    }
+
+    #[test]
+    fn media_foundation_auto_uses_hardware_encoding_with_host_readback() {
+        let mut caps = full();
+        caps.media.vaapi_device = no("VAAPI device");
+        caps.media.media_foundation_h264_encode = yes();
+        caps.media.software_encode = no("LGPL software H.264 encoder");
+        caps.media.nv12_hardware_frames = no("VAAPI frames");
+        caps.media.nv12_hardware_upload = no("VAAPI upload");
+        let plan = automatic(&caps);
+        assert_eq!(plan.decode, MediaImplementation::Software);
+        assert_eq!(plan.encode, MediaImplementation::MediaFoundation);
+        assert_eq!(plan.backend, ProcessingBackend::Vulkan);
+        assert_eq!(plan.pixel_path, PixelPath::PartiallyStaged);
+        assert!(!plan.hardware_upload);
+        assert!(!plan.hardware_input_interop);
+        assert!(!plan.hardware_output_interop);
+        assert_eq!(
+            nodes(&plan),
+            vec![
+                PlanNode::SoftwareDecode,
+                PlanNode::VulkanAscii,
+                PlanNode::HostReadback,
+                PlanNode::MediaFoundationEncode,
+            ]
+        );
+        assert_eq!(
+            plan.steps.last().unwrap().input,
+            Some(FrameDomain::HostNv12)
+        );
+        assert!(
+            plan.to_string()
+                .contains("Media Foundation hardware H.264 encode")
+        );
+    }
+
+    #[test]
+    fn explicit_media_foundation_uses_cpu_host_frames_and_is_preferred_over_software() {
+        let mut caps = full();
+        caps.media.vaapi_device = no("VAAPI device");
+        caps.media.media_foundation_h264_encode = yes();
+        for encode in [MediaRequest::Auto, MediaRequest::MediaFoundation] {
+            let plan = PipelinePlanner::select(
+                &caps,
+                &h264(),
+                PipelinePolicy {
+                    backend: ProcessingBackend::Cpu,
+                    encode,
+                    ..Default::default()
+                },
+            )
+            .unwrap()
+            .selected;
+            assert_eq!(plan.encode, MediaImplementation::MediaFoundation);
+            assert_eq!(plan.pixel_path, PixelPath::Host);
+            assert_eq!(
+                nodes(&plan),
+                vec![
+                    PlanNode::SoftwareDecode,
+                    PlanNode::CpuAscii,
+                    PlanNode::MediaFoundationEncode,
+                ]
+            );
+        }
+    }
+
+    #[test]
+    fn unavailable_media_foundation_is_never_selected_or_silently_substituted() {
+        for fact in [
+            no("hardware MFT unavailable"),
+            CapabilitySupport::not_probed("hardware MFT not probed"),
+        ] {
+            let mut caps = full();
+            caps.media.vaapi_device = no("VAAPI device");
+            caps.media.media_foundation_h264_encode = fact;
+            assert_eq!(automatic(&caps).encode, MediaImplementation::Software);
+            let error = PipelinePlanner::select(
+                &caps,
+                &h264(),
+                PipelinePolicy {
+                    encode: MediaRequest::MediaFoundation,
+                    ..Default::default()
+                },
+            )
+            .unwrap_err();
+            assert!(
+                error
+                    .to_string()
+                    .contains("Media Foundation hardware H.264 encode unavailable")
+            );
+        }
+    }
+
+    #[test]
+    fn lgpl_auto_failure_retains_media_foundation_hardware_probe_diagnosis() {
+        let mut caps = full();
+        caps.media.vaapi_device = no("VAAPI device");
+        caps.media.software_encode = no("LGPL software H.264 encoder");
+        caps.media.media_foundation_h264_encode =
+            CapabilitySupport::unsupported("no compatible hardware MFT for 1920x1080");
+        let error = PipelinePlanner::select(&caps, &h264(), Default::default()).unwrap_err();
+        assert!(error.to_string().contains(
+            "Media Foundation hardware H.264 encode unavailable: no compatible hardware MFT for 1920x1080"
+        ));
+        caps.media.media_foundation_h264_encode = CapabilitySupport::not_probed("Windows only");
+        let error = PipelinePlanner::select(&caps, &h264(), Default::default()).unwrap_err();
+        assert!(!error.to_string().contains("Media Foundation"));
+        assert!(!error.to_string().contains("Windows only"));
+    }
+
+    #[test]
+    fn media_foundation_rejects_unsupported_codec_depth_decode_and_interop() {
+        let mut caps = full();
+        caps.media.media_foundation_h264_encode = yes();
+        let policy = PipelinePolicy {
+            encode: MediaRequest::MediaFoundation,
+            ..Default::default()
+        };
+        for unsupported in [
+            PipelinePolicy {
+                output_codec: VideoCodec::Hevc,
+                ..policy.clone()
+            },
+            PipelinePolicy {
+                output_codec: VideoCodec::Av1,
+                ..policy.clone()
+            },
+            PipelinePolicy {
+                output_bit_depth: 10,
+                ..policy.clone()
+            },
+        ] {
+            assert!(
+                PipelinePlanner::select(&caps, &h264(), unsupported)
+                    .unwrap_err()
+                    .to_string()
+                    .contains("requires 8-bit H.264 output")
+            );
+        }
+        for unsupported in [
+            PipelinePolicy {
+                input_interop: InteropRequest::On,
+                ..policy.clone()
+            },
+            PipelinePolicy {
+                output_interop: InteropRequest::On,
+                ..policy.clone()
+            },
+        ] {
+            assert!(
+                PipelinePlanner::select(&caps, &h264(), unsupported)
+                    .unwrap_err()
+                    .to_string()
+                    .contains("hardware interop is not implemented")
+            );
+        }
+        for decode in [MediaRequest::Hardware, MediaRequest::MediaFoundation] {
+            let error = PipelinePlanner::select(
+                &caps,
+                &h264(),
+                PipelinePolicy {
+                    decode,
+                    ..policy.clone()
+                },
+            )
+            .unwrap_err();
+            assert!(
+                error
+                    .to_string()
+                    .contains(if decode == MediaRequest::Hardware {
+                        "requires software decode"
+                    } else {
+                        "Media Foundation decoding is not implemented"
+                    })
+            );
+        }
+    }
+
+    #[test]
+    fn media_foundation_capability_cannot_enable_ten_bit_or_hdr_candidates() {
+        let mut caps = full();
+        caps.media.vaapi_device = no("VAAPI device");
+        caps.media.media_foundation_h264_encode = yes();
+        for input in [main10_input(VideoCodec::Hevc), pq_input(VideoCodec::Hevc)] {
+            let error = PipelinePlanner::select(
+                &caps,
+                &input,
+                PipelinePolicy {
+                    output_codec: VideoCodec::Hevc,
+                    output_bit_depth: 10,
+                    ..Default::default()
+                },
+            );
+            assert!(error.is_err());
+        }
     }
     #[test]
     fn no_input_interop_avoids_staged_hardware_decode() {

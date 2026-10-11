@@ -7,13 +7,18 @@ Maintenance follows changes and regressions.
 
 AsciiFlow is a Rust CLI that converts video into color or monochrome ASCII
 video. It has a portable CPU path and, on qualified Linux hardware, a Vulkan
-processing path with VAAPI decode/encode and optional DMA-BUF interop. The
+processing path with VAAPI decode/encode and optional DMA-BUF interop. Windows
+x86_64 now implements software decode and hardware-only Media Foundation H.264
+8-bit SDR encoding, with CPU or Vulkan host processing. Actual Windows
+build and hardware conversion qualification remain pending. The
 former C# implementation is no longer part of the active project; its
 remaining feature gaps are recorded in the [Rust follow-up inventory](docs/legacy-feature-parity.md).
 
 The official LGPL prebuilt release does not support software H.264 encoding.
-Software decode and qualified VAAPI H.264/HEVC/AV1 encoding remain available
-subject to runtime probes. Source/developer builds retain the libx264 backend;
+Linux software decode and qualified VAAPI H.264/HEVC/AV1 encoding remain available
+subject to runtime probes. The Windows profile includes H.264/HEVC software
+decode, AAC passthrough and MF H.264 encoding; missing hardware fails without
+a software encoder fallback. Source/developer builds retain the libx264 backend;
 availability depends on their FFmpeg build capabilities. GPL-capable custom
 builds are outside this LGPL release qualification.
 
@@ -35,6 +40,8 @@ retention can grow its working set; constant memory is not promised.
 
 <!-- production-support-contract:begin -->
 Support contract `1.1.0`. Hardware conditions and evidence: [production support contract](docs/production-support.md).
+
+The retained support tables and hardware evidence below describe the qualified Linux paths. They do not qualify the new Windows Media Foundation implementation.
 
 | Dimension | Value | Support state | Conditions |
 |---|---|---|---|
@@ -96,7 +103,7 @@ and [failure semantics](docs/failure-semantics.md) for precise boundaries.
 
 ## Build and run
 
-The Rust workspace needs Rust, `clang`/`libclang`, FFmpeg development headers
+Linux development builds need Rust, `clang`/`libclang`, FFmpeg development headers
 and libraries, FreeType, and Linux `libva`/`libdrm` headers for the hardware
 path. Software H.264 encoding in a developer build requires `libx264`; the
 official `lgpl-prebuilt` profile excludes that route. VAAPI H.264 depends on
@@ -108,7 +115,7 @@ build, see [`third_party/ffmpeg/`](third_party/ffmpeg/) and the
 cargo build --release --locked --workspace
 cargo test --workspace
 
-# Automatic planning chooses a legal available path; LGPL prebuilt requires VAAPI encoding.
+# Automatic planning chooses a legal available path; Linux LGPL prebuilt requires VAAPI encoding.
 cargo run --release --bin asciiflow -- input.mp4 output.mp4 --width 160
 
 # Inspect detected capabilities and the selected plan without creating output.
@@ -141,7 +148,8 @@ Omitting this option never converts HDR to SDR automatically.
 
 Use `--output-codec h264|hevc|av1`, `--output-bit-depth 8|10`,
 `--backend auto|cpu|vulkan`, `--decode auto|software|vaapi`, and
-`--encode auto|software|vaapi` to constrain planning. Other common flags
+`--encode auto|software|vaapi|mf` to constrain planning. `mf` requests Windows
+hardware encoding; Windows auto prefers eligible Vulkan devices, then CPU. Other common flags
 include `--width`, `--height`, `--charset`, `--font`, `--font-face-index`,
 `--color true|false`, `--audio auto|copy|none`, `--max-frames`,
 `--no-progress`, and `--verbose`. The input is positional; output is
@@ -155,6 +163,9 @@ with `--capabilities` and `--explain-plan`. Streaming input is not supported.
 Current source builds accept `--font "Liberation Mono:style=Bold"` as well as
 explicit files and `builtin-8x8`. A system match must still pass the existing
 FreeType monospaced/scalable/glyph checks; discovery does not promise fallback.
+Windows uses `builtin-8x8` or explicit font files; family-name discovery is
+Linux-only. Windows MSVC source builds and packaging prerequisites are recorded
+in [release packaging](docs/releases.md#reproduce-and-inspect).
 
 Normal runs write a short input/plan/font/audio/output overview to stderr and
 two English completion lines to stdout. Interactive stderr terminals show one
@@ -166,13 +177,15 @@ trusted frame count show elapsed progress without a percentage or invented ETA.
 Capability/plan inspection does not start this conversion UI. See the
 [font and terminal validation report](docs/font-terminal-validation.md).
 
-## Installing the Linux release
+## Installing release packages
 
-For automated packages of the current source, see the [Linux Release workflow
-and packaging instructions](docs/releases.md). Tag-triggered publishing and
-manual trial builds use the official LGPL profile.
+For Linux x86_64 and Windows x86_64 packages, see the [Release LGPL workflow
+and packaging instructions](docs/releases.md). Date tags and manual runs build
+both platforms from the same commit; publishing waits for both platform gates.
+Manual runs use the date in Asia/Taipei. The Release contains a Linux `.tar.gz`,
+a Windows `.zip` and their combined `SHA256SUMS`.
 
-The official package is dynamically linked for Linux x86-64. Extract the
+The Linux package is dynamically linked. Extract the
 archive and add its directory to your `PATH` (or invoke `asciiflow` by absolute
 path). Keep the executable next to its bundled `lib/` directory and retain the
 licenses, notices and `sources/` when redistributing it. Shaders and the builtin
@@ -180,6 +193,20 @@ font are embedded; no source checkout, shader cache or fixtures are needed at
 runtime. FreeType, libdav1d, Vulkan and VAAPI/driver libraries remain system
 prerequisites. Font-name discovery also needs runtime Fontconfig on Linux;
 builtin and explicit-file selection do not.
+
+The Windows package keeps `asciiflow.exe` beside four replaceable FFmpeg DLLs.
+It needs Windows 10/11 Media Foundation, a compatible H.264 hardware encoder
+and driver, and the Microsoft Visual C++ 2015–2022 x64 Redistributable. N editions
+need the Media Feature Pack. FreeType/libpng/zlib are embedded with their source
+and notices; MSYS2 and MinGW runtimes are not required by the package. The first
+Windows profile has no AV1 decoder, HEVC/AV1 encoder, hardware decoding,
+10-bit/HDR output or VAAPI interop. Its packaging and real hardware conversion
+have not been verified on the current Linux development host.
+
+```powershell
+./asciiflow.exe input.mp4 output.mp4 --backend cpu --decode software --encode mf --width 160
+./asciiflow.exe input.mp4 --backend cpu --decode software --encode mf --explain-plan
+```
 
 Package build and runtime requirements are recorded in [release packaging](docs/releases.md).
 The [historical qualification receipt](docs/historical-release-receipt.md) describes
@@ -253,6 +280,10 @@ above-1000-nit conversion remain unsupported.
 The repository CI runs Rust format, strict Clippy, workspace tests, and Vulkan
 1.3 validation on generated SPIR-V. Hardware gates require an Intel host and
 are deliberately separate from portable CI.
+The Windows release gate checks DLL/license profiles, relocated startup and MF
+planning failures without assuming a hosted-runner GPU. The opt-in real Windows
+MF round-trip gate is documented in [release verification](docs/releases.md#windows-hardware-gate);
+it has not yet provided retained hardware qualification.
 
 ### Local artifacts and cleanup
 

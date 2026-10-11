@@ -26,6 +26,116 @@ use std::{
 const MUX_CHANNEL_CAPACITY: usize = 16;
 const MUX_POLL: Duration = Duration::from_millis(20);
 
+fn configure_media_foundation(codec: NonNull<ffi::AVCodecContext>) -> Result<()> {
+    // h264_mf otherwise permits a software MFT. Never relax this option.
+    check(
+        unsafe { ffi::av_opt_set_int((*codec.as_ptr()).priv_data, c"hw_encoding".as_ptr(), 1, 0) },
+        "Media Foundation encoder cannot enforce hardware-only encoding",
+    )?;
+    unsafe {
+        (*codec.as_ptr()).max_b_frames = 0;
+        (*codec.as_ptr()).gop_size = 60;
+        (*codec.as_ptr()).bit_rate = 8_000_000;
+    }
+    Ok(())
+}
+
+/// Qualify a hardware MFT by submitting and draining an NV12 frame, without a muxer.
+pub fn probe_media_foundation_encoder(desc: &FrameDesc, rate: Rational) -> Result<()> {
+    require_supported_output(&VideoCodec::H264, desc, EncodeMode::MediaFoundation)?;
+    if !cfg!(target_os = "windows") {
+        return Err(Error::Media(
+            "Media Foundation encoding requires Windows".into(),
+        ));
+    }
+    let width = i32::try_from(desc.width)
+        .map_err(|_| Error::Media("MF probe width exceeds FFmpeg i32 range".into()))?;
+    let height = i32::try_from(desc.height)
+        .map_err(|_| Error::Media("MF probe height exceeds FFmpeg i32 range".into()))?;
+    let encoder = unsafe { ffi::avcodec_find_encoder_by_name(c"h264_mf".as_ptr()) };
+    if encoder.is_null() {
+        return Err(Error::Media("FFmpeg exposes no h264_mf encoder".into()));
+    }
+    let codec = NonNull::new(unsafe { ffi::avcodec_alloc_context3(encoder) })
+        .ok_or_else(|| Error::Media("failed to allocate Media Foundation probe".into()))?;
+    let _guard = CodecGuard(Some(codec));
+    unsafe {
+        (*codec.as_ptr()).width = width;
+        (*codec.as_ptr()).height = height;
+        (*codec.as_ptr()).pix_fmt = ffi::AVPixelFormat::AV_PIX_FMT_NV12;
+        (*codec.as_ptr()).time_base = ffi::AVRational {
+            num: rate.denominator,
+            den: rate.numerator,
+        };
+        (*codec.as_ptr()).framerate = ffi::AVRational {
+            num: rate.numerator,
+            den: rate.denominator,
+        };
+        (*codec.as_ptr()).color_range = output_color_range(desc);
+        let (matrix, primaries, transfer) = output_native_color(desc.color_space);
+        (*codec.as_ptr()).colorspace = matrix;
+        (*codec.as_ptr()).color_primaries = primaries;
+        (*codec.as_ptr()).color_trc = transfer;
+        (*codec.as_ptr()).chroma_sample_location = ffi::AVChromaLocation::AVCHROMA_LOC_LEFT;
+        (*codec.as_ptr()).flags |= ffi::AV_CODEC_FLAG_GLOBAL_HEADER as i32;
+    }
+    configure_media_foundation(codec)?;
+    check(
+        unsafe { ffi::avcodec_open2(codec.as_ptr(), encoder, ptr::null_mut()) },
+        "failed to initialize hardware Media Foundation encoder",
+    )?;
+    let mut frame = Frame::new()?;
+    let native = unsafe { &mut *frame.as_mut_ptr() };
+    native.format = ffi::AVPixelFormat::AV_PIX_FMT_NV12 as i32;
+    native.width = width;
+    native.height = height;
+    native.pts = 0;
+    native.duration = 1;
+    check(
+        unsafe { ffi::av_frame_get_buffer(frame.as_mut_ptr(), 32) },
+        "allocate MF probe frame",
+    )?;
+    let native = unsafe { &*frame.as_mut_ptr() };
+    unsafe {
+        for (plane, height, value) in [(0, desc.height, 16), (1, desc.height / 2, 128)] {
+            ptr::write_bytes(
+                native.data[plane],
+                value,
+                native.linesize[plane] as usize * height as usize,
+            );
+        }
+    }
+    let mut packet = Packet::new()?;
+    let mut received = 0;
+    for input in [frame.as_mut_ptr(), ptr::null_mut()] {
+        check(
+            unsafe { ffi::avcodec_send_frame(codec.as_ptr(), input) },
+            "submit/drain MF probe frame",
+        )?;
+        loop {
+            let result =
+                unsafe { ffi::avcodec_receive_packet(codec.as_ptr(), packet.as_mut_ptr()) };
+            if result == ffi::AVERROR_EOF || (again(result) && !input.is_null()) {
+                break;
+            }
+            check(result, "receive hardware MF probe packet")?;
+            if packet.size() == 0 || received >= 16 {
+                return Err(Error::Media(
+                    "invalid hardware MF probe packet sequence".into(),
+                ));
+            }
+            received += 1;
+            packet.unref();
+        }
+    }
+    if received == 0 {
+        return Err(Error::Media(
+            "hardware MF encoder produced no packet".into(),
+        ));
+    }
+    Ok(())
+}
+
 #[cfg(all(test, feature = "encode-characterization"))]
 #[path = "encoder_replay.rs"]
 mod encoder_replay;
@@ -500,19 +610,21 @@ impl Encoder {
             )));
         }
         let codec_name = output_codec_name(&output_codec)?;
-        let encoder_name = if mode == EncodeMode::Vaapi {
-            format!("{codec_name}_vaapi")
-        } else {
-            "libx264".into()
+        let encoder_name = match mode {
+            EncodeMode::Vaapi => format!("{codec_name}_vaapi"),
+            EncodeMode::Software => "libx264".into(),
+            EncodeMode::MediaFoundation => "h264_mf".into(),
         };
         let name = CString::new(encoder_name.clone()).unwrap();
         let encoder = unsafe { ffi::avcodec_find_encoder_by_name(name.as_ptr()) };
         if encoder.is_null() {
-            return Err(asciiflow_core::Error::Media(if mode == EncodeMode::Vaapi {
-                format!("this FFmpeg build has no {encoder_name} encoder")
-            } else {
-                "this FFmpeg build has no libx264 software H.264 encoder; generic encoder fallback is not allowed".into()
-            }));
+            return Err(asciiflow_core::Error::Media(
+                if mode != EncodeMode::Software {
+                    format!("this FFmpeg build has no {encoder_name} encoder")
+                } else {
+                    "this FFmpeg build has no libx264 software H.264 encoder; generic encoder fallback is not allowed".into()
+                },
+            ));
         }
         require_output_codec_id(encoder, &output_codec)?;
         if mode == EncodeMode::Vaapi {
@@ -586,9 +698,14 @@ impl Encoder {
         #[cfg(feature = "encode-characterization")]
         let capture =
             super::encoder_capture::EncoderCapture::from_environment(unsafe { &*codec.as_ptr() })?;
+        if mode == EncodeMode::MediaFoundation {
+            configure_media_foundation(codec)?;
+        }
         let mut options = ptr::null_mut();
         let codec_options: &[(&str, &str)] = if mode == EncodeMode::Vaapi {
             vaapi_codec_options(&output_codec)
+        } else if mode == EncodeMode::MediaFoundation {
+            &[]
         } else {
             &[
                 ("preset", "ultrafast"),
@@ -607,7 +724,7 @@ impl Encoder {
         let opened = unsafe { ffi::avcodec_open2(codec.as_ptr(), encoder, &mut options) };
         let unused_options = unsafe { ffi::av_dict_count(options) };
         unsafe { ffi::av_dict_free(&mut options) };
-        let configure_operation = if mode == EncodeMode::Vaapi {
+        let configure_operation = if mode != EncodeMode::Software {
             format!(
                 "failed to configure {encoder_name} encoder for {}x{} {:?}",
                 desc.width, desc.height, desc.format
@@ -1244,6 +1361,15 @@ impl Encoder {
 
 fn require_supported_output(codec: &VideoCodec, desc: &FrameDesc, mode: EncodeMode) -> Result<()> {
     desc.validate_layout()?;
+    if mode == EncodeMode::MediaFoundation
+        && (codec != &VideoCodec::H264
+            || desc.format != PixelFormat::Nv12
+            || desc.color_space != ColorSpace::default())
+    {
+        return Err(Error::UnsupportedFrame(
+            "Media Foundation output requires H.264 8-bit limited BT.709 SDR".into(),
+        ));
+    }
     if desc.color_space.transfer == TransferCharacteristic::Pq && desc.format != PixelFormat::P010Le
     {
         return Err(Error::UnsupportedFrame(
@@ -1330,6 +1456,10 @@ fn pool_supports_upload(pool: &HardwareFramesPool, format: PixelFormat) -> Resul
     }
 }
 impl FrameSink for Encoder {
+    fn encode_on_caller_thread(&self) -> bool {
+        self.mode == EncodeMode::MediaFoundation
+    }
+
     fn encode(&mut self, frame: VideoFrame) -> Result<()> {
         if frame.desc() != &self.desc {
             return Err(asciiflow_core::Error::Media(
@@ -1358,6 +1488,10 @@ impl FrameSink for Encoder {
             }
         }
         native.pts = self.next_pts;
+        if self.mode == EncodeMode::MediaFoundation {
+            // MF forwards this duration to the native sample (one CFR frame).
+            native.duration = 1;
+        }
         let pts = native.pts;
         let frame_to_send = if self.mode == EncodeMode::Vaapi {
             let hardware_frame = self
@@ -2137,11 +2271,112 @@ mod audio_regression_tests {
         AsciiBackend, AsciiConfig, AudioPlan, AudioPolicy, BackendOutput, BackendTimings,
         ColorSpace, FrameDesc, HostFrame, Pipeline, VideoCodec,
     };
+    #[test]
+    fn media_foundation_requires_h264_nv12_sdr_without_software_fallback() {
+        let desc = FrameDesc::host_nv12(128, 128, ColorSpace::default()).unwrap();
+        require_supported_output(&VideoCodec::H264, &desc, EncodeMode::MediaFoundation).unwrap();
+        for codec in [VideoCodec::Hevc, VideoCodec::Av1] {
+            assert!(require_supported_output(&codec, &desc, EncodeMode::MediaFoundation).is_err());
+        }
+        let ten_bit = FrameDesc::host_p010_le(128, 128, ColorSpace::default()).unwrap();
+        assert!(
+            require_supported_output(&VideoCodec::H264, &ten_bit, EncodeMode::MediaFoundation)
+                .is_err()
+        );
+        #[cfg(not(target_os = "windows"))]
+        assert!(
+            probe_media_foundation_encoder(&desc, Rational::new(30, 1).unwrap())
+                .unwrap_err()
+                .to_string()
+                .contains("requires Windows")
+        );
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    #[ignore = "requires a real Windows Media Foundation H.264 hardware encoder"]
+    fn media_foundation_hardware_encode_round_trip() {
+        use asciiflow_core::FrameSource;
+        let desc = FrameDesc::host_nv12(128, 128, ColorSpace::default()).unwrap();
+        let rate = Rational::new(30, 1).unwrap();
+        probe_media_foundation_encoder(&desc, rate).unwrap();
+        let source = OutputPath(
+            std::env::temp_dir().join(format!("asciiflow-mf-source-{}.mp4", std::process::id())),
+        );
+        let path = OutputPath(
+            std::env::temp_dir().join(format!("asciiflow-mf-{}.mp4", std::process::id())),
+        );
+        assert!(!source.0.exists() && !path.0.exists());
+        let mut encoder = Encoder::create_with_codec_and_audio(
+            &source.0,
+            desc.clone(),
+            rate,
+            OutputEncoding {
+                codec: VideoCodec::H264,
+                mode: EncodeMode::MediaFoundation,
+            },
+            VaapiOptions::default(),
+            vec![],
+            CancellationToken::new(),
+        )
+        .unwrap();
+        for pts in 0..8 {
+            let mut host = HostFrame::new_zeroed(&desc);
+            let (y, uv) = host.planes_mut(&desc);
+            y.fill(16);
+            uv.fill(128);
+            encoder
+                .encode(VideoFrame::new_host(desc.clone(), Some(pts), host).unwrap())
+                .unwrap();
+        }
+        encoder.finish().unwrap();
+        drop(encoder);
+        let decoder = Decoder::open_with(
+            &source.0,
+            super::super::DecodeMode::Software,
+            VaapiOptions::default(),
+        )
+        .unwrap();
+        let encoder = Encoder::create_with_codec_and_audio(
+            &path.0,
+            desc.clone(),
+            rate,
+            OutputEncoding {
+                codec: VideoCodec::H264,
+                mode: EncodeMode::MediaFoundation,
+            },
+            VaapiOptions::default(),
+            vec![],
+            CancellationToken::new(),
+        )
+        .unwrap();
+        assert!(encoder.encode_on_caller_thread());
+        Pipeline::new(2)
+            .unwrap()
+            .run(decoder, Identity, encoder, AsciiConfig::default())
+            .unwrap();
+        let mut decoder = Decoder::open_with(
+            &path.0,
+            super::super::DecodeMode::Software,
+            VaapiOptions::default(),
+        )
+        .unwrap();
+        assert_eq!(decoder.info().requirements.codec, VideoCodec::H264);
+        assert_eq!(decoder.info().frame_desc, desc);
+        let mut count = 0;
+        while decoder.next_frame().unwrap().is_some() {
+            count += 1;
+        }
+        assert_eq!(count, 8);
+    }
     #[cfg(feature = "lgpl-prebuilt")]
     #[test]
     fn lgpl_profile_rejects_software_without_generic_h264_fallback() {
         assert!(unsafe { ffi::avcodec_find_encoder_by_name(c"libx264".as_ptr()) }.is_null());
+        #[cfg(target_os = "linux")]
         assert!(!unsafe { ffi::avcodec_find_encoder_by_name(c"h264_vaapi".as_ptr()) }.is_null());
+        #[cfg(target_os = "windows")]
+        assert!(!unsafe { ffi::avcodec_find_encoder_by_name(c"h264_mf".as_ptr()) }.is_null());
         assert!(!super::super::probe_vaapi_build().software_h264_encoder);
         let target =
             std::env::temp_dir().join(format!("lgpl-no-software-{}.mp4", std::process::id()));

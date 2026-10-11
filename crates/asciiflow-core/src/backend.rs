@@ -142,6 +142,12 @@ pub trait FrameSink: Send {
     fn encode(&mut self, frame: VideoFrame) -> Result<()>;
     fn finish(&mut self) -> Result<()>;
 
+    /// Keep initialization, encoding and destruction on the pipeline caller's thread.
+    /// Thread-bound sinks must be created on that thread before running the pipeline.
+    fn encode_on_caller_thread(&self) -> bool {
+        false
+    }
+
     fn take_timings(&mut self) -> SinkTimings {
         SinkTimings::default()
     }

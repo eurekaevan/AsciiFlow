@@ -24,6 +24,8 @@ pub enum MediaArg {
     Auto,
     Software,
     Vaapi,
+    /// Windows Media Foundation H.264 hardware encoder (encode only).
+    Mf,
 }
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, ValueEnum)]
@@ -108,6 +110,7 @@ impl From<MediaArg> for MediaRequest {
             MediaArg::Auto => Self::Auto,
             MediaArg::Software => Self::Software,
             MediaArg::Vaapi => Self::Hardware,
+            MediaArg::Mf => Self::MediaFoundation,
         }
     }
 }

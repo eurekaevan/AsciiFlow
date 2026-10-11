@@ -11,6 +11,7 @@ use asciiflow_core::{
     PipelinePolicy, PipelineStage, PlanningResult, ProcessingBackend, SourceTimings,
 };
 use asciiflow_cpu::{CpuAsciiBackend, Nv12Mapper};
+#[cfg(target_os = "linux")]
 use asciiflow_interop::{
     VaapiVulkanFullInteropProcessor, VaapiVulkanInteropProcessor,
     VulkanVaapiOutputInteropProcessor, run_full_interop_pipeline_with_cancellation,
@@ -613,6 +614,7 @@ fn run_inner(
         let mut media_plan = vec![match plan.decode {
             MediaImplementation::Software => "software decode",
             MediaImplementation::Hardware => "VAAPI decode",
+            MediaImplementation::MediaFoundation => "unsupported MF decode",
         }];
         if plan.hardware_input_interop {
             media_plan.extend([
@@ -647,6 +649,7 @@ fn run_inner(
             media_plan.push(match plan.encode {
                 MediaImplementation::Software => "software encode",
                 MediaImplementation::Hardware => "VAAPI encode",
+                MediaImplementation::MediaFoundation => "hardware MF encode",
             });
         }
         println!("Media plan: {}", media_plan.join(" -> "));
@@ -720,6 +723,7 @@ fn run_inner(
     } else {
         let implementation = |kind| match kind {
             MediaImplementation::Hardware => "VAAPI",
+            MediaImplementation::MediaFoundation => "Media Foundation hardware",
             MediaImplementation::Software => "software",
         };
         let range =
@@ -774,6 +778,7 @@ fn run_inner(
                 .run_with_cancellation(source, backend, encoder, config, cancellation.clone())
                 .map(|report| report.metrics)
         }
+        #[cfg(target_os = "linux")]
         SelectedProcessor::Interop(interop) => run_interop_pipeline_with_cancellation(
             decoder,
             *interop,
@@ -782,6 +787,7 @@ fn run_inner(
             plan.buffer_capacity,
             cancellation.clone(),
         ),
+        #[cfg(target_os = "linux")]
         SelectedProcessor::FullInterop(interop) => run_full_interop_pipeline_with_cancellation(
             decoder,
             *interop,
@@ -790,6 +796,7 @@ fn run_inner(
             plan.buffer_capacity,
             cancellation.clone(),
         ),
+        #[cfg(target_os = "linux")]
         SelectedProcessor::OutputInterop(interop) => run_output_interop_pipeline_with_cancellation(
             decoder,
             *interop,
@@ -877,7 +884,10 @@ enum InitCapability {
     Vulkan,
     SoftwareEncode,
     HardwareEncode,
+    MediaFoundationEncode,
+    #[cfg(any(target_os = "linux", test))]
     InputInterop,
+    #[cfg(any(target_os = "linux", test))]
     OutputInterop,
     Muxer,
     Configuration,
@@ -888,8 +898,12 @@ impl InitCapability {
         match self {
             Self::SoftwareDecode | Self::HardwareDecode => PipelineStage::DecoderInitialization,
             Self::Vulkan => PipelineStage::ProcessorInitialization,
-            Self::SoftwareEncode | Self::HardwareEncode => PipelineStage::EncoderInitialization,
+            Self::SoftwareEncode | Self::HardwareEncode | Self::MediaFoundationEncode => {
+                PipelineStage::EncoderInitialization
+            }
+            #[cfg(any(target_os = "linux", test))]
             Self::InputInterop => PipelineStage::InputInteropInitialization,
+            #[cfg(any(target_os = "linux", test))]
             Self::OutputInterop => PipelineStage::OutputInteropInitialization,
             Self::Muxer => PipelineStage::MuxInitialization,
             Self::Configuration => PipelineStage::Planning,
@@ -903,7 +917,10 @@ impl InitCapability {
             Self::Vulkan => "create Vulkan ASCII processor",
             Self::SoftwareEncode => "create software output video encoder and MP4 muxer",
             Self::HardwareEncode => "create VAAPI output video encoder and MP4 muxer",
+            Self::MediaFoundationEncode => "create hardware Media Foundation encoder and MP4 muxer",
+            #[cfg(any(target_os = "linux", test))]
             Self::InputInterop => "create VAAPI to Vulkan input interop",
+            #[cfg(any(target_os = "linux", test))]
             Self::OutputInterop => "create Vulkan to VAAPI output interop",
             Self::Muxer => "create MP4 muxer",
             Self::Configuration => "validate execution configuration",
@@ -914,8 +931,12 @@ impl InitCapability {
         match self {
             Self::HardwareDecode => policy.decode == asciiflow_core::MediaRequest::Auto,
             Self::Vulkan => policy.backend == ProcessingBackend::Auto,
-            Self::HardwareEncode => policy.encode == asciiflow_core::MediaRequest::Auto,
+            Self::HardwareEncode | Self::MediaFoundationEncode => {
+                policy.encode == asciiflow_core::MediaRequest::Auto
+            }
+            #[cfg(any(target_os = "linux", test))]
             Self::InputInterop => policy.input_interop == asciiflow_core::InteropRequest::Auto,
+            #[cfg(any(target_os = "linux", test))]
             Self::OutputInterop => policy.output_interop == asciiflow_core::InteropRequest::Auto,
             Self::SoftwareDecode | Self::SoftwareEncode | Self::Muxer | Self::Configuration => {
                 false
@@ -946,6 +967,10 @@ impl InitCapability {
                 snapshot.processing.vulkan_auto_eligible = false;
             }
             Self::HardwareEncode => snapshot.media.disable_encode_output(output, reason),
+            Self::MediaFoundationEncode => {
+                snapshot.media.media_foundation_h264_encode = unsupported()
+            }
+            #[cfg(any(target_os = "linux", test))]
             Self::InputInterop => {
                 if input.bit_depth == Some(10) {
                     snapshot.interop.p010_input = unsupported();
@@ -953,6 +978,7 @@ impl InitCapability {
                     snapshot.interop.set_input(&input.codec, unsupported());
                 }
             }
+            #[cfg(any(target_os = "linux", test))]
             Self::OutputInterop => snapshot
                 .interop
                 .set_output_for_requirements(output, unsupported()),
@@ -1004,14 +1030,26 @@ struct Initialized<T> {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[cfg_attr(
+    not(target_os = "linux"),
+    allow(
+        clippy::enum_variant_names,
+        reason = "Windows retains only creation checkpoints from the shared factory"
+    )
+)]
 enum InitializationPoint {
     DecoderCreate,
     VaapiFramesPoolCreate,
+    #[cfg(any(target_os = "linux", test))]
     InputDrmPrimeMap,
+    #[cfg(any(target_os = "linux", test))]
     InputDmaBufImport,
     VulkanProcessorCreate,
+    #[cfg(any(target_os = "linux", test))]
     OutputVaapiFrameAcquire,
+    #[cfg(any(target_os = "linux", test))]
     OutputDrmPrimeMap,
+    #[cfg(any(target_os = "linux", test))]
     OutputDmaBufImport,
     EncoderCreate,
     MuxerCreate,
@@ -1024,6 +1062,7 @@ impl InitializationPoint {
             Self::DecoderCreate => match plan.decode {
                 MediaImplementation::Software => InitCapability::SoftwareDecode,
                 MediaImplementation::Hardware => InitCapability::HardwareDecode,
+                MediaImplementation::MediaFoundation => InitCapability::Configuration,
             },
             Self::VaapiFramesPoolCreate => InitCapability::HardwareEncode,
             Self::OutputVaapiFrameAcquire | Self::OutputDrmPrimeMap | Self::OutputDmaBufImport => {
@@ -1034,6 +1073,7 @@ impl InitializationPoint {
             Self::EncoderCreate => match plan.encode {
                 MediaImplementation::Software => InitCapability::SoftwareEncode,
                 MediaImplementation::Hardware => InitCapability::HardwareEncode,
+                MediaImplementation::MediaFoundation => InitCapability::MediaFoundationEncode,
             },
             Self::MuxerCreate => InitCapability::Muxer,
         }
@@ -1213,10 +1253,17 @@ impl PipelineFactory {
         let decode_capability = match plan.decode {
             MediaImplementation::Software => InitCapability::SoftwareDecode,
             MediaImplementation::Hardware => InitCapability::HardwareDecode,
+            MediaImplementation::MediaFoundation => InitCapability::Configuration,
         };
         let decode_mode = match plan.decode {
             MediaImplementation::Software => DecodeMode::Software,
             MediaImplementation::Hardware => DecodeMode::Vaapi,
+            MediaImplementation::MediaFoundation => {
+                return Err(InitializationFailure::new(
+                    InitCapability::Configuration,
+                    anyhow::anyhow!("Media Foundation decoding is not implemented"),
+                ));
+            }
         };
         let decoder_result = if plan.color_processing != asciiflow_core::ColorProcessing::Sdr {
             Decoder::open_with_pq_preserve(&args.input, decode_mode, vaapi.clone())
@@ -1247,10 +1294,12 @@ impl PipelineFactory {
         let encode_capability = match plan.encode {
             MediaImplementation::Software => InitCapability::SoftwareEncode,
             MediaImplementation::Hardware => InitCapability::HardwareEncode,
+            MediaImplementation::MediaFoundation => InitCapability::MediaFoundationEncode,
         };
         let encode_mode = match plan.encode {
             MediaImplementation::Software => EncodeMode::Software,
             MediaImplementation::Hardware => EncodeMode::Vaapi,
+            MediaImplementation::MediaFoundation => EncodeMode::MediaFoundation,
         };
         hooks.checkpoint(InitializationPoint::EncoderCreate, plan)?;
         hooks.checkpoint(InitializationPoint::MuxerCreate, plan)?;
@@ -1307,6 +1356,7 @@ impl PipelineFactory {
             .map_err(|error| InitializationFailure::new(InitCapability::Muxer, error))?;
 
         let selection = match vulkan {
+            #[cfg(target_os = "linux")]
             Some(backend) if plan.hardware_output_interop && plan.hardware_input_interop => {
                 hooks.checkpoint(InitializationPoint::InputDrmPrimeMap, plan)?;
                 hooks.checkpoint(InitializationPoint::InputDmaBufImport, plan)?;
@@ -1345,6 +1395,7 @@ impl PipelineFactory {
                     gpu_slots: Some(2),
                 }
             }
+            #[cfg(target_os = "linux")]
             Some(backend) if plan.hardware_output_interop => {
                 hooks.checkpoint(InitializationPoint::OutputVaapiFrameAcquire, plan)?;
                 hooks.checkpoint(InitializationPoint::OutputDrmPrimeMap, plan)?;
@@ -1372,6 +1423,7 @@ impl PipelineFactory {
                     gpu_slots: Some(2),
                 }
             }
+            #[cfg(target_os = "linux")]
             Some(backend) if plan.hardware_input_interop => {
                 hooks.checkpoint(InitializationPoint::InputDrmPrimeMap, plan)?;
                 hooks.checkpoint(InitializationPoint::InputDmaBufImport, plan)?;
@@ -1460,6 +1512,7 @@ impl PipelineFactory {
         })
     }
 
+    #[cfg(target_os = "linux")]
     fn require_two_slots(path: &'static str) -> std::result::Result<(), InitializationFailure> {
         match vulkan_frame_slots() {
             Ok(2) => Ok(()),
@@ -1477,8 +1530,11 @@ impl PipelineFactory {
 
 enum SelectedProcessor {
     Host(Box<dyn AsciiBackend>),
+    #[cfg(target_os = "linux")]
     Interop(Box<VaapiVulkanInteropProcessor>),
+    #[cfg(target_os = "linux")]
     FullInterop(Box<VaapiVulkanFullInteropProcessor>),
+    #[cfg(target_os = "linux")]
     OutputInterop(Box<VulkanVaapiOutputInteropProcessor>),
 }
 
@@ -2004,6 +2060,7 @@ mod capability_and_output_tests {
             media: MediaCapabilities {
                 software_decode: supported(),
                 software_encode: supported(),
+                media_foundation_h264_encode: CapabilitySupport::not_probed("Windows only"),
                 vaapi_device: supported(),
                 h264_vaapi_decode: supported(),
                 hevc_vaapi_decode: supported(),

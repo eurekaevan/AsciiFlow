@@ -98,6 +98,10 @@ pub fn natural_cell_aspect(path: &Path, face_index: isize) -> Result<CellAspect,
 }
 
 /// Initialization-only: all native objects are dropped before returning owned bytes.
+#[allow(
+    clippy::useless_conversion,
+    reason = "FreeType C long is 32-bit on Windows and 64-bit on Linux"
+)]
 pub fn build_font_atlas(
     path: &Path,
     face_index: isize,
@@ -151,9 +155,9 @@ pub fn build_font_atlas(
             .size_metrics()
             .ok_or_else(|| error("read size metrics", "missing metrics".into()))?;
         let mut left = 0i64;
-        let mut right = (metrics.max_advance + 63) / 64;
-        let mut top = (metrics.ascender + 63) / 64;
-        let mut bottom = metrics.descender.div_euclid(64);
+        let mut right = (i64::from(metrics.max_advance) + 63) / 64;
+        let mut top = (i64::from(metrics.ascender) + 63) / 64;
+        let mut bottom = i64::from(metrics.descender).div_euclid(64);
         for &index in &indices {
             face.load_glyph(index, LoadFlag::NO_BITMAP)
                 .map_err(|e| error("load glyph outline", e.to_string()))?;

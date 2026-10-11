@@ -2891,6 +2891,7 @@ mod tests {
         object_size: u64,
     ) -> ExternalPlaneImage {
         ExternalPlaneImage {
+            #[cfg(target_os = "linux")]
             fd: std::fs::File::open("/dev/null").unwrap().into(),
             object_size,
             modifier: 9,

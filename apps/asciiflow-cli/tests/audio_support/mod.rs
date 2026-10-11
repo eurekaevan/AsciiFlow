@@ -68,6 +68,7 @@ impl Process {
     pub fn start(cmd: &mut Command) -> Self {
         Self(Some(cmd.spawn().unwrap()))
     }
+    #[cfg(target_os = "linux")]
     pub fn pid(&self) -> u32 {
         self.0.as_ref().unwrap().id()
     }

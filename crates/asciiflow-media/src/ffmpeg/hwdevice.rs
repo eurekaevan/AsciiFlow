@@ -1,12 +1,17 @@
-use super::{codec::ffmpeg_error, ffi};
+#[cfg(target_os = "linux")]
+use super::codec::ffmpeg_error;
+use super::ffi;
 use asciiflow_core::{Error, Result};
-use std::{ffi::CString, path::Path, ptr, ptr::NonNull};
+#[cfg(target_os = "linux")]
+use std::{ffi::CString, ptr};
+use std::{path::Path, ptr::NonNull};
 
 pub(crate) struct HardwareDevice {
     reference: NonNull<ffi::AVBufferRef>,
 }
 
 impl HardwareDevice {
+    #[cfg(target_os = "linux")]
     pub(crate) fn vaapi(path: Option<&Path>) -> Result<Self> {
         let display_path = path
             .map(|value| value.display().to_string())
@@ -36,6 +41,11 @@ impl HardwareDevice {
         let reference = NonNull::new(reference)
             .ok_or_else(|| Error::Media("FFmpeg returned a null VAAPI device".into()))?;
         Ok(Self { reference })
+    }
+
+    #[cfg(not(target_os = "linux"))]
+    pub(crate) fn vaapi(_path: Option<&Path>) -> Result<Self> {
+        Err(Error::Media("VAAPI requires Linux".into()))
     }
 
     pub(crate) fn as_ptr(&self) -> *mut ffi::AVBufferRef {

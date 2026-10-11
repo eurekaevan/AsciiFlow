@@ -8,6 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 BEGIN = "<!-- production-support-contract:begin -->"
 END = "<!-- production-support-contract:end -->"
+PLATFORM_SCOPE = "The retained support tables and hardware evidence below describe the qualified Linux paths. They do not qualify the new Windows Media Foundation implementation."
 
 
 def profile_availability(contract, case, profile):
@@ -19,7 +20,7 @@ def profile_availability(contract, case, profile):
 
 
 def render(contract):
-    lines = [BEGIN, f"Support contract `{contract['support_contract_version']}`. Hardware conditions and evidence: [production support contract](docs/production-support.md).", "",
+    lines = [BEGIN, f"Support contract `{contract['support_contract_version']}`. Hardware conditions and evidence: [production support contract](docs/production-support.md).", "", PLATFORM_SCOPE, "",
              "| Dimension | Value | Support state | Conditions |", "|---|---|---|---|"]
     for name in ("input_container", "output_container", "input_color", "output_profile", "output_dynamic_range"):
         for value in contract["dimensions"].get(name, []):
@@ -34,6 +35,10 @@ def full(contract):
     lines = ["# Production support contract", "", f"Version: {contract['support_contract_version']}. Generated from `tests/support/production-support-v1.json`; do not edit the tables manually.", "", "## Support states", ""]
     for state, definition in sorted(contract["states"].items()):
         lines.append(f"- {state}: {definition}")
+    lines += ["", "## Windows implementation boundary", "", PLATFORM_SCOPE, "",
+              "Windows x86_64 implements software H.264/HEVC video decoding, MP4/AAC passthrough and hardware-only Media Foundation H.264 8-bit SDR encoding (`--encode mf`). Software H.264 encoding is excluded from the LGPL package; unavailable MF hardware produces an explicit error without a software encoder fallback.", "",
+              "Automatic Windows processing prefers eligible Vulkan devices and otherwise selects CPU. Vulkan processing uses host frames and readback; Windows VAAPI/DRM/DMA-BUF interop and hardware decoding are unavailable. The initial Windows package has no AV1 decoder, HEVC/AV1 encoder, 10-bit output, HDR preservation or HDR-to-SDR conversion.", "",
+              "These are implementation and release-profile boundaries, not retained Windows hardware qualification. The Windows build and real hardware conversion have not been verified on the current Linux development host. Hosted release checks cover the native LGPL profile, relocated startup, import dependencies, rejection behavior and MF planning diagnostics; they do not establish end-to-end hardware conversion. See [release instructions](releases.md) for the opt-in Windows hardware round-trip gate."]
     lines += ["", "## Qualification scope", ""]
     lines.extend(f"- {key}: {value}" for key, value in sorted(contract["hardware_scope"].items()))
     lines += ["", "## Production limits", "", "```json", json.dumps(contract["production_limits"], indent=2, sort_keys=True), "```"]

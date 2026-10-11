@@ -4,6 +4,9 @@ AsciiFlow is a Rust video processor with a permanent CPU reference backend,
 a Vulkan 1.3 compute backend, optional Linux VAAPI media, and qualified Intel
 DMA-BUF bridges in both pixel directions. Input interop avoids decode-side
 Host copies; output interop fills encoder-owned VAAPI surfaces from Vulkan.
+Windows uses hardware-only Media Foundation H.264 encoding of host NV12 frames,
+with software decoding and CPU or Vulkan processing. Linux VAAPI/DRM interop
+remains platform-specific; see [release profiles](releases.md) for Windows limits.
 The default output is 8-bit H.264. The former C# implementation is outside the
 active tree; its distinct features are tracked in
 [legacy-feature-parity.md](legacy-feature-parity.md).
@@ -273,12 +276,16 @@ See [P010 and SDR rendering semantics](p010.md#cpu-and-vulkan-semantics).
 
 Planning keeps four concepts separate:
 
-* `CapabilitySnapshot` records facts observed from FFmpeg, VAAPI, Vulkan, and
+* `CapabilitySnapshot` records facts observed from FFmpeg, VAAPI, Media Foundation, Vulkan, and
   DRM PRIME. Each fact is `Supported`, `Unsupported(reason)`, or
   `NotProbed(reason)`; native handles and pointers never enter Core.
 * `PipelinePolicy` records user intent. `auto`, `software`, `hardware`,
   `cpu`, `vulkan`, and interop `auto|off|on` are policy values, not capability
   claims.
+  Windows `--encode mf` requires the actual hardware-only encoder probe to pass;
+  automatic planning also considers this route. MF initialization, encoding and
+  destruction stay on the pipeline caller's thread to balance COM ownership,
+  while decoding and processing retain their bounded worker queues.
 * `PipelinePlan` is the selected, printable sequence of logical nodes and
   frame domains. It includes transfer nodes, pixel-path classification,
   preference cost, and human-readable reasons.

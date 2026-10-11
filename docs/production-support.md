@@ -9,6 +9,16 @@ Version: 1.1.0. Generated from `tests/support/production-support-v1.json`; do no
 - Unqualified: No production evidence supports a claim; current planner acceptance is not qualification.
 - Unsupported: Explicitly rejected by the current product contract or sealed production evidence.
 
+## Windows implementation boundary
+
+The retained support tables and hardware evidence below describe the qualified Linux paths. They do not qualify the new Windows Media Foundation implementation.
+
+Windows x86_64 implements software H.264/HEVC video decoding, MP4/AAC passthrough and hardware-only Media Foundation H.264 8-bit SDR encoding (`--encode mf`). Software H.264 encoding is excluded from the LGPL package; unavailable MF hardware produces an explicit error without a software encoder fallback.
+
+Automatic Windows processing prefers eligible Vulkan devices and otherwise selects CPU. Vulkan processing uses host frames and readback; Windows VAAPI/DRM/DMA-BUF interop and hardware decoding are unavailable. The initial Windows package has no AV1 decoder, HEVC/AV1 encoder, 10-bit output, HDR preservation or HDR-to-SDR conversion.
+
+These are implementation and release-profile boundaries, not retained Windows hardware qualification. The Windows build and real hardware conversion have not been verified on the current Linux development host. Hosted release checks cover the native LGPL profile, relocated startup, import dependencies, rejection behavior and MF planning diagnostics; they do not establish end-to-end hardware conversion. See [release instructions](releases.md) for the opt-in Windows hardware round-trip gate.
+
 ## Qualification scope
 
 - ffmpeg: FFmpeg 8.1.3

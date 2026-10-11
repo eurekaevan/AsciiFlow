@@ -48,6 +48,7 @@ impl VaapiOptions {
         [hevc_main10, av1_10bit]
     }
 
+    #[cfg(target_os = "linux")]
     fn probe_decode_profiles_all(&self) -> [CapabilitySupport; 5] {
         let library = match unsafe { libloading::Library::new("libva.so.2") } {
             Ok(value) => value,
@@ -76,6 +77,11 @@ impl VaapiOptions {
         unsafe { query_profiles(&library, display) }
     }
 
+    #[cfg(not(target_os = "linux"))]
+    fn probe_decode_profiles_all(&self) -> [CapabilitySupport; 5] {
+        unsupported_profiles("VAAPI requires Linux".into())
+    }
+
     /// Probe the exact 8-bit VAAPI encode profiles used by the output planner.
     pub fn probe_encode_profiles(&self) -> [CapabilitySupport; 3] {
         let [h264, hevc, av1, _, _] = self.probe_encode_profiles_all();
@@ -96,6 +102,7 @@ impl VaapiOptions {
         av1_10bit
     }
 
+    #[cfg(target_os = "linux")]
     fn probe_encode_profiles_all(&self) -> [CapabilitySupport; 5] {
         let library = match unsafe { libloading::Library::new("libva.so.2") } {
             Ok(value) => value,
@@ -124,6 +131,10 @@ impl VaapiOptions {
             return unsupported_encode_profiles("VAAPI device returned a null display".into());
         }
         unsafe { query_encode_profiles(&library, display) }
+    }
+    #[cfg(not(target_os = "linux"))]
+    fn probe_encode_profiles_all(&self) -> [CapabilitySupport; 5] {
+        unsupported_encode_profiles("VAAPI requires Linux".into())
     }
 }
 
@@ -157,6 +168,7 @@ pub enum DecodeMode {
 pub enum EncodeMode {
     Software,
     Vaapi,
+    MediaFoundation,
 }
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -266,29 +278,46 @@ pub fn probe_decoder_build(codec: &VideoCodec, mode: DecodeMode) -> Result<Strin
         .into_owned())
 }
 
+#[cfg(target_os = "linux")]
 type VaStatus = i32;
+#[cfg(target_os = "linux")]
 type VaProfile = i32;
+#[cfg(target_os = "linux")]
 type VaEntrypoint = i32;
+#[cfg(target_os = "linux")]
 type VaDisplay = ffi::VADisplay;
+#[cfg(target_os = "linux")]
 const VA_STATUS_SUCCESS: VaStatus = 0;
 // libva va.h ABI constants, not codec bitstream profile_idc values.
+#[cfg(target_os = "linux")]
 const VA_PROFILE_H264_BASELINE: VaProfile = 5;
+#[cfg(target_os = "linux")]
 const VA_PROFILE_H264_MAIN: VaProfile = 6;
+#[cfg(target_os = "linux")]
 const VA_PROFILE_H264_HIGH: VaProfile = 7;
+#[cfg(target_os = "linux")]
 const VA_PROFILE_HEVC_MAIN: VaProfile = 17;
+#[cfg(target_os = "linux")]
 const VA_PROFILE_HEVC_MAIN10: VaProfile = 18;
+#[cfg(target_os = "linux")]
 const VA_PROFILE_AV1_PROFILE0: VaProfile = 32;
+#[cfg(target_os = "linux")]
 const VA_ENTRYPOINT_VLD: VaEntrypoint = 1;
+#[cfg(target_os = "linux")]
 const VA_ENTRYPOINT_ENC_SLICE: VaEntrypoint = 6;
+#[cfg(target_os = "linux")]
 const VA_CONFIG_ATTRIB_RT_FORMAT: i32 = 0;
+#[cfg(target_os = "linux")]
 const VA_RT_FORMAT_YUV420_10: u32 = 0x0000_0100;
 
+#[cfg(target_os = "linux")]
 #[repr(C)]
 struct VaConfigAttrib {
     kind: i32,
     value: u32,
 }
 
+#[cfg(target_os = "linux")]
 unsafe fn query_profiles(
     library: &libloading::Library,
     display: VaDisplay,
@@ -386,6 +415,7 @@ unsafe fn query_profiles(
     }
 }
 
+#[cfg(target_os = "linux")]
 unsafe fn ten_bit_profile_support(
     library: &libloading::Library,
     display: VaDisplay,
@@ -447,6 +477,7 @@ unsafe fn ten_bit_profile_support(
     CapabilitySupport::supported()
 }
 
+#[cfg(target_os = "linux")]
 unsafe fn query_encode_profiles(
     library: &libloading::Library,
     display: VaDisplay,
@@ -556,6 +587,7 @@ unsafe fn query_encode_profiles(
     }
 }
 
+#[cfg(target_os = "linux")]
 unsafe fn profile_entrypoint_10bit_support(
     library: &libloading::Library,
     display: VaDisplay,
@@ -617,6 +649,7 @@ unsafe fn profile_entrypoint_10bit_support(
     CapabilitySupport::supported()
 }
 
+#[cfg(target_os = "linux")]
 unsafe fn profile_entrypoint_support(
     display: VaDisplay,
     available: &[VaProfile],
@@ -648,6 +681,7 @@ unsafe fn profile_entrypoint_support(
     CapabilitySupport::unsupported("driver exposes no matching EncSlice profile")
 }
 
+#[cfg(target_os = "linux")]
 unsafe fn profile_support(
     display: VaDisplay,
     available: &[VaProfile],

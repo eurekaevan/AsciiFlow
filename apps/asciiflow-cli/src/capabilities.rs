@@ -1,12 +1,14 @@
 use asciiflow_core::{
     AsciiBackend, AsciiConfig, AudioPlan, CapabilitySnapshot, CapabilitySupport, Error,
-    FrameSource, InteropCapabilities, MediaCapabilities, PipelinePlan, PipelineStage, PixelFormat,
-    ProcessingCapabilities, VideoCodec,
+    FrameSource, InteropCapabilities, MediaCapabilities, PipelinePlan, ProcessingCapabilities,
 };
+#[cfg(target_os = "linux")]
+use asciiflow_core::{PipelineStage, PixelFormat, VideoCodec};
+#[cfg(target_os = "linux")]
 use asciiflow_interop::DrmPrimeMapping;
-use asciiflow_media::{
-    DecodeMode, Decoder, MediaInfo, VaapiOptions, probe_vaapi_build, probe_vaapi_encoder_for,
-};
+#[cfg(target_os = "linux")]
+use asciiflow_media::probe_vaapi_encoder_for;
+use asciiflow_media::{DecodeMode, Decoder, MediaInfo, VaapiOptions, probe_vaapi_build};
 use asciiflow_vulkan::VulkanAsciiBackend;
 use std::{
     path::Path,
@@ -127,7 +129,12 @@ pub fn probe_for_request(
         .color_processing_for(request)?
         == asciiflow_core::ColorProcessing::HdrPqToSdrBt709
     {
+        #[cfg(target_os = "linux")]
         probe_hdr_to_sdr(input, vaapi, config, &mut result);
+        #[cfg(not(target_os = "linux"))]
+        return Err(Error::UnsupportedFrame(
+            "HDR conversion is not qualified on Windows".into(),
+        ));
     }
     result.duration = started.elapsed();
     Ok(result)
@@ -135,6 +142,7 @@ pub fn probe_for_request(
 
 /// Qualify actual source decode, sealed C execution, target-specific encoder
 /// acceptance and writable output imports. No vendor inference or host pixels.
+#[cfg(target_os = "linux")]
 fn probe_hdr_to_sdr(
     input: &Path,
     vaapi: &VaapiOptions,
@@ -273,6 +281,7 @@ fn probe_hdr_to_sdr(
     };
 }
 
+#[cfg(target_os = "linux")]
 pub fn probe(
     input: &Path,
     vaapi: &VaapiOptions,
@@ -610,6 +619,9 @@ pub fn probe(
             media: MediaCapabilities {
                 software_decode: CapabilitySupport::supported(),
                 software_encode,
+                media_foundation_h264_encode: CapabilitySupport::not_probed(
+                    "Media Foundation requires Windows",
+                ),
                 vaapi_device,
                 h264_vaapi_decode: decode_facts[0].clone(),
                 hevc_vaapi_decode: decode_facts[1].clone(),
@@ -667,6 +679,126 @@ pub fn probe(
 
 /// Runtime facts are scoped to this probe, input, driver, and device. They do
 /// not promote an implementation or historical fixture to global qualification.
+#[cfg(not(target_os = "linux"))]
+pub fn probe(
+    input: &Path,
+    vaapi: &VaapiOptions,
+    config: &AsciiConfig,
+) -> asciiflow_core::Result<CapabilityProbe> {
+    let started = Instant::now();
+    if vaapi.device.is_some() {
+        return Err(Error::InvalidConfig(
+            "--hw-device selects a Linux VAAPI device; Windows MF uses the system hardware encoder"
+                .into(),
+        ));
+    }
+    let mut decoder = Decoder::open_with_pq_preserve(input, DecodeMode::Software, vaapi.clone())?;
+    let frame = decoder
+        .next_frame()?
+        .ok_or_else(|| Error::Media("input contains no decodable video frame".into()))?;
+    let media_info = decoder.info().clone();
+    drop(decoder);
+    let unavailable = || CapabilitySupport::unsupported("VAAPI/DRM interop requires Linux");
+    let media_foundation_h264_encode = match asciiflow_media::ffmpeg::probe_media_foundation_encoder(
+        &media_info.frame_desc,
+        media_info.frame_rate,
+    ) {
+        Ok(()) => CapabilitySupport::supported(),
+        Err(error) => CapabilitySupport::unsupported(error.to_string()),
+    };
+    let software_encode = if cfg!(feature = "lgpl-prebuilt") {
+        CapabilitySupport::unsupported(
+            "Software H.264 encoding is excluded from the official LGPL prebuilt release (libx264 excluded)",
+        )
+    } else if probe_vaapi_build().software_h264_encoder {
+        CapabilitySupport::supported()
+    } else {
+        CapabilitySupport::unsupported("FFmpeg exposes no software H.264 encoder")
+    };
+    let diagnostic_config = AsciiConfig {
+        font: "builtin-8x8".into(),
+        ..config.clone()
+    };
+    let backend = VulkanAsciiBackend::new().and_then(|mut backend| {
+        backend.prepare(&media_info.frame_desc, &diagnostic_config)?;
+        backend.process(frame, &diagnostic_config)?;
+        Ok(backend)
+    });
+    let processing = match backend {
+        Ok(backend) => {
+            let device = backend.device_info();
+            ProcessingCapabilities {
+                cpu: CapabilitySupport::supported(),
+                vulkan: CapabilitySupport::supported(),
+                vulkan_pq: CapabilitySupport::unsupported("Windows HDR output is not qualified"),
+                vulkan_hdr_to_sdr: CapabilitySupport::unsupported(
+                    "Windows HDR conversion is not qualified",
+                ),
+                vulkan_auto_eligible: device.auto_eligible(),
+                vulkan_device_name: Some(device.name.clone()),
+                vulkan_device_kind: Some(device.planner_device_kind()),
+                compute_queue: CapabilitySupport::supported(),
+                storage_buffer_8bit: CapabilitySupport::supported(),
+                shader_int64: CapabilitySupport::supported(),
+                synchronization2: CapabilitySupport::supported(),
+            }
+        }
+        Err(error) => ProcessingCapabilities {
+            cpu: CapabilitySupport::supported(),
+            vulkan: CapabilitySupport::unsupported(error.to_string()),
+            vulkan_pq: CapabilitySupport::unsupported("Windows HDR output is not qualified"),
+            vulkan_hdr_to_sdr: CapabilitySupport::unsupported(
+                "Windows HDR conversion is not qualified",
+            ),
+            vulkan_auto_eligible: false,
+            vulkan_device_name: None,
+            vulkan_device_kind: None,
+            compute_queue: CapabilitySupport::not_probed("Vulkan unavailable"),
+            storage_buffer_8bit: CapabilitySupport::not_probed("Vulkan unavailable"),
+            shader_int64: CapabilitySupport::not_probed("Vulkan unavailable"),
+            synchronization2: CapabilitySupport::not_probed("Vulkan unavailable"),
+        },
+    };
+    Ok(CapabilityProbe {
+        snapshot: CapabilitySnapshot {
+            media: MediaCapabilities {
+                software_decode: CapabilitySupport::supported(),
+                software_encode,
+                media_foundation_h264_encode,
+                vaapi_device: unavailable(),
+                h264_vaapi_decode: unavailable(),
+                hevc_vaapi_decode: unavailable(),
+                av1_vaapi_decode: unavailable(),
+                h264_vaapi_encode: unavailable(),
+                hevc_vaapi_encode: unavailable(),
+                hevc_main10_vaapi_decode: unavailable(),
+                av1_10bit_vaapi_decode: unavailable(),
+                hevc_main10_vaapi_encode: unavailable(),
+                av1_vaapi_encode: unavailable(),
+                av1_10bit_vaapi_encode: unavailable(),
+                nv12_hardware_frames: unavailable(),
+                nv12_hardware_upload: unavailable(),
+                p010_hardware_frames: unavailable(),
+                p010_hardware_upload: unavailable(),
+            },
+            processing,
+            interop: InteropCapabilities {
+                input: unavailable(),
+                hevc_input: unavailable(),
+                av1_input: unavailable(),
+                output: unavailable(),
+                hevc_output: unavailable(),
+                av1_output: unavailable(),
+                p010_input: unavailable(),
+                p010_output: unavailable(),
+                av1_p010_output: unavailable(),
+            },
+        },
+        media_info,
+        duration: started.elapsed(),
+    })
+}
+
 pub fn diagnostic(snapshot: &CapabilitySnapshot) -> serde_json::Value {
     fn fact(value: &CapabilitySupport) -> serde_json::Value {
         let state = match value {
@@ -689,7 +821,7 @@ pub fn diagnostic(snapshot: &CapabilitySnapshot) -> serde_json::Value {
         "historical_hardware_evidence": "separate bounded qualification artifacts; not established by this runtime probe",
         "hdr_to_sdr_input_domain": "decoded per-pixel RGB components must be finite and within 0–1000 cd/m²; metadata alone is insufficient; no implicit highlight clipping",
         "media": facts!(snapshot.media;
-            software_decode, software_encode, vaapi_device, h264_vaapi_decode, hevc_vaapi_decode,
+            software_decode, software_encode, media_foundation_h264_encode, vaapi_device, h264_vaapi_decode, hevc_vaapi_decode,
             av1_vaapi_decode, h264_vaapi_encode, hevc_vaapi_encode, hevc_main10_vaapi_decode,
             av1_10bit_vaapi_decode, hevc_main10_vaapi_encode, av1_vaapi_encode, av1_10bit_vaapi_encode,
             nv12_hardware_frames, nv12_hardware_upload, p010_hardware_frames, p010_hardware_upload),
@@ -717,6 +849,10 @@ pub fn print(
     );
     println!(
         "Historical hardware evidence is recorded separately in bounded qualification artifacts."
+    );
+    print_fact(
+        "Media Foundation H.264 hardware encode",
+        &snapshot.media.media_foundation_h264_encode,
     );
     println!("Input:");
     println!(
@@ -1065,6 +1201,7 @@ mod tests {
             media: MediaCapabilities {
                 software_decode: supported(),
                 software_encode: supported(),
+                media_foundation_h264_encode: CapabilitySupport::not_probed("Windows only"),
                 vaapi_device: supported(),
                 h264_vaapi_decode: supported(),
                 hevc_vaapi_decode: supported(),

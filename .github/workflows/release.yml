@@ -1,4 +1,4 @@
-name: Release Linux LGPL
+name: Release LGPL
 
 on:
   push:
@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  prepare:
     runs-on: ubuntu-24.04
     outputs:
       release_date: ${{ steps.release.outputs.release_date }}
@@ -33,6 +33,15 @@ jobs:
           with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
               output.write(f'release_date={value}\nrelease_commit={commit}\n')
           PY
+  build-linux:
+    needs: prepare
+    runs-on: ubuntu-24.04
+    env:
+      RELEASE_DATE: ${{ needs.prepare.outputs.release_date }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.release_commit }}
       - uses: dtolnay/rust-toolchain@1.99.0
         with:
           components: rust-docs
@@ -59,19 +68,63 @@ jobs:
           path: ${{ runner.temp }}/asciiflow-release/dist/*
           if-no-files-found: error
 
+  build-windows:
+    needs: prepare
+    runs-on: windows-2022
+    env:
+      RELEASE_DATE: ${{ needs.prepare.outputs.release_date }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.release_commit }}
+      - uses: dtolnay/rust-toolchain@1.99.0
+        with:
+          components: rust-docs
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+      - uses: msys2/setup-msys2@v2
+        id: msys2
+        with:
+          msystem: MSYS
+          path-type: inherit
+          update: true
+          install: make nasm diffutils tar xz
+      - name: Build and verify Windows release archive
+        env:
+          MSYS2_ROOT: ${{ steps.msys2.outputs.msys2-location }}
+          LIBCLANG_PATH: C:\Program Files\LLVM\bin
+        shell: pwsh
+        run: |
+          $archive = Join-Path $env:RUNNER_TEMP 'ffmpeg-8.1.3.tar.xz'
+          Invoke-WebRequest https://ffmpeg.org/releases/ffmpeg-8.1.3.tar.xz -OutFile $archive
+          ./scripts/package-windows-release.ps1 $archive (Join-Path $env:RUNNER_TEMP 'asciiflow-release')
+      - name: Retain Windows build diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-x86_64-build-diagnostics
+          path: ${{ runner.temp }}/asciiflow-release/**/*.log
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-x86_64-lgpl
+          path: ${{ runner.temp }}/asciiflow-release/dist/*
+          if-no-files-found: error
+
   publish:
-    needs: build
+    needs: [prepare, build-linux, build-windows]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ needs.build.outputs.release_commit }}
+          ref: ${{ needs.prepare.outputs.release_commit }}
       - name: Create or verify release tag
         env:
-          RELEASE_TAG: ${{ needs.build.outputs.release_date }}
-          RELEASE_COMMIT: ${{ needs.build.outputs.release_commit }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.release_date }}
+          RELEASE_COMMIT: ${{ needs.prepare.outputs.release_commit }}
         shell: bash
         run: |
           if git ls-remote --exit-code --tags origin "refs/tags/$RELEASE_TAG"; then
@@ -90,13 +143,24 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: linux-x86_64-lgpl
-          path: dist
+          path: dist/linux
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-x86_64-lgpl
+          path: dist/windows
+      - name: Combine platform checksums and release notes
+        shell: bash
+        run: |
+          cat dist/linux/SHA256SUMS dist/windows/SHA256SUMS > dist/SHA256SUMS
+          cat dist/linux/RELEASE_NOTES.md dist/windows/RELEASE_NOTES.md > dist/RELEASE_NOTES.md
+          cp dist/linux/*.tar.gz dist/windows/*.zip dist/
+          (cd dist && sha256sum --check SHA256SUMS)
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          RELEASE_TAG: ${{ needs.build.outputs.release_date }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.release_date }}
         shell: bash
         run: |
-          gh release create "$RELEASE_TAG" dist/*.tar.gz dist/SHA256SUMS \
+          gh release create "$RELEASE_TAG" dist/*.tar.gz dist/*.zip dist/SHA256SUMS \
             --verify-tag --latest --generate-notes --notes-file dist/RELEASE_NOTES.md

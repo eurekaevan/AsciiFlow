@@ -23,7 +23,8 @@ pub use decoder::{Decoder, MediaInfo, VaapiDecodedFrame};
 #[cfg(feature = "av1-encode-diagnostic")]
 pub use encoder::probe_vaapi_av1_encoder_diagnostic;
 pub use encoder::{
-    Encoder, OutputEncoding, VaapiEncoderProbe, probe_vaapi_encoder, probe_vaapi_encoder_for,
+    Encoder, OutputEncoding, VaapiEncoderProbe, probe_media_foundation_encoder,
+    probe_vaapi_encoder, probe_vaapi_encoder_for,
 };
 #[cfg(feature = "p010-output-diagnostic")]
 pub use hwframes::VaapiDiagnosticP010Pool;

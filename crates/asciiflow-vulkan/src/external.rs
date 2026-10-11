@@ -1,8 +1,11 @@
-use crate::context::{VulkanContext, vk_error};
+use crate::context::VulkanContext;
+#[cfg(target_os = "linux")]
+use crate::context::vk_error;
 use asciiflow_core::{Error, Result};
 use ash::vk;
+#[cfg(target_os = "linux")]
+use std::os::fd::{AsRawFd, IntoRawFd, OwnedFd};
 use std::{
-    os::fd::{AsRawFd, IntoRawFd, OwnedFd},
     sync::{
         Arc,
         atomic::{AtomicBool, Ordering},
@@ -25,6 +28,7 @@ pub enum ExternalImageAccess {
 }
 
 pub struct ExternalPlaneImage {
+    #[cfg(target_os = "linux")]
     pub fd: OwnedFd,
     pub object_size: u64,
     pub modifier: u64,
@@ -58,6 +62,15 @@ pub(crate) struct ImportedExternalPlane {
 }
 
 impl ImportedExternalPlane {
+    #[cfg(not(target_os = "linux"))]
+    pub(crate) fn import(
+        _context: &VulkanContext,
+        _input: ExternalPlaneImage,
+    ) -> Result<(Self, ExternalImageTimings)> {
+        Err(Error::Vulkan("DMA-BUF image import requires Linux".into()))
+    }
+
+    #[cfg(target_os = "linux")]
     pub(crate) fn import(
         context: &VulkanContext,
         input: ExternalPlaneImage,
@@ -230,6 +243,7 @@ impl Drop for ImportedExternalPlane {
     }
 }
 
+#[cfg(target_os = "linux")]
 fn require_modifier_support(
     context: &VulkanContext,
     format: vk::Format,
@@ -328,12 +342,14 @@ fn require_modifier_support(
     Ok(())
 }
 
+#[cfg(target_os = "linux")]
 struct ImportedPlaneGuard<'a> {
     device: &'a ash::Device,
     image: vk::Image,
     memory: vk::DeviceMemory,
 }
 
+#[cfg(target_os = "linux")]
 impl<'a> ImportedPlaneGuard<'a> {
     fn new(device: &'a ash::Device, image: vk::Image) -> Self {
         Self {
@@ -349,6 +365,7 @@ impl<'a> ImportedPlaneGuard<'a> {
     }
 }
 
+#[cfg(target_os = "linux")]
 impl Drop for ImportedPlaneGuard<'_> {
     fn drop(&mut self) {
         unsafe {
