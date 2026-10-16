@@ -4,7 +4,8 @@ AsciiFlow's own source remains MIT-licensed; see `LICENSE`. The executable also
 contains code from the exact locked Rust dependencies and the built-in font.
 Run `python3 scripts/collect-release-notices.py NEW_OUTPUT_DIRECTORY` from the
 locked source checkout to generate the Linux dependency inventory and copy
-upstream license and notice texts. For Windows use
+upstream license and notice texts. Official CLI + GUI packages must pass
+`--features gui,lgpl-prebuilt`. For Windows use
 `--target x86_64-pc-windows-msvc`; inventories follow the target's actual locked
 normal-dependency graph. Include the generated files in each release archive.
 
@@ -14,6 +15,13 @@ Explicit FreeType font files are supplied by the user and are not bundled.
 Test-only OFL font fixtures are not release assets. Project GLSL is compiled
 by shaderc at build time into embedded SPIR-V; no external shader directory is
 needed at runtime. Shaderc is build tooling, not a bundled runtime library.
+
+The GUI embeds the fonts supplied by `epaint_default_fonts`; its Hack, Ubuntu,
+Noto Emoji and emoji-icon font notices are retained in the generated inventory.
+Exact locked GUI crates that omit their upstream license texts use the local,
+commit- and checksum-verified supplements documented in
+`third_party/rust-licenses/README.md`. These supplements do not change the
+upstream licenses or relax collection checks for other packages.
 
 ## Official LGPL prebuilt release
 

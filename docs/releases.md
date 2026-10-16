@@ -3,7 +3,8 @@
 The **Release LGPL** workflow builds Linux x86_64 and Windows x86_64 packages
 from one exact commit and one `YYYY-MM-DD` date. Both use Rust 1.99.0 and
 FFmpeg 8.1.3 with GPL, nonfree and version3 disabled. macOS and ARM packages
-are not currently produced.
+are not currently produced. Each archive includes `asciiflow` and the
+`asciiflow-gui` desktop application (with `.exe` on Windows).
 
 Linux retains its existing Ubuntu 24.04/glibc 2.39 LGPL profile. The Windows
 implementation and packaging workflow are new: neither an actual Windows build
@@ -16,7 +17,8 @@ receipt, and Linux hardware qualification does not apply to Windows.
 Download `asciiflow-YYYY-MM-DD-linux-x86_64-lgpl.tar.gz` and `SHA256SUMS` from
 the same Release. When downloading only one platform, run
 `sha256sum --check --ignore-missing SHA256SUMS`, extract the archive, and run
-`./asciiflow --help` from its directory. Keep `lib/` next to the executable.
+`./asciiflow --help` or `./asciiflow-gui` from its directory. Keep `lib/` next
+to both executables.
 The package contains the four required FFmpeg libraries; compatible modified
 builds can replace these dynamic libraries.
 
@@ -24,10 +26,12 @@ Host dependencies include libdav1d, libva, libva-drm, libdrm, FreeType, the Vulk
 loader and C/C++ runtimes. On Ubuntu 24.04, install:
 
 ```sh
-sudo apt-get install libdav1d7 libva2 libva-drm2 libdrm2 libfreetype6 libvulkan1 libfontconfig1
+sudo apt-get install libdav1d7 libva2 libva-drm2 libdrm2 libfreetype6 libvulkan1 libfontconfig1 libgl1 libxkbcommon0 libwayland-client0 libx11-6 libxcursor1 libxi6 libxrandr2
 ```
 
-Install VAAPI and Vulkan drivers suitable for your GPU separately. Fontconfig
+The GUI additionally needs a working X11/Wayland desktop, OpenGL driver and
+a configured desktop portal for native file dialogs. Install VAAPI and Vulkan
+drivers suitable for your GPU separately. Fontconfig
 supports font-name discovery; the built-in font needs no external font file.
 The archive requires glibc 2.39 or newer. See `production-support.md` for the
 qualified hardware paths and limitations. This profile provides VAAPI
@@ -48,7 +52,9 @@ if ($entry.Count -ne 1 -or (Get-FileHash $archive -Algorithm SHA256).Hash.ToLowe
 Expand-Archive $archive
 ```
 
-Keep `asciiflow.exe` and its four FFmpeg DLLs in the same extracted directory.
+Keep `asciiflow.exe`, `asciiflow-gui.exe` and the four FFmpeg DLLs in the same
+extracted directory. Launch `asciiflow-gui.exe` for the graphical interface;
+it requires a desktop with OpenGL support.
 The native MSVC package does not need a MinGW or MSYS2 runtime installed by the
 user. Windows 10/11 requires the Microsoft Visual C++ 2015–2022 x64
 Redistributable, Media Foundation and a compatible H.264 hardware encoder with
@@ -73,6 +79,53 @@ font files work without Linux Fontconfig; font-name discovery remains Linux-only
 These commands describe the implemented route. Successful real conversion on
 Windows still needs the hardware gate below; Linux's retained audio and media
 evidence does not qualify every Windows input or device.
+
+## First graphical interface
+
+The GUI currently uses English labels and runs one conversion at a time. It
+supports file selection or drag-and-drop where the window backend permits it,
+an output destination, character-grid
+settings, color/monochrome rendering, character ramps, fonts, audio policy and
+advanced media/device settings. Its preview renders the first decoded frame on
+the CPU using the selected rendering settings. Preview currently admits 8-bit
+BT.709 SDR only; it does not play the video or
+qualify a hardware encode path. Conversion runs in the background through the
+same planner and pipeline as the CLI, with progress, cancellation and visible
+errors. Unknown totals remain indeterminate.
+
+On Linux the GUI prefers X11/XWayland when `DISPLAY` is present, because the
+locked winit 0.30 backend does not implement native Wayland file-drop events
+([upstream issue](https://github.com/rust-windowing/winit/issues/1881)). This also
+permits drops from a Wayland file manager through the compositor's XWayland
+bridge. Without an X11 display, the GUI uses native Wayland and directs users to
+**Choose input video** instead of advertising file dragging. An invalid X11
+display produces the existing startup error rather than silently changing modes.
+
+Existing media, audio, color and hardware support boundaries still apply.
+The GUI is new and does not inherit the recorded single-job CLI qualification.
+An isolated Linux X11 desktop with software OpenGL was exercised using preset
+synthetic input: actual first-frame preview, a 90-frame CPU/libx264 conversion,
+and cancellation that removed staging without committing output. This developer
+build exercise does not qualify the official LGPL hardware encoder routes.
+A native Linux Wayland window was also exercised with software OpenGL. Native
+input selection and display of a filename containing spaces were confirmed by a
+user. The window and appearance fields expose accessibility names; native dialogs
+are parented to the main window. Linux uses an installed Fontconfig CJK fallback
+for interface filenames, without bundling a font or changing the rendering font.
+The installed CJK glyphs passed a separate desktop font check.
+
+Automated GUI-state tests exercised dropped-file state reset, two complete
+90-frame CPU/software conversions around a cancelled job using Chinese and
+space-containing paths, output decoding and staging cleanup. These tests do not
+establish native drag-and-drop or dialog interaction. Window-close cancellation
+and worker-disconnect reporting are covered by a controlled worker test.
+Native Wayland file dragging was reported as nonfunctional during user
+acceptance, leading to the XWayland selection above. The corrected X11 window
+was observed on the real desktop; the user then confirmed that dragging a video
+from the file manager works and its filename displays correctly. Native output
+selection, overwrite confirmation,
+cancellation while closing a real window, long repeated sessions and Windows
+desktop execution also still require interactive acceptance.
 
 ## Create a release
 
@@ -137,7 +190,8 @@ are retained in the package build record.
 
 Each archive includes exact application and FFmpeg source, recipes,
 compiler/configuration records, actual FFmpeg license/capability receipts,
-Rust dependency notices and Rust standard-library notices. Only avcodec,
+Rust dependency notices (including the enabled GUI dependency graph and
+embedded-font license texts) and Rust standard-library notices. Only avcodec,
 avformat, avutil and swscale are packaged as FFmpeg runtime libraries. Windows
 also embeds FreeType, libpng and zlib and includes their native notices and
 exact locked crate source archives. Linux continues to use host FreeType.
@@ -145,10 +199,13 @@ Graphics drivers and platform runtimes remain host dependencies. Retain the
 source and notice directories when redistributing either package.
 
 Hosted release gates inspect the restricted LGPL profile, relocated dependency
-resolution, software-encoding rejection and version/help startup. Windows also
+resolution for both executables, software-encoding rejection and CLI version/help
+startup. GUI presence and imports are checked without opening a headless window.
+Windows also
 checks explicit MF planning diagnostics: a probed encoder permits an MF plan;
 unavailable hardware must produce a clear planning failure without fallback.
-These gates do not establish end-to-end video conversion on a real Windows GPU.
+These gates do not establish graphical interaction or end-to-end video conversion
+on a real Windows GPU.
 
 ## Windows hardware gate
 

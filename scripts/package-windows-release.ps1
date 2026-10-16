@@ -104,11 +104,13 @@ foreach ($header in @('zlib.h', 'zconf.h')) {
 $zlibHeaders = $zlibHeaders.Replace('\', '/')
 $env:CFLAGS_x86_64_pc_windows_msvc = "$($env:CFLAGS_x86_64_pc_windows_msvc) /I`"$zlibHeaders`"".Trim()
 $env:CC_SHELL_ESCAPED_FLAGS = '1' # cc must preserve a quoted header path containing spaces.
-Invoke-Checked cargo @('build', '--locked', '--release', '--target', $target, '-p', 'asciiflow-cli', '--features', 'lgpl-prebuilt')
+Invoke-Checked cargo @('build', '--locked', '--release', '--target', $target, '-p', 'asciiflow-cli', '--features', 'lgpl-prebuilt,gui', '--bins')
 # This device-free test also compiles the opt-in Windows hardware round-trip gate.
 Invoke-Checked cargo @('test', '--locked', '--lib', '--target', $target, '-p', 'asciiflow-media', '--features', 'lgpl-prebuilt', 'ffmpeg::encoder::audio_regression_tests::lgpl_profile_rejects_software_without_generic_h264_fallback', '--', '--exact')
 $null = New-Item -ItemType Directory -Path $package, (Join-Path $package 'sources'), (Join-Path $package 'notices\rust-std'), (Join-Path $package 'build')
-Copy-Item (Join-Path $env:CARGO_TARGET_DIR "$target\release\asciiflow.exe") $package
+foreach ($binary in @('asciiflow.exe', 'asciiflow-gui.exe')) {
+    Copy-Item (Join-Path $env:CARGO_TARGET_DIR "$target\release\$binary") $package
+}
 foreach ($component in @('avcodec', 'avformat', 'avutil', 'swscale')) {
     $libraries = @(Get-ChildItem (Join-Path $env:FFMPEG_DIR "bin\$component-*.dll"))
     if ($libraries.Count -ne 1) { throw "Expected one $component DLL" }
@@ -116,7 +118,7 @@ foreach ($component in @('avcodec', 'avformat', 'avutil', 'swscale')) {
 }
 Copy-Item LICENSE, THIRD_PARTY_NOTICES.md, docs/production-support.md $package
 Copy-Item docs/releases.md (Join-Path $package 'README.md')
-Invoke-Checked python @('scripts/collect-release-notices.py', (Join-Path $package 'notices\rust-dependencies'), '--target', $target)
+Invoke-Checked python @('scripts/collect-release-notices.py', (Join-Path $package 'notices\rust-dependencies'), '--target', $target, '--features', 'lgpl-prebuilt,gui')
 $rustSysroot = & rustc --print sysroot
 if ($LASTEXITCODE -ne 0) { throw 'Cannot locate Rust standard-library notices' }
 Copy-Item (Join-Path $rustSysroot 'share\doc\rust\COPYRIGHT-library.html') (Join-Path $package 'notices\rust-std')
@@ -201,6 +203,8 @@ import hashlib, json, os, pathlib, re, subprocess, sys
 package, output = map(pathlib.Path, sys.argv[1:])
 system = pathlib.Path(os.environ['SystemRoot']) / 'System32'
 receipt = {}
+for executable in ('asciiflow.exe', 'asciiflow-gui.exe'):
+    assert (package / executable).is_file(), executable
 for binary in sorted([*package.glob('*.exe'), *package.glob('*.dll')]):
     listing = subprocess.check_output(['dumpbin.exe', '/DEPENDENTS', str(binary)], text=True)
     dependencies = re.findall(r'^\s+([\w.+-]+\.dll)\s*$', listing, re.MULTILINE | re.IGNORECASE)
@@ -215,6 +219,9 @@ output.write_text(json.dumps(receipt, indent=2) + '\n')
 '@
 Invoke-Checked python @('-c', $runtimeCheck, $relocatedPackage, (Join-Path $work 'runtime-check.json'))
 $executable = Join-Path $relocatedPackage 'asciiflow.exe'
+$guiExecutable = Join-Path $relocatedPackage 'asciiflow-gui.exe'
+# Capture pipes explicitly for the Windows GUI subsystem without opening a window.
+Invoke-Checked python @('-c', 'import subprocess,sys; actual=subprocess.check_output([sys.argv[1], "--version"], text=True, timeout=30).strip(); assert actual == "AsciiFlow GUI " + sys.argv[2], actual', $guiExecutable, $releaseDate)
 $version = & $executable --version
 if ($LASTEXITCODE -ne 0 -or $version -ne "asciiflow $releaseDate") { throw "Unexpected packaged build label: $version" }
 & $executable --help | Set-Content (Join-Path $work 'help.txt')
@@ -251,7 +258,9 @@ Copy-Item (Join-Path $work 'runtime-check.json'), (Join-Path $work 'software-rej
 @"
 Windows x86_64 official LGPL package. Release date: $releaseDate.
 
-Includes FFmpeg 8.1.3 DLLs, exact corresponding sources and third-party notices.
+Includes the CLI and graphical application, FFmpeg 8.1.3 DLLs, exact corresponding sources and third-party notices.
+Launch asciiflow-gui.exe for the English single-job interface. A desktop with
+OpenGL support is required for the graphical application.
 Requires Windows 10/11 Media Foundation, a compatible H.264 hardware encoder and
 the Microsoft Visual C++ 2015-2022 x64 Redistributable. Windows N editions need
 the Media Feature Pack. Use --decode software --encode mf; software H.264
@@ -263,7 +272,8 @@ compatible driver. See README.md and production-support.md for supported routes.
 
 CI checks the LGPL/codec profile, DLL imports, software-encoding rejection,
 the explicit MF plan/probe result and relocated startup. An unavailable MF GPU
-must produce a clear planning failure. Real video encoding is not verified here.
+must produce a clear planning failure. Desktop interaction and real video encoding
+are not verified here.
 SHA256SUMS covers the release ZIP.
 "@ | Set-Content (Join-Path $dist 'RELEASE_NOTES.md')
 $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLowerInvariant()

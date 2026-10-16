@@ -5,8 +5,8 @@ system font discovery and terminal UX. The
 [historical release receipt](docs/historical-release-receipt.md) retains the identity, qualification and limitations of its frozen artifact.
 Maintenance follows changes and regressions.
 
-AsciiFlow is a Rust CLI that converts video into color or monochrome ASCII
-video. It has a portable CPU path and, on qualified Linux hardware, a Vulkan
+AsciiFlow is a Rust application with command-line and graphical interfaces that
+converts video into color or monochrome ASCII video. It has a portable CPU path and, on qualified Linux hardware, a Vulkan
 processing path with VAAPI decode/encode and optional DMA-BUF interop. Windows
 x86_64 now implements software decode and hardware-only Media Foundation H.264
 8-bit SDR encoding, with CPU or Vulkan host processing. Actual Windows
@@ -21,6 +21,25 @@ decode, AAC passthrough and MF H.264 encoding; missing hardware fails without
 a software encoder fallback. Source/developer builds retain the libx264 backend;
 availability depends on their FFmpeg build capabilities. GPL-capable custom
 builds are outside this LGPL release qualification.
+
+## Graphical interface
+
+Run `asciiflow-gui` (`asciiflow-gui.exe` on Windows) from the extracted release
+directory. The first interface uses English labels and handles one file at a
+time: choose or drop a video, choose the output, adjust the character grid,
+color, character ramp, font and audio policy, then start or cancel conversion.
+A first-frame CPU preview uses the actual 8-bit BT.709 SDR renderer; it is not a video player or
+a guarantee that a requested hardware route is available. Advanced settings
+expose processing, codec and hardware choices; conversion uses the same planning
+and media pipeline as the CLI. Progress is reported without inventing a total
+when it is unknown.
+
+The graphical application needs an X11/Wayland or Windows desktop with OpenGL
+support. Linux prefers X11/XWayland for file dragging; native Wayland uses the
+file selector. Linux file dialogs use the desktop portal; Chinese filenames need an
+installed CJK font available through Fontconfig. See the [desktop acceptance
+record](docs/releases.md#first-graphical-interface) for verified interactions.
+Windows hardware conversion requires separate live validation.
 
 ## Current support
 
@@ -115,6 +134,9 @@ build, see [`third_party/ffmpeg/`](third_party/ffmpeg/) and the
 cargo build --release --locked --workspace
 cargo test --workspace
 
+# Build and open the graphical application in a desktop session.
+cargo run --release --locked -p asciiflow-cli --features gui --bin asciiflow-gui
+
 # Automatic planning chooses a legal available path; Linux LGPL prebuilt requires VAAPI encoding.
 cargo run --release --bin asciiflow -- input.mp4 output.mp4 --width 160
 
@@ -180,7 +202,8 @@ Capability/plan inspection does not start this conversion UI. See the
 ## Installing release packages
 
 For Linux x86_64 and Windows x86_64 packages, see the [Release LGPL workflow
-and packaging instructions](docs/releases.md). Date tags and manual runs build
+and packaging instructions](docs/releases.md). Each package includes the CLI
+and `asciiflow-gui`. Date tags and manual runs build
 both platforms from the same commit; publishing waits for both platform gates.
 Manual runs use the date in Asia/Taipei. The Release contains a Linux `.tar.gz`,
 a Windows `.zip` and their combined `SHA256SUMS`.
@@ -194,7 +217,8 @@ runtime. FreeType, libdav1d, Vulkan and VAAPI/driver libraries remain system
 prerequisites. Font-name discovery also needs runtime Fontconfig on Linux;
 builtin and explicit-file selection do not.
 
-The Windows package keeps `asciiflow.exe` beside four replaceable FFmpeg DLLs.
+The Windows package keeps `asciiflow.exe` and `asciiflow-gui.exe` beside four
+replaceable FFmpeg DLLs.
 It needs Windows 10/11 Media Foundation, a compatible H.264 hardware encoder
 and driver, and the Microsoft Visual C++ 2015–2022 x64 Redistributable. N editions
 need the Media Feature Pack. FreeType/libpng/zlib are embedded with their source
@@ -254,7 +278,7 @@ There is no telemetry or automatic upload.
 ## Project map and verification
 
 ```text
-apps/asciiflow-cli/       CLI and composition root
+apps/asciiflow-cli/       CLI, egui interface and shared composition root
 crates/asciiflow-core/    frames, contracts, planning and bounded pipeline
 crates/asciiflow-media/   FFmpeg decode/encode and mux ownership
 crates/asciiflow-cpu/     permanent CPU pixel reference

@@ -222,18 +222,23 @@ pub struct Args {
 
 impl Args {
     pub fn resolved_charset(&self) -> String {
-        match self.charset.as_str() {
-            "standard" => STANDARD_CHARSET.into(),
-            "detailed" => {
-                // The legacy spelling is dense-to-sparse; reverse it so the
-                // shared dark-to-light LUT selects sparse-to-dense glyphs.
-                "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\\|()1{}[]?-_+~<>i!lI;:,\"^`'. "
-                    .chars()
-                    .rev()
-                    .collect()
-            }
-            literal => literal.into(),
+        resolve_charset(&self.charset)
+    }
+}
+
+/// Shared CLI and preview spelling for preset names and literal ramps.
+pub fn resolve_charset(value: &str) -> String {
+    match value {
+        "standard" => STANDARD_CHARSET.into(),
+        "detailed" => {
+            // The legacy spelling is dense-to-sparse; reverse it so the
+            // shared dark-to-light LUT selects sparse-to-dense glyphs.
+            "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\\|()1{}[]?-_+~<>i!lI;:,\"^`'. "
+                .chars()
+                .rev()
+                .collect()
         }
+        literal => literal.into(),
     }
 }
 

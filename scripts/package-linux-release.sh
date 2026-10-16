@@ -34,16 +34,16 @@ export RUSTFLAGS='-C link-arg=-Wl,--disable-new-dtags,-rpath,$ORIGIN/lib'
 python3 tests/release/ffmpeg-profile-receipt.py "$FFMPEG_DIR" "$work/ffmpeg-profile.json"
 cargo test --locked -p asciiflow-media --features lgpl-prebuilt \
   ffmpeg::encoder::audio_regression_tests::lgpl_profile_rejects_software_without_generic_h264_fallback -- --exact
-cargo build --locked --release -p asciiflow-cli --features lgpl-prebuilt
+cargo build --locked --release -p asciiflow-cli --features lgpl-prebuilt,gui --bins
 package="$work/$name"
 mkdir -p "$package/lib" "$package/sources" "$package/notices/rust-std" "$package/build"
-cp "$CARGO_TARGET_DIR/release/asciiflow" "$package/"
+cp "$CARGO_TARGET_DIR/release/"{asciiflow,asciiflow-gui} "$package/"
 for component in avcodec avformat avutil swscale; do
   cp -a "$FFMPEG_DIR/lib/lib$component.so"* "$package/lib/"
 done
 cp LICENSE THIRD_PARTY_NOTICES.md "$package/"
 cp docs/production-support.md "$package/"
-python3 scripts/collect-release-notices.py "$package/notices/rust-dependencies"
+python3 scripts/collect-release-notices.py "$package/notices/rust-dependencies" --features lgpl-prebuilt,gui
 rust_docs="$(rustc --print sysroot)/share/doc/rust"
 cp "$rust_docs/COPYRIGHT-library.html" "$package/notices/rust-std/"
 cp -a "$rust_docs/licenses" "$package/notices/rust-std/"
@@ -86,21 +86,30 @@ relocated="$work/relocated/$name"
 python3 - "$relocated" "$work/runtime-check.txt" <<'PY'
 import pathlib, re, subprocess, sys
 package = pathlib.Path(sys.argv[1]).resolve()
-# ldd on the executable follows its RPATH through the complete dependency tree.
-# A standalone library does not inherit the executable's search path.
-listing = subprocess.check_output(['ldd', str(package / 'asciiflow')], text=True)
-assert 'not found' not in listing, listing
-assert not any(x in listing.lower() for x in ['libx264', 'libx265', 'libfdk', 'libxvid']), listing
-resolved_ffmpeg = re.findall(r'(lib(?:av\w+|swscale)\.so[^ ]*) => (\S+)', listing)
-assert len(resolved_ffmpeg) == 4, listing
-for name, resolved in resolved_ffmpeg:
-    assert pathlib.Path(resolved).resolve().parent == package / 'lib', (name, resolved)
-dynamic = subprocess.check_output(['readelf', '-d', str(package / 'asciiflow')], text=True)
-assert '(RPATH)' in dynamic and '[$ORIGIN/lib]' in dynamic, dynamic
-assert '(RUNPATH)' not in dynamic, dynamic
-pathlib.Path(sys.argv[2]).write_text(listing + dynamic)
+# Audit both executables after relocation without opening a desktop window.
+receipts = []
+for executable in ('asciiflow', 'asciiflow-gui'):
+    binary = package / executable
+    assert binary.is_file() and binary.stat().st_mode & 0o111, binary
+    # ldd follows the executable's RPATH through the complete dependency tree.
+    listing = subprocess.check_output(['ldd', str(binary)], text=True)
+    assert 'not found' not in listing, listing
+    assert not any(x in listing.lower() for x in ['libx264', 'libx265', 'libfdk', 'libxvid']), listing
+    resolved_ffmpeg = re.findall(r'(lib(?:av\w+|swscale)\.so[^ ]*) => (\S+)', listing)
+    assert len(resolved_ffmpeg) == 4, listing
+    for name, resolved in resolved_ffmpeg:
+        assert pathlib.Path(resolved).resolve().parent == package / 'lib', (name, resolved)
+    dynamic = subprocess.check_output(['readelf', '-d', str(binary)], text=True)
+    assert '(RPATH)' in dynamic and '[$ORIGIN/lib]' in dynamic, dynamic
+    assert '(RUNPATH)' not in dynamic, dynamic
+    receipts.append(executable + '\n' + listing + dynamic)
+pathlib.Path(sys.argv[2]).write_text('\n'.join(receipts))
 PY
 version_output=$("$relocated/asciiflow" --version)
+gui_version=$("$relocated/asciiflow-gui" --version)
+[[ "$gui_version" == "AsciiFlow GUI $release_date" ]] || {
+  echo "Unexpected GUI build label: $gui_version" >&2; exit 1;
+}
 [[ "$version_output" == "asciiflow $release_date" ]] || {
   echo "Packaged CLI build label does not match release date: $version_output" >&2; exit 1;
 }
@@ -117,12 +126,14 @@ cat > "$work/dist/RELEASE_NOTES.md" <<NOTES
 Linux x86_64 official LGPL package, built on Ubuntu 24.04 (glibc 2.39 or newer).
 Release date: $release_date.
 
-Includes FFmpeg 8.1.3 shared libraries, corresponding source and third-party notices.
+Includes the CLI and graphical application, FFmpeg 8.1.3 shared libraries, corresponding source and third-party notices.
+Run ./asciiflow-gui in an X11 or Wayland desktop with OpenGL support.
+The GUI uses English text and supports one conversion job at a time.
 Software H.264 encoding is excluded; a compatible VAAPI GPU and host drivers are required.
 See the included README.md and production-support.md for dependencies and supported routes.
 
 CI verifies the FFmpeg profile, LGPL software-encoding rejection and relocated archive startup.
-Real GPU conversion is not verified by GitHub hosted runners. SHA256SUMS covers the release archive.
+Desktop interaction and real GPU conversion are not verified by GitHub hosted runners. SHA256SUMS covers the release archive.
 NOTES
 (cd "$work/dist" && sha256sum "$name.tar.gz" > SHA256SUMS)
 echo "Verified release assets: $work/dist"
