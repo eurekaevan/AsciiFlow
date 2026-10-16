@@ -55,6 +55,69 @@ pub fn list_system_fonts() -> Result<Vec<SystemFont>, FontError> {
     Ok(fonts)
 }
 
+/// Resolve an installed UI family without imposing the video renderer's monospace filter.
+/// Kept separate from CLI font-family resolution, which remains Fontconfig-only.
+#[cfg(target_os = "windows")]
+pub fn resolve_system_ui_font(family: &str) -> Result<ResolvedFont, FontError> {
+    use std::io::Read;
+    let library =
+        freetype::Library::init().map_err(|cause| error(family, "SystemFontNotResolved", cause))?;
+    let mut matched = None;
+    for path in system_font_files()? {
+        let Ok(file) = std::fs::File::open(&path) else {
+            continue;
+        };
+        let mut bytes = Vec::new();
+        if file
+            .take(32 * 1024 * 1024 + 1)
+            .read_to_end(&mut bytes)
+            .is_err()
+            || bytes.len() > 32 * 1024 * 1024
+        {
+            continue;
+        }
+        let bytes = std::rc::Rc::new(bytes);
+        let Ok(first) = library.new_memory_face(bytes.clone(), 0) else {
+            continue;
+        };
+        let count = first.raw().num_faces.clamp(0, 65_536);
+        drop(first);
+        for index in 0..count {
+            let Ok(face) = library.new_memory_face(bytes.clone(), index as isize) else {
+                continue;
+            };
+            if !face.is_scalable()
+                || !face
+                    .family_name()
+                    .is_some_and(|name| name.eq_ignore_ascii_case(family))
+            {
+                continue;
+            }
+            let normal = !face
+                .style_flags()
+                .intersects(freetype::face::StyleFlag::BOLD | freetype::face::StyleFlag::ITALIC);
+            let resolved = ResolvedFont {
+                requested: family.into(),
+                source: FontSource::File,
+                path: Some(path.clone()),
+                face_index: index as isize,
+                name: family.into(),
+            };
+            if normal {
+                return Ok(resolved);
+            }
+            matched.get_or_insert(resolved);
+        }
+    }
+    matched.ok_or_else(|| {
+        error(
+            family,
+            "SystemFontNotResolved",
+            "the system UI font has no readable installed outline font file",
+        )
+    })
+}
+
 fn append_font_faces(library: &freetype::Library, path: &Path, fonts: &mut Vec<SystemFont>) {
     use std::{io::Read, rc::Rc};
     // Match the renderer's file-size limit and retain Unicode Windows paths.
@@ -302,6 +365,9 @@ pub fn resolve_font(request: &str, face_index: Option<u32>) -> Result<ResolvedFo
                 face_index,
             })
         }
+        #[cfg(target_os = "linux")]
+        FontSource::Fontconfig => resolve_system_pattern(request),
+        #[cfg(not(target_os = "linux"))]
         FontSource::Fontconfig => resolve_system(request),
     }
 }
@@ -342,7 +408,9 @@ fn resolve_system(request: &str) -> Result<ResolvedFont, FontError> {
 }
 
 #[cfg(target_os = "linux")]
-fn resolve_system(request: &str) -> Result<ResolvedFont, FontError> {
+/// Resolve a Fontconfig pattern directly, including escaped family-name delimiters.
+/// This deliberately bypasses CLI path classification.
+pub fn resolve_system_pattern(request: &str) -> Result<ResolvedFont, FontError> {
     use fontconfig_sys::{self as sys, constants::*, statics::LIB_RESULT};
     use std::ffi::{CStr, CString};
 

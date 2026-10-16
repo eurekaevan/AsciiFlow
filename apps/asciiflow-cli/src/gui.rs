@@ -4,6 +4,7 @@ use asciiflow_cli::{Preview, args::Args, preview, run_with_progress};
 use asciiflow_core::{AsciiConfig, CancellationToken};
 use clap::Parser;
 use eframe::egui;
+mod gui_system;
 use std::{
     ffi::OsString,
     path::PathBuf,
@@ -28,7 +29,8 @@ fn main() -> std::process::ExitCode {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([1120.0, 760.0])
-            .with_min_inner_size([820.0, 600.0]),
+            .with_min_inner_size([820.0, 600.0])
+            .with_icon(application_icon()),
         #[cfg(target_os = "linux")]
         event_loop_builder: Some(Box::new(|builder| {
             use winit::platform::x11::EventLoopBuilderExtX11;
@@ -57,6 +59,11 @@ fn main() -> std::process::ExitCode {
     std::process::ExitCode::SUCCESS
 }
 
+fn application_icon() -> egui::IconData {
+    eframe::icon_data::from_png_bytes(include_bytes!("../../../assets/asciiflow.png"))
+        .expect("the embedded application icon must be a valid PNG")
+}
+
 #[derive(Clone, PartialEq)]
 struct Settings {
     input: Option<PathBuf>,
@@ -76,7 +83,10 @@ impl Default for Settings {
         Self {
             input: None,
             output: None,
-            config: AsciiConfig::default(),
+            config: AsciiConfig {
+                charset: "standard".into(),
+                ..Default::default()
+            },
             font_face_index: None,
             audio: "auto",
             backend: "auto",
@@ -151,17 +161,21 @@ struct Job {
 }
 
 struct App {
+    logo: egui::TextureHandle,
     file_drop_supported: bool,
     fonts: Vec<asciiflow_font::SystemFont>,
     font_scan:
         Option<JoinHandle<Result<Vec<asciiflow_font::SystemFont>, asciiflow_font::FontError>>>,
     font_error: Option<String>,
     font_filter: String,
+    custom_charset: String,
     settings: Settings,
     job: Option<Job>,
     texture: Option<egui::TextureHandle>,
     preview_settings: Option<Settings>,
     preview_description: String,
+    completed_output: Option<PathBuf>,
+    location_job: Option<JoinHandle<anyhow::Result<()>>>,
     status: String,
     failed: bool,
     closing: bool,
@@ -187,13 +201,12 @@ impl App {
         visuals.widgets.hovered.bg_fill = egui::Color32::from_rgb(45, 64, 79);
         cc.egui_ctx.set_visuals(visuals);
         cc.egui_ctx.style_mut(|style| {
-            style.spacing.item_spacing = egui::vec2(10.0, 10.0);
-            style.spacing.button_padding = egui::vec2(12.0, 8.0);
+            style.spacing.item_spacing = egui::vec2(10.0, 6.0);
+            style.spacing.button_padding = egui::vec2(12.0, 6.0);
             style.spacing.interact_size.y = 32.0;
         });
-        #[cfg(target_os = "linux")]
-        if let Err(error) = install_system_cjk_font(&cc.egui_ctx) {
-            eprintln!("System CJK interface font unavailable: {error:#}");
+        if let Err(error) = gui_system::install_ui_font(&cc.egui_ctx) {
+            eprintln!("System interface font unavailable: {error:#}");
         }
         #[cfg(target_os = "linux")]
         let file_drop_supported = {
@@ -217,17 +230,30 @@ impl App {
             Ok(handle) => (Some(handle), None),
             Err(error) => (None, Some(format!("Could not scan system fonts: {error}"))),
         };
+        let icon = application_icon();
+        let logo = cc.egui_ctx.load_texture(
+            "asciiflow-icon",
+            egui::ColorImage::from_rgba_unmultiplied(
+                [icon.width as usize, icon.height as usize],
+                &icon.rgba,
+            ),
+            egui::TextureOptions::LINEAR,
+        );
         Self {
+            logo,
             fonts: Vec::new(),
             font_scan,
             font_error,
             font_filter: String::new(),
+            custom_charset: AsciiConfig::default().charset,
             file_drop_supported,
             settings: Settings::default(),
             job: None,
             texture: None,
             preview_settings: None,
             preview_description: String::new(),
+            completed_output: None,
+            location_job: None,
             status: "Choose a video to get started.".into(),
             failed: false,
             closing: false,
@@ -392,13 +418,15 @@ impl App {
                 }
             }
             Ok(Outcome::Converted) => {
+                self.completed_output = job.settings.output.clone();
                 self.status = format!(
                     "Conversion complete in {:.1}s. Saved to {}",
                     job.started.elapsed().as_secs_f64(),
                     job.settings
                         .output
                         .as_ref()
-                        .map(|path| path.display().to_string())
+                        .and_then(|path| path.file_name())
+                        .map(|name| name.to_string_lossy().into_owned())
                         .unwrap_or_default()
                 );
             }
@@ -409,7 +437,14 @@ impl App {
     fn files(&mut self, ui: &mut egui::Ui, frame: &eframe::Frame) {
         ui.heading("Your video");
         ui.horizontal(|ui| {
-            ui.label(egui::RichText::new("INPUT").small().weak());
+            ui.allocate_ui_with_layout(
+                egui::vec2(56.0, 32.0),
+                egui::Layout::left_to_right(egui::Align::Center),
+                |ui| {
+                    ui.set_width(56.0);
+                    ui.label(egui::RichText::new("INPUT").small().weak());
+                },
+            );
             if ui.button("Choose video…").clicked()
                 && let Some(path) = rfd::FileDialog::new()
                     .set_parent(frame)
@@ -433,7 +468,11 @@ impl App {
         }
         ui.separator();
         ui.horizontal(|ui| {
-            ui.label(egui::RichText::new("OUTPUT").small().weak());
+            ui.allocate_ui_with_layout(egui::vec2(56.0, 32.0),
+                egui::Layout::left_to_right(egui::Align::Center), |ui| {
+                    ui.set_width(56.0);
+                    ui.label(egui::RichText::new("OUTPUT").small().weak());
+                });
             if ui.button("Save output as…")
                 .on_hover_text("Existing files require confirmation and are replaced only after successful conversion.").clicked() {
                 let name = self.settings.input.as_ref().and_then(|path| path.file_stem())
@@ -458,7 +497,7 @@ impl App {
     fn settings(&mut self, ui: &mut egui::Ui, frame: &eframe::Frame) {
         ui.heading("Appearance");
         ui.small("Shape your character canvas");
-        ui.add_space(6.0);
+        ui.add_space(8.0);
         let label = ui.label(egui::RichText::new("Rendering font").strong());
         let selected = if self.settings.config.font == "builtin-8x8" {
             "Built-in · 8 × 8".to_owned()
@@ -540,7 +579,8 @@ impl App {
             })
             .response
             .labelled_by(label.id);
-        ui.horizontal(|ui| {
+        ui.horizontal_wrapped(|ui| {
+            ui.spacing_mut().item_spacing = egui::vec2(8.0, 4.0);
             if self.font_scan.is_some() {
                 ui.spinner();
                 ui.small("Scanning installed fonts…");
@@ -572,7 +612,7 @@ impl App {
         ui.separator();
         egui::Grid::new("appearance")
             .num_columns(2)
-            .spacing([14.0, 12.0])
+            .spacing([16.0, 8.0])
             .show(ui, |ui| {
                 let label = ui.label("Columns");
                 ui.add(egui::DragValue::new(&mut self.settings.config.grid_width).range(1..=8192))
@@ -601,13 +641,54 @@ impl App {
                 ui.label("Color");
                 ui.checkbox(&mut self.settings.config.color, "Retain source colors");
                 ui.end_row();
-                let label = ui.label("Characters");
-                ui.add(
-                    egui::TextEdit::singleline(&mut self.settings.config.charset)
-                        .desired_width(210.0),
+                let label = ui.label("Character set");
+                let previous = match self.settings.config.charset.as_str() {
+                    "standard" => "standard",
+                    "detailed" => "detailed",
+                    _ => "custom",
+                };
+                let mut preset = previous;
+                let selection = choice(
+                    ui,
+                    "character-set",
+                    &mut preset,
+                    &[
+                        ("standard", "Standard"),
+                        ("detailed", "Detailed"),
+                        ("custom", "Custom"),
+                    ],
                 )
                 .labelled_by(label.id);
+                if preset != previous {
+                    if previous == "custom" {
+                        self.custom_charset = self.settings.config.charset.clone();
+                    }
+                    self.settings.config.charset = if preset == "custom" {
+                        self.custom_charset.clone()
+                    } else {
+                        preset.into()
+                    };
+                }
+                let ramp = asciiflow_cli::args::resolve_charset(&self.settings.config.charset);
+                selection.on_hover_text(format!(
+                    "{} characters · sparse to dense\n{ramp}",
+                    ramp.chars().count()
+                ));
                 ui.end_row();
+                if preset == "custom" {
+                    let label = ui.label("Characters");
+                    if ui
+                        .add(
+                            egui::TextEdit::singleline(&mut self.settings.config.charset)
+                                .desired_width(210.0),
+                        )
+                        .labelled_by(label.id)
+                        .changed()
+                    {
+                        self.custom_charset = self.settings.config.charset.clone();
+                    }
+                    ui.end_row();
+                }
                 let label = ui.label("Audio");
                 choice(
                     ui,
@@ -623,8 +704,7 @@ impl App {
                 ui.end_row();
             });
         ui.small("Rows: Auto keeps the source aspect. Characters run from sparse to dense.");
-        ui.add_space(8.0);
-        ui.add_space(14.0);
+        ui.add_space(12.0);
         ui.separator();
         ui.collapsing("Advanced processing", |ui| {
             egui::Grid::new("advanced").num_columns(2).spacing([12.0, 10.0]).show(ui, |ui| {
@@ -647,30 +727,6 @@ impl App {
             ui.small("Official LGPL packages need a supported hardware encoder. HEVC, AV1 and HDR require qualified Linux hardware paths.");
         });
     }
-}
-
-/// Use an installed font for file names; never bundle or change the video font.
-#[cfg(target_os = "linux")]
-fn install_system_cjk_font(ctx: &egui::Context) -> anyhow::Result<()> {
-    let resolved = asciiflow_font::resolve_font("Noto Sans CJK SC:charset=4e2d 6587", None)?;
-    let path = resolved
-        .path
-        .ok_or_else(|| anyhow::anyhow!("Fontconfig returned no font file"))?;
-    let mut data = egui::FontData::from_owned(std::fs::read(&path)?);
-    // FreeType encodes a named variable-font instance in the high 16 bits.
-    // egui accepts only the collection face, using that face's default axes.
-    data.index = u32::try_from(resolved.face_index)? & 0xffff;
-    let mut fonts = egui::FontDefinitions::default();
-    fonts.font_data.insert("system-cjk".into(), Arc::new(data));
-    for family in [egui::FontFamily::Proportional, egui::FontFamily::Monospace] {
-        fonts
-            .families
-            .entry(family)
-            .or_default()
-            .push("system-cjk".into());
-    }
-    ctx.set_fonts(fonts);
-    Ok(())
 }
 
 fn choice(
@@ -696,6 +752,27 @@ fn choice(
 impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         self.complete(ctx);
+        if self
+            .location_job
+            .as_ref()
+            .is_some_and(|job| job.is_finished())
+        {
+            match self
+                .location_job
+                .take()
+                .expect("finished location request exists")
+                .join()
+            {
+                Ok(Ok(())) => {}
+                Ok(Err(error)) => {
+                    self.error(format!("Could not open the file location: {error:#}"))
+                }
+                Err(_) => self.error("The file location request stopped unexpectedly.".into()),
+            }
+        }
+        if self.location_job.is_some() {
+            ctx.request_repaint_after(std::time::Duration::from_millis(100));
+        }
         if self
             .font_scan
             .as_ref()
@@ -744,122 +821,149 @@ impl eframe::App for App {
                 self.input(path);
             }
         }
-        egui::TopBottomPanel::top("title").show(ctx, |ui| {
-            ui.add_space(12.0);
-            ui.horizontal(|ui| {
-                ui.label(
-                    egui::RichText::new("AF")
-                        .size(23.0)
-                        .strong()
-                        .color(egui::Color32::from_rgb(101, 217, 213)),
-                );
-                ui.separator();
-                ui.vertical(|ui| {
-                    ui.label(egui::RichText::new("AsciiFlow").size(22.0).strong());
-                    ui.small("Turn motion into characters");
-                });
-                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    ui.label(egui::RichText::new("LOCAL PROCESSING").small().weak());
+        egui::TopBottomPanel::top("title")
+            .frame(
+                egui::Frame::new()
+                    .fill(ctx.style().visuals.panel_fill)
+                    .inner_margin(egui::Margin::symmetric(20, 10)),
+            )
+            .show(ctx, |ui| {
+                ui.horizontal(|ui| {
+                    ui.spacing_mut().item_spacing.x = 14.0;
+                    ui.add(
+                        egui::Image::new(&self.logo)
+                            .fit_to_exact_size(egui::vec2(40.0, 40.0))
+                            .alt_text("AsciiFlow AF icon"),
+                    );
+                    ui.separator();
+                    ui.vertical(|ui| {
+                        ui.label(egui::RichText::new("AsciiFlow").size(22.0).strong());
+                        ui.small("Turn motion into characters");
+                    });
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        ui.label(egui::RichText::new("LOCAL PROCESSING").small().weak());
+                    });
                 });
             });
-            ui.add_space(12.0);
-        });
-        egui::TopBottomPanel::bottom("task").show(ctx, |ui| {
-            ui.add_space(8.0);
-            if let Some(job) = &self.job {
-                let (frames, total) = job
-                    .progress
-                    .lock()
-                    .map(|state| (state.frames, state.total))
-                    .unwrap_or_default();
-                ui.horizontal(|ui| {
-                    ui.spinner();
-                    ui.label(if self.closing {
-                        "Cancelling before closing…"
-                    } else if job.cancellation.is_cancelled() {
-                        "Cancelling…"
-                    } else if job.conversion {
-                        "Converting…"
-                    } else {
-                        "Rendering preview…"
-                    });
-                    if ui
-                        .add_enabled(
-                            !job.cancellation.is_cancelled(),
-                            egui::Button::new("Cancel"),
-                        )
-                        .clicked()
-                    {
-                        job.cancellation.cancel();
-                    }
-                });
-                if job.conversion {
-                    if let Some(total) = total.filter(|total| *total > 0) {
-                        ui.add(
-                            egui::ProgressBar::new(
-                                (frames as f64 / total as f64).clamp(0.0, 1.0) as f32
+        egui::TopBottomPanel::bottom("task")
+            .frame(
+                egui::Frame::new()
+                    .fill(ctx.style().visuals.panel_fill)
+                    .inner_margin(egui::Margin::symmetric(20, 12)),
+            )
+            .show(ctx, |ui| {
+                if let Some(job) = &self.job {
+                    let (frames, total) = job
+                        .progress
+                        .lock()
+                        .map(|state| (state.frames, state.total))
+                        .unwrap_or_default();
+                    ui.horizontal(|ui| {
+                        ui.spinner();
+                        ui.label(if self.closing {
+                            "Cancelling before closing…"
+                        } else if job.cancellation.is_cancelled() {
+                            "Cancelling…"
+                        } else if job.conversion {
+                            "Converting…"
+                        } else {
+                            "Rendering preview…"
+                        });
+                        if ui
+                            .add_enabled(
+                                !job.cancellation.is_cancelled(),
+                                egui::Button::new("Cancel"),
                             )
-                            .text(format!("{frames} / {total} frames")),
-                        );
-                    } else {
-                        ui.label(format!("{frames} frames processed · total unknown"));
+                            .clicked()
+                        {
+                            job.cancellation.cancel();
+                        }
+                    });
+                    if job.conversion {
+                        if let Some(total) = total.filter(|total| *total > 0) {
+                            ui.add(
+                                egui::ProgressBar::new(
+                                    (frames as f64 / total as f64).clamp(0.0, 1.0) as f32,
+                                )
+                                .text(format!("{frames} / {total} frames")),
+                            );
+                        } else {
+                            ui.label(format!("{frames} frames processed · total unknown"));
+                        }
+                        let seconds = job.started.elapsed().as_secs_f64();
+                        if frames > 0 && seconds > 0.0 {
+                            ui.small(format!(
+                                "{:.1} frames/s · {:.0}s elapsed",
+                                frames as f64 / seconds,
+                                seconds
+                            ));
+                        }
                     }
-                    let seconds = job.started.elapsed().as_secs_f64();
-                    if frames > 0 && seconds > 0.0 {
-                        ui.small(format!(
-                            "{:.1} frames/s · {:.0}s elapsed",
-                            frames as f64 / seconds,
-                            seconds
-                        ));
-                    }
+                    ctx.request_repaint_after(std::time::Duration::from_millis(100));
+                } else {
+                    ui.horizontal_wrapped(|ui| {
+                        ui.spacing_mut().item_spacing = egui::vec2(10.0, 8.0);
+                        let ready = self.settings.input.is_some() && !self.closing;
+                        if ui
+                            .add_enabled(
+                                ready,
+                                egui::Button::new("Preview first frame")
+                                    .min_size(egui::vec2(160.0, 38.0)),
+                            )
+                            .clicked()
+                        {
+                            self.start(ctx, false, frame);
+                        }
+                        if ui
+                            .add_enabled(
+                                ready && self.settings.output.is_some(),
+                                egui::Button::new(egui::RichText::new("Start conversion").strong())
+                                    .min_size(egui::vec2(180.0, 38.0))
+                                    .fill(egui::Color32::from_rgb(28, 98, 108)),
+                            )
+                            .clicked()
+                        {
+                            self.start(ctx, true, frame);
+                        }
+                        if let Some(output) = self.completed_output.clone()
+                            && ui
+                                .add_enabled(
+                                    self.location_job.is_none(),
+                                    egui::Button::new("Open file location")
+                                        .min_size(egui::vec2(160.0, 38.0)),
+                                )
+                                .on_hover_text(output.display().to_string())
+                                .clicked()
+                        {
+                            match thread::Builder::new()
+                                .name("asciiflow-file-location".into())
+                                .spawn(move || reveal_output(&output))
+                            {
+                                Ok(job) => self.location_job = Some(job),
+                                Err(error) => self
+                                    .error(format!("Could not request the file location: {error}")),
+                            }
+                        }
+                    });
                 }
-                ctx.request_repaint_after(std::time::Duration::from_millis(100));
-            } else {
-                ui.horizontal(|ui| {
-                    let ready = self.settings.input.is_some() && !self.closing;
-                    if ui
-                        .add_enabled(
-                            ready,
-                            egui::Button::new("Preview first frame")
-                                .min_size(egui::vec2(160.0, 38.0)),
-                        )
-                        .clicked()
-                    {
-                        self.start(ctx, false, frame);
-                    }
-                    if ui
-                        .add_enabled(
-                            ready && self.settings.output.is_some(),
-                            egui::Button::new(egui::RichText::new("Start conversion").strong())
-                                .min_size(egui::vec2(180.0, 38.0))
-                                .fill(egui::Color32::from_rgb(28, 98, 108)),
-                        )
-                        .clicked()
-                    {
-                        self.start(ctx, true, frame);
-                    }
-                });
-            }
-            ui.add_space(4.0);
-            ui.label(egui::RichText::new(&self.status).color(if self.failed {
-                egui::Color32::from_rgb(255, 155, 145)
-            } else {
-                ui.visuals().text_color()
-            }));
-            ui.add_space(8.0);
-        });
+                ui.add_space(4.0);
+                ui.label(egui::RichText::new(&self.status).color(if self.failed {
+                    egui::Color32::from_rgb(255, 155, 145)
+                } else {
+                    ui.visuals().text_color()
+                }));
+            });
         egui::SidePanel::left("controls")
             .resizable(false)
             .exact_width(390.0)
             .frame(
                 egui::Frame::new()
                     .fill(ctx.style().visuals.panel_fill)
-                    .inner_margin(18.0),
+                    .inner_margin(16.0),
             )
             .show(ctx, |ui| {
                 egui::ScrollArea::vertical().show(ui, |ui| {
                     ui.add_enabled_ui(self.job.is_none() && !self.closing, |ui| {
-                        ui.add_space(12.0);
                         egui::Frame::group(ui.style())
                             .fill(ui.visuals().faint_bg_color)
                             .inner_margin(14.0)
@@ -868,7 +972,7 @@ impl eframe::App for App {
                                 ui.set_width(ui.available_width());
                                 self.files(ui, frame);
                             });
-                        ui.add_space(12.0);
+                        ui.add_space(10.0);
                         self.settings(ui, frame);
                     });
                 });
@@ -924,26 +1028,129 @@ impl Drop for App {
     }
 }
 
+/// Reveal the committed file, falling back to its directory on Linux desktops
+/// without the FileManager1 selection interface. Run only on the location worker.
+fn reveal_output(path: &std::path::Path) -> anyhow::Result<()> {
+    use anyhow::{Context, ensure};
+    use std::process::Command;
+    let path = std::path::absolute(path).context("locate the completed output")?;
+    ensure!(
+        path.is_file(),
+        "the completed output is no longer a regular file"
+    );
+    #[cfg(target_os = "linux")]
+    {
+        let uri = output_file_uri(&path);
+        let selection = Command::new("gdbus")
+            .args([
+                "call",
+                "--session",
+                "--timeout",
+                "5",
+                "--dest",
+                "org.freedesktop.FileManager1",
+                "--object-path",
+                "/org/freedesktop/FileManager1",
+                "--method",
+                "org.freedesktop.FileManager1.ShowItems",
+            ])
+            .arg(format!("['{uri}']"))
+            .arg("")
+            .output();
+        if selection
+            .as_ref()
+            .is_ok_and(|output| output.status.success())
+        {
+            return Ok(());
+        }
+        let parent = path.parent().context("output has no parent directory")?;
+        let opened = Command::new("xdg-open")
+            .arg(parent)
+            .output()
+            .context("start the desktop file manager (xdg-open)")?;
+        ensure!(
+            opened.status.success(),
+            "file manager exited with {}: {}",
+            opened.status,
+            String::from_utf8_lossy(&opened.stderr).trim()
+        );
+        Ok(())
+    }
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        // Keep the switch separate from the quoted, literal path; never invoke a shell.
+        Command::new("explorer.exe")
+            .raw_arg("/select,")
+            .arg(&path)
+            .spawn()
+            .context("start Windows Explorer")?;
+        Ok(())
+    }
+    #[cfg(not(any(target_os = "linux", target_os = "windows")))]
+    {
+        let opened = Command::new("open")
+            .arg("-R")
+            .arg(&path)
+            .output()
+            .context("start the file manager")?;
+        ensure!(
+            opened.status.success(),
+            "file manager exited with {}",
+            opened.status
+        );
+        Ok(())
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn output_file_uri(path: &std::path::Path) -> String {
+    use std::{fmt::Write, os::unix::ffi::OsStrExt};
+    let mut uri = String::from("file://");
+    for &byte in path.as_os_str().as_bytes() {
+        if byte.is_ascii_alphanumeric() || b"/-._~".contains(&byte) {
+            uri.push(char::from(byte));
+        } else {
+            write!(uri, "%{byte:02X}").expect("writing into a string cannot fail");
+        }
+    }
+    uri
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[cfg(target_os = "linux")]
     #[test]
-    #[ignore = "requires a Linux system CJK font; desktop acceptance gate"]
-    fn desktop_system_font_displays_chinese_file_names() {
-        let ctx = egui::Context::default();
-        install_system_cjk_font(&ctx).unwrap();
-        let _ = ctx.run(egui::RawInput::default(), |ctx| {
-            ctx.fonts(|fonts| {
-                for family in [egui::FontFamily::Proportional, egui::FontFamily::Monospace] {
-                    let font = egui::FontId::new(14.0, family);
-                    for character in "中文測試视频.mp4".chars() {
-                        assert!(fonts.has_glyph(&font, character), "missing {character}");
-                    }
-                }
-            });
-        });
+    #[ignore = "opens a real desktop file manager; run only during desktop acceptance"]
+    fn desktop_reveals_completed_output() {
+        let directory =
+            std::env::temp_dir().join(format!("asciiflow-location-{}", std::process::id()));
+        std::fs::create_dir_all(&directory).unwrap();
+        let output = directory.join("中文 saved output.mp4");
+        std::fs::copy(
+            PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .join("../../tests/fixtures/media/no-audio.mp4"),
+            &output,
+        )
+        .unwrap();
+        reveal_output(&output).unwrap();
+        assert!(output.is_file());
+        println!("Desktop acceptance file: {}", output.display());
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn location_uri_preserves_unicode_and_literal_filename_characters() {
+        use std::os::unix::ffi::OsStringExt;
+        let path = PathBuf::from(OsString::from_vec(
+            b"/tmp/\xe4\xb8\xad name ' [x]#?%\xff.mp4".to_vec(),
+        ));
+        assert_eq!(
+            output_file_uri(&path),
+            "file:///tmp/%E4%B8%AD%20name%20%27%20%5Bx%5D%23%3F%25%FF.mp4"
+        );
     }
 
     #[test]
@@ -1001,6 +1208,7 @@ mod tests {
         // Cancellation may race with a completed commit; both outcomes must leave
         // the GUI reusable and the filesystem consistent.
         let mut committed = 0;
+        let mut last_output = None;
         for (index, cancel) in [false, true, false].into_iter().enumerate() {
             let output = directory.join(format!("中文 输出 {index}.mp4"));
             app.settings.output = Some(output.clone());
@@ -1028,7 +1236,11 @@ mod tests {
                 }
                 assert_eq!(frames, 90);
                 committed += 1;
+                last_output = Some(output.clone());
             }
+            assert_eq!(app.completed_output, last_output);
+            app.settings.output = Some(directory.join("another destination.mp4"));
+            assert_eq!(app.completed_output, last_output);
         }
         assert_eq!(
             std::fs::read_dir(&directory).unwrap().count(),
@@ -1038,47 +1250,44 @@ mod tests {
         std::fs::remove_dir_all(directory).unwrap();
     }
 
-    #[test]
-    fn font_search_stays_open_and_selection_updates_the_rendering_font() {
-        let ctx = egui::Context::default();
-        let mut app = App::new(&eframe::CreationContext::_new_kittest(ctx.clone()));
-        app.font_scan = None;
-        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../tests/fixtures/fonts/Inconsolata-Regular.ttf");
-        app.fonts = vec![asciiflow_font::SystemFont {
-            name: "Inconsolata Regular".into(),
-            path: path.clone(),
-            face_index: 0,
-        }];
+    fn appearance_frame(
+        ctx: &egui::Context,
+        app: &mut App,
+        events: Vec<egui::Event>,
+    ) -> egui::FullOutput {
         let frame = eframe::Frame::_new_kittest();
-        let mut render = |events: Vec<egui::Event>| {
-            ctx.run(
-                egui::RawInput {
-                    screen_rect: Some(egui::Rect::from_min_size(
-                        egui::Pos2::ZERO,
-                        egui::vec2(390.0, 900.0),
-                    )),
-                    events,
-                    ..Default::default()
-                },
-                |ctx| {
-                    egui::CentralPanel::default().show(ctx, |ui| app.settings(ui, &frame));
-                },
-            )
-        };
-        let text_position = |output: &egui::FullOutput, text: &str| {
-            output
-                .shapes
-                .iter()
-                .find_map(|shape| match &shape.shape {
-                    egui::Shape::Text(shape) if shape.galley.job.text == text => {
-                        Some(shape.pos + egui::vec2(5.0, 5.0))
-                    }
-                    _ => None,
-                })
-                .unwrap_or_else(|| panic!("missing text: {text}"))
-        };
-        let click = |pos| {
+        ctx.run(
+            egui::RawInput {
+                screen_rect: Some(egui::Rect::from_min_size(
+                    egui::Pos2::ZERO,
+                    egui::vec2(390.0, 900.0),
+                )),
+                events,
+                ..Default::default()
+            },
+            |ctx| {
+                egui::CentralPanel::default().show(ctx, |ui| app.settings(ui, &frame));
+            },
+        )
+    }
+
+    fn click_appearance_text(ctx: &egui::Context, app: &mut App, text: &str) {
+        // Settle layout before choosing a text position, including newly opened popups.
+        appearance_frame(ctx, app, Vec::new());
+        let output = appearance_frame(ctx, app, Vec::new());
+        let pos = output
+            .shapes
+            .iter()
+            .find_map(|shape| match &shape.shape {
+                egui::Shape::Text(shape) if shape.galley.job.text == text => {
+                    Some(shape.pos + egui::vec2(5.0, 5.0))
+                }
+                _ => None,
+            })
+            .unwrap_or_else(|| panic!("missing text: {text}"));
+        appearance_frame(
+            ctx,
+            app,
             vec![
                 egui::Event::PointerMoved(pos),
                 egui::Event::PointerButton {
@@ -1093,27 +1302,68 @@ mod tests {
                     pressed: false,
                     modifiers: egui::Modifiers::NONE,
                 },
-            ]
-        };
-        render(Vec::new());
-        let output = render(Vec::new());
-        let pos = text_position(&output, "Built-in · 8 × 8");
-        render(click(pos));
-        let output = render(Vec::new());
+            ],
+        );
+    }
+
+    #[test]
+    fn font_search_stays_open_and_selection_updates_the_rendering_font() {
+        let ctx = egui::Context::default();
+        let mut app = App::new(&eframe::CreationContext::_new_kittest(ctx.clone()));
+        app.font_scan = None;
+        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../tests/fixtures/fonts/Inconsolata-Regular.ttf");
+        app.fonts = vec![asciiflow_font::SystemFont {
+            name: "Inconsolata Regular".into(),
+            path: path.clone(),
+            face_index: 0,
+        }];
+        click_appearance_text(&ctx, &mut app, "Built-in · 8 × 8");
         assert!(ctx.memory(|memory| memory.any_popup_open()));
-        let pos = text_position(&output, "Search installed fonts…");
-        render(click(pos));
+        click_appearance_text(&ctx, &mut app, "Search installed fonts…");
         assert!(
             ctx.memory(|memory| memory.any_popup_open()),
             "search must keep the popup open"
         );
-        let output = render(vec![egui::Event::Text("inconsolata".into())]);
-        let pos = text_position(&output, "Inconsolata Regular");
-        render(click(pos));
+        appearance_frame(
+            &ctx,
+            &mut app,
+            vec![egui::Event::Text("inconsolata".into())],
+        );
+        click_appearance_text(&ctx, &mut app, "Inconsolata Regular");
         assert!(!ctx.memory(|memory| memory.any_popup_open()));
         assert_eq!(app.font_filter, "inconsolata");
         assert_eq!(app.settings.config.font, path.to_str().unwrap());
         assert_eq!(app.settings.font_face_index, Some(0));
+    }
+
+    #[test]
+    fn charset_presets_match_cli_and_keep_custom_characters_when_switching() {
+        let ctx = egui::Context::default();
+        let mut app = App::new(&eframe::CreationContext::_new_kittest(ctx.clone()));
+        app.settings.input = Some("input.mp4".into());
+        app.settings.output = Some("output.mp4".into());
+        assert_eq!(
+            app.settings.args().unwrap().resolved_charset(),
+            asciiflow_cli::args::resolve_charset("standard")
+        );
+        click_appearance_text(&ctx, &mut app, "Standard");
+        click_appearance_text(&ctx, &mut app, "Detailed");
+        assert_eq!(app.settings.config.charset, "detailed");
+        assert_eq!(
+            app.settings.args().unwrap().resolved_charset(),
+            asciiflow_cli::args::resolve_charset("detailed")
+        );
+        click_appearance_text(&ctx, &mut app, "Detailed");
+        click_appearance_text(&ctx, &mut app, "Custom");
+        app.settings.config.charset = " .:+=#@".into();
+        click_appearance_text(&ctx, &mut app, "Custom");
+        click_appearance_text(&ctx, &mut app, "Standard");
+        assert_eq!(app.settings.config.charset, "standard");
+        click_appearance_text(&ctx, &mut app, "Standard");
+        click_appearance_text(&ctx, &mut app, "Custom");
+        assert_eq!(app.settings.config.charset, " .:+=#@");
+        assert_eq!(app.settings.args().unwrap().resolved_charset(), " .:+=#@");
     }
 
     #[test]
@@ -1167,22 +1417,9 @@ mod tests {
             conversion: true,
             settings: settings.clone(),
         };
-        let mut app = App {
-            file_drop_supported: true,
-            fonts: Vec::new(),
-            font_scan: None,
-            font_error: None,
-            font_filter: String::new(),
-            settings,
-            job: Some(job),
-            texture: None,
-            preview_settings: None,
-            preview_description: String::new(),
-            status: String::new(),
-            failed: false,
-            closing: false,
-        };
         let ctx = egui::Context::default();
+        let mut app = App::new(&eframe::CreationContext::_new_kittest(ctx.clone()));
+        app.job = Some(job);
         app.complete(&ctx);
         assert!(app.job.is_some(), "polling must not join an active worker");
         let mut input = egui::RawInput {

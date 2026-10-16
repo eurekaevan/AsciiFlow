@@ -28,6 +28,8 @@ Run `asciiflow-gui` (`asciiflow-gui.exe` on Windows) from the extracted release
 directory. The first interface uses English labels and handles one file at a
 time: choose or drop a video, choose the output, adjust the character grid,
 color, character ramp, font and audio policy, then start or cancel conversion.
+The character-set selector offers the CLI Standard and Detailed presets plus
+Custom; switching presets keeps your custom characters.
 A first-frame CPU preview uses the actual 8-bit BT.709 SDR renderer; it is not a video player or
 a guarantee that a requested hardware route is available. Advanced settings
 expose processing, codec and hardware choices; conversion uses the same planning
@@ -42,6 +44,10 @@ record](docs/releases.md#first-graphical-interface) for verified interactions.
 Windows hardware conversion requires separate live validation.
 The GUI scans installed monospaced rendering fonts in the background and offers
 a searchable selector; custom font files remain available through Browse font.
+Interface fonts follow the supported desktop's font family and size at startup.
+After conversion, Open file location reveals the saved output in the file manager.
+The original AF [application icon](assets/README.md) is embedded in the window
+and included in release archives as SVG, PNG and ICO.
 
 ## Current support
 

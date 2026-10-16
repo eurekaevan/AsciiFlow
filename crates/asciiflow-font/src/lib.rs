@@ -2,6 +2,10 @@ use font8x8::{BASIC_FONTS, UnicodeFonts};
 use thiserror::Error;
 mod resolve;
 mod scalable;
+#[cfg(target_os = "linux")]
+pub use resolve::resolve_system_pattern;
+#[cfg(target_os = "windows")]
+pub use resolve::resolve_system_ui_font;
 pub use resolve::{FontSource, ResolvedFont, SystemFont, list_system_fonts, resolve_font};
 pub use scalable::{CellAspect, FontDiagnostics, build_font_atlas, natural_cell_aspect};
 

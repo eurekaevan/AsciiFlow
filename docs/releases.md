@@ -32,7 +32,10 @@ sudo apt-get install libdav1d7 libva2 libva-drm2 libdrm2 libfreetype6 libvulkan1
 The GUI additionally needs a working X11/Wayland desktop, OpenGL driver and
 a configured desktop portal for native file dialogs. Install VAAPI and Vulkan
 drivers suitable for your GPU separately. Fontconfig
-supports font-name discovery; the built-in font needs no external font file.
+supports font-name discovery; the built-in font needs no external font file. GNOME interface
+font settings use `gsettings`; selecting completed files uses `gdbus` (both in
+`libglib2.0-bin` on Ubuntu). Opening the parent folder falls back to `xdg-open`
+from `xdg-utils` when file selection is unavailable.
 The archive requires glibc 2.39 or newer. See `production-support.md` for the
 qualified hardware paths and limitations. This profile provides VAAPI
 H.264/HEVC/AV1 encoding and excludes software H.264 encoding; selecting
@@ -93,6 +96,19 @@ qualify a hardware encode path. Conversion runs in the background through the
 same planner and pipeline as the CLI, with progress, cancellation and visible
 errors. Unknown totals remain indeterminate.
 
+The character-set selector defaults to **Standard**, using the same `standard`
+ramp as the CLI. **Detailed** uses the CLI's `detailed` ramp, and **Custom** exposes
+the editable character sequence. Switching to a preset keeps the previous
+custom sequence for when Custom is selected again. Hovering over the selector
+shows the effective ramp and its character count. Preview and conversion share
+the CLI preset resolver.
+
+The window and header use the original AF application icon. Both release archives
+include editable SVG, a 512px PNG, and a multi-size ICO under `assets/`. The ICO
+can be used for Windows shortcuts; Explorer's executable-file icon is not yet
+embedded as a Windows resource. No external file is needed for the running
+window icon, which is compiled into the GUI binary.
+
 Rendering fonts are scanned once in the background at startup. The searchable
 selector includes the built-in 8×8 font and installed scalable monospaced faces;
 proportional, unreadable and renderer-incompatible fonts are omitted. Linux uses
@@ -105,10 +121,26 @@ the default, and a scan failure is shown without disabling it or file browsing.
 
 The interface uses a dark canvas, grouped file controls, a searchable font
 selector above appearance settings, and a persistent conversion toolbar.
+Interface font family and body size are read at startup from GNOME's interface
+font setting, KDE's `kdeglobals`, or the Windows system message font. These are
+independent of the rendering font. Other Linux desktops are not yet qualified;
+if discovery fails the UI retains its default font and reports a diagnostic.
+Installed CJK faces remain fallback fonts. Font weight/style settings on KDE and
+Windows are not currently mirrored.
+
+After a successful conversion, **Open file location** refers to the last committed
+output, even if the next destination changes or a later job is cancelled. Linux
+requests file selection through `org.freedesktop.FileManager1`, falling back to
+opening its parent folder; Windows hands selection to Explorer. Requests run
+outside the UI thread and failures are displayed. On this Linux host, the native
+file manager opened the test directory and exposed the Chinese output filename
+as selected. This does not qualify native Windows behavior.
+
 A real Linux XWayland window was visually checked at its default size; the
 system scanner found 111 compatible faces on that host. Automated interaction
 covers opening the selector, focusing search, filtering and choosing a face.
-This does not qualify the Windows font directories or native desktop operation.
+The catalog and interface checks do not qualify the Windows font directories
+or Windows desktop operation.
 The existing optional `system_monospace_matches_explicit_atlas` test fails on this
 host because its default `monospace` alias resolves to a variable font that
 FreeType does not flag as fixed-width. The new catalog excludes that font under
@@ -119,7 +151,7 @@ locked winit 0.30 backend does not implement native Wayland file-drop events
 ([upstream issue](https://github.com/rust-windowing/winit/issues/1881)). This also
 permits drops from a Wayland file manager through the compositor's XWayland
 bridge. Without an X11 display, the GUI uses native Wayland and directs users to
-**Choose input video** instead of advertising file dragging. An invalid X11
+**Choose video…** instead of advertising file dragging. An invalid X11
 display produces the existing startup error rather than silently changing modes.
 
 Existing media, audio, color and hardware support boundaries still apply.

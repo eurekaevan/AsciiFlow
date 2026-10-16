@@ -108,6 +108,7 @@ Invoke-Checked cargo @('build', '--locked', '--release', '--target', $target, '-
 # This device-free test also compiles the opt-in Windows hardware round-trip gate.
 Invoke-Checked cargo @('test', '--locked', '--lib', '--target', $target, '-p', 'asciiflow-media', '--features', 'lgpl-prebuilt', 'ffmpeg::encoder::audio_regression_tests::lgpl_profile_rejects_software_without_generic_h264_fallback', '--', '--exact')
 $null = New-Item -ItemType Directory -Path $package, (Join-Path $package 'sources'), (Join-Path $package 'notices\rust-std'), (Join-Path $package 'build')
+Copy-Item assets (Join-Path $package 'assets') -Recurse
 foreach ($binary in @('asciiflow.exe', 'asciiflow-gui.exe')) {
     Copy-Item (Join-Path $env:CARGO_TARGET_DIR "$target\release\$binary") $package
 }

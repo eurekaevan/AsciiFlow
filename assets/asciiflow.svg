@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <title>AsciiFlow</title>
+  <desc>An original AF monogram in mint on a dark navy square.</desc>
+  <rect x="12" y="12" width="488" height="488" rx="20" fill="#092c32" stroke="#48d9c7" stroke-width="16"/>
+  <g fill="#79f4dc">
+    <path fill-rule="evenodd" d="M88 352 150 160H192L254 352H212L199 310H141L128 352ZM152 274H188L170 215Z"/>
+    <path d="M273 160H414V198H314V241H402V279H314V352H273Z"/>
+  </g>
+</svg>

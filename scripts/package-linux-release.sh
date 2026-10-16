@@ -38,6 +38,7 @@ cargo build --locked --release -p asciiflow-cli --features lgpl-prebuilt,gui --b
 package="$work/$name"
 mkdir -p "$package/lib" "$package/sources" "$package/notices/rust-std" "$package/build"
 cp "$CARGO_TARGET_DIR/release/"{asciiflow,asciiflow-gui} "$package/"
+cp -a assets "$package/"
 for component in avcodec avformat avutil swscale; do
   cp -a "$FFMPEG_DIR/lib/lib$component.so"* "$package/lib/"
 done
