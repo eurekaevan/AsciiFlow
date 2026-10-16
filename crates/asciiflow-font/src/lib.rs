@@ -2,7 +2,7 @@ use font8x8::{BASIC_FONTS, UnicodeFonts};
 use thiserror::Error;
 mod resolve;
 mod scalable;
-pub use resolve::{FontSource, ResolvedFont, resolve_font};
+pub use resolve::{FontSource, ResolvedFont, SystemFont, list_system_fonts, resolve_font};
 pub use scalable::{CellAspect, FontDiagnostics, build_font_atlas, natural_cell_aspect};
 
 #[derive(Debug, Error)]

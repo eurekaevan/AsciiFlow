@@ -62,6 +62,7 @@ struct Settings {
     input: Option<PathBuf>,
     output: Option<PathBuf>,
     config: AsciiConfig,
+    font_face_index: Option<u32>,
     audio: &'static str,
     backend: &'static str,
     encoder: &'static str,
@@ -76,6 +77,7 @@ impl Default for Settings {
             input: None,
             output: None,
             config: AsciiConfig::default(),
+            font_face_index: None,
             audio: "auto",
             backend: "auto",
             encoder: "auto",
@@ -114,6 +116,9 @@ impl Settings {
         if let Some(height) = self.config.grid_height {
             values.extend(["--height".into(), height.to_string().into()]);
         }
+        if let Some(index) = self.font_face_index {
+            values.extend(["--font-face-index".into(), index.to_string().into()]);
+        }
         values.push("--no-progress".into());
         values.extend([
             "--".into(),
@@ -147,6 +152,11 @@ struct Job {
 
 struct App {
     file_drop_supported: bool,
+    fonts: Vec<asciiflow_font::SystemFont>,
+    font_scan:
+        Option<JoinHandle<Result<Vec<asciiflow_font::SystemFont>, asciiflow_font::FontError>>>,
+    font_error: Option<String>,
+    font_filter: String,
     settings: Settings,
     job: Option<Job>,
     texture: Option<egui::TextureHandle>,
@@ -159,7 +169,28 @@ struct App {
 
 impl App {
     fn new(cc: &eframe::CreationContext<'_>) -> Self {
-        cc.egui_ctx.set_visuals(egui::Visuals::dark());
+        let mut visuals = egui::Visuals::dark();
+        visuals.panel_fill = egui::Color32::from_rgb(20, 26, 35);
+        visuals.window_fill = egui::Color32::from_rgb(27, 35, 46);
+        visuals.extreme_bg_color = egui::Color32::from_rgb(13, 18, 25);
+        visuals.faint_bg_color = egui::Color32::from_rgb(28, 37, 49);
+        visuals.override_text_color = Some(egui::Color32::from_rgb(222, 230, 239));
+        visuals.widgets.inactive.bg_fill = egui::Color32::from_rgb(36, 47, 61);
+        visuals.widgets.inactive.weak_bg_fill = egui::Color32::from_rgb(36, 47, 61);
+        visuals.widgets.hovered.weak_bg_fill = egui::Color32::from_rgb(45, 64, 79);
+        visuals.widgets.active.weak_bg_fill = egui::Color32::from_rgb(32, 112, 124);
+        visuals.widgets.inactive.corner_radius = egui::CornerRadius::same(6);
+        visuals.widgets.hovered.corner_radius = egui::CornerRadius::same(6);
+        visuals.widgets.active.corner_radius = egui::CornerRadius::same(6);
+        visuals.selection.bg_fill = egui::Color32::from_rgb(28, 98, 108);
+        visuals.widgets.active.bg_fill = egui::Color32::from_rgb(32, 112, 124);
+        visuals.widgets.hovered.bg_fill = egui::Color32::from_rgb(45, 64, 79);
+        cc.egui_ctx.set_visuals(visuals);
+        cc.egui_ctx.style_mut(|style| {
+            style.spacing.item_spacing = egui::vec2(10.0, 10.0);
+            style.spacing.button_padding = egui::vec2(12.0, 8.0);
+            style.spacing.interact_size.y = 32.0;
+        });
         #[cfg(target_os = "linux")]
         if let Err(error) = install_system_cjk_font(&cc.egui_ctx) {
             eprintln!("System CJK interface font unavailable: {error:#}");
@@ -174,7 +205,23 @@ impl App {
         };
         #[cfg(not(target_os = "linux"))]
         let file_drop_supported = true;
+        let repaint = cc.egui_ctx.clone();
+        let font_scan = thread::Builder::new()
+            .name("asciiflow-font-scan".into())
+            .spawn(move || {
+                let fonts = asciiflow_font::list_system_fonts();
+                repaint.request_repaint();
+                fonts
+            });
+        let (font_scan, font_error) = match font_scan {
+            Ok(handle) => (Some(handle), None),
+            Err(error) => (None, Some(format!("Could not scan system fonts: {error}"))),
+        };
         Self {
+            fonts: Vec::new(),
+            font_scan,
+            font_error,
+            font_filter: String::new(),
             file_drop_supported,
             settings: Settings::default(),
             job: None,
@@ -238,6 +285,7 @@ impl App {
         let progress = Arc::new(Mutex::new(Progress::default()));
         let worker_progress = Arc::clone(&progress);
         let config = settings.config.clone();
+        let font_face_index = settings.font_face_index;
         let repaint = ctx.clone();
         let (sender, result) = mpsc::sync_channel(1);
         let handle = thread::Builder::new()
@@ -254,7 +302,8 @@ impl App {
                         })
                         .map(|()| Outcome::Converted)
                     } else {
-                        preview(&input, &config, worker_cancellation).map(Outcome::Preview)
+                        preview(&input, &config, worker_cancellation, font_face_index)
+                            .map(Outcome::Preview)
                     }
                 }));
                 let outcome = match outcome {
@@ -358,93 +407,244 @@ impl App {
     }
 
     fn files(&mut self, ui: &mut egui::Ui, frame: &eframe::Frame) {
-        ui.heading("1  Files");
-        if ui.button("Choose input video…").clicked()
-            && let Some(path) = rfd::FileDialog::new()
-                .set_parent(frame)
-                .add_filter("MP4 video", &["mp4", "mov", "m4v"])
-                .pick_file()
-        {
-            self.input(path);
-        }
-        ui.label(
-            self.settings
-                .input
-                .as_ref()
-                .map(|path| path.display().to_string())
-                .unwrap_or_else(|| {
-                    if self.file_drop_supported {
-                    "Or drop a local video into this window."
-                } else {
-                    "Use Choose input video. File dragging is unavailable in this Wayland window."
-                }.into()
-                }),
-        );
-        ui.add_space(8.0);
-        if ui.button("Save output as…").clicked() {
-            let name = self
-                .settings
-                .input
-                .as_ref()
-                .and_then(|path| path.file_stem())
-                .map(|stem| format!("{}-ascii.mp4", stem.to_string_lossy()))
-                .unwrap_or_else(|| "output-ascii.mp4".into());
-            if let Some(path) = rfd::FileDialog::new()
-                .set_parent(frame)
-                .add_filter("MP4 video", &["mp4"])
-                .set_file_name(&name)
-                .save_file()
+        ui.heading("Your video");
+        ui.horizontal(|ui| {
+            ui.label(egui::RichText::new("INPUT").small().weak());
+            if ui.button("Choose video…").clicked()
+                && let Some(path) = rfd::FileDialog::new()
+                    .set_parent(frame)
+                    .add_filter("MP4 video", &["mp4", "mov", "m4v"])
+                    .pick_file()
             {
-                self.settings.output = Some(path);
+                self.input(path);
             }
+        });
+        if let Some(path) = &self.settings.input {
+            ui.add(
+                egui::Label::new(path.file_name().unwrap_or_default().to_string_lossy()).truncate(),
+            )
+            .on_hover_text(path.display().to_string());
+        } else {
+            ui.small(if self.file_drop_supported {
+                "Or drop a video into this window."
+            } else {
+                "Choose a video. Dragging is unavailable on native Wayland."
+            });
         }
-        ui.label(
-            self.settings
-                .output
-                .as_ref()
-                .map(|path| path.display().to_string())
-                .unwrap_or_else(|| "Choose an MP4 destination before converting.".into()),
-        );
-        ui.small("Replacing an existing file requires confirmation; it is replaced only after conversion succeeds.");
+        ui.separator();
+        ui.horizontal(|ui| {
+            ui.label(egui::RichText::new("OUTPUT").small().weak());
+            if ui.button("Save output as…")
+                .on_hover_text("Existing files require confirmation and are replaced only after successful conversion.").clicked() {
+                let name = self.settings.input.as_ref().and_then(|path| path.file_stem())
+                    .map(|stem| format!("{}-ascii.mp4", stem.to_string_lossy()))
+                    .unwrap_or_else(|| "output-ascii.mp4".into());
+                if let Some(path) = rfd::FileDialog::new().set_parent(frame)
+                    .add_filter("MP4 video", &["mp4"]).set_file_name(&name).save_file() {
+                    self.settings.output = Some(path);
+                }
+            }
+        });
+        if let Some(path) = &self.settings.output {
+            ui.add(
+                egui::Label::new(path.file_name().unwrap_or_default().to_string_lossy()).truncate(),
+            )
+            .on_hover_text(path.display().to_string());
+        } else {
+            ui.small("Choose an MP4 destination before converting.");
+        }
     }
 
     fn settings(&mut self, ui: &mut egui::Ui, frame: &eframe::Frame) {
-        ui.heading("2  Appearance");
-        egui::Grid::new("appearance").num_columns(2).spacing([12.0, 10.0]).show(ui, |ui| {
-            let label = ui.label("Columns");
-            ui.add(egui::DragValue::new(&mut self.settings.config.grid_width).range(1..=8192)).labelled_by(label.id); ui.end_row();
-            let label = ui.label("Rows");
-            let mut height = self.settings.config.grid_height.unwrap_or(0);
-            if ui.add(egui::DragValue::new(&mut height).range(0..=8192).custom_formatter(|value, _| if value == 0.0 { "Auto".into() } else { format!("{value:.0}") })).labelled_by(label.id).changed() {
-                self.settings.config.grid_height = (height != 0).then_some(height);
-            } ui.end_row();
-            ui.label("Color"); ui.checkbox(&mut self.settings.config.color, "Retain source colors"); ui.end_row();
-            let label = ui.label("Character set"); ui.text_edit_singleline(&mut self.settings.config.charset).labelled_by(label.id); ui.end_row();
-            let label = ui.label("Font"); ui.horizontal(|ui| {
-                ui.add(egui::TextEdit::singleline(&mut self.settings.config.font).desired_width(155.0)).labelled_by(label.id);
-                if ui.small_button("Browse…").clicked()
-                    && let Some(path) = rfd::FileDialog::new().set_parent(frame).add_filter("Font", &["ttf", "otf", "ttc"]).pick_file()
+        ui.heading("Appearance");
+        ui.small("Shape your character canvas");
+        ui.add_space(6.0);
+        let label = ui.label(egui::RichText::new("Rendering font").strong());
+        let selected = if self.settings.config.font == "builtin-8x8" {
+            "Built-in · 8 × 8".to_owned()
+        } else {
+            self.fonts
+                .iter()
+                .find(|font| {
+                    font.path.to_str() == Some(self.settings.config.font.as_str())
+                        && Some(font.face_index) == self.settings.font_face_index
+                })
+                .map(|font| font.name.clone())
+                .unwrap_or_else(|| {
+                    PathBuf::from(&self.settings.config.font)
+                        .file_name()
+                        .unwrap_or_default()
+                        .to_string_lossy()
+                        .into_owned()
+                })
+        };
+        egui::ComboBox::from_id_salt("system-font")
+            .close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside)
+            .truncate()
+            .selected_text(selected)
+            .width(ui.available_width())
+            .show_ui(ui, |ui| {
+                ui.set_width(320.0);
+                ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Truncate);
+                ui.add(
+                    egui::TextEdit::singleline(&mut self.font_filter)
+                        .hint_text("Search installed fonts…")
+                        .desired_width(ui.available_width()),
+                );
+                ui.separator();
+                if ui
+                    .selectable_label(
+                        self.settings.config.font == "builtin-8x8",
+                        "Built-in · 8 × 8",
+                    )
+                    .clicked()
                 {
-                    match path.to_str() {
-                        Some(path) => self.settings.config.font = path.into(),
-                        None => self.error("This font path cannot be represented as Unicode. Choose another path.".into()),
-                    }
+                    self.settings.config.font = "builtin-8x8".into();
+                    self.settings.font_face_index = None;
+                    ui.memory_mut(|memory| memory.close_popup());
                 }
-            }); ui.end_row();
-            let label = ui.label("Audio"); choice(ui, "audio", &mut self.settings.audio, &[("auto", "Auto"), ("copy", "Require passthrough"), ("none", "No audio")]).labelled_by(label.id); ui.end_row();
+                let filter = self.font_filter.to_lowercase();
+                egui::ScrollArea::vertical()
+                    .max_height(220.0)
+                    .show(ui, |ui| {
+                        let mut matches = 0;
+                        for font in &self.fonts {
+                            if !font.name.to_lowercase().contains(&filter) {
+                                continue;
+                            }
+                            // Non-Unicode font paths cannot be passed to the renderer's font option.
+                            let Some(path) = font.path.to_str() else {
+                                continue;
+                            };
+                            matches += 1;
+                            let selected = self.settings.config.font == path
+                                && self.settings.font_face_index == Some(font.face_index);
+                            if ui
+                                .selectable_label(selected, &font.name)
+                                .on_hover_text(format!(
+                                    "{} · face {}",
+                                    font.path.display(),
+                                    font.face_index
+                                ))
+                                .clicked()
+                            {
+                                self.settings.config.font = path.into();
+                                self.settings.font_face_index = Some(font.face_index);
+                                ui.memory_mut(|memory| memory.close_popup());
+                            }
+                        }
+                        if matches == 0 && self.font_scan.is_none() {
+                            ui.weak("No matching system fonts.");
+                        }
+                    });
+            })
+            .response
+            .labelled_by(label.id);
+        ui.horizontal(|ui| {
+            if self.font_scan.is_some() {
+                ui.spinner();
+                ui.small("Scanning installed fonts…");
+            } else {
+                ui.small(format!("{} installed monospaced faces", self.fonts.len()));
+            }
+            if ui.small_button("Browse font…").clicked()
+                && let Some(path) = rfd::FileDialog::new()
+                    .set_parent(frame)
+                    .add_filter("Font", &["ttf", "otf", "ttc"])
+                    .pick_file()
+            {
+                match path.to_str() {
+                    Some(path) => {
+                        self.settings.config.font = path.into();
+                        self.settings.font_face_index = None;
+                    }
+                    None => self.error(
+                        "This font path cannot be represented as Unicode. Choose another path."
+                            .into(),
+                    ),
+                }
+            }
         });
-        ui.small("Rows: 0 = automatic. Characters run from sparse to dense. Font: builtin-8x8 or a monospaced font file.");
+        if let Some(error) = &self.font_error {
+            ui.colored_label(egui::Color32::from_rgb(255, 177, 126), error);
+        }
         ui.add_space(8.0);
+        ui.separator();
+        egui::Grid::new("appearance")
+            .num_columns(2)
+            .spacing([14.0, 12.0])
+            .show(ui, |ui| {
+                let label = ui.label("Columns");
+                ui.add(egui::DragValue::new(&mut self.settings.config.grid_width).range(1..=8192))
+                    .labelled_by(label.id);
+                ui.end_row();
+                let label = ui.label("Rows");
+                let mut height = self.settings.config.grid_height.unwrap_or(0);
+                if ui
+                    .add(
+                        egui::DragValue::new(&mut height)
+                            .range(0..=8192)
+                            .custom_formatter(|value, _| {
+                                if value == 0.0 {
+                                    "Auto".into()
+                                } else {
+                                    format!("{value:.0}")
+                                }
+                            }),
+                    )
+                    .labelled_by(label.id)
+                    .changed()
+                {
+                    self.settings.config.grid_height = (height != 0).then_some(height);
+                }
+                ui.end_row();
+                ui.label("Color");
+                ui.checkbox(&mut self.settings.config.color, "Retain source colors");
+                ui.end_row();
+                let label = ui.label("Characters");
+                ui.add(
+                    egui::TextEdit::singleline(&mut self.settings.config.charset)
+                        .desired_width(210.0),
+                )
+                .labelled_by(label.id);
+                ui.end_row();
+                let label = ui.label("Audio");
+                choice(
+                    ui,
+                    "audio",
+                    &mut self.settings.audio,
+                    &[
+                        ("auto", "Auto"),
+                        ("copy", "Require passthrough"),
+                        ("none", "No audio"),
+                    ],
+                )
+                .labelled_by(label.id);
+                ui.end_row();
+            });
+        ui.small("Rows: Auto keeps the source aspect. Characters run from sparse to dense.");
+        ui.add_space(8.0);
+        ui.add_space(14.0);
+        ui.separator();
         ui.collapsing("Advanced processing", |ui| {
             egui::Grid::new("advanced").num_columns(2).spacing([12.0, 10.0]).show(ui, |ui| {
-                let label = ui.label("Processing"); choice(ui, "backend", &mut self.settings.backend, &[("auto", "Auto"), ("cpu", "CPU"), ("vulkan", "Vulkan")]).labelled_by(label.id); ui.end_row();
+                let label = ui.label("Processing");
+                choice(ui, "backend", &mut self.settings.backend, &[("auto", "Auto"), ("cpu", "CPU"), ("vulkan", "Vulkan")]).labelled_by(label.id);
+                ui.end_row();
                 let label = ui.label("Encoder");
-                choice(ui, "encoder", &mut self.settings.encoder, &[("auto", "Auto"), ("vaapi", "VAAPI (Linux)"), ("mf", "Media Foundation (Windows)"), ("software", "Software (custom build)")]).labelled_by(label.id); ui.end_row();
-                let label = ui.label("Video codec"); choice(ui, "codec", &mut self.settings.codec, &[("h264", "H.264"), ("hevc", "HEVC"), ("av1", "AV1")]).labelled_by(label.id); ui.end_row();
-                let label = ui.label("Bit depth"); choice(ui, "depth", &mut self.settings.depth, &[("8", "8 bit"), ("10", "10 bit")]).labelled_by(label.id); ui.end_row();
-                let label = ui.label("Dynamic range"); choice(ui, "range", &mut self.settings.dynamic_range, &[("preserve", "Preserve"), ("sdr", "Convert to SDR")]).labelled_by(label.id); ui.end_row();
+                choice(ui, "encoder", &mut self.settings.encoder, &[("auto", "Auto"), ("vaapi", "VAAPI (Linux)"), ("mf", "Media Foundation (Windows)"), ("software", "Software (custom build)")]).labelled_by(label.id);
+                ui.end_row();
+                let label = ui.label("Video codec");
+                choice(ui, "codec", &mut self.settings.codec, &[("h264", "H.264"), ("hevc", "HEVC"), ("av1", "AV1")]).labelled_by(label.id);
+                ui.end_row();
+                let label = ui.label("Bit depth");
+                choice(ui, "depth", &mut self.settings.depth, &[("8", "8 bit"), ("10", "10 bit")]).labelled_by(label.id);
+                ui.end_row();
+                let label = ui.label("Dynamic range");
+                choice(ui, "range", &mut self.settings.dynamic_range, &[("preserve", "Preserve"), ("sdr", "Convert to SDR")]).labelled_by(label.id);
+                ui.end_row();
             });
-            ui.small("Hardware support is checked when converting. Official LGPL packages require a supported hardware encoder. HEVC, AV1 and HDR require qualified Linux hardware paths.");
+            ui.small("Official LGPL packages need a supported hardware encoder. HEVC, AV1 and HDR require qualified Linux hardware paths.");
         });
     }
 }
@@ -496,6 +696,29 @@ fn choice(
 impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         self.complete(ctx);
+        if self
+            .font_scan
+            .as_ref()
+            .is_some_and(|scan| scan.is_finished())
+        {
+            match self
+                .font_scan
+                .take()
+                .expect("finished font scan exists")
+                .join()
+            {
+                Ok(Ok(fonts)) => self.fonts = fonts,
+                Ok(Err(error)) => {
+                    self.font_error = Some(format!("System font scan failed: {error}"))
+                }
+                Err(_) => {
+                    self.font_error = Some("The system font scan stopped unexpectedly.".into())
+                }
+            }
+        }
+        if self.font_scan.is_some() {
+            ctx.request_repaint_after(std::time::Duration::from_millis(100));
+        }
         ctx.accesskit_node_builder(egui::accesskit_root_id(), |node| {
             node.set_label("AsciiFlow")
         });
@@ -522,12 +745,24 @@ impl eframe::App for App {
             }
         }
         egui::TopBottomPanel::top("title").show(ctx, |ui| {
-            ui.add_space(10.0);
+            ui.add_space(12.0);
             ui.horizontal(|ui| {
-                ui.heading("AsciiFlow");
-                ui.label(egui::RichText::new("VIDEO / ASCII").weak());
+                ui.label(
+                    egui::RichText::new("AF")
+                        .size(23.0)
+                        .strong()
+                        .color(egui::Color32::from_rgb(101, 217, 213)),
+                );
+                ui.separator();
+                ui.vertical(|ui| {
+                    ui.label(egui::RichText::new("AsciiFlow").size(22.0).strong());
+                    ui.small("Turn motion into characters");
+                });
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    ui.label(egui::RichText::new("LOCAL PROCESSING").small().weak());
+                });
             });
-            ui.add_space(8.0);
+            ui.add_space(12.0);
         });
         egui::TopBottomPanel::bottom("task").show(ctx, |ui| {
             ui.add_space(8.0);
@@ -583,7 +818,11 @@ impl eframe::App for App {
                 ui.horizontal(|ui| {
                     let ready = self.settings.input.is_some() && !self.closing;
                     if ui
-                        .add_enabled(ready, egui::Button::new("Preview first frame"))
+                        .add_enabled(
+                            ready,
+                            egui::Button::new("Preview first frame")
+                                .min_size(egui::vec2(160.0, 38.0)),
+                        )
                         .clicked()
                     {
                         self.start(ctx, false, frame);
@@ -591,8 +830,9 @@ impl eframe::App for App {
                     if ui
                         .add_enabled(
                             ready && self.settings.output.is_some(),
-                            egui::Button::new("Start conversion")
-                                .fill(egui::Color32::from_rgb(34, 104, 130)),
+                            egui::Button::new(egui::RichText::new("Start conversion").strong())
+                                .min_size(egui::vec2(180.0, 38.0))
+                                .fill(egui::Color32::from_rgb(28, 98, 108)),
                         )
                         .clicked()
                     {
@@ -610,40 +850,58 @@ impl eframe::App for App {
         });
         egui::SidePanel::left("controls")
             .resizable(false)
-            .exact_width(370.0)
+            .exact_width(390.0)
+            .frame(
+                egui::Frame::new()
+                    .fill(ctx.style().visuals.panel_fill)
+                    .inner_margin(18.0),
+            )
             .show(ctx, |ui| {
                 egui::ScrollArea::vertical().show(ui, |ui| {
                     ui.add_enabled_ui(self.job.is_none() && !self.closing, |ui| {
                         ui.add_space(12.0);
-                        self.files(ui, frame);
-                        ui.add_space(18.0);
+                        egui::Frame::group(ui.style())
+                            .fill(ui.visuals().faint_bg_color)
+                            .inner_margin(14.0)
+                            .corner_radius(10)
+                            .show(ui, |ui| {
+                                ui.set_width(ui.available_width());
+                                self.files(ui, frame);
+                            });
+                        ui.add_space(12.0);
                         self.settings(ui, frame);
                     });
                 });
             });
-        egui::CentralPanel::default().show(ctx, |ui| {
-            ui.heading("First-frame preview");
-            ui.small("CPU preview · 8-bit BT.709 SDR inputs · before output encoding");
-            ui.add_space(10.0);
-            if let Some(texture) = &self.texture {
-                if self.preview_settings.as_ref() != Some(&self.settings) {
-                    ui.colored_label(
-                        egui::Color32::YELLOW,
-                        "Settings changed — refresh the preview.",
-                    );
-                }
-                ui.label(&self.preview_description);
-                let available = ui.available_size();
-                let original = texture.size_vec2();
-                let scale = (available.x / original.x)
-                    .min(available.y / original.y)
-                    .clamp(0.01, 1.0);
-                ui.centered_and_justified(|ui| {
-                    ui.add(egui::Image::new(texture).fit_to_exact_size(original * scale));
-                });
-            } else {
-                ui.centered_and_justified(|ui| {
-                    ui.label(
+        egui::CentralPanel::default()
+            .frame(
+                egui::Frame::new()
+                    .fill(egui::Color32::from_rgb(13, 18, 25))
+                    .inner_margin(24.0),
+            )
+            .show(ctx, |ui| {
+                ui.heading("Preview canvas");
+                ui.small("CPU preview · 8-bit BT.709 SDR inputs · before output encoding");
+                ui.add_space(10.0);
+                if let Some(texture) = &self.texture {
+                    if self.preview_settings.as_ref() != Some(&self.settings) {
+                        ui.colored_label(
+                            egui::Color32::YELLOW,
+                            "Settings changed — refresh the preview.",
+                        );
+                    }
+                    ui.label(&self.preview_description);
+                    let available = ui.available_size();
+                    let original = texture.size_vec2();
+                    let scale = (available.x / original.x)
+                        .min(available.y / original.y)
+                        .clamp(0.01, 1.0);
+                    ui.centered_and_justified(|ui| {
+                        ui.add(egui::Image::new(texture).fit_to_exact_size(original * scale));
+                    });
+                } else {
+                    ui.centered_and_justified(|ui| {
+                        ui.label(
                         egui::RichText::new(if self.file_drop_supported {
                             "Drop a video, adjust the appearance,\nthen preview its first frame."
                         } else {
@@ -652,9 +910,9 @@ impl eframe::App for App {
                         .size(18.0)
                         .weak(),
                     );
-                });
-            }
-        });
+                    });
+                }
+            });
     }
 }
 
@@ -781,6 +1039,84 @@ mod tests {
     }
 
     #[test]
+    fn font_search_stays_open_and_selection_updates_the_rendering_font() {
+        let ctx = egui::Context::default();
+        let mut app = App::new(&eframe::CreationContext::_new_kittest(ctx.clone()));
+        app.font_scan = None;
+        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../tests/fixtures/fonts/Inconsolata-Regular.ttf");
+        app.fonts = vec![asciiflow_font::SystemFont {
+            name: "Inconsolata Regular".into(),
+            path: path.clone(),
+            face_index: 0,
+        }];
+        let frame = eframe::Frame::_new_kittest();
+        let mut render = |events: Vec<egui::Event>| {
+            ctx.run(
+                egui::RawInput {
+                    screen_rect: Some(egui::Rect::from_min_size(
+                        egui::Pos2::ZERO,
+                        egui::vec2(390.0, 900.0),
+                    )),
+                    events,
+                    ..Default::default()
+                },
+                |ctx| {
+                    egui::CentralPanel::default().show(ctx, |ui| app.settings(ui, &frame));
+                },
+            )
+        };
+        let text_position = |output: &egui::FullOutput, text: &str| {
+            output
+                .shapes
+                .iter()
+                .find_map(|shape| match &shape.shape {
+                    egui::Shape::Text(shape) if shape.galley.job.text == text => {
+                        Some(shape.pos + egui::vec2(5.0, 5.0))
+                    }
+                    _ => None,
+                })
+                .unwrap_or_else(|| panic!("missing text: {text}"))
+        };
+        let click = |pos| {
+            vec![
+                egui::Event::PointerMoved(pos),
+                egui::Event::PointerButton {
+                    pos,
+                    button: egui::PointerButton::Primary,
+                    pressed: true,
+                    modifiers: egui::Modifiers::NONE,
+                },
+                egui::Event::PointerButton {
+                    pos,
+                    button: egui::PointerButton::Primary,
+                    pressed: false,
+                    modifiers: egui::Modifiers::NONE,
+                },
+            ]
+        };
+        render(Vec::new());
+        let output = render(Vec::new());
+        let pos = text_position(&output, "Built-in · 8 × 8");
+        render(click(pos));
+        let output = render(Vec::new());
+        assert!(ctx.memory(|memory| memory.any_popup_open()));
+        let pos = text_position(&output, "Search installed fonts…");
+        render(click(pos));
+        assert!(
+            ctx.memory(|memory| memory.any_popup_open()),
+            "search must keep the popup open"
+        );
+        let output = render(vec![egui::Event::Text("inconsolata".into())]);
+        let pos = text_position(&output, "Inconsolata Regular");
+        render(click(pos));
+        assert!(!ctx.memory(|memory| memory.any_popup_open()));
+        assert_eq!(app.font_filter, "inconsolata");
+        assert_eq!(app.settings.config.font, path.to_str().unwrap());
+        assert_eq!(app.settings.font_face_index, Some(0));
+    }
+
+    #[test]
     fn gui_arguments_preserve_literal_characters_and_paths() {
         let mut settings = Settings {
             input: Some(PathBuf::from("-input with spaces.mp4")),
@@ -789,11 +1125,13 @@ mod tests {
         };
         settings.config.charset = "- .#@".into();
         settings.config.font = "-font name.ttf".into();
+        settings.font_face_index = Some(3);
         let args = settings.args().unwrap();
         assert_eq!(args.input, settings.input.unwrap());
         assert_eq!(args.output, settings.output);
         assert_eq!(args.charset, settings.config.charset);
         assert_eq!(args.font, settings.config.font);
+        assert_eq!(args.font_face_index, Some(3));
         assert!(args.no_progress);
     }
 
@@ -831,6 +1169,10 @@ mod tests {
         };
         let mut app = App {
             file_drop_supported: true,
+            fonts: Vec::new(),
+            font_scan: None,
+            font_error: None,
+            font_filter: String::new(),
             settings,
             job: Some(job),
             texture: None,

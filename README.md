@@ -40,6 +40,8 @@ file selector. Linux file dialogs use the desktop portal; Chinese filenames need
 installed CJK font available through Fontconfig. See the [desktop acceptance
 record](docs/releases.md#first-graphical-interface) for verified interactions.
 Windows hardware conversion requires separate live validation.
+The GUI scans installed monospaced rendering fonts in the background and offers
+a searchable selector; custom font files remain available through Browse font.
 
 ## Current support
 

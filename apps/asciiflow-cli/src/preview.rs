@@ -22,6 +22,7 @@ pub fn preview(
     input: &Path,
     config: &AsciiConfig,
     cancellation: CancellationToken,
+    font_face_index: Option<u32>,
 ) -> Result<Preview> {
     ensure_not_cancelled(&cancellation)?;
     ensure!(
@@ -44,8 +45,13 @@ pub fn preview(
         );
     }
     ensure_not_cancelled(&cancellation)?;
-    let (atlas, font, _) =
-        prepare_font(&mut config, &desc, None, false, &mut serde_json::json!({}))?;
+    let (atlas, font, _) = prepare_font(
+        &mut config,
+        &desc,
+        font_face_index,
+        false,
+        &mut serde_json::json!({}),
+    )?;
     let output = CpuAsciiBackend::with_atlas(atlas, &config)
         .process(frame, &config)?
         .frame;
@@ -113,7 +119,7 @@ mod tests {
             charset: " ".into(),
             ..Default::default()
         };
-        let black = preview(&fixture(), &config, CancellationToken::new()).unwrap();
+        let black = preview(&fixture(), &config, CancellationToken::new(), None).unwrap();
         assert_eq!((black.width, black.height), (64, 64));
         assert_eq!(black.rgb.len(), 64 * 64 * 3);
         assert!(black.rgb.iter().all(|value| *value <= 1));
@@ -124,6 +130,7 @@ mod tests {
                 ..Default::default()
             },
             CancellationToken::new(),
+            None,
         )
         .unwrap();
         assert_ne!(black.rgb, rendered.rgb);
@@ -137,7 +144,7 @@ mod tests {
                 charset: name.into(),
                 ..Default::default()
             };
-            let preset = preview(&fixture(), &config, CancellationToken::new()).unwrap();
+            let preset = preview(&fixture(), &config, CancellationToken::new(), None).unwrap();
             let literal = preview(
                 &fixture(),
                 &AsciiConfig {
@@ -145,6 +152,7 @@ mod tests {
                     ..config
                 },
                 CancellationToken::new(),
+                None,
             )
             .unwrap();
             assert_eq!(preset.rgb, literal.rgb, "preset {name}");
@@ -152,11 +160,28 @@ mod tests {
     }
 
     #[test]
+    fn preview_uses_the_selected_font_face() {
+        let config = AsciiConfig {
+            grid_width: 4,
+            font: Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../tests/fixtures/fonts/Inconsolata-Regular.ttf")
+                .to_str()
+                .unwrap()
+                .into(),
+            ..Default::default()
+        };
+        let rendered = preview(&fixture(), &config, CancellationToken::new(), Some(0)).unwrap();
+        assert!(rendered.description.contains("Inconsolata"));
+        let error = preview(&fixture(), &config, CancellationToken::new(), Some(99)).unwrap_err();
+        assert!(format!("{error:#}").contains("face 99"));
+    }
+
+    #[test]
     fn preview_reports_cancelled_invalid_input_and_invalid_font() {
         let cancel = CancellationToken::new();
         cancel.cancel();
         assert!(
-            preview(Path::new("missing"), &AsciiConfig::default(), cancel)
+            preview(Path::new("missing"), &AsciiConfig::default(), cancel, None)
                 .unwrap_err()
                 .chain()
                 .any(|e| e
@@ -167,7 +192,8 @@ mod tests {
             preview(
                 Path::new("."),
                 &AsciiConfig::default(),
-                CancellationToken::new()
+                CancellationToken::new(),
+                None
             )
             .unwrap_err()
             .to_string()
@@ -180,7 +206,8 @@ mod tests {
                     font: "/missing/font.ttf".into(),
                     ..Default::default()
                 },
-                CancellationToken::new()
+                CancellationToken::new(),
+                None
             )
             .is_err()
         );

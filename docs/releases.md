@@ -93,6 +93,27 @@ qualify a hardware encode path. Conversion runs in the background through the
 same planner and pipeline as the CLI, with progress, cancellation and visible
 errors. Unknown totals remain indeterminate.
 
+Rendering fonts are scanned once in the background at startup. The searchable
+selector includes the built-in 8×8 font and installed scalable monospaced faces;
+proportional, unreadable and renderer-incompatible fonts are omitted. Linux uses
+the Fontconfig configuration, while Windows scans the standard system and user
+Fonts directories. Fonts registered outside those Windows directories require
+**Browse font…**. No fonts are copied into the release. The selected file and
+collection face index are shared by preview and conversion. Missing character
+glyphs still produce the renderer's existing error. The built-in font remains
+the default, and a scan failure is shown without disabling it or file browsing.
+
+The interface uses a dark canvas, grouped file controls, a searchable font
+selector above appearance settings, and a persistent conversion toolbar.
+A real Linux XWayland window was visually checked at its default size; the
+system scanner found 111 compatible faces on that host. Automated interaction
+covers opening the selector, focusing search, filtering and choosing a face.
+This does not qualify the Windows font directories or native desktop operation.
+The existing optional `system_monospace_matches_explicit_atlas` test fails on this
+host because its default `monospace` alias resolves to a variable font that
+FreeType does not flag as fixed-width. The new catalog excludes that font under
+the existing renderer requirement; the separate actual catalog test passes.
+
 On Linux the GUI prefers X11/XWayland when `DISPLAY` is present, because the
 locked winit 0.30 backend does not implement native Wayland file-drop events
 ([upstream issue](https://github.com/rust-windowing/winit/issues/1881)). This also
