@@ -86,6 +86,8 @@ for category, option, required in (
 assert not any(name in receipt['encoders'] for name in ('libx264', 'libx265', 'libfdk', 'libxvid'))
 receipt['mf_options'] = run('-hide_banner', '-h', 'encoder=h264_mf')
 assert 'hw_encoding' in receipt['mf_options'], receipt['mf_options']
+receipt['hardware_accelerators'] = run('-hide_banner', '-hwaccels')
+assert 'd3d11va' in receipt['hardware_accelerators'].split(), receipt['hardware_accelerators']
 receipt['hardware_execution'] = 'NOT_VERIFIED; hosted runner profile/startup checks do not exercise an encoder device'
 receipt['status'] = 'PASS'
 output.write_text(json.dumps(receipt, indent=2) + '\n')

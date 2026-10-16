@@ -231,6 +231,13 @@ the Windows SDK, LLVM/libclang, CMake, Python and MSYS2 make/NASM. The workflow
 uses `windows-2022`; its exact setup is in the same workflow file. MSYS2 is build
 tooling; FFmpeg is compiled with MSVC rather than MinGW. Set `MSYS2_ROOT` when
 MSYS2 is outside `C:\msys64`, and `LIBCLANG_PATH` to LLVM's `bin` directory.
+With FFmpeg autodetection disabled, the recipe explicitly enables D3D11VA:
+FFmpeg 8.1.3's Media Foundation encoder uses D3D11 context types whose header
+is conditional on this feature. The device-free profile receipt checks that
+D3D11VA is present; this does not prove GPU execution. Failed configure/build/
+install steps print their log tail in Actions and retain the complete logs in
+the existing diagnostics artifact.
+
 The recipe supplies the locked `libz-sys` include directory for the bundled
 FreeType/libpng build: upstream `freetype-sys` 0.23.0 references a zlib header
 directory that its crate archive does not contain. This target-specific,

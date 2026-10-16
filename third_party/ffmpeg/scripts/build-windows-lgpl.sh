@@ -19,12 +19,14 @@ mkdir -p "$work"
 tar -xf "$archive" -C "$work"
 prefix="$work/sysroot"
 cd "$work/ffmpeg-8.1.3"
+# mfenc.c uses D3D11 types even for host-memory input. With autodetection off,
+# D3D11VA must be enabled explicitly so its SDK declarations are included.
 configure=(./configure --prefix="$prefix" --libdir="$prefix/lib"
   --toolchain=msvc --arch=x86_64 --target-os=win64
   --enable-shared --disable-static --disable-gpl --disable-nonfree
   --disable-version3 --disable-autodetect --disable-doc --disable-debug
   --disable-avdevice --enable-avfilter --disable-filters --disable-network
-  --enable-w32threads --enable-mediafoundation
+  --enable-w32threads --enable-mediafoundation --enable-d3d11va
   --disable-encoders --enable-encoder=h264_mf
   --disable-decoders --enable-decoder=h264,hevc,aac
   --disable-demuxers --enable-demuxer=mov
@@ -39,9 +41,22 @@ else
   [[ $? == 2 ]]
 fi
 sha256sum "$archive" > "$work/source.sha256"
-"${configure[@]}" > "$work/configure.log" 2>&1
-make -j"${ASCIIFLOW_BUILD_JOBS:-4}" > "$work/build.log" 2>&1
-make install > "$work/install.log" 2>&1
+run_logged() {
+  local log=$1
+  shift
+  local status
+  if "$@" > "$work/$log" 2>&1; then
+    return 0
+  else
+    status=$?
+  fi
+  printf 'FFmpeg %s failed with exit code %s; last 200 log lines:\n' "$log" "$status" >&2
+  tail -n 200 "$work/$log" >&2
+  return "$status"
+}
+run_logged configure.log "${configure[@]}"
+run_logged build.log make -j"${ASCIIFLOW_BUILD_JOBS:-4}"
+run_logged install.log make install
 # FFmpeg installs MSVC import libraries beside the DLLs; ffmpeg-sys expects lib/.
 mkdir -p "$prefix/lib"
 cp "$prefix/bin/"*.lib "$prefix/lib/"
