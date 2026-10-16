@@ -26,6 +26,7 @@ scratch/
 *.aac
 *.flac
 *.png
+!/assets/asciiflow.png
 *.jpg
 *.jpeg
 *.gif
