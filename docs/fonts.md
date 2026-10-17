@@ -1,13 +1,13 @@
 # Fonts
 
 `--font builtin-8x8` retains the deterministic built-in default.
-`--font /path/to/mono.ttf` selects a font file; FreeType, not its extension,
+`--font /path/to/font.ttf` selects a font file; FreeType, not its extension,
 determines validity. `--font-face-index N` selects a collection face, default 0,
 and is accepted only with an explicit font file (including an explicit zero).
 `--font monospace`, `--font "JetBrains Mono"`, or
 `--font "JetBrains Mono:style=Bold"` uses the system Fontconfig configuration
 on Linux. Fontconfig selects one file and its collection face index; FreeType
-still performs rasterization and the final scalable/monospace/glyph checks.
+still performs rasterization and the final scalable/glyph checks.
 An unsuitable match fails without trying another face.
 
 Existing paths, absolute paths, `./` or `../` prefixes, and values containing
@@ -25,15 +25,15 @@ System discovery uses fonts.conf, aliases and caches, not a project font scan.
 Fontconfig's process-global configuration/cache may remain resident; match objects
 are destroyed during initialization. No discovery happens during frame processing.
 Omitting `--font` retains `builtin-8x8` and its original output. Explicit missing,
-invalid, non-scalable, proportional, missing-glyph, or unsupported pixel-mode
+invalid, non-scalable, missing-glyph, or unsupported pixel-mode
 fonts fail before staging/mux creation, without fallback. Errors name the font,
 operation and native/context cause. Missing glyphs include character/code point.
 Capability-only reports do not open fonts. Font choice does not affect planning.
 
 ## Geometry and ownership
 
-The font crate owns freetype-rs 0.38.0, linked to system FreeType through
-freetype-sys/pkg-config (no bundled feature). The CLI resolves the existing grid
+The font crate owns freetype-rs 0.38.0, using system FreeType through
+freetype-sys/pkg-config on Linux and bundled FreeType on Windows. The CLI resolves the existing grid
 using integer geometry; tile dimensions are ceil(frame width/columns),
 ceil(frame height/rows). When `--height` is omitted, rows are rounded half-up
 from `columns * frame_height * natural_width / (frame_width * natural_height)`
@@ -41,10 +41,12 @@ and clamped to at least one row and at most the frame height. Explicit height
 keeps the existing grid unchanged. Builtin uses 8:8 and retains the old automatic
 grid. Resolved scalable-font rows must fit the existing CLI 1..=8192 row bound;
 an excessively tall grid rejects before staging, with an explicit diagnostic.
-Scalable fonts use an unscaled ASCII M advance (global advance if M is
+Scalable fonts use an unscaled ASCII M advance (global maximum advance if M is
 absent) and global ascender minus descender; some monospaced fonts have much
-wider non-ASCII glyphs, so global maximum advance alone is unsuitable. This
-lookup performs no rasterization. The integer ratio is independent of ppem.
+wider non-ASCII glyphs, so global maximum advance alone is unsuitable. For a
+proportional font, this defines a reference cell: the grid does not change width
+for individual characters. This lookup performs no rasterization. The integer
+ratio is independent of ppem.
 
 Only automatic sampling/grid geometry changes, not output resolution, timing,
 CPU/Vulkan algorithms or glyph fitting. There is no font-size/DPI, letter-spacing,
@@ -58,10 +60,12 @@ For the tested Liberation Mono Regular face, the natural ratio is 1229:2320
 geometry is 160x48 with 12x23-pixel cells; explicit `--height 54` remains
 160x54 with 12x20-pixel cells.
 
-One common pixel size fits the face ascender/descender and entire ramp's bitmap
-extents into the tile. The horizontal origin centers the common advance/extents
-interval, not each bitmap. Bearings remain relative to that origin; all glyphs
-share one baseline and size. Signed pitch and negative bearings are handled.
+Both proportional and monospaced scalable faces are accepted. One common pixel
+size fits the face ascender/descender and entire ramp's bitmap extents into the
+fixed tile. Proportional glyphs are individually centered horizontally, without
+stretching; monospaced glyphs retain the common advance/extents origin and
+relative bearings. All glyphs share one baseline and size. Signed pitch and
+negative bearings are handled.
 Outline loading uses NO_BITMAP with default hinting, followed by NORMAL grayscale
 rasterization. No color loading is requested. GRAY keeps 8-bit coverage; MONO
 expands to R8; other modes fail. Space has a valid blank tile. Duplicate ramp
@@ -102,9 +106,9 @@ CPU allowance and select the real device. The `asciiflow-font` example `atlas`
 accepts `FONT OUTPUT.pgm` and emits a visual PGM plus raw R8 bytes for hashing.
 Raster hashes are stable only for the same font, FreeType, geometry and request.
 
-Scope: ASCII ramp, scalable monospaced fonts. No shaping, ligatures, fallback,
-color glyphs, variable-axis controls, density
-calibration, or full Unicode typography is promised.
+Scope: ASCII ramp, scalable proportional or monospaced fonts. No shaping,
+ligatures, fallback, color glyphs, variable-axis controls, density calibration,
+or full Unicode typography is promised.
 
 The ignored `system_monospace_matches_explicit_atlas` test exercises local
 Fontconfig discovery and proves name/path atlas equality for the resolved face.
@@ -123,10 +127,13 @@ The existing real-device PQ FreeType CPU/Vulkan comparison additionally covers
 the fixture font's new automatic grid, using its unchanged pixel-error oracle.
 These are short geometry regressions, not a new long-soak or release qualification.
 
-The recorded validation host used Fontconfig 2.17.0. Its default `monospace` alias selected
-`NotoSansMono[wght].ttf`, which failed the unchanged FreeType fixed-width check.
-That is an expected rejection, not permission to choose another font silently.
-Installed Liberation Mono passed family/file equivalence; an isolated Fontconfig
-configuration mapping `monospace` to that same face passed the local alias test.
-This is a host-specific observation, not a universal font blacklist. See the
-[qualification report](font-terminal-validation.md) and its recorded controls.
+The earlier validation host used Fontconfig 2.17.0. Its default `monospace` alias
+selected `NotoSansMono[wght].ttf`, which the then-current FreeType fixed-width
+check rejected. That false rejection was subsequently fixed, and the actual
+system-alias test passed. Proportional-font support now removes the fixed-width
+requirement altogether; neither change introduces silent font substitution.
+Installed Liberation Mono also passed family/file equivalence; an isolated
+Fontconfig configuration mapping `monospace` to that same face passed the earlier
+alias test. Original commands, output identities, terminal transcripts and
+failed controls remain in the [font/terminal evidence receipt](../tests/ux/font-terminal-validation.json);
+those historical results do not qualify a later build.

@@ -34,6 +34,8 @@ export RUSTFLAGS='-C link-arg=-Wl,--disable-new-dtags,-rpath,$ORIGIN/lib'
 python3 tests/release/ffmpeg-profile-receipt.py "$FFMPEG_DIR" "$work/ffmpeg-profile.json"
 cargo test --locked -p asciiflow-media --features lgpl-prebuilt \
   ffmpeg::encoder::audio_regression_tests::lgpl_profile_rejects_software_without_generic_h264_fallback -- --exact
+cargo test --locked -p asciiflow-media --features lgpl-prebuilt --test codec_decode \
+  mkv_avi_webm_software_decode_preserves_display_frames_and_pts -- --exact
 cargo build --locked --release -p asciiflow-cli --features lgpl-prebuilt,gui --bins
 package="$work/$name"
 mkdir -p "$package/lib" "$package/sources" "$package/notices/rust-std" "$package/build"
@@ -43,7 +45,7 @@ for component in avcodec avformat avutil swscale; do
   cp -a "$FFMPEG_DIR/lib/lib$component.so"* "$package/lib/"
 done
 cp LICENSE THIRD_PARTY_NOTICES.md "$package/"
-cp docs/production-support.md "$package/"
+cp docs/production-support.md docs/gui.md "$package/"
 python3 scripts/collect-release-notices.py "$package/notices/rust-dependencies" --features lgpl-prebuilt,gui
 rust_docs="$(rustc --print sysroot)/share/doc/rust"
 cp "$rust_docs/COPYRIGHT-library.html" "$package/notices/rust-std/"

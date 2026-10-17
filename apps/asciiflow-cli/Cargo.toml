@@ -35,7 +35,6 @@ ctrlc.workspace = true
 ffmpeg-sys-next.workspace = true
 indicatif = { version = "0.18", default-features = false }
 serde_json = "1.0"
-tracing.workspace = true
 tracing-subscriber.workspace = true
 eframe = { version = "=0.31.1", optional = true, default-features = false, features = ["accesskit", "default_fonts", "glow", "x11", "wayland"] }
 rfd = { version = "=0.15.4", optional = true, default-features = false, features = ["xdg-portal", "async-std"] }

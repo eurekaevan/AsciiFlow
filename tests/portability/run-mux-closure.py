@@ -9,7 +9,7 @@ from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "corpus"))
 from run import Run
-from portability import digest, source_identity
+from portability import source_identity
 
 
 def capture_manifest(run, stack_id, name, prefix=None):

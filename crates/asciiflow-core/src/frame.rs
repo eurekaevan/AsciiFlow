@@ -302,9 +302,6 @@ impl VideoFrame {
     pub fn host(&self) -> &HostFrame {
         &self.storage
     }
-    pub fn host_mut(&mut self) -> &mut HostFrame {
-        &mut self.storage
-    }
     pub fn into_host(self) -> HostFrame {
         self.storage
     }

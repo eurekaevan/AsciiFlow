@@ -1,8 +1,8 @@
 # Font fixtures
 
 These fixtures are downloaded from the official Google Fonts repository for
-font-loading and monospace validation. They are test inputs, not copies of
-fonts installed on the host system.
+font-loading, layout and CPU/GPU parity validation. They are test inputs, not
+copies of fonts installed on the host system.
 
 ## Inconsolata Regular
 
@@ -21,8 +21,9 @@ this document together.
 
 ## Abel Regular
 
-This small proportional face is used by rejection tests to ensure a renderer
-does not accept a non-monospace font as a monospace fixture.
+This small proportional face verifies natural cell metrics, centered glyph
+placement at a common size and baseline, CPU/GPU parity, and missing-glyph
+errors. It complements the monospaced Inconsolata fixture.
 
 - File: `Abel-Regular.ttf`
 - Family/style: Abel Regular (proportional)

@@ -28,7 +28,7 @@ pub struct ResolvedFont {
     pub name: String,
 }
 
-/// A scalable, monospaced system font face, including its collection index.
+/// A scalable system font face, including its collection index.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SystemFont {
     pub name: String,
@@ -55,7 +55,7 @@ pub fn list_system_fonts() -> Result<Vec<SystemFont>, FontError> {
     Ok(fonts)
 }
 
-/// Resolve an installed UI family without imposing the video renderer's monospace filter.
+/// Resolve an installed UI family without requiring a rendering character ramp.
 /// Kept separate from CLI font-family resolution, which remains Fontconfig-only.
 #[cfg(target_os = "windows")]
 pub fn resolve_system_ui_font(family: &str) -> Result<ResolvedFont, FontError> {
@@ -144,7 +144,7 @@ fn append_font_faces(library: &freetype::Library, path: &Path, fonts: &mut Vec<S
         let Ok(face) = library.new_memory_face(bytes.clone(), index as isize) else {
             continue;
         };
-        if !face.is_scalable() || !face.is_fixed_width() {
+        if !face.is_scalable() {
             continue;
         }
         let family = face.family_name().unwrap_or_else(|| {
@@ -533,13 +533,13 @@ mod tests {
     }
 
     #[test]
-    fn enumeration_filters_proportional_faces_and_retains_collection_indices() {
+    fn enumeration_includes_proportional_faces_and_retains_collection_indices() {
         let library = freetype::Library::init().unwrap();
         let mut fonts = Vec::new();
         append_font_faces(&library, &fixture("Abel-Regular.ttf"), &mut fonts);
-        assert!(fonts.is_empty());
-        append_font_faces(&library, &fixture("Inconsolata-Regular.ttf"), &mut fonts);
         assert_eq!(fonts.len(), 1);
+        append_font_faces(&library, &fixture("Inconsolata-Regular.ttf"), &mut fonts);
+        assert_eq!(fonts.len(), 2);
         assert_eq!(fonts[0].face_index, 0);
 
         // Assemble a real collection from the existing licensed fixture faces.
@@ -582,9 +582,14 @@ mod tests {
         std::fs::remove_file(&path).unwrap();
         assert_eq!(
             fonts.iter().map(|font| font.face_index).collect::<Vec<_>>(),
-            [1, 2]
+            [0, 1, 2]
         );
-        assert!(fonts.iter().all(|font| font.name.contains("Inconsolata")));
+        assert!(fonts[0].name.contains("Abel"));
+        assert!(
+            fonts[1..]
+                .iter()
+                .all(|font| font.name.contains("Inconsolata"))
+        );
         assert!(fonts.iter().all(|font| font.path == path));
     }
 
@@ -641,19 +646,21 @@ mod tests {
         assert_eq!(atlas.as_r8_slice(), explicit.as_r8_slice());
         let proportional =
             system_match("test", &fixture("Abel-Regular.ttf"), 0, "fixture".into()).unwrap();
-        let error = build_font_atlas(
+        let (atlas, _) = build_font_atlas(
             proportional.path.as_ref().unwrap(),
             proportional.face_index,
             "@Ag ",
             12,
             20,
         )
-        .unwrap_err();
-        assert!(error.to_string().contains("monospaced"));
+        .unwrap();
+        let (explicit, _) =
+            build_font_atlas(&fixture("Abel-Regular.ttf"), 0, "@Ag ", 12, 20).unwrap();
+        assert_eq!(atlas.as_r8_slice(), explicit.as_r8_slice());
     }
 
     #[test]
-    #[ignore = "requires runtime Fontconfig and installed scalable monospaced fonts"]
+    #[ignore = "requires runtime Fontconfig and installed scalable fonts"]
     fn system_font_enumeration_returns_renderable_faces() {
         let fonts = list_system_fonts().unwrap();
         assert!(!fonts.is_empty());

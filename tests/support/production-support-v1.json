@@ -56,7 +56,8 @@
     { "id": "cpu-vaapi-validation", "stage": "CPU and staged VAAPI", "kind": "validation-report", "artifact": "docs/cpu-validation.md", "status": "QUALIFIED" },
     { "id": "current-cli", "stage": "Current checkout", "kind": "output-container-guard", "artifact": "apps/asciiflow-cli/src/main.rs", "status": "CURRENT" },
     { "id": "real-media-corpus", "stage": "Real-media compatibility", "kind": "reviewed-real-media-corpus", "artifact": "tests/corpus/real-media-v1.json", "status": "QUALIFIED" },
-    { "id": "media-compatibility-report", "stage": "Real-media compatibility", "kind": "compatibility-report", "artifact": "docs/media-compatibility-results.md", "status": "QUALIFIED" }
+    { "id": "media-compatibility-report", "stage": "Real-media compatibility", "kind": "compatibility-report", "artifact": "docs/media-compatibility-results.md", "status": "QUALIFIED" },
+    { "id": "container-input-regression", "stage": "Container inputs", "kind": "synthetic-media-and-end-to-end-regression", "artifact": "tests/fixtures/containers/README.md", "status": "QUALIFIED" }
   ],
   "dimensions": {
     "input_resolution": [
@@ -69,7 +70,8 @@
     ],
     "input_container": [
       { "value": "mp4", "status": "ConditionallySupported", "evidence": ["pq-reference", "hdr-to-sdr-production", "real-media-corpus"], "conditions": "Retained matrix plus exact reviewed MP4 tuples (ordinary/fast-start/fragmented) only. AAC payload/timing/default/language are strictly checked where copied. Subtitles and video display titles are explicitly not copied." },
-      { "value": "matroska", "status": "Unqualified", "evidence": [], "conditions": "Video-only H.264 sample converts, but AAC/FLAC Matroska-to-MP4 strict oracles fail: unspecified language becomes und, absent default becomes true, millisecond packet duration and missing first duration differ. Not a supported Matroska/audio preservation claim." },
+      { "value": "matroska", "status": "ConditionallySupported", "evidence": ["container-input-regression"], "conditions": "Software 8-bit SDR H.264/AAC MKV and VP8/Vorbis or VP9/Opus WebM regression tuples to MP4. Compressed audio payload/order preserved; packet timestamps allow input plus output container tick quantization. Language/default/duration identity across containers is not promised; historical strict preservation failures remain." },
+      { "value": "avi", "status": "ConditionallySupported", "evidence": ["container-input-regression"], "conditions": "Software 8-bit SDR MPEG-4 Part 2/MP3 regression tuple to MP4. AVI encoder-delay timestamp gap is retained as input evidence; output uses the existing CFR grid. Audio payload/order and quantized packet timing checked, not language/default identity." },
       { "value": "mov", "status": "Unqualified", "evidence": [], "conditions": "H.264/AAC sample converts but the unchanged strict audio oracle rejects undefined language becoming und. No MOV support promotion." }
     ],
     "output_container": [
@@ -80,7 +82,7 @@
       { "value": "h264", "status": "Supported", "evidence": ["pq-reference", "cpu-vaapi-validation"] },
       { "value": "hevc", "status": "Supported", "evidence": ["pq-reference", "hdr-to-sdr-production", "cpu-vaapi-validation"] },
       { "value": "av1", "status": "ConditionallySupported", "evidence": ["pq-reference", "hdr-to-sdr-production"], "conditions": "Qualified input profiles and bit depths in the retained production cases; PQ input additionally requires AV1 Main 10-bit 4:2:0." },
-      { "value": "other", "status": "Unqualified", "evidence": [] }
+      { "value": "other", "status": "ConditionallySupported", "evidence": ["container-input-regression"], "conditions": "Only software decoding of the exact 8-bit SDR 4:2:0 VP8/WebM, VP9/WebM and MPEG-4 Part 2/AVI regression tuples. No blanket other-codec, hardware or HDR qualification." }
     ],
     "input_profile": [
       { "value": "h264-baseline", "status": "Supported", "evidence": ["cpu-vaapi-validation"] },
@@ -170,7 +172,7 @@
     ],
     "input_color": [
       { "value": "sdr709", "status": "Supported", "evidence": ["pq-reference", "hdr-to-sdr-production"] },
-      { "value": "sdr601", "status": "Unqualified", "evidence": [], "conditions": "Legacy 8-bit software normalization is planner-accepted, but this path lacks production qualification." },
+      { "value": "sdr601", "status": "ConditionallySupported", "evidence": ["container-input-regression"], "conditions": "Software normalization of the exact 8-bit VP8/WebM regression tuple to canonical BT.709 NV12. No blanket BT.601 codec, range or hardware qualification." },
       { "value": "pq", "status": "ConditionallySupported", "evidence": ["hdr-to-sdr-production"], "conditions": "Canonical limited BT.2020 NCL/PQ and left chroma; HEVC Main10 or AV1 Main 10-bit 4:2:0; VAAPI decode, Vulkan processing, VAAPI encode and matching input/output profile interop. The 0–1000 cd/m2 source pixel ceiling applies only to explicit HDR-to-SDR conversion." },
       { "value": "hlg", "status": "Unsupported", "evidence": ["hdr-to-sdr-production"] },
       { "value": "full_pq", "status": "Unsupported", "evidence": ["hdr-to-sdr-production"] },
@@ -220,13 +222,13 @@
       { "value": "auto", "status": "ConditionallySupported", "evidence": ["hdr-to-sdr-production"], "conditions": "Only for sealed automatic-path smoke cases." }
     ],
     "audio_policy": [
-      { "value": "auto", "status": "ConditionallySupported", "evidence": ["hdr-to-sdr-runtime"], "conditions": "MP4-compatible compressed streams; AAC single/dual-track cases qualified. Existing CFR video timeline required; incompatible streams are omitted, not transcoded." },
-      { "value": "copy", "status": "ConditionallySupported", "evidence": ["hdr-to-sdr-runtime"], "conditions": "Strict MP4 copy eligibility and the existing CFR video timeline; AAC single/dual-track cases qualified. VFR/discontinuities reject." },
+      { "value": "auto", "status": "ConditionallySupported", "evidence": ["hdr-to-sdr-runtime", "container-input-regression"], "conditions": "MP4-compatible compressed streams; retained AAC cases and exact container-input regression tuples only. Existing CFR video timeline required; incompatible streams are omitted, not transcoded." },
+      { "value": "copy", "status": "ConditionallySupported", "evidence": ["hdr-to-sdr-runtime", "container-input-regression"], "conditions": "MP4 copy eligibility and the existing CFR video timeline; retained AAC cases and exact container-input regression tuples only. VFR/discontinuities reject." },
       { "value": "none", "status": "Supported", "evidence": ["hdr-to-sdr-runtime"] }
     ],
     "audio_codec": [
-      { "value": "aac", "status": "ConditionallySupported", "evidence": ["hdr-to-sdr-runtime"], "conditions": "MP4-compatible single/dual AAC cases only." },
-      { "value": "other", "status": "Unqualified", "evidence": [] }
+      { "value": "aac", "status": "ConditionallySupported", "evidence": ["hdr-to-sdr-runtime", "container-input-regression"], "conditions": "Retained MP4 single/dual AAC cases plus the H.264/AAC MKV regression tuple. Cross-container timing/metadata conditions apply to MKV." },
+      { "value": "other", "status": "ConditionallySupported", "evidence": ["container-input-regression"], "conditions": "Only compressed MP3 from the AVI, Vorbis from the VP8/WebM and Opus from the VP9/WebM regression tuples into MP4. Payload/order and container-tick timing checked, not cross-container metadata identity." }
     ],
     "font": [
       { "value": "builtin-8x8", "status": "ConditionallySupported", "evidence": ["hdr-to-sdr-runtime"], "conditions": "Sealed automatic-path render smoke cases." },

@@ -57,6 +57,31 @@ fn font_bytes(path: &Path) -> Result<Vec<u8>, FontError> {
     Ok(bytes)
 }
 
+/// Some grid-aligned fonts omit the fixed-pitch metadata (e.g. Noto Sans Mono).
+/// Check the entire printable ASCII set, never just the selected ramp, before
+/// using the existing monospaced layout. Other faces use per-glyph centering.
+fn is_monospaced(face: &freetype::Face) -> Result<bool, freetype::Error> {
+    if face.is_fixed_width() {
+        return Ok(true);
+    }
+    let mut advance = None;
+    for character in ' '..='~' {
+        let Some(index) = face.get_char_index(character as usize) else {
+            return Ok(false);
+        };
+        face.load_glyph(
+            index,
+            LoadFlag::NO_SCALE | LoadFlag::NO_HINTING | LoadFlag::NO_BITMAP,
+        )?;
+        let width = face.glyph().advance().x;
+        if width <= 0 || advance.is_some_and(|previous| width != previous) {
+            return Ok(false);
+        }
+        advance = Some(width);
+    }
+    Ok(true)
+}
+
 /// Initialization-only metrics lookup, with no pixel sizing or rasterization.
 pub fn natural_cell_aspect(path: &Path, face_index: isize) -> Result<CellAspect, FontError> {
     let error = |detail: &str| FontError::Font {
@@ -68,8 +93,8 @@ pub fn natural_cell_aspect(path: &Path, face_index: isize) -> Result<CellAspect,
     let face = library
         .new_memory_face(font_bytes(path)?, face_index)
         .map_err(|e| error(&e.to_string()))?;
-    if !face.is_scalable() || !face.is_fixed_width() {
-        return Err(error("a scalable monospaced face is required"));
+    if !face.is_scalable() {
+        return Err(error("a scalable face is required"));
     }
     // max_advance_width may include wide non-ASCII glyphs even on a fixed-width
     // face (e.g. Inconsolata). Read the unscaled normal ASCII advance instead.
@@ -128,12 +153,8 @@ pub fn build_font_atlas(
     if !face.is_scalable() {
         return Err(error("validate face", "a scalable face is required".into()));
     }
-    if !face.is_fixed_width() {
-        return Err(error(
-            "validate face",
-            "scalable font rendering requires a monospaced font".into(),
-        ));
-    }
+    let monospaced =
+        is_monospaced(&face).map_err(|e| error("read glyph metrics", e.to_string()))?;
     let mut indices = Vec::new();
     for character in ramp.chars() {
         indices.push(face.get_char_index(character as usize).ok_or_else(|| {
@@ -155,7 +176,11 @@ pub fn build_font_atlas(
             .size_metrics()
             .ok_or_else(|| error("read size metrics", "missing metrics".into()))?;
         let mut left = 0i64;
-        let mut right = (i64::from(metrics.max_advance) + 63) / 64;
+        let mut right = if monospaced {
+            (i64::from(metrics.max_advance) + 63) / 64
+        } else {
+            1 // An all-blank ramp still has a valid cell.
+        };
         let mut top = (i64::from(metrics.ascender) + 63) / 64;
         let mut bottom = i64::from(metrics.descender).div_euclid(64);
         for &index in &indices {
@@ -165,8 +190,12 @@ pub fn build_font_atlas(
                 .render_glyph(RenderMode::Normal)
                 .map_err(|e| error("rasterize glyph", e.to_string()))?;
             let slot = face.glyph();
-            left = left.min(i64::from(slot.bitmap_left()));
-            right = right.max(i64::from(slot.bitmap_left()) + i64::from(slot.bitmap().width()));
+            if monospaced {
+                left = left.min(i64::from(slot.bitmap_left()));
+                right = right.max(i64::from(slot.bitmap_left()) + i64::from(slot.bitmap().width()));
+            } else {
+                right = right.max(i64::from(slot.bitmap().width()));
+            }
             top = top.max(i64::from(slot.bitmap_top()));
             bottom = bottom.min(i64::from(slot.bitmap_top()) - i64::from(slot.bitmap().rows()));
         }
@@ -227,6 +256,11 @@ pub fn build_font_atlas(
                 "invalid bitmap pitch/buffer".into(),
             ));
         }
+        let left = if monospaced {
+            origin + slot.bitmap_left()
+        } else {
+            (width as i32 - bitmap.width()) / 2
+        };
         for y in 0..rows {
             // FreeType's allocation starts at the bottom row for negative pitch.
             let row_offset = bitmap_row_offset(y, rows, bitmap.pitch());
@@ -245,7 +279,7 @@ pub fn build_font_atlas(
                     }
                     _ => unreachable!(),
                 };
-                let dx = origin + slot.bitmap_left() + x as i32;
+                let dx = left + x as i32;
                 let dy = baseline - slot.bitmap_top() + y as i32;
                 if let Some(offset) = tile_offset(dx, dy, width, height) {
                     pixels[tile * width as usize * height as usize + offset] = coverage;
@@ -331,12 +365,37 @@ mod tests {
             }
         );
         assert!(natural_cell_aspect(&font(), 999).is_err());
-        assert!(natural_cell_aspect(&font().with_file_name("Abel-Regular.ttf"), 0).is_err());
+        assert_eq!(
+            natural_cell_aspect(&font().with_file_name("Abel-Regular.ttf"), 0).unwrap(),
+            CellAspect {
+                width: 1339,
+                height: 2610
+            }
+        );
         // A metrics lookup does not change the common-ppem atlas construction.
         let (before, _) = build_font_atlas(&font(), 0, "Ag#._ A", 12, 20).unwrap();
         natural_cell_aspect(&font(), 0).unwrap();
         let (after, _) = build_font_atlas(&font(), 0, "Ag#._ A", 12, 20).unwrap();
         assert_eq!(before.as_r8_slice(), after.as_r8_slice());
+    }
+
+    #[test]
+    fn missing_fixed_pitch_metadata_uses_actual_ascii_advances() {
+        let library = Library::init().unwrap();
+        let mut mono = library
+            .new_memory_face(font_bytes(&font()).unwrap(), 0)
+            .unwrap();
+        // Model a real fixed-width font with an unset post.isFixedPitch flag.
+        mono.raw_mut().face_flags &= !freetype::ffi::FT_FACE_FLAG_FIXED_WIDTH;
+        assert!(!mono.is_fixed_width());
+        assert!(is_monospaced(&mono).unwrap());
+        let proportional = library
+            .new_memory_face(
+                font_bytes(&font().with_file_name("Abel-Regular.ttf")).unwrap(),
+                0,
+            )
+            .unwrap();
+        assert!(!is_monospaced(&proportional).unwrap());
     }
     #[test]
     fn scalable_monospaced_atlas_has_uniform_baseline_grayscale_and_duplicate_identity() {
@@ -396,13 +455,50 @@ mod tests {
         assert!(build_font_atlas(&font(), 0, "Ag", 1, 1).is_err());
     }
     #[test]
-    fn proportional_font_is_explicitly_rejected() {
+    fn proportional_glyphs_are_centered_without_scaling_on_a_common_baseline() {
         let path = font().with_file_name("Abel-Regular.ttf");
+        let ramp = "Wi.jg W";
+        let (atlas, diagnostics) = build_font_atlas(&path, 0, ramp, 24, 32).unwrap();
+        let library = Library::init().unwrap();
+        let face = library
+            .new_memory_face(font_bytes(&path).unwrap(), 0)
+            .unwrap();
+        face.set_pixel_sizes(0, diagnostics.pixel_size).unwrap();
+        let mut widths = Vec::new();
+        for (tile, character) in ramp.chars().enumerate() {
+            let mut expected = vec![0; 24 * 32];
+            if character != ' ' {
+                face.load_char(character as usize, LoadFlag::NO_BITMAP)
+                    .unwrap();
+                face.glyph().render_glyph(RenderMode::Normal).unwrap();
+                let slot = face.glyph();
+                let bitmap = slot.bitmap();
+                assert_eq!(bitmap.pixel_mode().unwrap(), PixelMode::Gray);
+                assert!(bitmap.pitch() > 0);
+                let width = bitmap.width() as usize;
+                widths.push(width);
+                let left = (24 - width) / 2;
+                let top = (diagnostics.baseline - slot.bitmap_top()) as usize;
+                for (y, row) in bitmap.buffer().chunks(bitmap.pitch() as usize).enumerate() {
+                    assert!(top + y < 32, "glyph must not be clipped");
+                    let start = (top + y) * 24 + left;
+                    expected[start..start + width].copy_from_slice(&row[..width]);
+                }
+            }
+            assert_eq!(atlas.glyph(tile), expected, "glyph {character:?}");
+        }
         assert!(
-            build_font_atlas(&path, 0, "A", 24, 24)
-                .unwrap_err()
-                .to_string()
-                .contains("monospaced")
+            widths[0] > widths[1],
+            "W and i retain their different widths"
+        );
+        assert_eq!(atlas.glyph(0), atlas.glyph(6));
+        assert!(
+            build_font_atlas(&path, 0, "  ", 24, 32)
+                .unwrap()
+                .0
+                .as_r8_slice()
+                .iter()
+                .all(|&v| v == 0)
         );
     }
 }

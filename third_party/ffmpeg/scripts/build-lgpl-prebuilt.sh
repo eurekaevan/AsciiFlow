@@ -22,8 +22,8 @@ configure=(./configure --prefix="$prefix" --libdir="$prefix/lib"
   --disable-avdevice --enable-avfilter --disable-filters --disable-network
   --enable-pthreads --enable-vaapi --enable-libdrm --enable-libdav1d
   --disable-encoders --enable-encoder=h264_vaapi,hevc_vaapi,av1_vaapi
-  --disable-decoders --enable-decoder=h264,hevc,av1,libdav1d,aac
-  --disable-demuxers --enable-demuxer=mov
+  --disable-decoders --enable-decoder=h264,hevc,av1,libdav1d,aac,vp8,vp9,mpeg4,mp3,mp3float,opus,vorbis
+  --disable-demuxers --enable-demuxer=mov,matroska,avi
   --disable-muxers --enable-muxer=mp4,null
   --disable-protocols --enable-protocol=file
   --extra-cflags="-I$devel/include -I$devel/include/libdrm"

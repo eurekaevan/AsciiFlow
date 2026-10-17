@@ -403,3 +403,55 @@ fn legacy_bt601_main8_is_normalized_to_bt709_nv12() {
     assert_eq!(color.effective.matrix, ColorMatrix::Bt601);
     assert_eq!(decode_all("hevc-main8-bt601.mp4").len(), 36);
 }
+
+#[test]
+fn mkv_avi_webm_software_decode_preserves_display_frames_and_pts() {
+    for (name, codec) in [
+        ("h264-aac.mkv", VideoCodec::H264),
+        ("mpeg4-mp3.avi", VideoCodec::Other("mpeg4".into())),
+        ("vp8-vorbis.webm", VideoCodec::Other("vp8".into())),
+        ("vp9-opus.webm", VideoCodec::Other("vp9".into())),
+    ] {
+        let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../tests/fixtures/containers")
+            .join(name);
+        let mut decoder = Decoder::open(&path).unwrap();
+        let mut pts = Vec::new();
+        while let Some(frame) = decoder.next_frame().unwrap() {
+            assert_eq!(frame.desc().format, PixelFormat::Nv12, "{name}");
+            assert_eq!(frame.desc().color_space, ColorSpace::default(), "{name}");
+            assert_eq!((frame.desc().width, frame.desc().height), (64, 64));
+            assert_eq!(frame.host().as_slice().len(), 64 * 64 * 3 / 2);
+            pts.push(frame.pts().expect("fixture frame has no PTS"));
+        }
+        assert_eq!(pts.len(), 30, "{name}: missing display/drain frames");
+        // Independently measured with ffprobe. AVI retains its muxer's initial
+        // timestamp gap; Matroska/WebM round 30 fps to millisecond ticks.
+        let expected = (0..30)
+            .map(|index| {
+                if name.ends_with(".avi") {
+                    if index == 0 { 0 } else { index + 1 }
+                } else {
+                    (index * 1000 + 15) / 30
+                }
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(pts, expected, "{name}: presentation timestamps changed");
+        let requirements = &decoder.info().requirements;
+        assert_eq!(requirements.codec, codec, "{name}");
+        assert_eq!(requirements.bit_depth, Some(8), "{name}");
+        assert_eq!(requirements.chroma_subsampling, ChromaSubsampling::Yuv420);
+        let color = requirements.color_semantics.unwrap();
+        assert_eq!(color.dynamic_range, DynamicRangeClass::Sdr, "{name}");
+        assert_eq!(color.support, Ok(()), "{name}");
+        assert_eq!(
+            color.effective.matrix,
+            if name == "vp8-vorbis.webm" {
+                ColorMatrix::Bt601
+            } else {
+                ColorMatrix::Bt709
+            },
+            "{name}: source matrix resolution changed"
+        );
+    }
+}

@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 from types import SimpleNamespace
 
-from preflight import ROOT, Run, qualify, save
+from preflight import Run, qualify, save
 
 
 def main():

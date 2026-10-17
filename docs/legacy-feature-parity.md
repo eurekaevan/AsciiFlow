@@ -15,7 +15,7 @@ and tests against the current media, color and failure-safety architecture.
 | FFmpeg content-based input/container probing | Present, but the qualified Rust input matrix is narrower than the old general FFmpeg claim | Qualify additional container/codec/color combinations individually; do not infer full support merely because FFmpeg opens a file. |
 | `.mp4`, `.m4v`, `.mov`, `.mkv`, `.avi`, `.ts`, `.m2ts` H.264 output and `.webm` VP9 output chosen by extension | **Not implemented**. Rust production output is MP4 with H.264, HEVC or AV1 | If needed, add an explicit container/codec capability matrix, muxer-aware audio policy, transactional-output tests and decode-back fixtures. WebM/VP9 requires its own encoder and timeline qualification. |
 | User-selected output frame rate (`--framerate`) | **Not implemented**; Rust uses the source's rational frame rate and requires CFR-compatible timestamps for audio copy | Specify drop/duplicate/interpolation and audio-offset policy before adding a flag; test noninteger rates, VFR/discontinuities and cancellation. |
-| Named system-font family, pixel size and cross-platform font fallback | **Not implemented**. Rust has the built-in 8×8 font or an explicit monospaced font file/face; invalid explicit fonts fail closed | Consider font discovery and fallback only with deterministic selection, portable fixture tests and bounded atlas geometry. Do not introduce silent substitution for an explicit file. |
+| Named system-font family, proportional fonts, pixel size and cross-platform font fallback | **Partly implemented**. Rust accepts scalable proportional and monospaced font files/faces; Linux CLI family/pattern discovery and GUI system-font selection are available. Explicit pixel-size control and automatic rendering-font fallback are not implemented | Glyphs share a fixed grid, size and baseline; proportional glyphs are centered horizontally without stretching. Missing glyphs and invalid fonts fail without substitution, shaping or ligatures. See the [font contract](fonts.md). |
 | `speed`, `balanced`, `quality` encoder modes and VP9 tuning | **Not implemented as user presets**. Rust has qualified codec-specific settings and measurement gates | Add per-codec profiles only after measuring quality, throughput, size, timestamps and repeatability on the target encoder; keep default behavior stable. |
 | Estimated progress when `nb_frames` is unavailable | Rust preserves unknown frame count and reports actual completion; equivalent estimate behavior is not established here | If requested, label estimates clearly, never use them as completion truth, and test unknown/incorrect metadata. |
 | Legacy `-i/-o` options and implicit default output path | Rust uses positional input/output; output is optional only for capability/plan inspection | Treat CLI compatibility as an explicit product decision, not an automatic migration requirement. |
@@ -23,7 +23,7 @@ and tests against the current media, color and failure-safety architecture.
 For future work, decide requirements in this order: (1) which additional
 container/codec combinations users actually need, (2) the video/audio
 timeline policy for rate changes or discontinuities, then (3) optional
-font-discovery and encoder-quality controls. Each decision should get a
+font-size/fallback and encoder-quality controls. Each decision should get a
 source-backed contract and regression fixtures before implementation. The
 old implementation's benchmark numbers are not Rust performance targets.
 

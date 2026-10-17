@@ -147,7 +147,7 @@ struct Progress {
 
 enum Outcome {
     Preview(Preview),
-    Converted,
+    Converted(Vec<String>),
 }
 
 struct Job {
@@ -326,7 +326,7 @@ impl App {
                             }
                             progress_repaint.request_repaint();
                         })
-                        .map(|()| Outcome::Converted)
+                        .map(Outcome::Converted)
                     } else {
                         preview(&input, &config, worker_cancellation, font_face_index)
                             .map(Outcome::Preview)
@@ -417,7 +417,7 @@ impl App {
                     self.status = "First-frame preview ready. Preview uses CPU rendering; output follows your selected processing settings.".into();
                 }
             }
-            Ok(Outcome::Converted) => {
+            Ok(Outcome::Converted(warnings)) => {
                 self.completed_output = job.settings.output.clone();
                 self.status = format!(
                     "Conversion complete in {:.1}s. Saved to {}",
@@ -429,6 +429,10 @@ impl App {
                         .map(|name| name.to_string_lossy().into_owned())
                         .unwrap_or_default()
                 );
+                for warning in warnings {
+                    self.status.push_str("\nWarning: ");
+                    self.status.push_str(&warning);
+                }
             }
             Err(error) => self.error(error),
         }
@@ -448,7 +452,7 @@ impl App {
             if ui.button("Choose video…").clicked()
                 && let Some(path) = rfd::FileDialog::new()
                     .set_parent(frame)
-                    .add_filter("MP4 video", &["mp4", "mov", "m4v"])
+                    .add_filter("Video files", &["mp4", "mov", "m4v", "mkv", "avi", "webm"])
                     .pick_file()
             {
                 self.input(path);
@@ -585,7 +589,7 @@ impl App {
                 ui.spinner();
                 ui.small("Scanning installed fonts…");
             } else {
-                ui.small(format!("{} installed monospaced faces", self.fonts.len()));
+                ui.small(format!("{} installed scalable faces", self.fonts.len()));
             }
             if ui.small_button("Browse font…").clicked()
                 && let Some(path) = rfd::FileDialog::new()
@@ -947,11 +951,18 @@ impl eframe::App for App {
                     });
                 }
                 ui.add_space(4.0);
-                ui.label(egui::RichText::new(&self.status).color(if self.failed {
-                    egui::Color32::from_rgb(255, 155, 145)
-                } else {
-                    ui.visuals().text_color()
-                }));
+                egui::ScrollArea::vertical()
+                    .id_salt("task-status")
+                    .max_height(96.0)
+                    .show(ui, |ui| {
+                        ui.label(egui::RichText::new(&self.status).color(if self.failed {
+                            egui::Color32::from_rgb(255, 155, 145)
+                        } else if self.status.contains("\nWarning:") {
+                            egui::Color32::from_rgb(255, 200, 125)
+                        } else {
+                            ui.visuals().text_color()
+                        }));
+                    });
             });
         egui::SidePanel::left("controls")
             .resizable(false)
@@ -1247,6 +1258,58 @@ mod tests {
             1 + committed,
             "only the input and successfully committed outputs should remain"
         );
+        std::fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[cfg(not(feature = "lgpl-prebuilt"))]
+    #[test]
+    fn completed_conversion_displays_skipped_audio_warning() {
+        let directory = std::env::temp_dir().join(format!(
+            "asciiflow-gui-audio-warning-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        std::fs::create_dir(&directory).unwrap();
+        let output = directory.join("output.mp4");
+        let ctx = egui::Context::default();
+        let mut app = App::new(&eframe::CreationContext::_new_kittest(ctx.clone()));
+        app.input(
+            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../tests/fixtures/media/mixed.mkv"),
+        );
+        app.settings.output = Some(output.clone());
+        app.settings.backend = "cpu";
+        app.settings.encoder = "software";
+        app.settings.audio = "auto";
+        app.settings.config.grid_width = 16;
+        app.start(&ctx, true, &eframe::Frame::_new_kittest());
+        assert!(app.job.is_some(), "worker must start");
+        let deadline = Instant::now() + std::time::Duration::from_secs(30);
+        while app.job.is_some() {
+            app.complete(&ctx);
+            assert!(Instant::now() < deadline, "worker did not finish");
+            thread::sleep(std::time::Duration::from_millis(1));
+        }
+        assert!(!app.failed, "{}", app.status);
+        assert!(
+            app.status.starts_with("Conversion complete"),
+            "{}",
+            app.status
+        );
+        assert!(
+            app.status.contains("\nWarning: audio stream #"),
+            "{}",
+            app.status
+        );
+        assert!(
+            app.status.contains("pcm_mulaw") && app.status.contains("skipped"),
+            "{}",
+            app.status
+        );
+        assert_eq!(app.completed_output, Some(output.clone()));
+        assert!(output.is_file());
         std::fs::remove_dir_all(directory).unwrap();
     }
 

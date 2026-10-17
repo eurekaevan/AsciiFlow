@@ -28,8 +28,8 @@ configure=(./configure --prefix="$prefix" --libdir="$prefix/lib"
   --disable-avdevice --enable-avfilter --disable-filters --disable-network
   --enable-w32threads --enable-mediafoundation --enable-d3d11va
   --disable-encoders --enable-encoder=h264_mf
-  --disable-decoders --enable-decoder=h264,hevc,aac
-  --disable-demuxers --enable-demuxer=mov
+  --disable-decoders --enable-decoder=h264,hevc,aac,vp8,vp9,mpeg4,mp3,mp3float,opus,vorbis
+  --disable-demuxers --enable-demuxer=mov,matroska,avi
   --disable-muxers --enable-muxer=mp4,null
   --disable-protocols --enable-protocol=file)
 printf '%q ' "${configure[@]}" > "$work/configure-command.txt"

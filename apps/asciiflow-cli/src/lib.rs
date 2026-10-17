@@ -132,16 +132,17 @@ fn failure_exit_code(error: &anyhow::Error) -> u8 {
 }
 
 fn run(args: Args, cancellation: CancellationToken) -> Result<()> {
-    run_observed(args, cancellation, None)
+    run_observed(args, cancellation, None).map(|_| ())
 }
 
 /// Run the same conversion and atomic output transaction used by the CLI.
 /// Call on a worker thread; native MF resources remain on that thread.
+/// Returns user-visible warnings after a successful commit (including skipped audio).
 pub fn run_with_progress(
     args: Args,
     cancellation: CancellationToken,
     observer: impl Fn(u64, Option<u64>) + Send + 'static,
-) -> Result<()> {
+) -> Result<Vec<String>> {
     run_observed(args, cancellation, Some(Box::new(observer)))
 }
 
@@ -151,7 +152,8 @@ fn run_observed(
     args: Args,
     cancellation: CancellationToken,
     observer: Option<ProgressObserver>,
-) -> Result<()> {
+) -> Result<Vec<String>> {
+    let mut warnings = Vec::new();
     let report_path = args.diagnostic_report.clone();
     let mut report = serde_json::json!({
         "schema_version": 1,
@@ -161,7 +163,7 @@ fn run_observed(
         "selected_plan": null,
         "plan_scope": null,
     });
-    let outcome = run_inner(args, cancellation, &mut report, observer);
+    let outcome = run_inner(args, cancellation, &mut report, observer, &mut warnings);
     report["status"] = serde_json::json!(if outcome.is_ok() {
         "success"
     } else {
@@ -179,7 +181,7 @@ fn run_observed(
         // into a reported pipeline failure, or replace its original error.
         eprintln!("Warning: diagnostic report failed: {error:#}");
     }
-    outcome
+    outcome.map(|()| warnings)
 }
 
 fn write_diagnostic_report(path: &Path, report: &serde_json::Value) -> Result<()> {
@@ -268,6 +270,7 @@ fn run_inner(
     cancellation: CancellationToken,
     report: &mut serde_json::Value,
     observer: Option<ProgressObserver>,
+    warnings: &mut Vec<String>,
 ) -> Result<()> {
     if args.output.is_none() && !args.capabilities && !args.explain_plan {
         bail!("output path is required unless --capabilities or --explain-plan is used");
@@ -490,10 +493,12 @@ fn run_inner(
     }
     if args.audio == args::AudioArg::Auto {
         for skipped in &audio_plan.skipped {
-            eprintln!(
-                "Warning: audio stream #{} ({}) was skipped: {}",
+            let warning = format!(
+                "audio stream #{} ({}) was skipped: {}",
                 skipped.input_index, skipped.codec, skipped.reason
             );
+            eprintln!("Warning: {warning}");
+            warnings.push(warning);
         }
     }
     let BuiltExecution {

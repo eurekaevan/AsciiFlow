@@ -51,6 +51,11 @@ the developer configuration, with diagnostic features selected explicitly and
 `lgpl-prebuilt` omitted. This keeps the release restriction and the software
 test contract intact; it does not justify skipping failing software tests.
 
+The LGPL no-software-encoder test also requires the isolated FFmpeg profile
+from the release recipe, with libx264 absent. Enabling `lgpl-prebuilt` while
+linking a GPL-enabled system FFmpeg does not satisfy that test's dependency
+precondition; use the recipe's `FFMPEG_DIR`, library and pkg-config paths.
+
 ## Hardware checks
 
 VAAPI/DMA-BUF/Intel Vulkan tests require real `/dev/dri` access and the intended
@@ -62,7 +67,7 @@ cargo test -p asciiflow-vulkan --features hdr-pq-qualification \
   --test pq_qualification pq_freetype_mapping_and_render_match_cpu --locked -- --ignored
 ```
 
-The font test depends on a locally installed acceptable monospaced face.
+The font test depends on a locally installed scalable face resolved by the `monospace` alias.
 Fontconfig matching and FreeType acceptance are separate gates; an unsuitable
 match must reject without fallback. The Vulkan command above checks host P010
 compute parity, not hardware-decoder interop. Consult [fonts](fonts.md),
@@ -114,17 +119,24 @@ replace the retained release-qualification receipts.
 For CLI/font/UI changes, use short SDR, PQ-preserve and explicit PQ-to-SDR
 production smokes, full decode-back, timestamps, color metadata and audio-copy
 checks. Verify redirected output and real terminal cancellation/error cleanup
-separately. [Font/terminal results](font-terminal-validation.md) retain an
-executed example; they do not imply a new package release.
+separately. The [font/terminal evidence receipt](../tests/ux/font-terminal-validation.json)
+retains an executed example and failed diagnostic controls; it does not qualify
+a later build.
 
 ## Long runs and release checks
 
 [Reliability](reliability-testing.md) describes the single-job process contract,
 resource observations and cleanup. Extend long-run testing only when the change
-or an actual anomaly warrants it. [Release qualification](lgpl-release-qualification.md)
-and the [historical release receipt](historical-release-receipt.md) retain exact dependency,
-source and package provenance. Historical failures remain historical results,
-not requirements to redesign the product or rerun every campaign.
+or an actual anomaly warrants it. Current package recipes and checks are
+specified in [release packaging](releases.md). Historical machine-readable
+[LGPL qualification](../tests/release/lgpl-qualification.json) and
+[final artifact receipt](../tests/release/asciiflow-2.0.0-final.json), with the
+archives in `tests/release/evidence/`, retain exact source, dependency, package
+and test identities. These receipts describe their recorded builds, not the
+current source. The old GPL-linked rc.1 artifact remains internal-only and not
+for redistribution, as recorded in [third-party notices](../THIRD_PARTY_NOTICES.md#historical-rc1).
+Historical failures remain historical results, not requirements to redesign the
+product or rerun every campaign.
 
 ## Evidence retention
 

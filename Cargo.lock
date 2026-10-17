@@ -279,7 +279,6 @@ dependencies = [
  "libc",
  "rfd",
  "serde_json",
- "tracing",
  "tracing-subscriber",
  "winit",
 ]
@@ -325,7 +324,6 @@ dependencies = [
  "ffmpeg-sys-next",
  "libc",
  "serde_json",
- "tracing",
 ]
 
 [[package]]

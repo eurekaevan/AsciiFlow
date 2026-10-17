@@ -1,5 +1,8 @@
 # Locked Rust dependency license supplements
 
+Git attributes disable line-ending conversion for this directory so that Windows
+checkouts preserve the original upstream bytes and their fixed SHA-256 hashes.
+
 The following locked crate archives omit their upstream workspace-level license
 texts. These files are copied verbatim from their exact crate-recorded Git commits:
 

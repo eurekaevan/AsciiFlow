@@ -21,7 +21,6 @@ asciiflow-vulkan = { path = "../asciiflow-vulkan" }
 crossbeam-channel.workspace = true
 ffmpeg-sys-next.workspace = true
 libc = "0.2"
-tracing.workspace = true
 
 [dev-dependencies]
 serde_json = "1"

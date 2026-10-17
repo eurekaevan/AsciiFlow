@@ -144,6 +144,7 @@ fn pq_auto_policies_select_only_the_full_hardware_path() {
     for input_codec in ["hevc", "av1"] {
         for output_codec in ["hevc", "av1"] {
             let ws = Workspace::new();
+            let report_path = ws.0.join("execution.json");
             let mut cmd = Command::new(env!("CARGO_BIN_EXE_asciiflow"));
             cmd.arg(canonical(input_codec))
                 .arg(ws.output())
@@ -166,17 +167,33 @@ fn pq_auto_policies_select_only_the_full_hardware_path() {
                     "3",
                     "--no-progress",
                 ])
+                .arg("--diagnostic-report")
+                .arg(&report_path)
                 .env("ASCIIFLOW_VULKAN_VALIDATION", "1")
                 .stdout(Stdio::piped())
                 .stderr(Stdio::piped());
             let result = Process::start(&mut cmd).finish();
             success(&result);
-            let plan = String::from_utf8_lossy(&result.stdout);
-            assert!(plan.contains("GPU + DMA-BUF input/output"), "{plan}");
-            assert!(
-                plan.contains("VAAPI decode") && plan.contains("VAAPI encode"),
-                "{plan}"
-            );
+            let report: serde_json::Value =
+                serde_json::from_slice(&std::fs::read(report_path).unwrap()).unwrap();
+            assert_eq!(report["status"], "success", "{report}");
+            assert_eq!(report["plan_scope"], "initialized_execution", "{report}");
+            let plan = &report["selected_plan"];
+            for (field, expected) in [
+                ("backend", "Vulkan"),
+                ("decode", "Hardware"),
+                ("encode", "Hardware"),
+                ("pixel_path", "GpuResident"),
+                ("color_processing", "HdrPqPreserve"),
+            ] {
+                assert_eq!(plan[field], expected, "{field}: {report}");
+            }
+            for field in ["hardware_input_interop", "hardware_output_interop"] {
+                assert_eq!(plan[field], true, "{field}: {report}");
+            }
+            for field in ["hardware_download", "hardware_upload"] {
+                assert_eq!(plan[field], false, "{field}: {report}");
+            }
             let diagnostics = String::from_utf8_lossy(&result.stderr);
             assert!(
                 !diagnostics.contains("VUID-") && !diagnostics.contains("Validation Error"),

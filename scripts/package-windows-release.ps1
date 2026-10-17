@@ -72,9 +72,9 @@ with os.add_dll_directory(str(prefix / 'bin')):
 receipt['license'] = run('-L')
 receipt['buildconf'] = run('-buildconf')
 for category, option, required in (
-    ('decoders', '-decoders', ('h264', 'hevc', 'aac')),
+    ('decoders', '-decoders', ('h264', 'hevc', 'vp8', 'vp9', 'mpeg4', 'aac', 'mp3', 'mp3float', 'opus', 'vorbis')),
     ('encoders', '-encoders', ('h264_mf',)),
-    ('demuxers', '-demuxers', ('mov',)),
+    ('demuxers', '-demuxers', ('mov', 'matroska', 'webm', 'avi')),
     ('muxers', '-muxers', ('mp4', 'null')),
     ('protocols', '-protocols', ('file',)),
     ('pixel_formats', '-pix_fmts', ('nv12', 'yuv420p')),
@@ -109,6 +109,7 @@ $env:CC_SHELL_ESCAPED_FLAGS = '1' # cc must preserve a quoted header path contai
 Invoke-Checked cargo @('build', '--locked', '--release', '--target', $target, '-p', 'asciiflow-cli', '--features', 'lgpl-prebuilt,gui', '--bins')
 # This device-free test also compiles the opt-in Windows hardware round-trip gate.
 Invoke-Checked cargo @('test', '--locked', '--lib', '--target', $target, '-p', 'asciiflow-media', '--features', 'lgpl-prebuilt', 'ffmpeg::encoder::audio_regression_tests::lgpl_profile_rejects_software_without_generic_h264_fallback', '--', '--exact')
+Invoke-Checked cargo @('test', '--locked', '--target', $target, '-p', 'asciiflow-media', '--features', 'lgpl-prebuilt', '--test', 'codec_decode', 'mkv_avi_webm_software_decode_preserves_display_frames_and_pts', '--', '--exact')
 $null = New-Item -ItemType Directory -Path $package, (Join-Path $package 'sources'), (Join-Path $package 'notices\rust-std'), (Join-Path $package 'build')
 Copy-Item assets (Join-Path $package 'assets') -Recurse
 foreach ($binary in @('asciiflow.exe', 'asciiflow-gui.exe')) {
@@ -119,7 +120,7 @@ foreach ($component in @('avcodec', 'avformat', 'avutil', 'swscale')) {
     if ($libraries.Count -ne 1) { throw "Expected one $component DLL" }
     Copy-Item $libraries[0].FullName $package
 }
-Copy-Item LICENSE, THIRD_PARTY_NOTICES.md, docs/production-support.md $package
+Copy-Item LICENSE, THIRD_PARTY_NOTICES.md, docs/production-support.md, docs/gui.md $package
 Copy-Item docs/releases.md (Join-Path $package 'README.md')
 Invoke-Checked python @('scripts/collect-release-notices.py', (Join-Path $package 'notices\rust-dependencies'), '--target', $target, '--features', 'lgpl-prebuilt,gui')
 $rustSysroot = & rustc --print sysroot

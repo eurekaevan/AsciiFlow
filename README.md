@@ -1,9 +1,7 @@
 # AsciiFlow
 
-Releases use calendar-date tags (`YYYY-MM-DD`). The current source includes
-system font discovery and terminal UX. The
-[historical release receipt](docs/historical-release-receipt.md) retains the identity, qualification and limitations of its frozen artifact.
-Maintenance follows changes and regressions.
+Releases use calendar-date tags (`YYYY-MM-DD`). Maintenance follows changes and
+regressions; current usage and support limits are documented below.
 
 AsciiFlow is a Rust application with command-line and graphical interfaces that
 converts video into color or monochrome ASCII video. It has a portable CPU path and, on qualified Linux hardware, a Vulkan
@@ -16,8 +14,9 @@ remaining feature gaps are recorded in the [Rust follow-up inventory](docs/legac
 
 The official LGPL prebuilt release does not support software H.264 encoding.
 Linux software decode and qualified VAAPI H.264/HEVC/AV1 encoding remain available
-subject to runtime probes. The Windows profile includes H.264/HEVC software
-decode, AAC passthrough and MF H.264 encoding; missing hardware fails without
+subject to runtime probes. Both release profiles include VP8/VP9/MPEG-4 Part 2 software decoding and
+MKV/AVI/WebM input alongside MP4. The Windows profile includes H.264/HEVC
+software decode, compressed audio passthrough and MF H.264 encoding; missing hardware fails without
 a software encoder fallback. Source/developer builds retain the libx264 backend;
 availability depends on their FFmpeg build capabilities. GPL-capable custom
 builds are outside this LGPL release qualification.
@@ -25,29 +24,30 @@ builds are outside this LGPL release qualification.
 ## Graphical interface
 
 Run `asciiflow-gui` (`asciiflow-gui.exe` on Windows) from the extracted release
-directory. The first interface uses English labels and handles one file at a
-time: choose or drop a video, choose the output, adjust the character grid,
-color, character ramp, font and audio policy, then start or cancel conversion.
-The character-set selector offers the CLI Standard and Detailed presets plus
-Custom; switching presets keeps your custom characters.
-A first-frame CPU preview uses the actual 8-bit BT.709 SDR renderer; it is not a video player or
-a guarantee that a requested hardware route is available. Advanced settings
-expose processing, codec and hardware choices; conversion uses the same planning
-and media pipeline as the CLI. Progress is reported without inventing a total
-when it is unknown.
+directory. The English-language interface converts one video at a time, with
+file selection, appearance controls, a first-frame preview and cancellation.
+See the [GUI user guide](docs/gui.md) for the complete workflow, control
+reference, desktop requirements and troubleshooting. The guide is also included
+as `gui.md` in release archives.
 
-The graphical application needs an X11/Wayland or Windows desktop with OpenGL
-support. Linux prefers X11/XWayland for file dragging; native Wayland uses the
-file selector. Linux file dialogs use the desktop portal; Chinese filenames need an
-installed CJK font available through Fontconfig. See the [desktop acceptance
-record](docs/releases.md#first-graphical-interface) for verified interactions.
-Windows hardware conversion requires separate live validation.
-The GUI scans installed monospaced rendering fonts in the background and offers
-a searchable selector; custom font files remain available through Browse font.
-Interface fonts follow the supported desktop's font family and size at startup.
-After conversion, Open file location reveals the saved output in the file manager.
-The original AF [application icon](assets/README.md) is embedded in the window
-and included in release archives as SVG, PNG and ICO.
+## Input formats
+
+The CLI and GUI accept local MP4, MKV, AVI and WebM files; output remains MP4.
+The GUI file selector and drag-and-drop use the same media pipeline.
+New regression coverage includes H.264/AAC in MKV, MPEG-4 Part 2/MP3 in AVI,
+and VP8/Vorbis or VP9/Opus in WebM, using software decoding of 8-bit SDR 4:2:0
+video. A container extension does not guarantee support for every codec,
+pixel format or color signal inside it. MJPEG, 10-bit VP9 and new hardware/HDR
+paths are outside this extension.
+
+Audio is copied as compressed packets without transcoding. **Auto** copies
+streams accepted by the actual MP4 muxer and reports skipped streams in the
+CLI and GUI; **Copy** rejects incompatible audio; **None** produces video only.
+Vorbis/Opus in MP4 may have more limited player compatibility than AAC.
+Cross-container metadata, packet duration and timestamp precision can change;
+see the [fixture and timing contract](tests/fixtures/containers/README.md).
+The existing video timeline rules still apply. These software regression tests
+do not qualify a Windows encoder device or a new Linux hardware route.
 
 ## Current support
 
@@ -73,12 +73,13 @@ The retained support tables and hardware evidence below describe the qualified L
 | Dimension | Value | Support state | Conditions |
 |---|---|---|---|
 | input_container | mp4 | ConditionallySupported | Retained matrix plus exact reviewed MP4 tuples (ordinary/fast-start/fragmented) only. AAC payload/timing/default/language are strictly checked where copied. Subtitles and video display titles are explicitly not copied. |
-| input_container | matroska | Unqualified | Video-only H.264 sample converts, but AAC/FLAC Matroska-to-MP4 strict oracles fail: unspecified language becomes und, absent default becomes true, millisecond packet duration and missing first duration differ. Not a supported Matroska/audio preservation claim. |
+| input_container | matroska | ConditionallySupported | Software 8-bit SDR H.264/AAC MKV and VP8/Vorbis or VP9/Opus WebM regression tuples to MP4. Compressed audio payload/order preserved; packet timestamps allow input plus output container tick quantization. Language/default/duration identity across containers is not promised; historical strict preservation failures remain. |
+| input_container | avi | ConditionallySupported | Software 8-bit SDR MPEG-4 Part 2/MP3 regression tuple to MP4. AVI encoder-delay timestamp gap is retained as input evidence; output uses the existing CFR grid. Audio payload/order and quantized packet timing checked, not language/default identity. |
 | input_container | mov | Unqualified | H.264/AAC sample converts but the unchanged strict audio oracle rejects undefined language becoming und. No MOV support promotion. |
 | output_container | mp4 | Supported |  |
 | output_container | matroska | Unsupported | The current CLI rejects non-MP4 output paths. |
 | input_color | sdr709 | Supported |  |
-| input_color | sdr601 | Unqualified | Legacy 8-bit software normalization is planner-accepted, but this path lacks production qualification. |
+| input_color | sdr601 | ConditionallySupported | Software normalization of the exact 8-bit VP8/WebM regression tuple to canonical BT.709 NV12. No blanket BT.601 codec, range or hardware qualification. |
 | input_color | pq | ConditionallySupported | Canonical limited BT.2020 NCL/PQ and left chroma; HEVC Main10 or AV1 Main 10-bit 4:2:0; VAAPI decode, Vulkan processing, VAAPI encode and matching input/output profile interop. The 0–1000 cd/m2 source pixel ceiling applies only to explicit HDR-to-SDR conversion. |
 | input_color | hlg | Unsupported |  |
 | input_color | full_pq | Unsupported |  |
@@ -102,7 +103,7 @@ existing CFR timeline; failure/cancellation preserves the destination. The
 default `preserve` never requests tone mapping. Explicit `sdr` uses the sealed
 1000→100-nit C pipeline; source pixels above its decoded domain reject.
 
-Rendering supports the built-in 8×8 font, an explicit monospaced FreeType file,
+Rendering supports the built-in 8×8 font, an explicit scalable FreeType file,
 or a Linux Fontconfig family/pattern such as `--font "Liberation Mono"` or
 `--font monospace`. Fontconfig selects one file/collection face; existing
 FreeType validation and rasterization remain authoritative. A system match
@@ -112,7 +113,10 @@ and standard/detailed/literal character ramps remain unchanged.
 When `--height` is omitted, scalable fonts use their natural cell width/height
 ratio to choose automatic rows. Builtin keeps its square-cell layout; an
 explicit `--height` preserves the requested grid. Glyphs are not stretched or
-cropped to simulate tighter spacing. `--verbose` reports the ratio and geometry.
+cropped to simulate tighter spacing. Proportional fonts use the same fixed grid,
+size and baseline, with each glyph centered horizontally. Automatic cell aspect
+uses the ASCII M advance (global maximum if absent) and ascender minus descender,
+including for proportional fonts. `--verbose` reports the ratio and geometry.
 The default ramps run sparse to dense on black, so black remains dark and
 white renders brighter. Audio auto copies eligible compressed tracks; copy
 is strict and none produces video-only output. Explicit hardware requests
@@ -192,7 +196,7 @@ with `--capabilities` and `--explain-plan`. Streaming input is not supported.
 
 Current source builds accept `--font "Liberation Mono:style=Bold"` as well as
 explicit files and `builtin-8x8`. A system match must still pass the existing
-FreeType monospaced/scalable/glyph checks; discovery does not promise fallback.
+FreeType scalable/glyph checks; discovery does not promise fallback.
 Windows uses `builtin-8x8` or explicit font files; family-name discovery is
 Linux-only. Windows MSVC source builds and packaging prerequisites are recorded
 in [release packaging](docs/releases.md#reproduce-and-inspect).
@@ -204,8 +208,8 @@ monochrome progress line; redirected output, `TERM=dumb`, `--no-progress`, and
 information. `--verbose` retains grouped diagnostic metrics instead. Progress
 uses accepted encoded frames, not a termination condition; inputs without a
 trusted frame count show elapsed progress without a percentage or invented ETA.
-Capability/plan inspection does not start this conversion UI. See the
-[font and terminal validation report](docs/font-terminal-validation.md).
+Capability/plan inspection does not start this conversion UI. The progress line
+is cleared on success, error and cancellation; native warnings remain visible.
 
 ## Installing release packages
 
@@ -241,9 +245,9 @@ have not been verified on the current Linux development host.
 ```
 
 Package build and runtime requirements are recorded in [release packaging](docs/releases.md).
-The [historical qualification receipt](docs/historical-release-receipt.md) describes
-its exact tested artifact and dependency stack; it does not automatically
-qualify a new package or another driver. Offline builds are not a release promise.
+Qualification applies to the exact tested artifact and dependency stack; it
+does not automatically qualify a new package or another driver. Offline builds
+are not a release promise.
 
 ```bash
 asciiflow --version
@@ -251,9 +255,8 @@ asciiflow input.mp4 output.mp4 --width 160 --audio auto
 asciiflow input.mp4 --capabilities
 ```
 
-See the [historical installation receipt](docs/historical-release-receipt.md), the
-[generated scenario matrix](docs/production-support.md#complete-scenario-inventory)
-and the [inherited LGPL qualification report](docs/lgpl-release-qualification.md).
+See the [generated scenario matrix](docs/production-support.md#complete-scenario-inventory)
+and the [distribution requirements](THIRD_PARTY_NOTICES.md).
 AsciiFlow source is MIT; the executable's distribution also has obligations
 from its actual native FFmpeg configuration. Do not describe a GPL-enabled
 FFmpeg-linked executable as an MIT-only or LGPL-only distribution.
@@ -266,8 +269,8 @@ FFmpeg-linked executable as an MIT-only or LGPL-only distribution.
   GPU path, not HLG, full-range HDR or arbitrary colorimetry. Explicit PQ→SDR
   additionally requires every decoded source pixel to be at most1000 cd/m².
 - Audio is compressed passthrough, not transcoding. Copy needs the original
-  CFR video grid and a qualified MP4/audio tuple; VFR/discontinuous copy rejects.
-  MOV/Matroska acceptance is not a preservation qualification.
+  CFR video grid and MP4-compatible audio; VFR/discontinuous copy rejects.
+  Container input tests do not promise identical language/default/duration metadata.
 - Hardware qualification is limited to the recorded stacks. Absence from the
   table does not prove incompatibility; historical FailedQualification remains
   in engineering records.

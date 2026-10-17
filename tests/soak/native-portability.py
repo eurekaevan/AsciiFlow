@@ -6,9 +6,7 @@ stack manifests only after source freeze, against the same binary and tree.
 """
 import argparse
 import importlib.util
-import json
 from pathlib import Path
-import subprocess
 import sys
 
 sys.dont_write_bytecode = True

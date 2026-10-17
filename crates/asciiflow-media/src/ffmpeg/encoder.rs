@@ -327,8 +327,13 @@ fn probe_vaapi_encoder_internal(
     check(
         opened,
         &format!(
-            "failed to configure {codec_name}_vaapi encoder probe for {}x{} {:?}",
-            desc.width, desc.height, desc.format
+            "failed to configure {codec_name}_vaapi encoder probe for {}x{} {}",
+            desc.width,
+            desc.height,
+            match desc.format {
+                PixelFormat::Nv12 => "NV12",
+                PixelFormat::P010Le => "P010LE",
+            }
         ),
     )?;
     if unused_options != 0 {
@@ -467,50 +472,6 @@ impl Encoder {
                 mode,
                 vaapi,
                 require_host_upload: true,
-                audio,
-                cancellation,
-            },
-        )
-    }
-
-    pub fn create_with_hardware_frames(
-        path: impl AsRef<Path>,
-        desc: FrameDesc,
-        frame_rate: Rational,
-        vaapi: VaapiOptions,
-    ) -> Result<Self> {
-        Self::create_internal(
-            path,
-            desc,
-            frame_rate,
-            EncoderCreateOptions {
-                codec: VideoCodec::H264,
-                mode: EncodeMode::Vaapi,
-                vaapi,
-                require_host_upload: false,
-                audio: Vec::new(),
-                cancellation: CancellationToken::new(),
-            },
-        )
-    }
-
-    pub fn create_with_hardware_frames_and_audio(
-        path: impl AsRef<Path>,
-        desc: FrameDesc,
-        frame_rate: Rational,
-        vaapi: VaapiOptions,
-        audio: Vec<AudioOutputTemplate>,
-        cancellation: CancellationToken,
-    ) -> Result<Self> {
-        Self::create_internal(
-            path,
-            desc,
-            frame_rate,
-            EncoderCreateOptions {
-                codec: VideoCodec::H264,
-                mode: EncodeMode::Vaapi,
-                vaapi,
-                require_host_upload: false,
                 audio,
                 cancellation,
             },

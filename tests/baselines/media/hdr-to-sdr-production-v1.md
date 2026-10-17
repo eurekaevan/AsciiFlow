@@ -1,11 +1,13 @@
-# C4B production output oracle harness
+# HDR-to-SDR production output oracle harness
 
 This harness records actual HDR→SDR production output evidence. Its presence or
 offline tests do not establish production availability, throughput, numerical
-tone-map parity, or hardware closure. Stage C-4B now establishes the checked-in
-`hdr-to-sdr-production-v1.json` from actual thirty-run execution and full decode.
+tone-map parity, or hardware closure. The production validation establishes the
+checked-in `hdr-to-sdr-production-v1.json` from actual thirty-run execution and
+full decode.
 The separate hardware/resource/fault closure is documented in
-`docs/stage5.3c4b-hdr-to-sdr-production.md` and `stage53c4b.json`.
+[HDR-to-SDR validation](../../../docs/hdr-to-sdr-validation.md) and
+[the production closure ledger](hdr-to-sdr-production.json).
 
 Run from the repository root after building the intended production binary and
 qualifying the required Intel render node. `ASCIIFLOW_BASELINE_BINARY` can select

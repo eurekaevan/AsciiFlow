@@ -657,16 +657,6 @@ impl Default for PipelinePolicy {
     }
 }
 
-impl PipelinePolicy {
-    pub fn is_fully_explicit(&self) -> bool {
-        self.backend != ProcessingBackend::Auto
-            && self.decode != MediaRequest::Auto
-            && self.encode != MediaRequest::Auto
-            && self.input_interop != InteropRequest::Auto
-            && self.output_interop != InteropRequest::Auto
-    }
-}
-
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum MediaImplementation {
     Software,

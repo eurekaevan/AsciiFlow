@@ -261,8 +261,10 @@ glyphs. The intermediate `CellGrid` contains compact `AsciiCell` values rather
 than strings.
 
 The font crate creates an owned R8 atlas during initialization: built-in 8x8 by
-default, or cell-sized FreeType tiles for an explicit font file. The renderer
-composites that atlas directly into a new NV12 frame.
+default, or cell-sized FreeType tiles for a selected scalable font file/face.
+Proportional faces use individual horizontal centering in a fixed grid, with
+one size and baseline; monospaced faces retain the common horizontal origin.
+The renderer composites that atlas directly into a new NV12 frame.
 It does not create RGB24 frames and does not rasterize glyphs per video frame.
 The CPU backend is the permanent correctness/reference backend, not temporary
 legacy code. FreeType is never called in the per-frame renderer.
@@ -593,8 +595,10 @@ that distinction explicit.
   CPU/Vulkan processing parity and explicit production HEVC Main10/AV1 10-bit output;
   qualified full input/output interop remains codec-neutral and does not make
   native handles part of Core.
-- Built-in 8x8 remains the default; explicit scalable monospaced FreeType fonts
-  provide grayscale tiles without changing glyph ordering or grid geometry.
+- Built-in 8x8 remains the default; scalable proportional and monospaced FreeType fonts
+  provide grayscale tiles without changing glyph ordering. Automatic grid
+  geometry uses ASCII M advance (global maximum if absent) and ascender minus
+  descender as its reference cell; individual glyph widths do not change it.
 - Source presentation timestamps are represented on decoded frames, but
   encoding uses an ordered constant-frame-rate sequence based on the source
   frame-rate rational. With audio selected, the mux layer preserves the first

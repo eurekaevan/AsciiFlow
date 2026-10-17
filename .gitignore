@@ -36,6 +36,9 @@ scratch/
 # Tiny self-generated regression media, with generator/version/checksums.
 !tests/fixtures/media/*.mp4
 !tests/fixtures/media/*.mkv
+!tests/fixtures/containers/*.mkv
+!tests/fixtures/containers/*.avi
+!tests/fixtures/containers/*.webm
 !tests/fixtures/codecs/*.mp4
 !crates/asciiflow-media/tests/fixtures/*.mp4
 

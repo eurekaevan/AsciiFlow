@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Attest the isolated LGPL dependency, not the host's similarly named SONAMEs."""
 import argparse
-import ctypes
 import hashlib
 import json
 import os
@@ -57,7 +56,7 @@ print(json.dumps(result))'''
                for v in receipt["reported_licenses"].values())
     required = json.loads((Path(__file__).with_name("required-ffmpeg-capabilities.json")).read_text())["production"]
     for category, option, needed in [
-        ("decoders", "-decoders", required["software_video_decoders"] + ["av1", "aac"]),
+        ("decoders", "-decoders", required["software_video_decoders"] + ["av1"] + required["audio_probe_decoders"]),
         ("encoders", "-encoders", required["vaapi_video_encoders"]),
         ("demuxers", "-demuxers", required["demuxers"]),
         ("muxers", "-muxers", required["muxers"]),

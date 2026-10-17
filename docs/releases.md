@@ -73,10 +73,12 @@ MF means FFmpeg's `h264_mf` encoder with hardware encoding required. Missing or
 incompatible hardware fails explicitly. Automatic Windows processing prefers
 eligible Vulkan devices and otherwise selects CPU. Vulkan uses host frames and
 readback; `--backend cpu` selects CPU processing explicitly.
-The initial profile includes software H.264/HEVC video decoding and AAC
-compressed passthrough in eligible MP4 inputs. It has no software AV1 decoder,
+The profile includes software H.264/HEVC/VP8/VP9/MPEG-4 Part 2 video decoding
+and MP4-compatible compressed audio passthrough. Both platform recipes enable
+MP4, Matroska/WebM and AVI demuxers. Input extension alone does not qualify all
+contained codecs or colors; see [input format scope](../README.md#input-formats). It has no software AV1 decoder,
 HEVC/AV1 encoder, hardware decoding, 10-bit output, HDR output/conversion or
-VAAPI/DRM/DMA-BUF interop. The default built-in font and explicit monospaced
+VAAPI/DRM/DMA-BUF interop. The default built-in font and explicit scalable
 font files work without Linux Fontconfig; font-name discovery remains Linux-only.
 
 These commands describe the implemented route. Successful real conversion on
@@ -85,74 +87,31 @@ evidence does not qualify every Windows input or device.
 
 ## First graphical interface
 
-The GUI currently uses English labels and runs one conversion at a time. It
-supports file selection or drag-and-drop where the window backend permits it,
-an output destination, character-grid
-settings, color/monochrome rendering, character ramps, fonts, audio policy and
-advanced media/device settings. Its preview renders the first decoded frame on
-the CPU using the selected rendering settings. Preview currently admits 8-bit
-BT.709 SDR only; it does not play the video or
-qualify a hardware encode path. Conversion runs in the background through the
-same planner and pipeline as the CLI, with progress, cancellation and visible
-errors. Unknown totals remain indeterminate.
+The [GUI user guide](gui.md) describes launching the application, file selection,
+appearance and advanced controls, preview, cancellation and opening the output
+location. Both platform archives include that guide as `gui.md`. This section
+retains desktop acceptance evidence; it does not qualify additional hardware
+or media paths.
 
-The character-set selector defaults to **Standard**, using the same `standard`
-ramp as the CLI. **Detailed** uses the CLI's `detailed` ramp, and **Custom** exposes
-the editable character sequence. Switching to a preset keeps the previous
-custom sequence for when Custom is selected again. Hovering over the selector
-shows the effective ramp and its character count. Preview and conversion share
-the CLI preset resolver.
-
-The window and header use the original AF application icon. Both release archives
-include editable SVG, a 512px PNG, and a multi-size ICO under `assets/`. The ICO
-can be used for Windows shortcuts; Explorer's executable-file icon is not yet
-embedded as a Windows resource. No external file is needed for the running
-window icon, which is compiled into the GUI binary.
-
-Rendering fonts are scanned once in the background at startup. The searchable
-selector includes the built-in 8×8 font and installed scalable monospaced faces;
-proportional, unreadable and renderer-incompatible fonts are omitted. Linux uses
-the Fontconfig configuration, while Windows scans the standard system and user
-Fonts directories. Fonts registered outside those Windows directories require
-**Browse font…**. No fonts are copied into the release. The selected file and
-collection face index are shared by preview and conversion. Missing character
-glyphs still produce the renderer's existing error. The built-in font remains
-the default, and a scan failure is shown without disabling it or file browsing.
-
-The interface uses a dark canvas, grouped file controls, a searchable font
-selector above appearance settings, and a persistent conversion toolbar.
-Interface font family and body size are read at startup from GNOME's interface
-font setting, KDE's `kdeglobals`, or the Windows system message font. These are
-independent of the rendering font. Other Linux desktops are not yet qualified;
-if discovery fails the UI retains its default font and reports a diagnostic.
-Installed CJK faces remain fallback fonts. Font weight/style settings on KDE and
-Windows are not currently mirrored.
-
-After a successful conversion, **Open file location** refers to the last committed
-output, even if the next destination changes or a later job is cancelled. Linux
-requests file selection through `org.freedesktop.FileManager1`, falling back to
-opening its parent folder; Windows hands selection to Explorer. Requests run
-outside the UI thread and failures are displayed. On this Linux host, the native
-file manager opened the test directory and exposed the Chinese output filename
-as selected. This does not qualify native Windows behavior.
+On the recorded Linux host, the native file manager opened the test directory
+and exposed the Chinese output filename as selected. This does not qualify
+native Windows behavior.
 
 A real Linux XWayland window was visually checked at its default size; the
 system scanner found 111 compatible faces on that host. Automated interaction
 covers opening the selector, focusing search, filtering and choosing a face.
 The catalog and interface checks do not qualify the Windows font directories
 or Windows desktop operation.
-The existing optional `system_monospace_matches_explicit_atlas` test fails on this
-host because its default `monospace` alias resolves to a variable font that
-FreeType does not flag as fixed-width. The new catalog excludes that font under
-the existing renderer requirement; the separate actual catalog test passes.
+At that earlier check, the optional `system_monospace_matches_explicit_atlas`
+test failed because the default `monospace` alias resolved to a variable font
+without FreeType's fixed-width flag. The false rejection was subsequently fixed
+and the actual system-alias test passed. The catalog now accepts scalable
+proportional faces as well, so fixed-width classification no longer filters it.
+The recorded 111-face count predates this broader catalog.
 
-On Linux the GUI prefers X11/XWayland when `DISPLAY` is present, because the
-locked winit 0.30 backend does not implement native Wayland file-drop events
-([upstream issue](https://github.com/rust-windowing/winit/issues/1881)). This also
-permits drops from a Wayland file manager through the compositor's XWayland
-bridge. Without an X11 display, the GUI uses native Wayland and directs users to
-**Choose video…** instead of advertising file dragging. An invalid X11
-display produces the existing startup error rather than silently changing modes.
+The guide describes Linux X11/XWayland selection and the native Wayland
+file-selector alternative. The backend limitation is tracked in
+[winit issue 1881](https://github.com/rust-windowing/winit/issues/1881).
 
 Existing media, audio, color and hardware support boundaries still apply.
 The GUI is new and does not inherit the recorded single-job CLI qualification.

@@ -6,7 +6,6 @@ whole invocation. A successful subset is not qualification or a seal decision.
 """
 import argparse
 import json
-import os
 from pathlib import Path
 from statistics import median
 import sys

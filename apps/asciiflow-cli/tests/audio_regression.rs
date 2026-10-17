@@ -3,33 +3,60 @@ use asciiflow_core::FrameSource;
 
 #[test]
 fn natural_font_aspect_changes_only_automatic_grid_geometry() {
-    let font = fixture("no-audio.mp4")
-        .parent()
-        .unwrap()
-        .parent()
-        .unwrap()
-        .join("fonts/Inconsolata-Regular.ttf");
-    for (height, expected_rows) in [(None, 8), (Some("12"), 12)] {
-        let ws = Workspace::new();
-        let report = ws.0.join("report.json");
-        let mut cmd = command(&fixture("no-audio.mp4"), &ws.output(), "none");
-        cmd.arg("--font")
-            .arg(&font)
-            .arg("--diagnostic-report")
-            .arg(&report);
-        if let Some(height) = height {
-            cmd.args(["--height", height]);
+    for (name, natural_cell) in [
+        ("Inconsolata-Regular.ttf", [500, 1049]),
+        ("Abel-Regular.ttf", [1339, 2610]),
+    ] {
+        let font = fixture("no-audio.mp4")
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .join("fonts")
+            .join(name);
+        for (height, expected_rows) in [(None, 8), (Some("12"), 12)] {
+            let ws = Workspace::new();
+            let report = ws.0.join("report.json");
+            let mut cmd = command(&fixture("no-audio.mp4"), &ws.output(), "none");
+            cmd.arg("--font")
+                .arg(&font)
+                .arg("--diagnostic-report")
+                .arg(&report);
+            if let Some(height) = height {
+                cmd.args(["--height", height]);
+            }
+            success(&Process::start(&mut cmd).finish());
+            let data: serde_json::Value =
+                serde_json::from_slice(&std::fs::read(report).unwrap()).unwrap();
+            assert_eq!(
+                data["font"]["resolved_path"],
+                serde_json::json!(font.canonicalize().unwrap())
+            );
+            assert_eq!(data["font"]["face_index"], 0);
+            assert_eq!(
+                data["font"]["natural_cell"],
+                serde_json::json!(natural_cell)
+            );
+            assert_eq!(data["font"]["grid"], serde_json::json!([16, expected_rows]));
+            assert_eq!(
+                data["font"]["cell_pixels"],
+                serde_json::json!([4, 64u32.div_ceil(expected_rows)])
+            );
+            let output = inspect(&ws.output());
+            assert!(audio(&output).is_empty());
+            assert_eq!(
+                output.iter().find(|stream| stream.video).unwrap().codec,
+                "h264"
+            );
+            let mut decoder = asciiflow_media::Decoder::open(ws.output()).unwrap();
+            let mut frames = 0;
+            while let Some(frame) = decoder.next_frame().unwrap() {
+                assert_eq!((frame.desc().width, frame.desc().height), (64, 64));
+                frames += 1;
+            }
+            assert_eq!(frames, 90, "{name}, height {height:?}");
+            ws.assert_no_staging();
         }
-        success(&Process::start(&mut cmd).finish());
-        let data: serde_json::Value =
-            serde_json::from_slice(&std::fs::read(report).unwrap()).unwrap();
-        assert_eq!(data["font"]["natural_cell"], serde_json::json!([500, 1049]));
-        assert_eq!(data["font"]["grid"], serde_json::json!([16, expected_rows]));
-        assert_eq!(
-            data["font"]["cell_pixels"],
-            serde_json::json!([4, 64u32.div_ceil(expected_rows)])
-        );
-        ws.assert_no_staging();
     }
 }
 
@@ -178,6 +205,90 @@ fn new_codec_ten_bit_failures_do_not_touch_existing_output() {
 }
 
 #[test]
+fn container_inputs_convert_to_h264_with_explicit_audio_policies() {
+    let root = fixture("single.mp4")
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .to_owned();
+    for (name, codec) in [
+        ("h264-aac.mkv", "aac"),
+        ("mpeg4-mp3.avi", "mp3"),
+        ("vp8-vorbis.webm", "vorbis"),
+        ("vp9-opus.webm", "opus"),
+    ] {
+        let input = root.join("containers").join(name);
+        let source = inspect(&input);
+        let source_audio = audio(&source);
+        assert_eq!(source_audio.len(), 1, "{name}");
+        assert_eq!(source_audio[0].codec, codec, "{name}");
+        for policy in ["none", "copy", "auto"] {
+            let ws = Workspace::new();
+            let result = Process::start(
+                command(&input, &ws.output(), policy)
+                    .arg("--font")
+                    .arg(root.join("fonts/Inconsolata-Regular.ttf")),
+            )
+            .finish();
+            assert!(
+                result.status.success(),
+                "{name}, {policy}: {}",
+                String::from_utf8_lossy(&result.stderr)
+            );
+            let output = inspect(&ws.output());
+            let video = output.iter().find(|stream| stream.video).unwrap();
+            assert_eq!(video.codec, "h264", "{name}, {policy}");
+            assert_eq!(video.packets.len(), 30, "{name}, {policy}");
+            let mut decoder = asciiflow_media::Decoder::open(ws.output()).unwrap();
+            let mut frames = 0;
+            while decoder.next_frame().unwrap().is_some() {
+                frames += 1;
+            }
+            assert_eq!(frames, 30, "{name}, {policy}");
+            let output_audio = audio(&output);
+            if policy == "none" {
+                assert!(output_audio.is_empty(), "{name}");
+            } else {
+                assert_eq!(output_audio.len(), 1, "{name}, {policy}");
+                let before = source_audio[0];
+                let after = output_audio[0];
+                assert_eq!(
+                    (&before.codec, before.rate, before.channels),
+                    (&after.codec, after.rate, after.channels),
+                    "{name}, {policy}"
+                );
+                assert_eq!(
+                    before.packets.len(),
+                    after.packets.len(),
+                    "{name}, {policy}"
+                );
+                // This cross-container contract preserves payload/order and the
+                // observable PTS/DTS timeline within one tick of each container.
+                // It does not assert equivalent language/default flags or packet
+                // durations, which AVI/Matroska and MP4 represent differently.
+                // The existing stricter MP4 preservation oracle is unchanged.
+                let tolerance = seconds(1, before) + seconds(1, after);
+                for (index, (a, b)) in before.packets.iter().zip(&after.packets).enumerate() {
+                    assert_eq!(a.data, b.data, "{name}, {policy}, packet {index}");
+                    for (field, x, y) in [("PTS", a.pts, b.pts), ("DTS", a.dts, b.dts)] {
+                        assert_ne!(x, ffmpeg_sys_next::AV_NOPTS_VALUE);
+                        assert_ne!(y, ffmpeg_sys_next::AV_NOPTS_VALUE);
+                        let difference = (seconds(x, before) - seconds(y, after)).abs();
+                        assert!(
+                            difference <= tolerance,
+                            "{name}, {policy}, packet {index}, {field}: difference {difference}s exceeds {tolerance}s"
+                        );
+                    }
+                }
+                assert_audio_decodes(&ws.output());
+            }
+            ws.assert_no_staging();
+        }
+    }
+}
+
+#[test]
 fn pq_requires_explicit_ten_bit_output_before_staging() {
     let ws = Workspace::new();
     std::fs::write(ws.output(), b"existing").unwrap();
@@ -305,33 +416,41 @@ fn explain_plan_reports_detected_hdr_before_rejection() {
 
 #[test]
 fn explicit_font_failures_preserve_output_and_capabilities_remain_font_independent() {
-    for name in ["missing.ttf", "Abel-Regular.ttf"] {
+    for failure in ["missing", "invalid", "missing-glyph"] {
         let ws = Workspace::new();
         std::fs::write(ws.output(), b"existing output").unwrap();
-        let font = fixture("single.mp4")
-            .parent()
-            .unwrap()
-            .parent()
-            .unwrap()
-            .join("fonts")
-            .join(name);
-        let result = Process::start(
-            command(&fixture("single.mp4"), &ws.output(), "copy")
-                .arg("--font")
-                .arg(&font),
-        )
-        .finish();
-        assert!(!result.status.success());
+        let font = match failure {
+            "missing" => ws.0.join("missing.ttf"),
+            "invalid" => {
+                let path = ws.0.join("invalid.ttf");
+                std::fs::write(&path, b"not a font").unwrap();
+                path
+            }
+            _ => fixture("single.mp4")
+                .parent()
+                .unwrap()
+                .parent()
+                .unwrap()
+                .join("fonts/Abel-Regular.ttf"),
+        };
+        let mut cmd = command(&fixture("single.mp4"), &ws.output(), "copy");
+        cmd.arg("--font").arg(&font);
+        if failure == "missing-glyph" {
+            cmd.args(["--charset", " A\u{10ffff}"]);
+        }
+        let result = Process::start(&mut cmd).finish();
+        assert!(!result.status.success(), "{failure}");
+        let error = String::from_utf8_lossy(&result.stderr);
+        let expected = match failure {
+            "missing" => "FontFileMissing",
+            "invalid" => "invalid.ttf",
+            _ => "missing glyph",
+        };
+        assert!(error.contains(expected), "{failure}: {error}");
         assert_eq!(std::fs::read(ws.output()).unwrap(), b"existing output");
         ws.assert_no_staging();
-        let result = Process::start(
-            command(&fixture("single.mp4"), &ws.output(), "copy")
-                .arg("--font")
-                .arg(&font)
-                .arg("--capabilities"),
-        )
-        .finish();
-        success(&result);
+        cmd.arg("--capabilities");
+        success(&Process::start(&mut cmd).finish());
     }
 }
 

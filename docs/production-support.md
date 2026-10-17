@@ -13,7 +13,7 @@ Version: 1.1.0. Generated from `tests/support/production-support-v1.json`; do no
 
 The retained support tables and hardware evidence below describe the qualified Linux paths. They do not qualify the new Windows Media Foundation implementation.
 
-Windows x86_64 implements software H.264/HEVC video decoding, MP4/AAC passthrough and hardware-only Media Foundation H.264 8-bit SDR encoding (`--encode mf`). Software H.264 encoding is excluded from the LGPL package; unavailable MF hardware produces an explicit error without a software encoder fallback.
+Windows x86_64 implements software H.264/HEVC/VP8/VP9/MPEG-4 Part 2 video decoding, MP4-compatible compressed audio passthrough and hardware-only Media Foundation H.264 8-bit SDR encoding (`--encode mf`). Software H.264 encoding is excluded from the LGPL package; unavailable MF hardware produces an explicit error without a software encoder fallback.
 
 Automatic Windows processing prefers eligible Vulkan devices and otherwise selects CPU. Vulkan processing uses host frames and readback; Windows VAAPI/DRM/DMA-BUF interop and hardware decoding are unavailable. The initial Windows package has no AV1 decoder, HEVC/AV1 encoder, 10-bit output, HDR preservation or HDR-to-SDR conversion.
 
@@ -49,10 +49,10 @@ Rows classify individual dimensions, not their Cartesian product. Conditions and
 
 | Dimension | Value | State | Conditions | Evidence |
 |---|---|---|---|---|
-| audio_codec | aac | ConditionallySupported | MP4-compatible single/dual AAC cases only. | hdr-to-sdr-runtime |
-| audio_codec | other | Unqualified |  |  |
-| audio_policy | auto | ConditionallySupported | MP4-compatible compressed streams; AAC single/dual-track cases qualified. Existing CFR video timeline required; incompatible streams are omitted, not transcoded. | hdr-to-sdr-runtime |
-| audio_policy | copy | ConditionallySupported | Strict MP4 copy eligibility and the existing CFR video timeline; AAC single/dual-track cases qualified. VFR/discontinuities reject. | hdr-to-sdr-runtime |
+| audio_codec | aac | ConditionallySupported | Retained MP4 single/dual AAC cases plus the H.264/AAC MKV regression tuple. Cross-container timing/metadata conditions apply to MKV. | hdr-to-sdr-runtime, container-input-regression |
+| audio_codec | other | ConditionallySupported | Only compressed MP3 from the AVI, Vorbis from the VP8/WebM and Opus from the VP9/WebM regression tuples into MP4. Payload/order and container-tick timing checked, not cross-container metadata identity. | container-input-regression |
+| audio_policy | auto | ConditionallySupported | MP4-compatible compressed streams; retained AAC cases and exact container-input regression tuples only. Existing CFR video timeline required; incompatible streams are omitted, not transcoded. | hdr-to-sdr-runtime, container-input-regression |
+| audio_policy | copy | ConditionallySupported | MP4 copy eligibility and the existing CFR video timeline; retained AAC cases and exact container-input regression tuples only. VFR/discontinuities reject. | hdr-to-sdr-runtime, container-input-regression |
 | audio_policy | none | Supported |  | hdr-to-sdr-runtime |
 | backend | auto | ConditionallySupported | Only for sealed automatic-path test cases. | hdr-to-sdr-production |
 | backend | cpu | Supported | Portable NV12 SDR production. P010 CPU is separately qualified processing; CPU production HDR preserve/tone mapping is unsupported. | cpu-vaapi-validation |
@@ -119,16 +119,17 @@ Rows classify individual dimensions, not their Cartesian product. Conditions and
 | input_codec | av1 | ConditionallySupported | Qualified input profiles and bit depths in the retained production cases; PQ input additionally requires AV1 Main 10-bit 4:2:0. | pq-reference, hdr-to-sdr-production |
 | input_codec | h264 | Supported |  | pq-reference, cpu-vaapi-validation |
 | input_codec | hevc | Supported |  | pq-reference, hdr-to-sdr-production, cpu-vaapi-validation |
-| input_codec | other | Unqualified |  |  |
+| input_codec | other | ConditionallySupported | Only software decoding of the exact 8-bit SDR 4:2:0 VP8/WebM, VP9/WebM and MPEG-4 Part 2/AVI regression tuples. No blanket other-codec, hardware or HDR qualification. | container-input-regression |
 | input_color | conflicting | Unsupported |  | hdr-to-sdr-production |
 | input_color | full_pq | Unsupported |  | hdr-to-sdr-production |
 | input_color | hlg | Unsupported |  | hdr-to-sdr-production |
 | input_color | pq | ConditionallySupported | Canonical limited BT.2020 NCL/PQ and left chroma; HEVC Main10 or AV1 Main 10-bit 4:2:0; VAAPI decode, Vulkan processing, VAAPI encode and matching input/output profile interop. The 0–1000 cd/m2 source pixel ceiling applies only to explicit HDR-to-SDR conversion. | hdr-to-sdr-production |
-| input_color | sdr601 | Unqualified | Legacy 8-bit software normalization is planner-accepted, but this path lacks production qualification. |  |
+| input_color | sdr601 | ConditionallySupported | Software normalization of the exact 8-bit VP8/WebM regression tuple to canonical BT.709 NV12. No blanket BT.601 codec, range or hardware qualification. | container-input-regression |
 | input_color | sdr709 | Supported |  | pq-reference, hdr-to-sdr-production |
 | input_color | unknown | Unsupported |  | hdr-to-sdr-production |
 | input_color | wide_sdr | Unsupported |  | hdr-to-sdr-production |
-| input_container | matroska | Unqualified | Video-only H.264 sample converts, but AAC/FLAC Matroska-to-MP4 strict oracles fail: unspecified language becomes und, absent default becomes true, millisecond packet duration and missing first duration differ. Not a supported Matroska/audio preservation claim. |  |
+| input_container | avi | ConditionallySupported | Software 8-bit SDR MPEG-4 Part 2/MP3 regression tuple to MP4. AVI encoder-delay timestamp gap is retained as input evidence; output uses the existing CFR grid. Audio payload/order and quantized packet timing checked, not language/default identity. | container-input-regression |
+| input_container | matroska | ConditionallySupported | Software 8-bit SDR H.264/AAC MKV and VP8/Vorbis or VP9/Opus WebM regression tuples to MP4. Compressed audio payload/order preserved; packet timestamps allow input plus output container tick quantization. Language/default/duration identity across containers is not promised; historical strict preservation failures remain. | container-input-regression |
 | input_container | mov | Unqualified | H.264/AAC sample converts but the unchanged strict audio oracle rejects undefined language becoming und. No MOV support promotion. |  |
 | input_container | mp4 | ConditionallySupported | Retained matrix plus exact reviewed MP4 tuples (ordinary/fast-start/fragmented) only. AAC payload/timing/default/language are strictly checked where copied. Subtitles and video display titles are explicitly not copied. | pq-reference, hdr-to-sdr-production, real-media-corpus |
 | input_gop | benign-elementary-stream-parameter-update | Unqualified | Level-only SPS change drains eight frames, but original Annex B PTS/DTS are absent; timeline preservation is unqualified. |  |
@@ -259,6 +260,7 @@ Availability is a distribution overlay, not a fifth base support state. Eligible
 
 ## Evidence
 
+- `container-input-regression`: [tests/fixtures/containers/README.md](../tests/fixtures/containers/README.md) — Container inputs, synthetic-media-and-end-to-end-regression, QUALIFIED.
 - `cpu-vaapi-validation`: [docs/cpu-validation.md](../docs/cpu-validation.md) — CPU and staged VAAPI, validation-report, QUALIFIED.
 - `current-cli`: [apps/asciiflow-cli/src/main.rs](../apps/asciiflow-cli/src/main.rs) — Current checkout, output-container-guard, CURRENT.
 - `hdr-to-sdr-device`: [tests/baselines/media/c4b-static-and-device-evidence.txt](../tests/baselines/media/c4b-static-and-device-evidence.txt) — HDR-to-SDR production, device-and-runtime-evidence, SEALED.

@@ -1,0 +1,2 @@
+# License supplements are pinned to upstream byte hashes; preserve them verbatim.
+third_party/rust-licenses/** -text

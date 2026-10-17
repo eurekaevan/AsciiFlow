@@ -3,6 +3,8 @@
 The production model is one CLI process, one media job, then process exit.
 Qualification covers recorded single-job workloads and long-run production
 paths, not a daemon, persistent worker or unconditional 24/7 service guarantee.
+Measured throughput applies to its recorded workload and stack; no real-time
+throughput guarantee is made.
 
 ## Recorded results
 
